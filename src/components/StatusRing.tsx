@@ -1,4 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { Play } from "lucide-react";
+import StatusViewerDialog from "./StatusViewerDialog";
 
 interface StatusRingProps {
   children: ReactNode;
@@ -11,6 +13,9 @@ interface StatusRingProps {
   showAddButton?: boolean;
   isNew?: boolean;
   className?: string;
+  userId?: string;
+  username?: string;
+  avatarUrl?: string;
 }
 
 const StatusRing = ({ 
@@ -23,9 +28,28 @@ const StatusRing = ({
   onAddClick,
   showAddButton = false,
   isNew = false,
-  className = "" 
+  className = "",
+  userId,
+  username,
+  avatarUrl
 }: StatusRingProps) => {
+  const [showViewer, setShowViewer] = useState(false);
   const hasContent = hasStatus && (statusText || musicTrackName);
+  
+  const handleStatusClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowViewer(true);
+  };
+
+  // Build status object for dialog
+  const statusData = {
+    id: '',
+    user_id: userId || '',
+    status_text: statusText,
+    emoji: emoji,
+    music_track_name: musicTrackName,
+    music_album_art: musicAlbumArt,
+  };
   
   return (
     <div className={`relative inline-block ${className}`}>
@@ -35,7 +59,10 @@ const StatusRing = ({
       )}
       
       {hasContent && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none animate-fade-in">
+        <div 
+          className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-auto cursor-pointer animate-fade-in"
+          onClick={handleStatusClick}
+        >
           <div className="relative group">
             {/* Compact black & white status bubble with shimmer */}
             <div className="relative bg-black text-white px-3 py-1.5 rounded-full text-[10px] overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.25)] min-w-[60px] max-w-[130px]">
@@ -79,6 +106,13 @@ const StatusRing = ({
                     ) : null}
                   </div>
                 </div>
+                
+                {/* Play button for music */}
+                {musicTrackName && (
+                  <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                    <Play className="w-2 h-2 text-black ml-px" />
+                  </div>
+                )}
               </div>
             </div>
             
@@ -108,6 +142,14 @@ const StatusRing = ({
           <span className="text-white text-xs font-bold">+</span>
         </button>
       )}
+      
+      {/* Status Viewer Dialog */}
+      <StatusViewerDialog
+        open={showViewer}
+        onOpenChange={setShowViewer}
+        status={statusData}
+        userProfile={{ username: username || '', avatar_url: avatarUrl || null }}
+      />
     </div>
   );
 };
