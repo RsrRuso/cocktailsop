@@ -65,7 +65,6 @@ const PurchaseOrders = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { addItemsFromPurchaseOrder } = usePurchaseOrderMaster();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -77,6 +76,9 @@ const PurchaseOrders = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
   });
+  
+  // Hook must be called after state declaration
+  const { addItemsFromPurchaseOrder } = usePurchaseOrderMaster(selectedWorkspaceId);
   
   const handleWorkspaceChange = (workspaceId: string | null) => {
     setSelectedWorkspaceId(workspaceId);
@@ -146,6 +148,7 @@ const PurchaseOrders = () => {
         .from('purchase_orders')
         .insert({
           user_id: user?.id,
+          workspace_id: selectedWorkspaceId || null,
           supplier_name: newOrder.supplier_name || null,
           order_number: newOrder.order_number || null,
           order_date: newOrder.order_date,

@@ -75,34 +75,30 @@ interface PriceChange {
 const POReceivedItems = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { receivedItems, receivedSummary, receivedTotals, isLoadingReceived, addReceivedItem } = usePurchaseOrderMaster();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'all' | 'summary'>('summary');
   const [isUploading, setIsUploading] = useState(false);
   const [varianceReport, setVarianceReport] = useState<VarianceReport | null>(null);
   const [showVarianceDialog, setShowVarianceDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
+  const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
   const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>(() => {
     const saved = localStorage.getItem('po-currency');
     return (saved as 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') || 'USD';
   });
   const [showRecordContent, setShowRecordContent] = useState<RecentReceived | null>(null);
-  const queryClient = useQueryClient();
 
-  // Save currency preference when changed
-  const handleCurrencyChange = (newCurrency: 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') => {
-    setCurrency(newCurrency);
-    localStorage.setItem('po-currency', newCurrency);
-  };
-
-  // Workspace state
+  // Workspace state - declare before hook usage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
   });
+  
+  // Hook must be called after state declaration
+  const { receivedItems, receivedSummary, receivedTotals, isLoadingReceived, addReceivedItem } = usePurchaseOrderMaster(selectedWorkspaceId);
   
   const handleWorkspaceChange = (workspaceId: string | null) => {
     setSelectedWorkspaceId(workspaceId);
@@ -111,6 +107,12 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
     } else {
       localStorage.removeItem('po-workspace-id');
     }
+  };
+
+  // Save currency preference when changed
+  const handleCurrencyChange = (newCurrency: 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') => {
+    setCurrency(newCurrency);
+    localStorage.setItem('po-currency', newCurrency);
   };
 
   // Currency symbols only - no conversion
@@ -281,6 +283,7 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
             .from('po_received_records')
             .insert({
               user_id: user?.id,
+              workspace_id: selectedWorkspaceId || null,
               supplier_name: matchedOrder?.supplier_name || parsed.location || 'Unknown Supplier',
               document_number: docNumber,
               received_date: receivedDate,
