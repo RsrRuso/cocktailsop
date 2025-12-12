@@ -256,6 +256,8 @@ const POReceivedItems = () => {
           
           // Auto-save items to purchase_order_received_items for totals tracking
           const receivedDate = new Date().toISOString().split('T')[0];
+          const docNumber = parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`;
+          
           for (const item of parsed.items) {
             if (item.quantity > 0) {
               const unitPrice = item.price_per_unit || 0;
@@ -266,7 +268,8 @@ const POReceivedItems = () => {
                 unit: item.unit,
                 unit_price: unitPrice,
                 total_price: item.quantity * unitPrice,
-                received_date: receivedDate
+                received_date: receivedDate,
+                document_number: docNumber
               });
             }
           }
@@ -684,25 +687,20 @@ const POReceivedItems = () => {
 
   const deleteReceivedRecord = async (id: string) => {
     try {
-      // First get the record to find associated items
+      // First get the record to find document_number for linking
       const { data: record } = await (supabase as any)
         .from('po_received_records')
-        .select('variance_data, document_number, received_date')
+        .select('document_number')
         .eq('id', id)
         .single();
       
-      if (record) {
-        // Extract received_date as date-only string (YYYY-MM-DD format)
-        const dateStr = typeof record.received_date === 'string' 
-          ? record.received_date.split('T')[0] 
-          : new Date(record.received_date).toISOString().split('T')[0];
-        
-        // Delete associated items matching user_id and date
+      if (record?.document_number) {
+        // Delete associated items by document_number (specific to this record)
         await (supabase as any)
           .from('purchase_order_received_items')
           .delete()
           .eq('user_id', user?.id)
-          .eq('received_date', dateStr);
+          .eq('document_number', record.document_number);
       }
       
       // Delete the received record
