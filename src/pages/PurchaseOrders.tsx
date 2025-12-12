@@ -577,6 +577,12 @@ const PurchaseOrders = () => {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        {order.order_number && (
+                          <span className="flex items-center gap-1 font-mono text-primary/80">
+                            <FileText className="w-3 h-3" />
+                            {order.order_number}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {format(new Date(order.order_date), 'MMM d, yyyy')}
