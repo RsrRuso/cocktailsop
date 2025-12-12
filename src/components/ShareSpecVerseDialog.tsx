@@ -528,39 +528,64 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       const fileName = `specverse-${selectedTool.id}-promo.png`;
       const storyFile = new File([storyBlob], fileName, { type: 'image/png' });
 
-      // Try to copy URL to clipboard (may fail silently if not in user gesture)
-      const copyToClipboard = async () => {
-        try {
-          await navigator.clipboard.writeText(toolUrl);
-          return true;
-        } catch {
-          return false;
-        }
-      };
-
-      if (!download && navigator.canShare && navigator.canShare({ files: [storyFile] })) {
-        try {
-          await navigator.share({
-            files: [storyFile],
-            title: `${selectedTool.name} - SpecVerse`,
-          });
-          const copied = await copyToClipboard();
-          toast.success(copied ? 'Shared! Link copied - paste as link sticker' : 'Shared to Instagram!', {
-            duration: 5000,
-            description: toolUrl
-          });
-          onOpenChange(false);
-          return;
-        } catch (err: any) {
-          if (err?.name === 'AbortError') {
-            setIsGenerating(false);
-            return;
-          }
-          // Fall through to download if share fails
-        }
+      // Copy URL to clipboard first
+      try {
+        await navigator.clipboard.writeText(toolUrl);
+      } catch {
+        // Clipboard may fail, continue anyway
       }
 
-      // Fallback: Download
+      // If not forcing download, try native share
+      if (!download) {
+        // Check if Web Share API with files is supported
+        if (navigator.share && navigator.canShare?.({ files: [storyFile] })) {
+          try {
+            await navigator.share({
+              files: [storyFile],
+              title: `${selectedTool.name} - SpecVerse`,
+            });
+            toast.success('Shared! Paste link as sticker in Instagram', {
+              duration: 5000,
+              description: toolUrl
+            });
+            onOpenChange(false);
+            return;
+          } catch (err: any) {
+            if (err?.name === 'AbortError') {
+              setIsGenerating(false);
+              return;
+            }
+            // Continue to fallback
+          }
+        }
+        
+        // Fallback: Try share without files (just URL)
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: `${selectedTool.name} - SpecVerse`,
+              text: selectedTool.tagline,
+              url: toolUrl,
+            });
+            toast.success('Link shared!', { duration: 3000 });
+            onOpenChange(false);
+            return;
+          } catch (err: any) {
+            if (err?.name === 'AbortError') {
+              setIsGenerating(false);
+              return;
+            }
+          }
+        }
+        
+        // Final fallback: Show instructions for manual share
+        toast.info('Open Instagram and paste the copied link', {
+          duration: 5000,
+          description: 'Image will download - upload to your story'
+        });
+      }
+
+      // Download the image
       const url = URL.createObjectURL(storyBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -570,11 +595,9 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      const copied = await copyToClipboard();
-      toast.success(copied ? 'Image downloaded & link copied!' : 'Image downloaded!', {
-        duration: 5000,
-        description: `Add link sticker: ${toolUrl}`
-      });
+      if (download) {
+        toast.success('Image downloaded!', { duration: 3000 });
+      }
     } catch (err) {
       console.error('Share failed:', err);
       toast.error('Failed to generate story');
