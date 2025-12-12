@@ -82,6 +82,74 @@ export const FormatTemplateDialog = ({
   const analyzeFile = async (file: File) => {
     setIsAnalyzing(true);
     try {
+      const fileType = file.type;
+      const fileName = file.name.toLowerCase();
+      
+      // Handle PDF files
+      if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+        toast.info("PDF detected - extracting text structure...");
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // Extract text from PDF (basic extraction)
+        let pdfText = '';
+        const textDecoder = new TextDecoder('utf-8', { fatal: false });
+        const rawText = textDecoder.decode(uint8Array);
+        
+        // Find text streams in PDF
+        const streamMatches = rawText.match(/stream[\s\S]*?endstream/g) || [];
+        for (const stream of streamMatches) {
+          const cleanedStream = stream
+            .replace(/stream|endstream/g, '')
+            .replace(/[^\x20-\x7E\n\t]/g, ' ')
+            .trim();
+          if (cleanedStream.length > 5) {
+            pdfText += cleanedStream + '\n';
+          }
+        }
+        
+        // Also try to find text between parentheses (PDF text objects)
+        const textMatches = rawText.match(/\(([^)]+)\)/g) || [];
+        const extractedWords = textMatches
+          .map(m => m.slice(1, -1))
+          .filter(t => t.length > 1 && /[a-zA-Z]/.test(t));
+        
+        if (extractedWords.length > 0) {
+          // Try to detect headers from extracted text
+          const potentialHeaders = extractedWords.slice(0, 20).filter(w => 
+            w.length > 2 && w.length < 30 && !/^\d+$/.test(w)
+          );
+          
+          if (potentialHeaders.length > 0) {
+            setDetectedHeaders(potentialHeaders);
+            const autoMappings = createAutoMappings(potentialHeaders);
+            setColumnMappings(autoMappings);
+            toast.success(`Detected ${potentialHeaders.length} potential columns from PDF`);
+          } else {
+            toast.warning("Could not detect column headers. Please enter manually.");
+            setDetectedHeaders(['Column1', 'Column2', 'Column3', 'Column4', 'Column5']);
+            setColumnMappings(createAutoMappings(['Column1', 'Column2', 'Column3', 'Column4', 'Column5']));
+          }
+        } else {
+          toast.warning("PDF text extraction limited. Default columns added.");
+          setDetectedHeaders(['Item Code', 'Item Name', 'Quantity', 'Unit', 'Price']);
+          setColumnMappings(createAutoMappings(['Item Code', 'Item Name', 'Quantity', 'Unit', 'Price']));
+        }
+        return;
+      }
+      
+      // Handle image files (JPG, PNG)
+      if (fileType.startsWith('image/') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png')) {
+        toast.info("Image detected - using OCR placeholder columns");
+        // For images, we provide default PO columns since we can't extract text client-side
+        const defaultHeaders = ['Item Code', 'Item Name', 'Quantity', 'Unit', 'Unit Price', 'Total Value'];
+        setDetectedHeaders(defaultHeaders);
+        setColumnMappings(createAutoMappings(defaultHeaders));
+        toast.success("Default PO columns added for image format. Adjust mappings as needed.");
+        return;
+      }
+      
+      // Handle text-based files (CSV, TXT, Excel)
       const text = await file.text();
       const lines = text.split('\n').filter(l => l.trim());
       
@@ -107,35 +175,7 @@ export const FormatTemplateDialog = ({
       setDetectedHeaders(headers);
 
       // Auto-map common column names
-      const autoMappings: ColumnMapping[] = headers.map(header => {
-        const lowerHeader = header.toLowerCase();
-        let targetField = 'ignore';
-
-        if (lowerHeader.includes('item') && lowerHeader.includes('code')) {
-          targetField = 'item_code';
-        } else if (lowerHeader.includes('item') && lowerHeader.includes('name') || lowerHeader === 'item' || lowerHeader === 'description') {
-          targetField = 'item_name';
-        } else if (lowerHeader.includes('qty') || lowerHeader === 'quantity') {
-          targetField = 'quantity';
-        } else if (lowerHeader === 'unit' || lowerHeader.includes('uom')) {
-          targetField = 'unit';
-        } else if (lowerHeader.includes('price') || lowerHeader.includes('cost')) {
-          targetField = 'unit_price';
-        } else if (lowerHeader.includes('value') || lowerHeader.includes('total') || lowerHeader.includes('amount')) {
-          targetField = 'total_value';
-        } else if (lowerHeader.includes('delivery') || lowerHeader.includes('date')) {
-          targetField = 'delivery_date';
-        } else if (lowerHeader.includes('supplier') || lowerHeader.includes('vendor')) {
-          targetField = 'supplier';
-        } else if ((lowerHeader.includes('doc') && lowerHeader.includes('no')) || (lowerHeader.includes('po') && lowerHeader.includes('no'))) {
-          targetField = 'document_number';
-        } else if (lowerHeader.includes('location') || lowerHeader.includes('locn')) {
-          targetField = 'location';
-        }
-
-        return { sourceColumn: header, targetField };
-      });
-
+      const autoMappings = createAutoMappings(headers);
       setColumnMappings(autoMappings);
       toast.success(`Detected ${headers.length} columns`);
     } catch (error) {
@@ -144,6 +184,37 @@ export const FormatTemplateDialog = ({
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const createAutoMappings = (headers: string[]): ColumnMapping[] => {
+    return headers.map(header => {
+      const lowerHeader = header.toLowerCase();
+      let targetField = 'ignore';
+
+      if (lowerHeader.includes('item') && lowerHeader.includes('code')) {
+        targetField = 'item_code';
+      } else if (lowerHeader.includes('item') && lowerHeader.includes('name') || lowerHeader === 'item' || lowerHeader === 'description') {
+        targetField = 'item_name';
+      } else if (lowerHeader.includes('qty') || lowerHeader === 'quantity') {
+        targetField = 'quantity';
+      } else if (lowerHeader === 'unit' || lowerHeader.includes('uom')) {
+        targetField = 'unit';
+      } else if (lowerHeader.includes('price') || lowerHeader.includes('cost')) {
+        targetField = 'unit_price';
+      } else if (lowerHeader.includes('value') || lowerHeader.includes('total') || lowerHeader.includes('amount')) {
+        targetField = 'total_value';
+      } else if (lowerHeader.includes('delivery') || lowerHeader.includes('date')) {
+        targetField = 'delivery_date';
+      } else if (lowerHeader.includes('supplier') || lowerHeader.includes('vendor')) {
+        targetField = 'supplier';
+      } else if ((lowerHeader.includes('doc') && lowerHeader.includes('no')) || (lowerHeader.includes('po') && lowerHeader.includes('no'))) {
+        targetField = 'document_number';
+      } else if (lowerHeader.includes('location') || lowerHeader.includes('locn')) {
+        targetField = 'location';
+      }
+
+      return { sourceColumn: header, targetField };
+    });
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -159,6 +230,9 @@ export const FormatTemplateDialog = ({
       'text/plain': ['.txt'],
       'application/vnd.ms-excel': ['.xls'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/pdf': ['.pdf'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
     },
     maxFiles: 1,
   });
@@ -307,7 +381,7 @@ export const FormatTemplateDialog = ({
                     Drop a sample file here or click to upload
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    CSV, TXT, XLS, XLSX supported
+                    CSV, TXT, XLS, XLSX, PDF, JPG, PNG supported
                   </p>
                 </div>
               )}
