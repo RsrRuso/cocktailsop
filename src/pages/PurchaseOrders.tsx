@@ -42,6 +42,8 @@ interface PurchaseOrder {
   status: string;
   created_at: string;
   items?: PurchaseOrderItem[];
+  submitted_by_name: string | null;
+  submitted_by_email: string | null;
 }
 
 interface ParsedOrderData {
@@ -62,7 +64,7 @@ interface ParsedOrderData {
 
 const PurchaseOrders = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -154,7 +156,9 @@ const PurchaseOrders = () => {
           order_date: newOrder.order_date,
           notes: newOrder.notes || null,
           total_amount: totalAmount,
-          status: 'confirmed'
+          status: 'confirmed',
+          submitted_by_name: profile?.full_name || profile?.username || null,
+          submitted_by_email: profile?.email || user?.email || null
         })
         .select()
         .single();
@@ -604,7 +608,7 @@ const PurchaseOrders = () => {
                           {order.status}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
                         {order.order_number && (
                           <span className="flex items-center gap-1 font-mono text-primary/80">
                             <FileText className="w-3 h-3" />
@@ -619,6 +623,12 @@ const PurchaseOrders = () => {
                           <DollarSign className="w-3 h-3" />
                           ${Number(order.total_amount).toFixed(2)}
                         </span>
+                        {(order.submitted_by_name || order.submitted_by_email) && (
+                          <span className="flex items-center gap-1 text-blue-500">
+                            <Users className="w-3 h-3" />
+                            Submitted by: {order.submitted_by_name || order.submitted_by_email}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-1">

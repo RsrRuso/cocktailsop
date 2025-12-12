@@ -61,6 +61,8 @@ interface RecentReceived {
   status: string;
   variance_data: any;
   created_at: string;
+  received_by_name: string | null;
+  received_by_email: string | null;
 }
 
 interface PriceChange {
@@ -74,7 +76,7 @@ interface PriceChange {
 
 const POReceivedItems = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -300,7 +302,9 @@ const POReceivedItems = () => {
               total_quantity: totalQty,
               total_value: totalValue,
               status: 'received',
-              variance_data: report
+              variance_data: report,
+              received_by_name: profile?.full_name || profile?.username || null,
+              received_by_email: profile?.email || user?.email || null
             })
             .select('id')
             .single();
@@ -938,6 +942,12 @@ const POReceivedItems = () => {
                             <DollarSign className="w-3 h-3" />
                             {formatCurrency(Number(record.total_value || 0))}
                           </span>
+                          {(record.received_by_name || record.received_by_email) && (
+                            <span className="flex items-center gap-1 text-green-500">
+                              <Package className="w-3 h-3" />
+                              Received by: {record.received_by_name || record.received_by_email}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-1">

@@ -7963,6 +7963,8 @@ export type Database = {
           created_at: string
           document_number: string | null
           id: string
+          received_by_email: string | null
+          received_by_name: string | null
           received_date: string
           status: string | null
           supplier_name: string | null
@@ -7977,6 +7979,8 @@ export type Database = {
           created_at?: string
           document_number?: string | null
           id?: string
+          received_by_email?: string | null
+          received_by_name?: string | null
           received_date?: string
           status?: string | null
           supplier_name?: string | null
@@ -7991,6 +7995,8 @@ export type Database = {
           created_at?: string
           document_number?: string | null
           id?: string
+          received_by_email?: string | null
+          received_by_name?: string | null
           received_date?: string
           status?: string | null
           supplier_name?: string | null
@@ -8752,6 +8758,8 @@ export type Database = {
           order_number: string | null
           parsed_data: Json | null
           status: string | null
+          submitted_by_email: string | null
+          submitted_by_name: string | null
           supplier_name: string | null
           total_amount: number | null
           updated_at: string
@@ -8767,6 +8775,8 @@ export type Database = {
           order_number?: string | null
           parsed_data?: Json | null
           status?: string | null
+          submitted_by_email?: string | null
+          submitted_by_name?: string | null
           supplier_name?: string | null
           total_amount?: number | null
           updated_at?: string
@@ -8782,6 +8792,8 @@ export type Database = {
           order_number?: string | null
           parsed_data?: Json | null
           status?: string | null
+          submitted_by_email?: string | null
+          submitted_by_name?: string | null
           supplier_name?: string | null
           total_amount?: number | null
           updated_at?: string
