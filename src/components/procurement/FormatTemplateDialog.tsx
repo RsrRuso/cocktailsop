@@ -85,56 +85,13 @@ export const FormatTemplateDialog = ({
       const fileType = file.type;
       const fileName = file.name.toLowerCase();
       
-      // Handle PDF files
+      // Handle PDF files - use default columns since client-side PDF parsing is unreliable
       if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        toast.info("PDF detected - extracting text structure...");
-        const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        
-        // Extract text from PDF (basic extraction)
-        let pdfText = '';
-        const textDecoder = new TextDecoder('utf-8', { fatal: false });
-        const rawText = textDecoder.decode(uint8Array);
-        
-        // Find text streams in PDF
-        const streamMatches = rawText.match(/stream[\s\S]*?endstream/g) || [];
-        for (const stream of streamMatches) {
-          const cleanedStream = stream
-            .replace(/stream|endstream/g, '')
-            .replace(/[^\x20-\x7E\n\t]/g, ' ')
-            .trim();
-          if (cleanedStream.length > 5) {
-            pdfText += cleanedStream + '\n';
-          }
-        }
-        
-        // Also try to find text between parentheses (PDF text objects)
-        const textMatches = rawText.match(/\(([^)]+)\)/g) || [];
-        const extractedWords = textMatches
-          .map(m => m.slice(1, -1))
-          .filter(t => t.length > 1 && /[a-zA-Z]/.test(t));
-        
-        if (extractedWords.length > 0) {
-          // Try to detect headers from extracted text
-          const potentialHeaders = extractedWords.slice(0, 20).filter(w => 
-            w.length > 2 && w.length < 30 && !/^\d+$/.test(w)
-          );
-          
-          if (potentialHeaders.length > 0) {
-            setDetectedHeaders(potentialHeaders);
-            const autoMappings = createAutoMappings(potentialHeaders);
-            setColumnMappings(autoMappings);
-            toast.success(`Detected ${potentialHeaders.length} potential columns from PDF`);
-          } else {
-            toast.warning("Could not detect column headers. Please enter manually.");
-            setDetectedHeaders(['Column1', 'Column2', 'Column3', 'Column4', 'Column5']);
-            setColumnMappings(createAutoMappings(['Column1', 'Column2', 'Column3', 'Column4', 'Column5']));
-          }
-        } else {
-          toast.warning("PDF text extraction limited. Default columns added.");
-          setDetectedHeaders(['Item Code', 'Item Name', 'Quantity', 'Unit', 'Price']);
-          setColumnMappings(createAutoMappings(['Item Code', 'Item Name', 'Quantity', 'Unit', 'Price']));
-        }
+        toast.info("PDF detected - using standard PO columns");
+        const defaultHeaders = ['Item Code', 'Item Name', 'Quantity', 'Unit', 'Unit Price', 'Total Value'];
+        setDetectedHeaders(defaultHeaders);
+        setColumnMappings(createAutoMappings(defaultHeaders));
+        toast.success("Standard PO columns added for PDF format. Adjust mappings as needed.");
         return;
       }
       
