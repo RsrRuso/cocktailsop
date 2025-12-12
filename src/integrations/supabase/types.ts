@@ -7925,6 +7925,68 @@ export type Database = {
         }
         Relationships: []
       }
+      po_format_templates: {
+        Row: {
+          column_mappings: Json
+          created_at: string
+          created_by_email: string | null
+          created_by_name: string | null
+          currency: string | null
+          date_format: string | null
+          delimiter: string | null
+          description: string | null
+          format_type: string
+          id: string
+          name: string
+          sample_headers: string[] | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          column_mappings?: Json
+          created_at?: string
+          created_by_email?: string | null
+          created_by_name?: string | null
+          currency?: string | null
+          date_format?: string | null
+          delimiter?: string | null
+          description?: string | null
+          format_type?: string
+          id?: string
+          name: string
+          sample_headers?: string[] | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          column_mappings?: Json
+          created_at?: string
+          created_by_email?: string | null
+          created_by_name?: string | null
+          currency?: string | null
+          date_format?: string | null
+          delimiter?: string | null
+          description?: string | null
+          format_type?: string
+          id?: string
+          name?: string
+          sample_headers?: string[] | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_format_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       po_price_history: {
         Row: {
           change_amount: number | null
