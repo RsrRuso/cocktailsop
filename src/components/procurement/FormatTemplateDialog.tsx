@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, Trash2, Loader2 } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Plus, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -39,6 +39,8 @@ const TARGET_FIELDS = [
   { value: 'ignore', label: '-- Ignore --' },
 ];
 
+type Step = 'select' | 'name' | 'upload' | 'mapping';
+
 export const FormatTemplateDialog = ({
   open,
   onOpenChange,
@@ -46,6 +48,7 @@ export const FormatTemplateDialog = ({
   formatType,
 }: FormatTemplateDialogProps) => {
   const { user, profile } = useAuth();
+  const [step, setStep] = useState<Step>('select');
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [detectedHeaders, setDetectedHeaders] = useState<string[]>([]);
@@ -91,18 +94,19 @@ export const FormatTemplateDialog = ({
         const defaultHeaders = ['Item Code', 'Item Name', 'Quantity', 'Unit', 'Unit Price', 'Total Value'];
         setDetectedHeaders(defaultHeaders);
         setColumnMappings(createAutoMappings(defaultHeaders));
-        toast.success("Standard PO columns added for PDF format. Adjust mappings as needed.");
+        setStep('mapping');
+        toast.success("Standard PO columns added. Adjust mappings as needed.");
         return;
       }
       
       // Handle image files (JPG, PNG)
       if (fileType.startsWith('image/') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png')) {
-        toast.info("Image detected - using OCR placeholder columns");
-        // For images, we provide default PO columns since we can't extract text client-side
+        toast.info("Image detected - using standard PO columns");
         const defaultHeaders = ['Item Code', 'Item Name', 'Quantity', 'Unit', 'Unit Price', 'Total Value'];
         setDetectedHeaders(defaultHeaders);
         setColumnMappings(createAutoMappings(defaultHeaders));
-        toast.success("Default PO columns added for image format. Adjust mappings as needed.");
+        setStep('mapping');
+        toast.success("Standard PO columns added. Adjust mappings as needed.");
         return;
       }
       
@@ -134,6 +138,7 @@ export const FormatTemplateDialog = ({
       // Auto-map common column names
       const autoMappings = createAutoMappings(headers);
       setColumnMappings(autoMappings);
+      setStep('mapping');
       toast.success(`Detected ${headers.length} columns`);
     } catch (error) {
       console.error("Error analyzing file:", error);
@@ -267,173 +272,291 @@ export const FormatTemplateDialog = ({
   };
 
   const resetForm = () => {
+    setStep('select');
     setName("");
     setDescription("");
     setDetectedHeaders([]);
     setColumnMappings([]);
   };
 
+  const handleCreateNew = () => {
+    setStep('name');
+  };
+
+  const handleNameSubmit = () => {
+    if (!name.trim()) {
+      toast.error("Please enter a format name");
+      return;
+    }
+    setStep('upload');
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 'select':
+        return (
+          <div className="space-y-4">
+            {/* Existing Templates */}
+            {templates && templates.length > 0 ? (
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Your Format Templates</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {templates.map((template: any) => (
+                    <div
+                      key={template.id}
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/50 hover:bg-muted/70 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{template.name}</p>
+                          {template.description && (
+                            <p className="text-xs text-muted-foreground">{template.description}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {template.sample_headers?.length || 0} columns • {template.currency}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteTemplate(template.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No format templates yet</p>
+                <p className="text-sm">Create your first template to get started</p>
+              </div>
+            )}
+
+            {/* Create New Button */}
+            <Button 
+              onClick={handleCreateNew} 
+              className="w-full h-12"
+              size="lg"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Create New Format Template
+            </Button>
+          </div>
+        );
+
+      case 'name':
+        return (
+          <div className="space-y-6">
+            <div className="text-center pb-4">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Name Your Format</h3>
+              <p className="text-sm text-muted-foreground">
+                Give this format a recognizable name
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Format Name *</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Market List, Supplier Invoice, METRO Order"
+                  className="h-12 text-base"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <Label>Description (optional)</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe when to use this format..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="AED">AED (د.إ)</SelectItem>
+                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Date Format</Label>
+                  <Select value={dateFormat} onValueChange={setDateFormat}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="DD-MM-YYYY">DD-MM-YYYY</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep('select')} className="flex-1">
+                Back
+              </Button>
+              <Button onClick={handleNameSubmit} className="flex-1">
+                Next: Upload Sample
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 'upload':
+        return (
+          <div className="space-y-6">
+            <div className="text-center pb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4">
+                <Check className="h-4 w-4" />
+                {name}
+              </div>
+              <h3 className="text-lg font-semibold">Upload Sample File</h3>
+              <p className="text-sm text-muted-foreground">
+                Upload a sample file to detect the column structure
+              </p>
+            </div>
+
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                isDragActive ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-muted-foreground/30 hover:border-primary/50'
+              }`}
+            >
+              <input {...getInputProps()} />
+              {isAnalyzing ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  <p className="font-medium">Analyzing file...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Drop a sample file here</p>
+                    <p className="text-sm text-muted-foreground">or click to browse</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center mt-2">
+                    {['CSV', 'TXT', 'XLS', 'XLSX', 'PDF', 'JPG', 'PNG'].map(ext => (
+                      <span key={ext} className="px-2 py-1 bg-muted rounded text-xs font-medium">
+                        {ext}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button variant="outline" onClick={() => setStep('name')} className="w-full">
+              Back
+            </Button>
+          </div>
+        );
+
+      case 'mapping':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">{name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Map columns to fields
+                </p>
+              </div>
+              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                {detectedHeaders.length} columns
+              </span>
+            </div>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {columnMappings.map((mapping, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg"
+                >
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      {mapping.sourceColumn}
+                    </span>
+                  </div>
+                  <span className="text-muted-foreground flex-shrink-0">→</span>
+                  <Select
+                    value={mapping.targetField}
+                    onValueChange={(v) => updateMapping(index, v)}
+                  >
+                    <SelectTrigger className="w-36 flex-shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TARGET_FIELDS.map((field) => (
+                        <SelectItem key={field.value} value={field.value}>
+                          {field.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={resetForm} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={saveTemplate} disabled={isSaving} className="flex-1">
+                {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Save Template
+              </Button>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) resetForm();
+      onOpenChange(isOpen);
+    }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {formatType === 'purchase_order' ? 'PO' : 'Receiving'} Format Templates
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Existing Templates */}
-          {templates && templates.length > 0 && (
-            <div className="space-y-2">
-              <Label>Saved Templates</Label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {templates.map((template: any) => (
-                  <div
-                    key={template.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{template.name}</p>
-                      {template.description && (
-                        <p className="text-xs text-muted-foreground">{template.description}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {template.sample_headers?.length || 0} columns • {template.currency}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteTemplate(template.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Upload Section */}
-          <div className="space-y-4">
-            <Label>Create New Template</Label>
-            
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                isDragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/30'
-              }`}
-            >
-              <input {...getInputProps()} />
-              {isAnalyzing ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm">Analyzing file...</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Drop a sample file here or click to upload
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    CSV, TXT, XLS, XLSX, PDF, JPG, PNG supported
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Detected Headers and Mapping */}
-            {detectedHeaders.length > 0 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Template Name *</Label>
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g., Market List Format"
-                    />
-                  </div>
-                  <div>
-                    <Label>Currency</Label>
-                    <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="AED">AED (د.إ)</SelectItem>
-                        <SelectItem value="AUD">AUD ($)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Description (optional)</Label>
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe this format..."
-                    rows={2}
-                  />
-                </div>
-
-                <div>
-                  <Label>Column Mappings</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Map each column from your file to the appropriate field
-                  </p>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {columnMappings.map((mapping, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 p-2 bg-muted/30 rounded"
-                      >
-                        <div className="flex-1 flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium truncate">
-                            {mapping.sourceColumn}
-                          </span>
-                        </div>
-                        <span className="text-muted-foreground">→</span>
-                        <Select
-                          value={mapping.targetField}
-                          onValueChange={(v) => updateMapping(index, v)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TARGET_FIELDS.map((field) => (
-                              <SelectItem key={field.value} value={field.value}>
-                                {field.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={resetForm}>
-                    Reset
-                  </Button>
-                  <Button onClick={saveTemplate} disabled={isSaving}>
-                    {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Save Template
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {renderStep()}
       </DialogContent>
     </Dialog>
   );
