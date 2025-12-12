@@ -703,13 +703,18 @@ const POReceivedItems = () => {
         .eq('id', id)
         .single();
       
-      // Delete associated items from purchase_order_received_items
-      if (record?.received_date) {
+      if (record) {
+        // Extract received_date as date-only string (YYYY-MM-DD format)
+        const dateStr = typeof record.received_date === 'string' 
+          ? record.received_date.split('T')[0] 
+          : new Date(record.received_date).toISOString().split('T')[0];
+        
+        // Delete associated items matching user_id and date
         await (supabase as any)
           .from('purchase_order_received_items')
           .delete()
           .eq('user_id', user?.id)
-          .eq('received_date', record.received_date);
+          .eq('received_date', dateStr);
       }
       
       // Delete the received record
