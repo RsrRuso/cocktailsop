@@ -154,7 +154,6 @@ export const InviteProcurementMemberDialog = ({
         workspace_id: workspaceId,
         user_id: userId,
         role: role,
-        invited_by: user.id,
       }));
 
       const { error } = await supabase
