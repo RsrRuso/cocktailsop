@@ -521,25 +521,34 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     if (!selectedTool) return;
     
     setIsGenerating(true);
+    const toolUrl = `${appUrl}${selectedTool.path}`;
     
     try {
       const storyBlob = await generateToolStoryImage(selectedTool);
       const fileName = `specverse-${selectedTool.id}-promo.png`;
       const storyFile = new File([storyBlob], fileName, { type: 'image/png' });
-      const toolUrl = `${appUrl}${selectedTool.path}`;
+
+      // Copy URL to clipboard first so it's ready for link sticker
+      await navigator.clipboard.writeText(toolUrl);
 
       if (!download && navigator.canShare && navigator.canShare({ files: [storyFile] })) {
         try {
           await navigator.share({
             files: [storyFile],
             title: `${selectedTool.name} - SpecVerse`,
-            url: toolUrl,
           });
-          toast.success('Add a link sticker with the copied URL!');
+          toast.success('Link copied! Paste it as a link sticker in Instagram Stories', {
+            duration: 5000,
+            description: toolUrl
+          });
           onOpenChange(false);
           return;
         } catch (err: any) {
-          if (err?.name === 'AbortError') return;
+          if (err?.name === 'AbortError') {
+            setIsGenerating(false);
+            return;
+          }
+          // Fall through to download if share fails
         }
       }
 
@@ -553,8 +562,10 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      navigator.clipboard.writeText(toolUrl);
-      toast.success('Image downloaded & link copied!');
+      toast.success('Image downloaded & link copied!', {
+        duration: 5000,
+        description: `Paste ${toolUrl} as link sticker`
+      });
     } catch (err) {
       console.error('Share failed:', err);
       toast.error('Failed to generate story');
