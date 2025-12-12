@@ -8,14 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useProcurementWorkspace, ProcurementWorkspace } from "@/hooks/useProcurementWorkspace";
+import { useProcurementWorkspace } from "@/hooks/useProcurementWorkspace";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { 
-  Users, Plus, Settings, Trash2, UserPlus, Crown, X, Building2, ChevronDown
+  Users, Plus, Settings, Trash2, UserPlus, Crown, X, Building2
 } from "lucide-react";
+import { InviteProcurementMemberDialog } from "./InviteProcurementMemberDialog";
 
 interface Props {
   selectedWorkspaceId: string | null;
@@ -30,38 +29,17 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
     createWorkspace, 
     deleteWorkspace,
     useWorkspaceMembers,
-    addMember,
     removeMember
   } = useProcurementWorkspace();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showManageDialog, setShowManageDialog] = useState(false);
-  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState("");
-  const [searchMember, setSearchMember] = useState("");
 
   const selectedWorkspace = workspaces?.find(w => w.id === selectedWorkspaceId);
-  const { data: members } = useWorkspaceMembers(selectedWorkspaceId);
-
-  // Search for users to add as members
-  const { data: searchResults } = useQuery({
-    queryKey: ['search-users-procurement', searchMember],
-    queryFn: async () => {
-      if (!searchMember || searchMember.length < 2) return [];
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url, email')
-        .or(`username.ilike.%${searchMember}%,full_name.ilike.%${searchMember}%,email.ilike.%${searchMember}%`)
-        .neq('id', user?.id)
-        .limit(10);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: searchMember.length >= 2
-  });
+  const { data: members, refetch: refetchMembers } = useWorkspaceMembers(selectedWorkspaceId);
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) {
@@ -77,19 +55,6 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
     setNewWorkspaceName("");
     setNewWorkspaceDescription("");
     setShowCreateDialog(false);
-  };
-
-  const handleAddMember = async (userId: string) => {
-    if (!selectedWorkspaceId) return;
-    
-    await addMember.mutateAsync({
-      workspaceId: selectedWorkspaceId,
-      userId,
-      role: 'member'
-    });
-    
-    setSearchMember("");
-    setShowAddMemberDialog(false);
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -245,9 +210,9 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
               <div className="flex items-center justify-between">
                 <Label>Members ({members?.length || 0})</Label>
                 {isOwner && (
-                  <Button size="sm" variant="outline" onClick={() => setShowAddMemberDialog(true)}>
+                  <Button size="sm" variant="outline" onClick={() => setShowInviteDialog(true)}>
                     <UserPlus className="h-4 w-4 mr-1" />
-                    Add
+                    Add from Followers
                   </Button>
                 )}
               </div>
@@ -291,7 +256,7 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
                               {member.profile?.full_name || member.profile?.username || 'Unknown'}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {member.profile?.email}
+                              {member.role === 'admin' ? 'Admin' : 'Member'}
                             </p>
                           </div>
                         </div>
@@ -326,70 +291,16 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
         </DialogContent>
       </Dialog>
 
-      {/* Add Member Dialog */}
-      <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              Add Member
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Search by name or email</Label>
-              <Input
-                value={searchMember}
-                onChange={(e) => setSearchMember(e.target.value)}
-                placeholder="Search users..."
-              />
-            </div>
-            
-            {searchResults && searchResults.length > 0 && (
-              <ScrollArea className="h-[200px]">
-                <div className="space-y-2">
-                  {searchResults.map((profile: any) => {
-                    const isMember = members?.some(m => m.user_id === profile.id);
-                    
-                    return (
-                      <Card 
-                        key={profile.id} 
-                        className={`p-3 cursor-pointer hover:bg-muted/50 ${isMember ? 'opacity-50' : ''}`}
-                        onClick={() => !isMember && handleAddMember(profile.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={profile.avatar_url || undefined} />
-                              <AvatarFallback>
-                                {profile.full_name?.[0] || profile.username?.[0] || '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {profile.full_name || profile.username}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {profile.email}
-                              </p>
-                            </div>
-                          </div>
-                          {isMember ? (
-                            <Badge variant="secondary">Added</Badge>
-                          ) : (
-                            <Plus className="h-4 w-4 text-primary" />
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Invite Members from Followers/Following Dialog */}
+      {selectedWorkspaceId && selectedWorkspace && (
+        <InviteProcurementMemberDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          workspaceId={selectedWorkspaceId}
+          workspaceName={selectedWorkspace.name}
+          onSuccess={() => refetchMembers()}
+        />
+      )}
     </div>
   );
 };
