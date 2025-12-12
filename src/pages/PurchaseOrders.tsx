@@ -15,9 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users
 } from "lucide-react";
 import { format } from "date-fns";
+import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
 
 interface PurchaseOrderItem {
   id?: string;
@@ -73,6 +74,18 @@ const PurchaseOrders = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [pasteContent, setPasteContent] = useState("");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
+    return localStorage.getItem('po-workspace-id') || null;
+  });
+  
+  const handleWorkspaceChange = (workspaceId: string | null) => {
+    setSelectedWorkspaceId(workspaceId);
+    if (workspaceId) {
+      localStorage.setItem('po-workspace-id', workspaceId);
+    } else {
+      localStorage.removeItem('po-workspace-id');
+    }
+  };
   
   // New order form state
   const [newOrder, setNewOrder] = useState({
@@ -85,16 +98,22 @@ const PurchaseOrders = () => {
     { item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }
   ]);
 
-  // Fetch purchase orders
+  // Fetch purchase orders (personal + workspace)
   const { data: orders, isLoading } = useQuery({
-    queryKey: ['purchase-orders', user?.id],
+    queryKey: ['purchase-orders', user?.id, selectedWorkspaceId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('purchase_orders')
         .select('*')
-        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
+      if (selectedWorkspaceId) {
+        query = query.eq('workspace_id', selectedWorkspaceId);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data as PurchaseOrder[];
     },
@@ -448,6 +467,12 @@ const PurchaseOrders = () => {
       </div>
 
       <div className="p-4 space-y-4 pb-24">
+        {/* Workspace Selector */}
+        <ProcurementWorkspaceSelector 
+          selectedWorkspaceId={selectedWorkspaceId}
+          onSelectWorkspace={handleWorkspaceChange}
+        />
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4 bg-card">

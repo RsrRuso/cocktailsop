@@ -7971,6 +7971,7 @@ export type Database = {
           total_value: number | null
           user_id: string
           variance_data: Json | null
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -7984,6 +7985,7 @@ export type Database = {
           total_value?: number | null
           user_id: string
           variance_data?: Json | null
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -7997,8 +7999,17 @@ export type Database = {
           total_value?: number | null
           user_id?: string
           variance_data?: Json | null
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "po_received_records_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       popular_music: {
         Row: {
@@ -8323,6 +8334,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      procurement_workspace_members: {
+        Row: {
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procurement_workspaces: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -8662,6 +8735,7 @@ export type Database = {
           total_amount: number | null
           updated_at: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -8676,6 +8750,7 @@ export type Database = {
           total_amount?: number | null
           updated_at?: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -8690,8 +8765,17 @@ export type Database = {
           total_amount?: number | null
           updated_at?: string
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       qr_codes: {
         Row: {
@@ -11347,6 +11431,10 @@ export type Database = {
       }
       is_mixologist_group_member: {
         Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_procurement_workspace_member: {
+        Args: { p_user_id: string; p_workspace_id: string }
         Returns: boolean
       }
       is_team_member: {
