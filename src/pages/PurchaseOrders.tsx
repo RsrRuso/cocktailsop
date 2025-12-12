@@ -22,6 +22,8 @@ interface PurchaseOrderItem {
   id?: string;
   item_code: string;
   item_name: string;
+  unit?: string;
+  delivery_date?: string | null;
   quantity: number;
   price_per_unit: number;
   price_total: number;
@@ -38,6 +40,22 @@ interface PurchaseOrder {
   status: string;
   created_at: string;
   items?: PurchaseOrderItem[];
+}
+
+interface ParsedOrderData {
+  doc_no: string | null;
+  doc_date: string | null;
+  location: string | null;
+  items: {
+    item_code: string;
+    item_name: string;
+    delivery_date: string | null;
+    unit: string;
+    quantity: number;
+    price_per_unit: number;
+    price_total: number;
+  }[];
+  total_amount: number;
 }
 
 const PurchaseOrders = () => {
@@ -60,7 +78,7 @@ const PurchaseOrders = () => {
     notes: ""
   });
   const [newItems, setNewItems] = useState<PurchaseOrderItem[]>([
-    { item_code: "", item_name: "", quantity: 0, price_per_unit: 0, price_total: 0 }
+    { item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }
   ]);
 
   // Fetch purchase orders
@@ -173,11 +191,11 @@ const PurchaseOrders = () => {
       order_date: format(new Date(), "yyyy-MM-dd"),
       notes: ""
     });
-    setNewItems([{ item_code: "", item_name: "", quantity: 0, price_per_unit: 0, price_total: 0 }]);
+    setNewItems([{ item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }]);
   };
 
   const handleAddItem = () => {
-    setNewItems([...newItems, { item_code: "", item_name: "", quantity: 0, price_per_unit: 0, price_total: 0 }]);
+    setNewItems([...newItems, { item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -203,12 +221,147 @@ const PurchaseOrders = () => {
     if (!file) return;
     
     setIsUploading(true);
+    toast.info("Processing document...");
     
-    // For now, just show a message - parsing will be refined when user uploads real format
-    toast.info("Document uploaded! Please upload your actual format so I can parse it correctly.");
+    try {
+      // Read file content
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          let textContent = '';
+          
+          if (file.type === 'application/pdf') {
+            // For PDF, we need to use the edge function for parsing
+            // Upload to storage first, then parse
+            const fileName = `po-docs/${user?.id}/${Date.now()}-${file.name}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('purchase-order-docs')
+              .upload(fileName, file);
+            
+            if (uploadError) {
+              console.error('Upload error:', uploadError);
+              toast.error("Failed to upload document");
+              setIsUploading(false);
+              return;
+            }
+
+            // For now, use the text content directly if available
+            // The document parser edge function will handle complex PDFs
+            toast.info("PDF uploaded. Please use the manual entry or provide parsed content.");
+            setIsUploading(false);
+            return;
+          } else if (file.type.includes('text') || file.name.endsWith('.csv')) {
+            textContent = e.target?.result as string;
+          }
+          
+          if (textContent) {
+            // Parse the content
+            const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
+              body: { content: textContent }
+            });
+            
+            if (error || !data?.success) {
+              toast.error(error?.message || data?.error || "Failed to parse document");
+              setIsUploading(false);
+              return;
+            }
+            
+            const parsed = data.data as ParsedOrderData;
+            
+            // Populate form with parsed data
+            if (parsed) {
+              setNewOrder({
+                supplier_name: parsed.location || '',
+                order_number: parsed.doc_no || '',
+                order_date: parsed.doc_date 
+                  ? format(new Date(parsed.doc_date.split('/').reverse().join('-')), 'yyyy-MM-dd')
+                  : format(new Date(), 'yyyy-MM-dd'),
+                notes: ''
+              });
+              
+              if (parsed.items && parsed.items.length > 0) {
+                setNewItems(parsed.items.map(item => ({
+                  item_code: item.item_code,
+                  item_name: item.item_name,
+                  unit: item.unit,
+                  delivery_date: item.delivery_date,
+                  quantity: item.quantity,
+                  price_per_unit: item.price_per_unit,
+                  price_total: item.price_total
+                })));
+              }
+              
+              setShowCreateDialog(true);
+              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: AED ${parsed.total_amount.toFixed(2)})`);
+            }
+          }
+        } catch (err) {
+          console.error('Parse error:', err);
+          toast.error("Failed to parse document");
+        }
+        setIsUploading(false);
+      };
+      
+      reader.onerror = () => {
+        toast.error("Failed to read file");
+        setIsUploading(false);
+      };
+      
+      reader.readAsText(file);
+    } catch (err) {
+      console.error('Error:', err);
+      toast.error("Failed to process document");
+      setIsUploading(false);
+    }
+  };
+
+  // Parse markdown/text content directly (for pasted content)
+  const parseMarketListContent = async (content: string) => {
+    setIsUploading(true);
     
-    // TODO: Implement document parsing based on user's actual format
-    // This will parse: code, name, qty, price per pc, price total
+    try {
+      const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
+        body: { content }
+      });
+      
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.error || "Failed to parse content");
+        setIsUploading(false);
+        return;
+      }
+      
+      const parsed = data.data as ParsedOrderData;
+      
+      if (parsed) {
+        setNewOrder({
+          supplier_name: parsed.location || '',
+          order_number: parsed.doc_no || '',
+          order_date: parsed.doc_date 
+            ? format(new Date(parsed.doc_date.split('/').reverse().join('-')), 'yyyy-MM-dd')
+            : format(new Date(), 'yyyy-MM-dd'),
+          notes: ''
+        });
+        
+        if (parsed.items && parsed.items.length > 0) {
+          setNewItems(parsed.items.map(item => ({
+            item_code: item.item_code,
+            item_name: item.item_name,
+            unit: item.unit,
+            delivery_date: item.delivery_date,
+            quantity: item.quantity,
+            price_per_unit: item.price_per_unit,
+            price_total: item.price_total
+          })));
+        }
+        
+        setShowCreateDialog(true);
+        toast.success(`Parsed ${parsed.items?.length || 0} items (Total: AED ${parsed.total_amount.toFixed(2)})`);
+      }
+    } catch (err) {
+      console.error('Parse error:', err);
+      toast.error("Failed to parse content");
+    }
     
     setIsUploading(false);
   };
@@ -419,16 +572,17 @@ const PurchaseOrders = () => {
                 </Button>
               </div>
               
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-20">Code</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="w-16">Qty</TableHead>
-                      <TableHead className="w-20">Price/pc</TableHead>
-                      <TableHead className="w-20">Total</TableHead>
-                      <TableHead className="w-10"></TableHead>
+                      <TableHead className="w-20 min-w-[80px]">Code</TableHead>
+                      <TableHead className="min-w-[120px]">Name</TableHead>
+                      <TableHead className="w-14 min-w-[56px]">Unit</TableHead>
+                      <TableHead className="w-14 min-w-[56px]">Qty</TableHead>
+                      <TableHead className="w-16 min-w-[64px]">Price</TableHead>
+                      <TableHead className="w-18 min-w-[72px]">Value</TableHead>
+                      <TableHead className="w-8"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -452,6 +606,14 @@ const PurchaseOrders = () => {
                         </TableCell>
                         <TableCell className="p-1">
                           <Input
+                            value={item.unit || ''}
+                            onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                            placeholder="KG"
+                            className="h-8 text-xs"
+                          />
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <Input
                             type="number"
                             value={item.quantity || ''}
                             onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
@@ -467,8 +629,8 @@ const PurchaseOrders = () => {
                             className="h-8 text-xs"
                           />
                         </TableCell>
-                        <TableCell className="p-1 text-xs font-medium">
-                          ${item.price_total.toFixed(2)}
+                        <TableCell className="p-1 text-xs font-medium text-foreground">
+                          {item.price_total.toFixed(2)}
                         </TableCell>
                         <TableCell className="p-1">
                           <Button
