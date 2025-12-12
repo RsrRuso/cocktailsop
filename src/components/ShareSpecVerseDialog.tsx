@@ -241,34 +241,23 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       ctx.restore();
     }
 
-    // SpecVerse cursive text below logo
+    // SpecVerse text below logo - using Grand Hotel font consistently
     const headerY = logoY + logoSize + 15;
-    ctx.font = 'italic 400 38px "Billabong", "Dancing Script", cursive, Georgia';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.font = '42px "Grand Hotel", cursive, Georgia';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     ctx.textAlign = 'center';
-    ctx.fillText('SpecVerse', 540, headerY + 5);
+    ctx.fillText('SpecVerse', 540, headerY + 10);
     
     // Tagline
     ctx.font = '18px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 35);
+    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 40);
 
-    // Gradient orb behind tool name
-    const orbY = headerY + 90;
-    const orbGrad = ctx.createRadialGradient(540, orbY, 0, 540, orbY, 80);
-    orbGrad.addColorStop(0, gradientColors.start + 'CC');
-    orbGrad.addColorStop(0.6, gradientColors.end + '66');
-    orbGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = orbGrad;
-    ctx.beginPath();
-    ctx.arc(540, orbY, 80, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Main glass card container
+    // Main glass card container - no orb, starts right after tagline
     const cardX = 55;
-    const cardY = orbY + 60;
+    const cardY = headerY + 70;
     const cardW = 970;
-    const cardH = 1420;
+    const cardH = 1480;
     
     // Card background - darker glass effect
     ctx.fillStyle = 'rgba(40, 40, 50, 0.85)';
@@ -397,12 +386,12 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       ctx.fillText(benefit, cardX + 75, yPos + 12);
     });
 
-    // QR Code section - positioned within card at bottom
-    const qrY = cardY + cardH - 200;
+    // QR Code section - bigger and positioned within card at bottom
+    const qrY = cardY + cardH - 240;
     
     try {
       const qrDataUrl = await QRCode.toDataURL(toolUrl, {
-        width: 160,
+        width: 200,
         margin: 1,
         color: {
           dark: '#ffffff',
@@ -417,12 +406,12 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         qrImg.src = qrDataUrl;
       });
       
-      const qrSize = 100;
+      const qrSize = 140;
       
       // QR background - dark glass
       ctx.fillStyle = 'rgba(30, 30, 40, 0.9)';
       ctx.beginPath();
-      ctx.roundRect(540 - qrSize/2 - 15, qrY - 15, qrSize + 30, qrSize + 30, 12);
+      ctx.roundRect(540 - qrSize/2 - 18, qrY - 18, qrSize + 36, qrSize + 36, 14);
       ctx.fill();
       
       ctx.drawImage(qrImg, 540 - qrSize/2, qrY, qrSize, qrSize);
@@ -430,8 +419,8 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       // Scan text
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
-      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 30);
+      ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 35);
     } catch (err) {
       console.log('QR generation failed:', err);
     }
