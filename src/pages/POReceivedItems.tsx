@@ -122,22 +122,31 @@ const POReceivedItems = () => {
     return `${currencySymbols[currency]}${amount.toFixed(2)}`;
   };
 
-  // Fetch recent received records
+  // Fetch recent received records - workspace aware
   const { data: recentReceived, isLoading: isLoadingRecent } = useQuery({
-    queryKey: ['po-recent-received', user?.id],
+    queryKey: ['po-recent-received', user?.id, selectedWorkspaceId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('po_received_records')
         .select('*')
-        .eq('user_id', user?.id)
         .order('received_date', { ascending: false })
         .limit(50);
       
+      if (selectedWorkspaceId) {
+        query = query.eq('workspace_id', selectedWorkspaceId);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as RecentReceived[];
     },
     enabled: !!user?.id
   });
+
+  // Calculate total from recent received records for accurate display
+  const calculatedTotalValue = recentReceived?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
 
   // Fetch price history for change tracking
   const { data: priceHistory } = useQuery({
@@ -864,7 +873,7 @@ const POReceivedItems = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Value</p>
-              <p className="text-lg font-bold">{formatCurrency(receivedTotals.totalPrice)}</p>
+              <p className="text-lg font-bold">{formatCurrency(calculatedTotalValue)}</p>
             </div>
           </div>
         </Card>
