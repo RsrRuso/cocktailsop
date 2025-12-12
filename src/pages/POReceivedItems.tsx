@@ -17,6 +17,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
 
 interface VarianceItem {
   item_code?: string;
@@ -96,6 +97,20 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
   const handleCurrencyChange = (newCurrency: 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') => {
     setCurrency(newCurrency);
     localStorage.setItem('po-currency', newCurrency);
+  };
+
+  // Workspace state
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
+    return localStorage.getItem('po-workspace-id') || null;
+  });
+  
+  const handleWorkspaceChange = (workspaceId: string | null) => {
+    setSelectedWorkspaceId(workspaceId);
+    if (workspaceId) {
+      localStorage.setItem('po-workspace-id', workspaceId);
+    } else {
+      localStorage.removeItem('po-workspace-id');
+    }
   };
 
   // Currency symbols only - no conversion
@@ -789,6 +804,12 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Workspace Selector */}
+        <ProcurementWorkspaceSelector 
+          selectedWorkspaceId={selectedWorkspaceId}
+          onSelectWorkspace={handleWorkspaceChange}
+        />
+
         {/* Field Guidelines */}
         <Card className="p-3 bg-muted/30 border-dashed">
           <div className="space-y-2">
