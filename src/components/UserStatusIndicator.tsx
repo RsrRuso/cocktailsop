@@ -37,73 +37,91 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
 
   if (!status) return null;
 
-  // Music status - premium design with glassmorphism
+  // Music status - premium design with animated effects
   if (status.music_track_name) {
     const sizeClasses = {
-      sm: 'min-w-[85px] max-w-[115px] py-1.5 px-2.5',
-      md: 'min-w-[95px] max-w-[125px] py-2 px-3',
-      lg: 'min-w-[105px] max-w-[135px] py-2 px-3'
+      sm: 'min-w-[90px] max-w-[130px] py-2 px-3',
+      md: 'min-w-[100px] max-w-[140px] py-2.5 px-3.5',
+      lg: 'min-w-[110px] max-w-[150px] py-2.5 px-4'
     };
     
     const textClasses = {
-      sm: 'text-[8px]',
-      md: 'text-[9px]',
-      lg: 'text-[10px]'
+      sm: 'text-[9px]',
+      md: 'text-[10px]',
+      lg: 'text-[11px]'
     };
 
     return (
       <>
         <div 
-          className={`absolute -top-10 left-0 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-12 left-0 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
-          <div className="relative">
-            {/* Premium glassmorphism music status */}
-            <div className={`bg-black/85 backdrop-blur-xl text-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.1)_inset] ${sizeClasses[size]} overflow-hidden`}>
+          <div className="relative group">
+            {/* Outer glow effect - emerald for music */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/40 via-teal-500/40 to-cyan-500/40 rounded-3xl blur-lg opacity-80 group-hover:opacity-100 transition-opacity animate-pulse" />
+            
+            {/* Animated gradient border */}
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 rounded-2xl opacity-70" />
+            
+            {/* Main content */}
+            <div className={`relative bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-2xl text-white rounded-2xl ${sizeClasses[size]} overflow-hidden`}>
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+              
+              {/* Inner glow */}
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/15 to-transparent" />
+              
               {/* Music Row */}
-              <div className="flex items-center gap-2">
-                {/* Album Art with glow */}
-                <div className="relative w-5 h-5 rounded-md flex-shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.3)]">
-                  {status.music_album_art ? (
-                    <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-                      <Music2 className="w-2.5 h-2.5" />
-                    </div>
-                  )}
+              <div className="relative flex items-center gap-2.5">
+                {/* Album Art with animated ring */}
+                <div className="relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-lg animate-[spin_3s_linear_infinite] opacity-60" />
+                  <div className="relative w-6 h-6 rounded-md overflow-hidden">
+                    {status.music_album_art ? (
+                      <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                        <Music2 className="w-3 h-3" />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Track Info with Marquee */}
                 <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className={`whitespace-nowrap font-semibold text-white ${textClasses[size]}`}>
+                  <div className={`whitespace-nowrap font-bold text-white tracking-wide ${textClasses[size]}`}>
                     <div className="animate-marquee inline-block">
                       {status.music_track_name}
                       {status.music_track_name && status.music_track_name.length > 8 && (
-                        <span className="ml-4">{status.music_track_name}</span>
+                        <span className="ml-6">{status.music_track_name}</span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Play Button with gradient */}
+                {/* Play Button with pulsing effect */}
                 <button
                   onClick={handleStatusClick}
-                  className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-[0_2px_8px_rgba(16,185,129,0.4)] transition-all"
+                  className="relative w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 group/play"
                 >
-                  <Play className="w-2 h-2 ml-px" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full animate-pulse opacity-50" />
+                  <div className="relative w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center shadow-[0_0_12px_rgba(16,185,129,0.6)] group-hover/play:shadow-[0_0_20px_rgba(16,185,129,0.8)] transition-shadow">
+                    <Play className="w-2.5 h-2.5 ml-0.5" />
+                  </div>
                 </button>
               </div>
 
               {/* Text Status Below Music */}
               {status.status_text && (
-                <div className="mt-1 pt-1 border-t border-white/10 overflow-hidden">
-                  <div className="flex items-center gap-1 justify-center">
-                    {status.emoji && <span className="text-[8px]">{status.emoji}</span>}
-                    <div className={`whitespace-nowrap text-white/80 ${textClasses[size]}`}>
+                <div className="relative mt-1.5 pt-1.5 border-t border-white/10 overflow-hidden">
+                  <div className="flex items-center gap-1.5 justify-center">
+                    {status.emoji && <span className="text-[9px] drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]">{status.emoji}</span>}
+                    <div className={`whitespace-nowrap text-white/90 font-medium ${textClasses[size]}`}>
                       <div className="animate-marquee inline-block">
                         {status.status_text}
                         {status.status_text.length > 10 && (
-                          <span className="ml-4">{status.status_text}</span>
+                          <span className="ml-6">{status.status_text}</span>
                         )}
                       </div>
                     </div>
@@ -112,9 +130,9 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
               )}
             </div>
             
-            {/* Connector dots */}
-            <div className="absolute -bottom-1.5 left-5 w-2.5 h-2.5 bg-black/85 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3)]" />
-            <div className="absolute -bottom-3 left-6 w-1.5 h-1.5 bg-black/85 rounded-full shadow-[0_2px_6px_rgba(0,0,0,0.25)]" />
+            {/* Premium connector dots */}
+            <div className="absolute -bottom-2 left-6 w-3 h-3 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4),0_2px_8px_rgba(0,0,0,0.5)] border border-emerald-500/30" />
+            <div className="absolute -bottom-4 left-7 w-2 h-2 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3),0_2px_6px_rgba(0,0,0,0.4)] border border-emerald-500/20" />
           </div>
         </div>
         <StatusViewerDialog
@@ -127,46 +145,63 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
     );
   }
 
-  // Regular text status - unified design matching StatusRing
+  // Regular text status - unified premium design
   if (status.status_text) {
     const sizeClasses = {
-      sm: 'min-w-[60px] max-w-[100px] py-1.5 px-2.5',
-      md: 'min-w-[70px] max-w-[110px] py-2 px-3',
-      lg: 'min-w-[80px] max-w-[120px] py-2 px-3'
+      sm: 'min-w-[70px] max-w-[120px] py-2 px-3',
+      md: 'min-w-[80px] max-w-[130px] py-2.5 px-3.5',
+      lg: 'min-w-[90px] max-w-[140px] py-2.5 px-4'
     };
     
     const textClasses = {
-      sm: 'text-[9px]',
-      md: 'text-[10px]',
-      lg: 'text-[11px]'
+      sm: 'text-[10px]',
+      md: 'text-[11px]',
+      lg: 'text-[12px]'
     };
 
     return (
       <>
         <div 
-          className={`absolute -top-10 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-12 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
-          <div className="relative">
-            {/* Premium glassmorphism status bubble */}
-            <div className={`bg-black/85 backdrop-blur-xl rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.1)_inset] ${sizeClasses[size]} overflow-hidden`}>
-              <div className="flex items-center gap-1.5 justify-center overflow-hidden">
-                {status.emoji && <span className={`${textClasses[size]} flex-shrink-0`}>{status.emoji}</span>}
+          <div className="relative group">
+            {/* Outer glow effect - violet/fuchsia for text status */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/30 via-fuchsia-500/30 to-pink-500/30 rounded-3xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity animate-pulse" />
+            
+            {/* Animated gradient border */}
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 rounded-2xl opacity-60" />
+            
+            {/* Main content */}
+            <div className={`relative bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-2xl rounded-2xl ${sizeClasses[size]} overflow-hidden`}>
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+              
+              {/* Inner glow */}
+              <div className="absolute inset-0 bg-gradient-to-t from-violet-500/10 to-transparent" />
+              
+              <div className="relative flex items-center gap-2 justify-center overflow-hidden">
+                {status.emoji && (
+                  <span className={`${textClasses[size]} flex-shrink-0 text-base drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]`}>
+                    {status.emoji}
+                  </span>
+                )}
                 <div className="overflow-hidden flex-1 min-w-0">
-                  <div className={`whitespace-nowrap ${textClasses[size]} font-semibold text-white`}>
+                  <div className={`whitespace-nowrap ${textClasses[size]} font-bold text-white tracking-wide`}>
                     <div className="animate-marquee inline-block">
                       {status.status_text}
                       {status.status_text.length > 10 && (
-                        <span className="ml-6">{status.status_text}</span>
+                        <span className="ml-8">{status.status_text}</span>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            {/* Speech bubble connector dots */}
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-black/85 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3)]" />
-            <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-black/85 rounded-full shadow-[0_2px_6px_rgba(0,0,0,0.25)]" />
+            
+            {/* Premium connector dots */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full shadow-[0_0_10px_rgba(139,92,246,0.4),0_2px_8px_rgba(0,0,0,0.5)] border border-violet-500/30" />
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 translate-x-1 w-2 h-2 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full shadow-[0_0_8px_rgba(139,92,246,0.3),0_2px_6px_rgba(0,0,0,0.4)] border border-violet-500/20" />
           </div>
         </div>
         <StatusViewerDialog
