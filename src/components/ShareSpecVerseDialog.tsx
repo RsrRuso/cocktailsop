@@ -641,7 +641,7 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         setSelectedTool(null);
       }
     }}>
-      <DialogContent className="p-0 max-w-sm max-h-[80vh] overflow-hidden border border-border/50 bg-background">
+      <DialogContent className="p-0 max-w-sm max-h-[80vh] overflow-hidden border border-white/10 bg-[#1a1a2e]">
         <DialogHeader className="p-3 pb-0">
           <DialogTitle className="flex items-center gap-2 text-foreground text-sm">
             {view === 'share' && (
