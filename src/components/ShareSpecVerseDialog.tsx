@@ -601,115 +601,110 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         setSelectedTool(null);
       }
     }}>
-      <DialogContent className="glass max-w-md max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="p-0 max-w-sm max-h-[75vh] overflow-hidden border-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400">
+        <DialogHeader className="p-3 pb-0">
+          <DialogTitle className="flex items-center gap-2 text-white text-sm">
             {view === 'share' && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 mr-1" onClick={handleBack}>
-                <ChevronLeft className="w-5 h-5" />
+              <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 text-white hover:bg-white/20" onClick={handleBack}>
+                <ChevronLeft className="w-4 h-4" />
               </Button>
             )}
-            <Share2 className="w-5 h-5" />
-            {view === 'select' ? 'Share SpecVerse' : `Share ${selectedTool?.name}`}
+            <Share2 className="w-4 h-4" />
+            {view === 'select' ? 'Share SpecVerse' : selectedTool?.name}
           </DialogTitle>
         </DialogHeader>
 
         {view === 'select' ? (
-          <ScrollArea className="h-[60vh] pr-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground mb-4">
-                Select a tool to create a shareable story sticker with direct link:
-              </p>
-              
+          <ScrollArea className="h-[55vh] px-3 pb-3">
+            <div className="space-y-1.5">
               {SHAREABLE_TOOLS.map((tool) => (
                 <button
                   key={tool.id}
                   onClick={() => handleSelectTool(tool)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r ${tool.gradient} text-white hover:opacity-90 transition-opacity text-left`}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg bg-black/20 backdrop-blur-sm text-white hover:bg-black/30 transition-colors text-left"
                 >
-                  <div className="p-2 bg-white/20 rounded-lg">
+                  <div className="p-1.5 bg-white/20 rounded-md">
                     {tool.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{tool.name}</p>
-                    <p className="text-sm text-white/80 truncate">{tool.tagline}</p>
+                    <p className="font-medium text-sm truncate">{tool.name}</p>
+                    <p className="text-xs text-white/70 truncate">{tool.tagline}</p>
                   </div>
-                  <span className="text-2xl">{tool.emoji}</span>
+                  <span className="text-lg">{tool.emoji}</span>
                 </button>
               ))}
             </div>
           </ScrollArea>
         ) : selectedTool && (
-          <div className="space-y-4">
-            {/* Preview card */}
-            <div className={`p-4 rounded-2xl bg-gradient-to-br ${selectedTool.gradient} text-white`}>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-3xl">{selectedTool.emoji}</span>
+          <div className="px-3 pb-3 space-y-2">
+            {/* Compact preview card */}
+            <div className="p-3 rounded-xl bg-black/25 backdrop-blur-sm text-white">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{selectedTool.emoji}</span>
                 <div>
-                  <h3 className="font-bold text-lg">{selectedTool.name}</h3>
-                  <p className="text-xs text-white/80">{selectedTool.tagline}</p>
+                  <h3 className="font-bold text-sm">{selectedTool.name}</h3>
+                  <p className="text-[10px] text-white/70">{selectedTool.tagline}</p>
                 </div>
               </div>
               
-              <div className="bg-black/20 rounded-lg p-2 mb-2">
-                <p className="text-xs font-medium text-red-200">❌ {selectedTool.problem}</p>
+              <div className="bg-red-900/40 rounded-md p-1.5 mb-1.5">
+                <p className="text-[10px] leading-tight line-clamp-3">❌ {selectedTool.problem}</p>
               </div>
               
-              <div className="bg-black/20 rounded-lg p-2 mb-2">
-                <p className="text-xs text-green-200">✅ {selectedTool.solution}</p>
+              <div className="bg-green-900/40 rounded-md p-1.5 mb-1.5">
+                <p className="text-[10px] leading-tight line-clamp-3">✅ {selectedTool.solution}</p>
               </div>
               
-              <div className="space-y-1">
-                {selectedTool.benefits.map((b, i) => (
-                  <p key={i} className="text-xs text-white/90">✓ {b}</p>
+              <div className="space-y-0.5">
+                {selectedTool.benefits.slice(0, 3).map((b, i) => (
+                  <p key={i} className="text-[10px] text-white/85">✓ {b}</p>
                 ))}
               </div>
             </div>
 
-            {/* Share to Instagram Story */}
+            {/* Share buttons */}
             <Button
               onClick={() => handleShareTool(false)}
               disabled={isGenerating}
-              className={`w-full h-14 bg-gradient-to-r ${selectedTool.gradient} hover:opacity-90 text-white font-medium`}
+              className="w-full h-10 bg-black/30 hover:bg-black/40 text-white font-medium border border-white/20"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Creating Story...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
                 </>
               ) : (
                 <>
-                  <Instagram className="w-5 h-5 mr-2" />
+                  <Instagram className="w-4 h-4 mr-2" />
                   Share to Instagram Story
                 </>
               )}
             </Button>
 
-            {/* Download */}
             <Button
               onClick={() => handleShareTool(true)}
               disabled={isGenerating}
-              variant="outline"
-              className="w-full h-12"
+              variant="ghost"
+              className="w-full h-9 text-white/80 hover:text-white hover:bg-white/10"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-3.5 h-3.5 mr-2" />
               Download Story Image
             </Button>
 
-            {/* Copy Link */}
-            <div className="flex gap-2">
+            {/* Compact link copy */}
+            <div className="flex gap-1.5">
               <Input 
                 value={`${appUrl}${selectedTool.path}`} 
                 readOnly 
-                className="flex-1 text-sm" 
+                className="flex-1 h-8 text-xs bg-black/20 border-white/20 text-white placeholder:text-white/50" 
               />
-              <Button onClick={handleCopyLink} variant="outline" size="icon">
-                {copied ? <Link className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              <Button onClick={handleCopyLink} variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
+                {copied ? <Link className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center">
-              Story image includes QR code linking directly to {selectedTool.name}
+            <p className="text-[10px] text-white/60 text-center">
+              Story includes QR code linking to {selectedTool.name}
             </p>
           </div>
         )}
