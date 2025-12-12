@@ -218,66 +218,27 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
   };
 
   const handleNativeShare = async () => {
-    setIsGenerating(true);
-    
-    try {
-      // Generate the story image
-      const storyBlob = await generateStoryImage();
-      const storyFile = new File([storyBlob], 'specverse-story.png', { type: 'image/png' });
-
-      // Try native share with image + clickable link in text
-      if (navigator.canShare && navigator.canShare({ files: [storyFile] })) {
-        try {
-          await navigator.share({
-            files: [storyFile],
-            title: 'SpecVerse',
-            text: `Check out SpecVerse - The Future of Hospitality! 🍸\n\n👉 ${appUrl}`,
-          });
-          toast.success('Shared successfully!');
-          onOpenChange(false);
-          return;
-        } catch (err: any) {
-          if (err?.name === 'AbortError') {
-            return; // User cancelled
-          }
+    // Share URL directly - apps will show clickable link preview
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'SpecVerse - The Future of Hospitality',
+          text: 'Check out SpecVerse! Professional tools for bartenders & hospitality pros. 🍸',
+          url: appUrl,
+        });
+        toast.success('Shared successfully!');
+        onOpenChange(false);
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          return; // User cancelled
         }
       }
-
-      // Fallback: Try share without file but with clickable link
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'SpecVerse',
-            text: `Check out SpecVerse - The Future of Hospitality! 🍸\n\n👉 ${appUrl}`,
-          });
-          toast.success('Shared successfully!');
-          onOpenChange(false);
-          return;
-        } catch (err: any) {
-          if (err?.name === 'AbortError') {
-            return;
-          }
-        }
-      }
-
-      // Final fallback: Download image and copy link
-      const url = URL.createObjectURL(storyBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'specverse-story.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      navigator.clipboard.writeText(appUrl);
-      toast.success('Image downloaded & link copied! Share them together.');
-    } catch (err) {
-      console.error('Share failed:', err);
-      toast.error('Failed to share');
-    } finally {
-      setIsGenerating(false);
     }
+    
+    // Fallback: Copy link
+    navigator.clipboard.writeText(appUrl);
+    toast.success('Link copied! Paste it to share.');
   };
 
   return (
