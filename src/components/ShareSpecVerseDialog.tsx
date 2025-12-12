@@ -199,6 +199,15 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     const ctx = canvas.getContext('2d')!;
     const toolUrl = `${appUrl}${tool.path}`;
 
+    // Load SV logo
+    const svLogo = new Image();
+    svLogo.crossOrigin = 'anonymous';
+    await new Promise<void>((resolve) => {
+      svLogo.onload = () => resolve();
+      svLogo.onerror = () => resolve();
+      svLogo.src = '/sv-logo.png';
+    });
+
     // Dark elegant background
     const bgGrad = ctx.createLinearGradient(0, 0, 0, 1920);
     bgGrad.addColorStop(0, '#0f0f23');
@@ -222,54 +231,46 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     ctx.fillStyle = glow2;
     ctx.fillRect(480, 1200, 600, 720);
 
-    // SpecVerse Logo Header with visible sparkle icon
-    const headerY = 50;
+    // Draw SV Logo prominently at top
+    const logoSize = 120;
+    const logoX = (1080 - logoSize) / 2;
+    const logoY = 40;
     
-    // Draw sparkle/star icons around SpecVerse text
-    const drawSparkle = (x: number, y: number, size: number, color: string) => {
+    if (svLogo.complete && svLogo.naturalWidth > 0) {
+      // Draw logo with rounded corners
       ctx.save();
-      ctx.fillStyle = color;
       ctx.beginPath();
-      // 4-point star sparkle
-      const outer = size;
-      const inner = size * 0.3;
-      for (let i = 0; i < 4; i++) {
-        const angle = (i * Math.PI / 2) - Math.PI / 2;
-        const nextAngle = angle + Math.PI / 4;
-        ctx.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer);
-        ctx.lineTo(x + Math.cos(nextAngle) * inner, y + Math.sin(nextAngle) * inner);
-      }
-      ctx.closePath();
-      ctx.fill();
+      ctx.roundRect(logoX, logoY, logoSize, logoSize, 20);
+      ctx.clip();
+      ctx.drawImage(svLogo, logoX, logoY, logoSize, logoSize);
       ctx.restore();
-    };
+      
+      // Add subtle glow around logo
+      ctx.shadowColor = gradientColors.start;
+      ctx.shadowBlur = 30;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(logoX, logoY, logoSize, logoSize, 20);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
     
-    // Gradient for sparkles
-    drawSparkle(300, headerY + 30, 20, gradientColors.start);
-    drawSparkle(780, headerY + 30, 20, gradientColors.end);
-    drawSparkle(260, headerY + 60, 12, gradientColors.mid);
-    drawSparkle(820, headerY + 60, 12, gradientColors.mid);
-    
-    // SpecVerse brand text - using billabong style italic like platform
-    ctx.font = 'italic 600 56px "Billabong", "Dancing Script", "Pacifico", cursive, Georgia';
-    const brandGrad = ctx.createLinearGradient(350, headerY, 730, headerY + 60);
+    // SpecVerse brand text below logo
+    const headerY = logoY + logoSize + 10;
+    ctx.font = 'italic 600 48px "Billabong", "Dancing Script", "Pacifico", cursive, Georgia';
+    const brandGrad = ctx.createLinearGradient(350, headerY, 730, headerY + 50);
     brandGrad.addColorStop(0, '#ffffff');
     brandGrad.addColorStop(0.5, gradientColors.start);
     brandGrad.addColorStop(1, gradientColors.end);
     ctx.fillStyle = brandGrad;
     ctx.textAlign = 'center';
-    ctx.fillText('SpecVerse', 540, headerY + 55);
-    
-    // Add glow effect behind text
-    ctx.shadowColor = gradientColors.start;
-    ctx.shadowBlur = 30;
-    ctx.fillText('SpecVerse', 540, headerY + 55);
-    ctx.shadowBlur = 0;
+    ctx.fillText('SpecVerse', 540, headerY + 40);
     
     // Tagline under brand
-    ctx.font = '22px system-ui, -apple-system, sans-serif';
+    ctx.font = '20px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 90);
+    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 70);
 
     // Glass card container
     const cardX = 60;
