@@ -46,7 +46,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
   return (
     <>
       <div 
-        className={`absolute -top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer animate-fade-in ${className}`}
+        className={`absolute -top-8 left-1/2 -translate-x-1/3 z-20 pointer-events-auto cursor-pointer animate-fade-in ${className}`}
         onClick={handleStatusClick}
       >
         <div className="relative group">
