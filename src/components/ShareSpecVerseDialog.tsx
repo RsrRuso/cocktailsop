@@ -406,12 +406,12 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         qrImg.src = qrDataUrl;
       });
       
-      const qrSize = 140;
+      const qrSize = 200;
       
-      // QR background - dark glass
+      // QR background - dark glass with larger padding
       ctx.fillStyle = 'rgba(30, 30, 40, 0.9)';
       ctx.beginPath();
-      ctx.roundRect(540 - qrSize/2 - 18, qrY - 18, qrSize + 36, qrSize + 36, 14);
+      ctx.roundRect(540 - qrSize/2 - 24, qrY - 24, qrSize + 48, qrSize + 48, 18);
       ctx.fill();
       
       ctx.drawImage(qrImg, 540 - qrSize/2, qrY, qrSize, qrSize);
@@ -419,8 +419,8 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       // Scan text
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
-      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 35);
+      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 45);
     } catch (err) {
       console.log('QR generation failed:', err);
     }
