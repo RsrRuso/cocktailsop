@@ -238,7 +238,7 @@ const PurchaseOrders = () => {
             // Upload to storage first, then parse
             const fileName = `po-docs/${user?.id}/${Date.now()}-${file.name}`;
             const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('purchase-order-docs')
+              .from('purchase-orders')
               .upload(fileName, file);
             
             if (uploadError) {
