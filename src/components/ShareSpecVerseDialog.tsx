@@ -35,9 +35,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'landing',
     name: 'SpecVerse',
     tagline: 'The Future of Hospitality',
-    problem: 'Hospitality pros lack a unified platform for networking, tools & career growth',
-    solution: 'All-in-one ecosystem connecting bartenders, venues, investors with professional tools, verified credentials & social networking',
-    benefits: ['Connect with verified pros globally', 'Free professional calculators & tools', 'Build your career portfolio', 'Access investment opportunities'],
+    problem: 'The hospitality industry is fragmented. Bartenders, managers, and venues struggle with scattered tools, lack professional networking, have no centralized career development, and miss investment opportunities. Finding quality education, connecting with industry peers globally, and building a verified professional presence is nearly impossible.',
+    solution: 'SpecVerse is the world\'s first all-in-one hospitality ecosystem. We unite professional networking, verified credentials, career tools, venue management systems, recipe databases, team collaboration, investor connections, and social features in one powerful platform. Build your reputation, grow your career, manage your venue, and connect with thousands of hospitality professionals worldwide.',
+    benefits: ['Connect with 10,000+ verified hospitality professionals globally', 'Access 50+ free professional calculators, recipe tools & analytics', 'Build your verified career portfolio with digital certificates', 'Discover investment opportunities & business partnerships'],
     icon: <Sparkles className="w-6 h-6" />,
     path: '/',
     gradient: 'from-purple-500 via-pink-500 to-orange-500',
@@ -47,9 +47,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'matrix-ai',
     name: 'Matrix AI',
     tagline: 'Your AI Hospitality Mentor',
-    problem: 'Need expert advice but no mentor available 24/7?',
-    solution: 'AI-powered assistant trained on hospitality knowledge - get instant answers on recipes, techniques, career advice & industry insights',
-    benefits: ['24/7 expert guidance', 'Recipe & technique help', 'Career mentorship', 'Voice-enabled assistant'],
+    problem: 'Hospitality professionals often work alone without access to mentorship. Getting expert advice on cocktail recipes, service techniques, wine pairings, career decisions, or troubleshooting problems requires expensive consultants or waiting for busy colleagues. This knowledge gap slows career growth and limits creativity.',
+    solution: 'Matrix AI is your 24/7 AI mentor trained specifically for hospitality. Ask any question about cocktails, spirits, wine, service techniques, career advice, menu engineering, or industry trends. Get instant expert-level answers, recipe suggestions, technique explanations, and personalized career guidance. Voice-enabled for hands-free use during service.',
+    benefits: ['Get expert answers instantly, anytime, anywhere', 'Voice-enabled assistant for hands-free operation', 'Trained on hospitality-specific knowledge base', 'Personalized career coaching & skill development'],
     icon: <Brain className="w-6 h-6" />,
     path: '/matrix-ai',
     gradient: 'from-violet-600 to-purple-600',
@@ -59,9 +59,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'music-box',
     name: 'Music Box',
     tagline: 'Curate Your Venue Sound',
-    problem: 'Spending hours creating playlists for your bar?',
-    solution: 'Upload, organize & share music tracks. Auto-extract audio from reels. Access trending hospitality music library',
-    benefits: ['Build venue playlists fast', 'Share tracks with team', 'Auto-extract from videos', 'Trending music library'],
+    problem: 'Creating the perfect atmosphere for your bar or restaurant takes hours of playlist curation. Finding the right music, organizing tracks, sharing with your team, and keeping the vibe fresh is time-consuming. Meanwhile, great audio from viral reels goes unused and trending hospitality tracks are hard to discover.',
+    solution: 'Music Box is your complete venue audio management system. Upload and organize your music library, auto-extract audio from popular reels, access a curated library of trending hospitality tracks, and share playlists with your entire team instantly. Create the perfect atmosphere with professionally curated sound.',
+    benefits: ['Build and share venue playlists in minutes', 'Auto-extract music from any video or reel', 'Access trending hospitality music library', 'Team-wide playlist sharing & collaboration'],
     icon: <Music className="w-6 h-6" />,
     path: '/music-box',
     gradient: 'from-pink-500 to-rose-500',
@@ -71,9 +71,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'batch-calculator',
     name: 'Batch Calculator',
     tagline: 'Scale Recipes Perfectly',
-    problem: 'Manually calculating batch recipes wastes time & causes errors',
-    solution: 'Instantly scale any cocktail recipe to any batch size. Share via QR codes. Track production history with your team',
-    benefits: ['One-click batch scaling', 'QR code recipe sharing', 'Production history tracking', 'Team collaboration'],
+    problem: 'Manual batch calculations waste valuable prep time and lead to costly errors. Scaling cocktail recipes from single serves to 50-liter batches requires tedious math. Sharing recipes with team members means writing specs repeatedly. Production tracking is scattered across notebooks and spreadsheets.',
+    solution: 'Batch Calculator instantly scales any cocktail recipe to any batch size with perfect precision. Generate QR codes to share recipes with your team - one scan shows the full spec. Track production history, log who made what and when, and maintain complete batch documentation for inventory and quality control.',
+    benefits: ['One-click scaling from 1 serve to 1000 liters', 'QR code recipe sharing - instant team access', 'Complete production history & team attribution', 'Perfect precision eliminates costly batch errors'],
     icon: <Calculator className="w-6 h-6" />,
     path: '/batch-calculator',
     gradient: 'from-amber-500 to-orange-500',
@@ -83,9 +83,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'menu-engineering',
     name: 'Menu Engineering',
     tagline: 'Maximize Menu Profits',
-    problem: 'Which menu items make money? Which are losing you profit?',
-    solution: 'BCG matrix analysis identifies Stars, Dogs, Puzzles & Plowhorses. AI suggests optimal pricing & ingredient optimization',
-    benefits: ['Identify profitable items', 'AI pricing suggestions', 'Ingredient cost tracking', 'Boost profit margins'],
+    problem: 'Most venues have no idea which menu items actually make money. Popular items might have terrible margins while profitable items go unnoticed. Without proper analysis, you\'re leaving thousands in profit on the table. Recipe costing is tedious and ingredient cross-utilization opportunities are missed.',
+    solution: 'Menu Engineering Pro uses BCG matrix analysis to categorize every item as Stars, Dogs, Puzzles, or Plowhorses. AI suggests optimal pricing, identifies ingredient cross-utilization opportunities, calculates exact food costs, and reveals which items to promote, reprice, or remove. Data-driven menu optimization that maximizes profit.',
+    benefits: ['Identify your most profitable menu items instantly', 'AI-powered pricing recommendations', 'Ingredient cross-utilization analysis', 'Increase profit margins by 15-30%'],
     icon: <ChefHat className="w-6 h-6" />,
     path: '/menu-engineering-pro',
     gradient: 'from-emerald-500 to-teal-500',
@@ -95,9 +95,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'cocktail-sop',
     name: 'Cocktail SOP',
     tagline: 'Professional Recipe Specs',
-    problem: 'Inconsistent drinks? Staff making recipes differently?',
-    solution: 'Create standardized recipes with exact specs, costs, taste profiles & step-by-step methods. Export as professional PDFs',
-    benefits: ['Consistent drink quality', 'Exact cost per drink', 'Taste profile mapping', 'PDF spec sheets'],
+    problem: 'Inconsistent drinks damage your brand and frustrate guests. Staff make recipes differently, training new hires is slow, and there\'s no standardized documentation. Calculating exact costs per drink, tracking taste profiles, and creating professional spec sheets takes hours of manual work.',
+    solution: 'Cocktail SOP creates standardized, professional recipe specifications. Document exact measurements, techniques, garnishes, and costs. Map taste profiles for each drink. Generate beautiful PDF spec sheets for training and operations. Ensure every drink is made perfectly, every time, by every bartender.',
+    benefits: ['Consistent drink quality across all staff', 'Exact cost-per-drink calculations', 'Professional PDF spec sheets for training', 'Taste profile mapping & documentation'],
     icon: <FlaskConical className="w-6 h-6" />,
     path: '/cocktail-sop',
     gradient: 'from-blue-500 to-cyan-500',
@@ -107,9 +107,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'lab-ops',
     name: 'LAB Ops',
     tagline: 'Complete Venue Management',
-    problem: 'Need expensive POS software for your bar or restaurant?',
-    solution: 'Full venue management: mobile ordering, kitchen display, staff scheduling, inventory, analytics - all in one free platform',
-    benefits: ['Mobile POS ordering', 'Kitchen/Bar display', 'Staff scheduling', 'Real-time analytics'],
+    problem: 'Traditional POS and venue management software costs thousands per year. Small bars and restaurants can\'t afford proper systems for ordering, kitchen displays, staff scheduling, inventory management, and analytics. This forces manual processes, errors, and inefficiency.',
+    solution: 'LAB Ops is a complete, FREE venue management system. Mobile POS for ordering, Kitchen and Bar display systems, staff scheduling with shift management, inventory tracking, real-time analytics, and comprehensive reporting. Enterprise-level capabilities without the enterprise price tag.',
+    benefits: ['Complete mobile POS ordering system', 'Kitchen & Bar display systems (KDS/BDS)', 'Staff scheduling & shift management', 'Real-time analytics & comprehensive reports'],
     icon: <BarChart3 className="w-6 h-6" />,
     path: '/lab-ops',
     gradient: 'from-indigo-500 to-blue-500',
@@ -119,9 +119,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'live-map',
     name: 'Live Map',
     tagline: 'Discover & Connect',
-    problem: 'Finding award-winning venues or connecting with local bartenders?',
-    solution: 'Interactive map showing nearby venues with Michelin stars, awards & ratings. Connect with hospitality pros in your area',
-    benefits: ['Find award-winning venues', 'Filter by Michelin & awards', 'Connect with local pros', 'Discover industry events'],
+    problem: 'Finding award-winning venues, discovering industry events, and connecting with local hospitality professionals is difficult. Award information is scattered across different guides. There\'s no easy way to see which bars near you have Michelin stars, World\'s 50 Best recognition, or other prestigious awards.',
+    solution: 'Live Map is an interactive discovery platform showing nearby and city-wide venues with their awards and ratings. Filter by Michelin stars, World\'s 50 Best, regional awards, and more. Connect with hospitality professionals in your area. Discover industry events, job opportunities, and networking meetups.',
+    benefits: ['Discover Michelin, World\'s 50 Best & award venues', 'Filter venues by specific awards & ratings', 'Connect with local hospitality professionals', 'Find industry events & networking opportunities'],
     icon: <Map className="w-6 h-6" />,
     path: '/live-map',
     gradient: 'from-green-500 to-emerald-500',
@@ -131,9 +131,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'shop',
     name: 'Shop',
     tagline: 'Premium Bar Products',
-    problem: 'Where to find quality bar equipment & hospitality products?',
-    solution: 'Curated marketplace for bartenders - premium bar tools, glassware, uniforms & digital products from trusted sellers',
-    benefits: ['Curated quality products', 'Industry-specific items', 'Digital & physical goods', 'Trusted sellers'],
+    problem: 'Finding quality bar equipment and hospitality products is frustrating. Generic marketplaces don\'t understand industry-specific needs. Product quality varies wildly, and there\'s no curation for professional standards. Digital products like templates, courses, and resources are scattered across the web.',
+    solution: 'SpecVerse Shop is a curated marketplace specifically for hospitality professionals. Premium bar tools, glassware, uniforms, and equipment from trusted sellers. Digital products including training courses, templates, and resources. Every product is vetted for professional quality and industry relevance.',
+    benefits: ['Curated premium quality products only', 'Industry-specific tools & equipment', 'Digital courses, templates & resources', 'Trusted sellers with professional standards'],
     icon: <ShoppingBag className="w-6 h-6" />,
     path: '/shop',
     gradient: 'from-rose-500 to-pink-500',
@@ -143,9 +143,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'exam-center',
     name: 'Exam Center',
     tagline: 'Get Certified',
-    problem: 'Want to prove your skills & advance your career?',
-    solution: 'Take AI-generated exams on cocktails, spirits, service & more. Earn digital certificates & badges to showcase expertise',
-    benefits: ['Industry certifications', 'AI-generated unique exams', 'Digital badges & certificates', 'Career advancement proof'],
+    problem: 'Proving your skills and advancing your career in hospitality is challenging. Traditional certifications are expensive and time-consuming. There\'s no way to demonstrate specific expertise in cocktails, spirits, wine, or service to potential employers. Career advancement often stalls without recognized credentials.',
+    solution: 'Exam Center offers AI-generated examinations on cocktails, spirits, wine, bar operations, service techniques, and more. Each exam is dynamically generated for uniqueness. Earn digital certificates and badges to showcase your expertise. Build a verified credential portfolio that proves your professional capabilities to employers worldwide.',
+    benefits: ['Industry-recognized digital certifications', 'AI-generated unique exams every time', 'Digital badges for your profile & portfolio', 'Prove expertise to employers worldwide'],
     icon: <GraduationCap className="w-6 h-6" />,
     path: '/exam-center',
     gradient: 'from-yellow-500 to-amber-500',
@@ -155,9 +155,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'industry-digest',
     name: 'Industry Digest',
     tagline: 'Stay Informed Daily',
-    problem: 'Missing important industry news & trends?',
-    solution: 'Daily curated news from global hospitality publications. Filter by region - Middle East, Europe, Americas, Asia Pacific',
-    benefits: ['Global hospitality news', 'Regional filtering', 'Award announcements', 'Trend insights daily'],
+    problem: 'Staying updated on hospitality industry news is overwhelming. Important trends, award announcements, venue openings, and career opportunities are scattered across dozens of publications. Regional news is hard to filter. Missing key industry developments can hurt your career and business decisions.',
+    solution: 'Industry Digest curates daily hospitality news from global publications. Filter by region - Middle East, Europe, Americas, Asia Pacific. Stay informed on Michelin announcements, World\'s 50 Best updates, industry trends, career opportunities, and business insights. Never miss important industry news again.',
+    benefits: ['Daily curated global hospitality news', 'Regional filtering for relevant content', 'Award announcements & industry updates', 'Trend insights for career & business decisions'],
     icon: <Newspaper className="w-6 h-6" />,
     path: '/industry-digest',
     gradient: 'from-slate-500 to-zinc-500',
@@ -167,9 +167,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     id: 'team',
     name: 'Team Dashboard',
     tagline: 'Manage Your Crew',
-    problem: 'Struggling with team scheduling & coordination?',
-    solution: 'Complete team management - scheduling, task assignment, performance tracking, time-off requests & shift management',
-    benefits: ['Visual staff scheduling', 'Task management', 'Performance tracking', 'Time-off handling'],
+    problem: 'Team management in hospitality is chaotic. Scheduling happens via group chats and spreadsheets. Task assignment lacks accountability. Performance tracking is subjective. Time-off requests get lost. Shift swaps cause confusion. There\'s no centralized system for team coordination and communication.',
+    solution: 'Team Dashboard provides complete crew management. Visual scheduling with drag-and-drop shifts. Task assignment with deadlines and accountability. Performance tracking and feedback. Time-off request handling. Shift swap management. All team coordination in one unified platform designed specifically for hospitality operations.',
+    benefits: ['Visual drag-and-drop staff scheduling', 'Task management with accountability tracking', 'Performance reviews & feedback system', 'Time-off & shift swap management'],
     icon: <Users className="w-6 h-6" />,
     path: '/team-dashboard',
     gradient: 'from-cyan-500 to-blue-500',
@@ -222,53 +222,60 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     ctx.fillStyle = glow2;
     ctx.fillRect(480, 1200, 600, 720);
 
-    // SpecVerse Logo at top (signature branding)
-    try {
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      await new Promise<void>((resolve, reject) => {
-        logoImg.onload = () => resolve();
-        logoImg.onerror = reject;
-        logoImg.src = '/specverse-logo.jpeg';
-      });
-      
-      // Draw circular logo
-      const logoSize = 80;
-      const logoX = 540 - logoSize/2;
-      const logoY = 60;
-      
+    // SpecVerse Logo Header with visible sparkle icon
+    const headerY = 50;
+    
+    // Draw sparkle/star icons around SpecVerse text
+    const drawSparkle = (x: number, y: number, size: number, color: string) => {
       ctx.save();
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(540, logoY + logoSize/2, logoSize/2, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      // 4-point star sparkle
+      const outer = size;
+      const inner = size * 0.3;
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * Math.PI / 2) - Math.PI / 2;
+        const nextAngle = angle + Math.PI / 4;
+        ctx.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer);
+        ctx.lineTo(x + Math.cos(nextAngle) * inner, y + Math.sin(nextAngle) * inner);
+      }
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
-      
-      // Logo border
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(540, logoY + logoSize/2, logoSize/2, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      // SpecVerse text below logo
-      ctx.font = 'italic 28px Georgia, serif';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.textAlign = 'center';
-      ctx.fillText('SpecVerse', 540, logoY + logoSize + 30);
-    } catch (err) {
-      // Fallback: Just text branding
-      ctx.font = 'italic 32px Georgia, serif';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.textAlign = 'center';
-      ctx.fillText('SpecVerse', 540, 100);
-    }
+    };
+    
+    // Gradient for sparkles
+    drawSparkle(300, headerY + 30, 20, gradientColors.start);
+    drawSparkle(780, headerY + 30, 20, gradientColors.end);
+    drawSparkle(260, headerY + 60, 12, gradientColors.mid);
+    drawSparkle(820, headerY + 60, 12, gradientColors.mid);
+    
+    // SpecVerse brand text - using billabong style italic like platform
+    ctx.font = 'italic 600 56px "Billabong", "Dancing Script", "Pacifico", cursive, Georgia';
+    const brandGrad = ctx.createLinearGradient(350, headerY, 730, headerY + 60);
+    brandGrad.addColorStop(0, '#ffffff');
+    brandGrad.addColorStop(0.5, gradientColors.start);
+    brandGrad.addColorStop(1, gradientColors.end);
+    ctx.fillStyle = brandGrad;
+    ctx.textAlign = 'center';
+    ctx.fillText('SpecVerse', 540, headerY + 55);
+    
+    // Add glow effect behind text
+    ctx.shadowColor = gradientColors.start;
+    ctx.shadowBlur = 30;
+    ctx.fillText('SpecVerse', 540, headerY + 55);
+    ctx.shadowBlur = 0;
+    
+    // Tagline under brand
+    ctx.font = '22px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 90);
 
     // Glass card container
-    const cardX = 70;
-    const cardY = 220;
-    const cardW = 940;
-    const cardH = 1450;
+    const cardX = 60;
+    const cardY = 160;
+    const cardW = 960;
+    const cardH = 1520;
     
     // Card shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -294,113 +301,138 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     ctx.stroke();
 
     // Tool icon gradient badge
-    const badgeY = cardY + 80;
+    const badgeY = cardY + 70;
     const badgeGrad = ctx.createLinearGradient(440, badgeY - 50, 640, badgeY + 50);
     badgeGrad.addColorStop(0, gradientColors.start);
     badgeGrad.addColorStop(1, gradientColors.end);
     ctx.fillStyle = badgeGrad;
     ctx.beginPath();
-    ctx.arc(540, badgeY, 60, 0, Math.PI * 2);
+    ctx.arc(540, badgeY, 55, 0, Math.PI * 2);
     ctx.fill();
     
     // Emoji in badge
-    ctx.font = '60px system-ui';
+    ctx.font = '52px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(tool.emoji, 540, badgeY);
 
     // Tool name with gradient
-    ctx.font = 'bold 64px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 58px system-ui, -apple-system, sans-serif';
     const titleGrad = ctx.createLinearGradient(300, badgeY + 90, 780, badgeY + 90);
     titleGrad.addColorStop(0, gradientColors.start);
     titleGrad.addColorStop(0.5, '#a855f7');
     titleGrad.addColorStop(1, '#ec4899');
     ctx.fillStyle = titleGrad;
     ctx.textBaseline = 'top';
-    ctx.fillText(tool.name, 540, badgeY + 80);
+    ctx.fillText(tool.name, 540, badgeY + 70);
 
     // Tagline
-    ctx.font = '32px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText(tool.tagline, 540, badgeY + 160);
+    ctx.font = '28px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(tool.tagline, 540, badgeY + 140);
+
+    // Helper function for text wrapping
+    const wrapText = (text: string, x: number, y: number, maxW: number, lineHeight: number, align: CanvasTextAlign = 'center') => {
+      ctx.textAlign = align;
+      const words = text.split(' ');
+      let line = '';
+      let currentY = y;
+      
+      words.forEach(word => {
+        const testLine = line + word + ' ';
+        if (ctx.measureText(testLine).width > maxW) {
+          ctx.fillText(line.trim(), x, currentY);
+          line = word + ' ';
+          currentY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      });
+      ctx.fillText(line.trim(), x, currentY);
+      return currentY + lineHeight;
+    };
 
     // PROBLEM SECTION
-    const problemY = badgeY + 240;
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+    const problemY = badgeY + 200;
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
     ctx.beginPath();
-    ctx.roundRect(cardX + 30, problemY - 20, cardW - 60, 80, 16);
+    ctx.roundRect(cardX + 25, problemY - 15, cardW - 50, 180, 16);
     ctx.fill();
     
-    ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ef4444';
-    ctx.fillText('❌ THE PROBLEM', 540, problemY + 5);
+    // Problem border
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(cardX + 25, problemY - 15, cardW - 50, 180, 16);
+    ctx.stroke();
     
-    ctx.font = '28px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(tool.problem, 540, problemY + 45);
+    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ef4444';
+    ctx.textAlign = 'center';
+    ctx.fillText('❌ THE PROBLEM', 540, problemY + 15);
+    
+    ctx.font = '22px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    wrapText(tool.problem, 540, problemY + 50, cardW - 100, 28);
 
     // SOLUTION SECTION
-    const solutionY = problemY + 120;
-    ctx.fillStyle = 'rgba(34, 197, 94, 0.15)';
+    const solutionY = problemY + 210;
+    ctx.fillStyle = 'rgba(34, 197, 94, 0.12)';
     ctx.beginPath();
-    ctx.roundRect(cardX + 30, solutionY - 20, cardW - 60, 130, 16);
+    ctx.roundRect(cardX + 25, solutionY - 15, cardW - 50, 220, 16);
     ctx.fill();
     
-    ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
+    // Solution border
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(cardX + 25, solutionY - 15, cardW - 50, 220, 16);
+    ctx.stroke();
+    
+    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#22c55e';
-    ctx.fillText('✅ THE SOLUTION', 540, solutionY + 5);
+    ctx.textAlign = 'center';
+    ctx.fillText('✅ THE SOLUTION', 540, solutionY + 15);
     
-    // Wrap solution text
-    ctx.font = '26px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    const solutionWords = tool.solution.split(' ');
-    let line = '';
-    let lineY = solutionY + 45;
-    const maxWidth = cardW - 100;
-    
-    solutionWords.forEach(word => {
-      const testLine = line + word + ' ';
-      if (ctx.measureText(testLine).width > maxWidth) {
-        ctx.fillText(line.trim(), 540, lineY);
-        line = word + ' ';
-        lineY += 35;
-      } else {
-        line = testLine;
-      }
-    });
-    ctx.fillText(line.trim(), 540, lineY);
+    ctx.font = '22px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    wrapText(tool.solution, 540, solutionY + 50, cardW - 100, 28);
 
     // BENEFITS SECTION
-    const benefitsY = solutionY + 170;
-    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    const benefitsY = solutionY + 250;
+    ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = gradientColors.start;
+    ctx.textAlign = 'center';
     ctx.fillText('✨ KEY BENEFITS', 540, benefitsY);
 
     // Benefits list
     ctx.textAlign = 'left';
     
     tool.benefits.forEach((benefit, i) => {
-      const yPos = benefitsY + 50 + (i * 60);
+      const yPos = benefitsY + 45 + (i * 52);
       
       // Benefit background
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      const benefitGrad = ctx.createLinearGradient(cardX + 35, yPos, cardX + cardW - 70, yPos);
+      benefitGrad.addColorStop(0, 'rgba(255, 255, 255, 0.06)');
+      benefitGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+      ctx.fillStyle = benefitGrad;
       ctx.beginPath();
-      ctx.roundRect(cardX + 40, yPos - 20, cardW - 80, 50, 12);
+      ctx.roundRect(cardX + 35, yPos - 18, cardW - 70, 46, 10);
       ctx.fill();
       
       // Check icon with gradient color
       ctx.fillStyle = gradientColors.start;
-      ctx.font = 'bold 28px system-ui';
-      ctx.fillText('✓', cardX + 65, yPos + 10);
+      ctx.font = 'bold 24px system-ui';
+      ctx.fillText('✓', cardX + 55, yPos + 10);
       
       // Benefit text
       ctx.fillStyle = '#ffffff';
-      ctx.font = '28px system-ui, -apple-system, sans-serif';
-      ctx.fillText(benefit, cardX + 105, yPos + 10);
+      ctx.font = '23px system-ui, -apple-system, sans-serif';
+      ctx.fillText(benefit, cardX + 90, yPos + 10);
     });
 
     // QR Code section
-    const qrY = cardY + cardH - 220;
+    const qrY = cardY + cardH - 180;
     
     try {
       const qrDataUrl = await QRCode.toDataURL(toolUrl, {
@@ -419,12 +451,12 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         qrImg.src = qrDataUrl;
       });
       
-      const qrSize = 120;
+      const qrSize = 110;
       
       // QR background
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.beginPath();
-      ctx.roundRect(540 - qrSize/2 - 15, qrY - 15, qrSize + 30, qrSize + 30, 12);
+      ctx.roundRect(540 - qrSize/2 - 12, qrY - 12, qrSize + 24, qrSize + 24, 12);
       ctx.fill();
       
       ctx.drawImage(qrImg, 540 - qrSize/2, qrY, qrSize, qrSize);
@@ -432,34 +464,35 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       // Scan text
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 40);
+      ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 35);
     } catch (err) {
       console.log('QR generation failed:', err);
     }
 
     // URL button outside card
-    const urlBoxY = cardY + cardH + 40;
+    const urlBoxY = cardY + cardH + 35;
     
     // URL background pill with gradient
-    const urlGrad = ctx.createLinearGradient(150, urlBoxY, 930, urlBoxY);
+    const urlGrad = ctx.createLinearGradient(140, urlBoxY, 940, urlBoxY);
     urlGrad.addColorStop(0, gradientColors.start);
     urlGrad.addColorStop(1, gradientColors.end);
     ctx.fillStyle = urlGrad;
     ctx.beginPath();
-    ctx.roundRect(150, urlBoxY - 32, 780, 64, 32);
+    ctx.roundRect(140, urlBoxY - 28, 800, 56, 28);
     ctx.fill();
     
     // URL text
-    ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(`🔗 ${toolUrl.replace('https://', '')}`, 540, urlBoxY + 8);
+    ctx.fillText(`🔗 ${toolUrl.replace('https://', '')}`, 540, urlBoxY + 6);
 
     // Call to action
-    ctx.font = '22px system-ui, -apple-system, sans-serif';
+    ctx.font = '20px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fillText('Add link sticker ☝️ to make it clickable!', 540, urlBoxY + 55);
+    ctx.fillText('Add link sticker ☝️ to make it clickable!', 540, urlBoxY + 48);
+
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob!), 'image/png', 1.0);
