@@ -64,18 +64,49 @@ export const usePurchaseOrderMaster = () => {
     enabled: !!user?.id
   });
 
-  // Add master item (upsert - won't duplicate)
+  // Add master item (upsert - won't duplicate based on normalized name)
   const addMasterItem = useMutation({
     mutationFn: async (item: { item_name: string; unit?: string; category?: string; last_price?: number }) => {
+      // Normalize item name - trim and consistent casing
+      const normalizedName = item.item_name.trim();
+      
+      // Check if item already exists (case-insensitive)
+      const { data: existing } = await supabase
+        .from('purchase_order_master_items')
+        .select('id, item_name')
+        .eq('user_id', user?.id)
+        .ilike('item_name', normalizedName)
+        .maybeSingle();
+      
+      if (existing) {
+        // Update existing item with latest price if provided
+        if (item.last_price) {
+          const { data, error } = await supabase
+            .from('purchase_order_master_items')
+            .update({ 
+              last_price: item.last_price, 
+              unit: item.unit || undefined,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', existing.id)
+            .select()
+            .single();
+          if (error) throw error;
+          return data;
+        }
+        return existing;
+      }
+      
+      // Insert new item
       const { data, error } = await supabase
         .from('purchase_order_master_items')
-        .upsert({
+        .insert({
           user_id: user?.id,
-          item_name: item.item_name,
+          item_name: normalizedName,
           unit: item.unit,
           category: item.category,
           last_price: item.last_price
-        }, { onConflict: 'user_id,item_name' })
+        })
         .select()
         .single();
       
