@@ -160,6 +160,8 @@ const CertificateView = lazy(() => import("@/pages/CertificateView"));
 const IndustryDigest = lazy(() => import("@/pages/IndustryDigest"));
 const Terms = lazy(() => import("@/pages/Terms"));
 const PurchaseOrders = lazy(() => import("@/pages/PurchaseOrders"));
+const POMasterItems = lazy(() => import("@/pages/POMasterItems"));
+const POReceivedItems = lazy(() => import("@/pages/POReceivedItems"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -334,6 +336,8 @@ const AppContent = () => {
           <Route path="/industry-digest" element={<IndustryDigest />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/purchase-orders" element={<PurchaseOrders />} />
+          <Route path="/po-master-items" element={<POMasterItems />} />
+          <Route path="/po-received-items" element={<POReceivedItems />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
