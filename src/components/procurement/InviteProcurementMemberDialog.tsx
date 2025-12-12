@@ -55,25 +55,10 @@ export const InviteProcurementMemberDialog = ({
     setLoadingConnections(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch followers
-      const { data: followersData } = await supabase
-        .from("follows")
-        .select(`
-          follower_id,
-          profiles!follows_follower_id_fkey(id, username, full_name, avatar_url)
-        `)
-        .eq("following_id", user.id);
-
-      // Fetch following
-      const { data: followingData } = await supabase
-        .from("follows")
-        .select(`
-          following_id,
-          profiles!follows_following_id_fkey(id, username, full_name, avatar_url)
-        `)
-        .eq("follower_id", user.id);
+      if (!user) {
+        setLoadingConnections(false);
+        return;
+      }
 
       // Get existing workspace members to filter them out
       const { data: existingMembers } = await supabase
@@ -83,14 +68,55 @@ export const InviteProcurementMemberDialog = ({
 
       const existingMemberIds = new Set(existingMembers?.map(m => m.user_id) || []);
 
-      // Filter out existing members
-      const followersList = followersData
-        ?.map((f: any) => f.profiles)
-        .filter((p: Profile) => p && !existingMemberIds.has(p.id)) || [];
+      // Fetch follower IDs first
+      const { data: followerIds, error: followerError } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("following_id", user.id);
 
-      const followingList = followingData
-        ?.map((f: any) => f.profiles)
-        .filter((p: Profile) => p && !existingMemberIds.has(p.id)) || [];
+      if (followerError) {
+        console.error("Follower fetch error:", followerError);
+      }
+
+      // Fetch following IDs
+      const { data: followingIds, error: followingError } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id);
+
+      if (followingError) {
+        console.error("Following fetch error:", followingError);
+      }
+
+      // Get unique follower user IDs
+      const followerUserIds = (followerIds || [])
+        .map(f => f.follower_id)
+        .filter(id => id && !existingMemberIds.has(id));
+
+      // Get unique following user IDs
+      const followingUserIds = (followingIds || [])
+        .map(f => f.following_id)
+        .filter(id => id && !existingMemberIds.has(id));
+
+      // Fetch follower profiles
+      let followersList: Profile[] = [];
+      if (followerUserIds.length > 0) {
+        const { data: followerProfiles } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", followerUserIds);
+        followersList = (followerProfiles || []) as Profile[];
+      }
+
+      // Fetch following profiles
+      let followingList: Profile[] = [];
+      if (followingUserIds.length > 0) {
+        const { data: followingProfiles } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", followingUserIds);
+        followingList = (followingProfiles || []) as Profile[];
+      }
 
       setFollowers(followersList);
       setFollowing(followingList);
