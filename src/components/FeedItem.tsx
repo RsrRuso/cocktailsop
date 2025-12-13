@@ -314,6 +314,28 @@ export const FeedItem = memo(({
         )}
       </div>
 
+      {/* Text-only posts - Twitter/X style */}
+      {(!item.media_urls || item.media_urls.length === 0) && item.content && (
+        <div 
+          className="px-3 py-4"
+          onClick={handleDoubleTap}
+        >
+          <p className="text-base leading-relaxed whitespace-pre-wrap">
+            {item.content}
+          </p>
+          
+          {/* Double tap heart animation */}
+          {doubleTapLike && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <Heart 
+                className="w-24 h-24 text-primary fill-primary animate-ping"
+                style={{ animationDuration: '0.5s' }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Media - Instagram 4:5 Frameless */}
       {item.media_urls && item.media_urls.length > 0 && (
         <div 
@@ -488,8 +510,8 @@ export const FeedItem = memo(({
           </button>
         </div>
 
-        {/* Caption */}
-        {'content' in item && item.content && (
+        {/* Caption - only show for posts with media (text-only posts show content above) */}
+        {'content' in item && item.content && item.media_urls && item.media_urls.length > 0 && (
           <p className="text-sm mt-1">
             <span 
               className="font-semibold mr-1.5 cursor-pointer hover:opacity-70"
