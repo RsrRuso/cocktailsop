@@ -30,8 +30,8 @@ const BottomNav = () => {
           <button
             onClick={() => {
               if (isActive("/home")) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                window.location.reload();
+                // Just scroll to top instantly - no refresh
+                window.scrollTo({ top: 0, behavior: 'instant' });
               } else {
                 navigate("/home");
               }
