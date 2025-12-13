@@ -231,12 +231,20 @@ const POReceivedItems = () => {
           let matchedOrder: any = null;
           
           if (orderNumber) {
-            const { data: orders } = await supabase
+            // For workspace orders, search by workspace_id; for personal, search by user_id
+            let orderQuery = supabase
               .from('purchase_orders')
               .select('id, order_number, supplier_name, order_date')
-              .eq('user_id', user?.id)
               .ilike('order_number', `%${orderNumber}%`)
               .limit(1);
+            
+            if (selectedWorkspaceId) {
+              orderQuery = orderQuery.eq('workspace_id', selectedWorkspaceId);
+            } else {
+              orderQuery = orderQuery.eq('user_id', user?.id).is('workspace_id', null);
+            }
+            
+            const { data: orders } = await orderQuery;
             
             if (orders && orders.length > 0) {
               matchedOrder = orders[0];
@@ -253,13 +261,21 @@ const POReceivedItems = () => {
           
           // If no order found by number, try to find by supplier
           if (orderedItems.length === 0 && parsed.location) {
-            const { data: orders } = await supabase
+            // For workspace orders, search by workspace_id; for personal, search by user_id
+            let supplierQuery = supabase
               .from('purchase_orders')
               .select('id, order_number, supplier_name, order_date')
-              .eq('user_id', user?.id)
               .ilike('supplier_name', `%${parsed.location}%`)
               .order('created_at', { ascending: false })
               .limit(1);
+            
+            if (selectedWorkspaceId) {
+              supplierQuery = supplierQuery.eq('workspace_id', selectedWorkspaceId);
+            } else {
+              supplierQuery = supplierQuery.eq('user_id', user?.id).is('workspace_id', null);
+            }
+            
+            const { data: orders } = await supplierQuery;
             
             if (orders && orders.length > 0) {
               matchedOrder = orders[0];
