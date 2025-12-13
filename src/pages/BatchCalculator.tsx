@@ -2685,7 +2685,7 @@ const BatchCalculator = () => {
         if (insertError) throw insertError;
         if (!newQR) throw new Error("No QR code created");
         qrCodeRecord = newQR;
-        toast.success(`Permanent QR code created for "${recipe.recipe_name}"!`);
+        toast.success(`Permanent code created for "${recipe.recipe_name}"!`);
       } else {
         // Update recipe data in existing QR to keep it current
         await supabase
@@ -2699,7 +2699,7 @@ const BatchCalculator = () => {
             },
           } as any)
           .eq("id", qrCodeRecord.id);
-        toast.success(`Permanent QR code loaded for "${recipe.recipe_name}"!`);
+        toast.success(`Permanent code loaded for "${recipe.recipe_name}"!`);
       }
 
       // Embed essential recipe data in URL as fallback for universal compatibility
@@ -2722,8 +2722,8 @@ const BatchCalculator = () => {
       setQrCodeUrl(qrDataUrl);
       setShowQRCode(true);
     } catch (error) {
-      console.error("Error generating QR:", error);
-      toast.error("Failed to generate QR code");
+      console.error("Error generating code:", error);
+      toast.error("Failed to generate code");
     }
   };
 
@@ -2740,7 +2740,7 @@ const BatchCalculator = () => {
     link.href = qrCodeDataUrl;
     link.download = `${group.name}-submission-qr.png`;
     link.click();
-    toast.success("QR code downloaded!");
+    toast.success("Code downloaded!");
   };
 
   const batchResults = calculateBatch();

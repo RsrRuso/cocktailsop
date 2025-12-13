@@ -247,9 +247,9 @@ export default function FifoQRAccessCode() {
         {qrCode && (
           <Card>
             <CardHeader>
-              <CardTitle>Workspace Access QR Code</CardTitle>
+              <CardTitle>Workspace Access Code</CardTitle>
               <CardDescription>
-                Share this QR code with team members to allow them to request access to your FIFO workspace
+                Share this code with team members to allow them to request access to your FIFO workspace
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
