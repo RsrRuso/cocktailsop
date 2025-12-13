@@ -544,7 +544,7 @@ const GMCommandGuide = () => {
             "Select cocktail for batching",
             "Enter batch size requirements",
             "Review AI-calculated formula",
-            "Print batch labels with QR codes"
+            "Print batch labels"
           ],
           outputs: [
             "Exact alcohol percentages",

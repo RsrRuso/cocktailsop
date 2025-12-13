@@ -228,7 +228,7 @@ export function AddFifoEmployeeDialog({
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
             <p className="font-medium mb-1">How it works:</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>Added members can scan QR codes to request access</li>
+              <li>Added members can use the invite link to request access</li>
               <li>You'll receive access requests in the Approvals section</li>
               <li>Approve requests to grant them inventory access</li>
             </ul>
