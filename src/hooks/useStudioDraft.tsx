@@ -59,7 +59,7 @@ export function useStudioDraft(draftId?: string) {
         caption: data.caption || '',
         draft_type: data.draft_type as 'reel' | 'post' | 'story',
         media_url: null,
-        thumbnail_url: data.thumbnail_url,
+        thumbnail_url: null,
         metadata_json: (data.metadata_json as Record<string, any>) || {},
         status: data.status || 'draft',
         hashtags: data.hashtags || [],

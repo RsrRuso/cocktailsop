@@ -212,6 +212,7 @@ export function useUploadQueue() {
 
       // Create media asset record
       await supabase.from('media_assets').insert({
+        user_id: user.id,
         draft_id: item.draftId,
         storage_path: filePath,
         asset_type: item.file.type.startsWith('video/') ? 'video' : 'image',
