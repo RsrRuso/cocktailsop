@@ -458,27 +458,6 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       ctx.fillText(benefit, cardX + 75, yPos + 12);
     });
 
-    // URL button outside card - gradient pill
-    const urlBoxY = cardY + cardH + 25;
-    
-    const urlGrad = ctx.createLinearGradient(100, urlBoxY, 980, urlBoxY);
-    urlGrad.addColorStop(0, gradientColors.start);
-    urlGrad.addColorStop(1, gradientColors.end);
-    ctx.fillStyle = urlGrad;
-    ctx.beginPath();
-    ctx.roundRect(100, urlBoxY - 26, 880, 52, 26);
-    ctx.fill();
-    
-    // URL text
-    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText(`🔗 ${toolUrl.replace('https://', '')}`, 540, urlBoxY + 4);
-
-    // Call to action below
-    ctx.font = '18px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('Add link sticker ☝️ to make it clickable!', 540, urlBoxY + 40);
 
 
     return new Promise((resolve) => {
