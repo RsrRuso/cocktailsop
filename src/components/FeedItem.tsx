@@ -65,7 +65,6 @@ export const FeedItem = memo(({
   const [doubleTapLike, setDoubleTapLike] = useState(false);
   const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
-  const [localLikeCount, setLocalLikeCount] = useState(item.like_count || 0);
   const [isVisible, setIsVisible] = useState(false);
 
   // Check if reel has attached music
@@ -93,17 +92,10 @@ export const FeedItem = memo(({
     }
   }, [isVisible, isUserMuted, hasAttachedMusic]);
 
-  // Sync local like count with prop when item changes (e.g., on refresh)
-  useEffect(() => {
-    setLocalLikeCount(item.like_count || 0);
-  }, [item.like_count]);
-
-  // Handle like with local optimistic update
+  // Handle like - parent manages count via useLike hook
   const handleLikeClick = useCallback(() => {
-    // Update local count optimistically
-    setLocalLikeCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1);
     onLike();
-  }, [isLiked, onLike]);
+  }, [onLike]);
 
   // Track views based on content type
   useViewTracking(item.type === 'reel' ? 'reel' : 'post', item.id, currentUserId, true);
@@ -478,7 +470,7 @@ export const FeedItem = memo(({
             onClick={() => setShowLikes(true)}
             className="font-semibold text-foreground hover:opacity-70 transition-opacity"
           >
-            {localLikeCount.toLocaleString()} likes
+            {(item.like_count || 0).toLocaleString()} likes
           </button>
           
           {(item.repost_count || 0) > 0 && (
