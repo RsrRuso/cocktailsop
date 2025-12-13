@@ -162,6 +162,15 @@ const Terms = lazy(() => import("@/pages/Terms"));
 const PurchaseOrders = lazy(() => import("@/pages/PurchaseOrders"));
 const POMasterItems = lazy(() => import("@/pages/POMasterItems"));
 const POReceivedItems = lazy(() => import("@/pages/POReceivedItems"));
+// Studio & Content Creation
+const Studio = lazy(() => import("./pages/Studio"));
+const Drafts = lazy(() => import("./pages/Drafts"));
+const Publish = lazy(() => import("./pages/Publish"));
+const Uploads = lazy(() => import("./pages/Uploads"));
+const Approvals = lazy(() => import("./pages/Approvals"));
+const Moderation = lazy(() => import("./pages/Moderation"));
+const PostAnalytics = lazy(() => import("./pages/PostAnalytics"));
+
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -338,6 +347,19 @@ const AppContent = () => {
           <Route path="/purchase-orders" element={<PurchaseOrders />} />
           <Route path="/po-master-items" element={<POMasterItems />} />
           <Route path="/po-received-items" element={<POReceivedItems />} />
+          
+          {/* Studio & Content Creation */}
+          <Route path="/studio" element={<Studio />} />
+          <Route path="/studio/:draftId" element={<Studio />} />
+          <Route path="/drafts" element={<Drafts />} />
+          <Route path="/publish/:draftId" element={<Publish />} />
+          <Route path="/uploads" element={<Uploads />} />
+          <Route path="/approvals" element={<Approvals />} />
+          <Route path="/venue/:venueId/approvals" element={<Approvals />} />
+          <Route path="/moderation" element={<Moderation />} />
+          <Route path="/analytics/post/:postId" element={<PostAnalytics />} />
+          <Route path="/analytics/reel/:reelId" element={<PostAnalytics />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
