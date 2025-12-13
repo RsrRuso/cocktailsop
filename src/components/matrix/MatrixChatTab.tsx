@@ -1,12 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles, Loader2, Camera, Mic, Volume2 } from "lucide-react";
+import { Send, Sparkles, Loader2, Camera, Mic, Volume2, Wrench, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { MatrixProactiveSuggestions } from "./MatrixProactiveSuggestions";
+import { MatrixToolsHelper } from "./MatrixToolsHelper";
 
 interface Message {
   role: "user" | "assistant";
@@ -23,10 +25,15 @@ export function MatrixChatTab() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showTools, setShowTools] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  const handleAskMatrix = useCallback((question: string) => {
+    setInput(question);
+  }, []);
 
   useEffect(() => {
     loadChatHistory();
@@ -189,16 +196,41 @@ export function MatrixChatTab() {
       {/* Messages Area */}
       <ScrollArea className="flex-1 pr-4 mb-4">
         <div className="space-y-4">
+          {/* Proactive Suggestions - Show when no messages */}
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-lg font-semibold mb-2">
-                Welcome to MATRIX AI
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                Ask me about platform insights, roadmap features, or get guidance
-              </p>
-            </div>
+            <>
+              <MatrixProactiveSuggestions onAskMatrix={handleAskMatrix} />
+              
+              <div className="text-center py-8">
+                <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="text-lg font-semibold mb-2">
+                  Welcome to MATRIX AI
+                </h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Ask me about platform insights, tools, or get guidance
+                </p>
+                
+                {/* Quick Actions */}
+                <div className="flex flex-wrap justify-center gap-2 mb-4">
+                  {[
+                    "How do I track inventory?",
+                    "Help me schedule staff",
+                    "What's new on the platform?",
+                    "Career tips for bartenders"
+                  ].map((q) => (
+                    <Button
+                      key={q}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setInput(q)}
+                    >
+                      {q}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           {messages.map((msg, idx) => (
@@ -253,6 +285,20 @@ export function MatrixChatTab() {
         </div>
       </ScrollArea>
 
+      {/* Tools Helper Panel */}
+      <AnimatePresence>
+        {showTools && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t pt-3 mb-2 overflow-hidden"
+          >
+            <MatrixToolsHelper />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input Area */}
       <div className="border-t pt-4 flex-shrink-0 space-y-2">
         {selectedImage && (
@@ -282,6 +328,15 @@ export function MatrixChatTab() {
             onChange={handleImageUpload}
             className="hidden"
           />
+          
+          <Button
+            variant={showTools ? "default" : "outline"}
+            size="icon"
+            className="h-[60px] w-[60px] shrink-0"
+            onClick={() => setShowTools(!showTools)}
+          >
+            {showTools ? <X className="w-5 h-5" /> : <Wrench className="w-5 h-5" />}
+          </Button>
           
           <Button
             variant="outline"
