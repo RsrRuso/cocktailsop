@@ -319,9 +319,9 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       ctx.restore();
     }
 
-    // SpecVerse text - normal bold font
+    // SpecVerse text - Grand Hotel font (matches platform branding)
     const headerY = logoY + logoSize + 15;
-    ctx.font = 'bold 48px system-ui, -apple-system, sans-serif';
+    ctx.font = '52px "Grand Hotel", cursive';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.fillText('SpecVerse', 540, headerY + 15);
