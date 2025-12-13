@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Bookmark } from "lucide-react";
+import { Loader2, Bookmark, Camera, Music, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 interface SavesDialogProps {
   open: boolean;
@@ -87,6 +88,55 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
     }
   };
 
+  const handleShareToStory = () => {
+    navigate('/create-story', { state: { shareContent: { type: contentType, id: contentId } } });
+    onOpenChange(false);
+    toast.success("Opening story creator...");
+  };
+
+  const handleShareToMusic = () => {
+    navigate('/music', { state: { shareContent: { type: contentType, id: contentId } } });
+    onOpenChange(false);
+    toast.success("Share to music...");
+  };
+
+  const handleShareToStatus = () => {
+    toast.success("Share to status...");
+    onOpenChange(false);
+  };
+
+  const renderShareOptions = () => (
+    <div className="flex items-center justify-around py-4 border-b border-white/10">
+      <button
+        onClick={handleShareToStory}
+        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+      >
+        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
+          <Camera className="w-6 h-6 text-white" />
+        </div>
+        <span className="text-xs text-white/80">Story</span>
+      </button>
+      <button
+        onClick={handleShareToMusic}
+        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+      >
+        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center">
+          <Music className="w-6 h-6 text-white" />
+        </div>
+        <span className="text-xs text-white/80">Music</span>
+      </button>
+      <button
+        onClick={handleShareToStatus}
+        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+      >
+        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center">
+          <MessageCircle className="w-6 h-6 text-white" />
+        </div>
+        <span className="text-xs text-white/80">Status</span>
+      </button>
+    </div>
+  );
+
   const renderSavesList = () => (
     <>
       {loading ? (
@@ -135,7 +185,8 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
               Saved By
             </DrawerTitle>
           </DrawerHeader>
-          <div className="overflow-y-auto flex-1 max-h-[70vh] px-4 py-3 pb-safe">
+          {renderShareOptions()}
+          <div className="overflow-y-auto flex-1 max-h-[50vh] px-4 py-3 pb-safe">
             {renderSavesList()}
           </div>
         </DrawerContent>
@@ -152,7 +203,8 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
             Saved By
           </DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[60vh] py-2">
+        {renderShareOptions()}
+        <div className="overflow-y-auto max-h-[50vh] py-2">
           {renderSavesList()}
         </div>
       </DialogContent>

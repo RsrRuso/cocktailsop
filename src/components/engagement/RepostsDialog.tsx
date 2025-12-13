@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Repeat2 } from "lucide-react";
+import { Loader2, Repeat2, Camera, Music, MessageCircle, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface RepostsDialogProps {
   open: boolean;
@@ -84,6 +85,23 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
     }
   };
 
+  const handleShareToStory = () => {
+    navigate('/create-story', { state: { shareContent: { type: contentType, id: contentId } } });
+    onOpenChange(false);
+    toast.success("Opening story creator...");
+  };
+
+  const handleShareToMusic = () => {
+    navigate('/music', { state: { shareContent: { type: contentType, id: contentId } } });
+    onOpenChange(false);
+    toast.success("Share to music...");
+  };
+
+  const handleShareToStatus = () => {
+    toast.success("Share to status...");
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[80vh] bg-black/70 backdrop-blur-xl border-0 z-50">
@@ -94,7 +112,38 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
           </DialogTitle>
         </DialogHeader>
 
-        <div className="overflow-y-auto max-h-[60vh] py-2">
+        {/* Share Options */}
+        <div className="flex items-center justify-around py-4 border-b border-white/10">
+          <button
+            onClick={handleShareToStory}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white/80">Story</span>
+          </button>
+          <button
+            onClick={handleShareToMusic}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center">
+              <Music className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white/80">Music</span>
+          </button>
+          <button
+            onClick={handleShareToStatus}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white/80">Status</span>
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[50vh] py-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-white" />
