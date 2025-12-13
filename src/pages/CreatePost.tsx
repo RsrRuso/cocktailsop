@@ -214,35 +214,31 @@ const CreatePost = () => {
           </Button>
 
           <Textarea
-            placeholder="What's on your mind?"
+            placeholder="What's happening?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="glass border-primary/20 min-h-[120px] text-lg resize-none"
+            className="glass border-primary/20 min-h-[140px] text-lg resize-none"
+            autoFocus
           />
 
-          {/* Drag and Drop Area */}
+          {/* Optional Media - Collapsible */}
           {mediaFiles.length === 0 && (
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+              className={`border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
                 isDragActive
                   ? "border-primary bg-primary/10"
-                  : "border-muted-foreground/30 hover:border-primary/50"
+                  : "border-muted-foreground/20 hover:border-primary/40 bg-muted/30"
               }`}
             >
               <input {...getInputProps()} />
-              <div className="flex justify-center gap-4 mb-4">
-                <ImageIcon className="w-12 h-12 text-muted-foreground" />
-                <Music className="w-12 h-12 text-muted-foreground" />
+              <div className="flex items-center justify-center gap-3">
+                <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                <Music className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  {isDragActive ? "Drop files..." : "Add photos or audio (optional)"}
+                </span>
               </div>
-              <p className="text-sm font-medium mb-1">
-                {isDragActive
-                  ? "Drop files here..."
-                  : "Drag and drop images or music, or click to select"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Up to 10 files • Max 15MB each
-              </p>
             </div>
           )}
 
