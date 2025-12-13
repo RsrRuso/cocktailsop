@@ -86,47 +86,49 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[70vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-sm max-h-[80vh] bg-background border border-border shadow-xl z-50">
+        <DialogHeader className="border-b border-border pb-3">
           <DialogTitle className="flex items-center gap-2">
             <Repeat2 className="w-5 h-5 text-green-500" />
             Reposts
           </DialogTitle>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-        ) : reposts.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No reposts yet</p>
-        ) : (
-          <div className="space-y-3">
-            {reposts.map((repost) => (
-              <div 
-                key={repost.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                onClick={() => {
-                  navigate(`/user/${repost.user_id}`);
-                  onOpenChange(false);
-                }}
-              >
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={repost.avatar_url || undefined} />
-                  <AvatarFallback>{repost.username?.[0] || '?'}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">
-                    {repost.full_name || repost.username}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    @{repost.username}
-                  </p>
+        <div className="overflow-y-auto max-h-[60vh] py-2">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : reposts.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No reposts yet</p>
+          ) : (
+            <div className="space-y-2">
+              {reposts.map((repost) => (
+                <div 
+                  key={repost.id}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    navigate(`/user/${repost.user_id}`);
+                    onOpenChange(false);
+                  }}
+                >
+                  <Avatar className="w-11 h-11">
+                    <AvatarImage src={repost.avatar_url || undefined} />
+                    <AvatarFallback>{repost.username?.[0] || '?'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">
+                      {repost.full_name || repost.username}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      @{repost.username}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

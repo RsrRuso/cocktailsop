@@ -128,14 +128,14 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85vh]">
+        <DrawerContent className="max-h-[85vh] bg-background border-t border-border">
           <DrawerHeader className="border-b border-border pb-3">
             <DrawerTitle className="flex items-center justify-center gap-2 text-lg">
               <Bookmark className="w-5 h-5 text-yellow-500" />
               Saved By
             </DrawerTitle>
           </DrawerHeader>
-          <div className="overflow-y-auto flex-1 px-4 py-3 pb-safe">
+          <div className="overflow-y-auto flex-1 max-h-[70vh] px-4 py-3 pb-safe">
             {renderSavesList()}
           </div>
         </DrawerContent>
@@ -145,14 +145,16 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[70vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-sm max-h-[80vh] bg-background border border-border shadow-xl z-50">
+        <DialogHeader className="border-b border-border pb-3">
           <DialogTitle className="flex items-center gap-2">
             <Bookmark className="w-5 h-5 text-yellow-500" />
             Saved By
           </DialogTitle>
         </DialogHeader>
-        {renderSavesList()}
+        <div className="overflow-y-auto max-h-[60vh] py-2">
+          {renderSavesList()}
+        </div>
       </DialogContent>
     </Dialog>
   );
