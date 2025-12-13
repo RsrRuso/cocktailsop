@@ -389,17 +389,22 @@ const POReceivedItems = () => {
     const orderedMap = new Map<string, any>();
     const receivedMap = new Map<string, any>();
     
+    // Normalize item code - remove decimals, spaces, leading zeros for comparison
+    const normalizeCode = (code: string): string => {
+      return String(code).replace(/[.\s]/g, '').replace(/^0+/, '').trim().toLowerCase();
+    };
+    
     // Build maps for comparison (prioritize ML/item code, fall back to name only when no code)
     orderedItems.forEach(item => {
       const key = item.item_code
-        ? `code:${String(item.item_code).trim().toLowerCase()}`
+        ? `code:${normalizeCode(item.item_code)}`
         : `name:${String(item.item_name).trim().toLowerCase()}`;
       orderedMap.set(key, item);
     });
     
     receivedItems.forEach(item => {
       const key = item.item_code
-        ? `code:${String(item.item_code).trim().toLowerCase()}`
+        ? `code:${normalizeCode(item.item_code)}`
         : `name:${String(item.item_name).trim().toLowerCase()}`;
       receivedMap.set(key, item);
     });
