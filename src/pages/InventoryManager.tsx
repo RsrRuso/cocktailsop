@@ -1022,7 +1022,7 @@ const InventoryManager = () => {
               <Lock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <CardTitle>Access Required</CardTitle>
               <CardDescription>
-                You need approval to access the Inventory Manager. Please scan the QR code provided by your manager or wait for approval.
+                You need approval to access the Inventory Manager. Please request access from your manager or wait for approval.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">

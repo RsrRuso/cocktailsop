@@ -3203,7 +3203,7 @@ const BatchCalculator = () => {
                       disabled={!targetLiters}
                     >
                       <QrCode className="w-5 h-5 mr-2" />
-                      {editingProductionId ? "Update Production" : "Submit & Generate QR Code"}
+                      {editingProductionId ? "Update Production" : "Submit Production"}
                     </Button>
                     {editingProductionId && (
                       <Button
@@ -3744,9 +3744,9 @@ const BatchCalculator = () => {
       <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Batch Submission QR Code</DialogTitle>
+            <DialogTitle>Batch Submission</DialogTitle>
             <DialogDescription>
-              Share this QR code with your team to submit batch productions
+              Share this with your team to submit batch productions
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
