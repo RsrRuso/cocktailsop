@@ -132,41 +132,41 @@ export const EnhancedLikesDialog = ({
 
         {/* AI Insights Section */}
         {likes.length > 0 && (
-          <div className="p-6 space-y-4 border-b border-border/50">
+          <div className="p-6 space-y-4 border-b border-white/10">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              <h3 className="font-semibold text-sm">Real-Time Insights</h3>
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <h3 className="font-semibold text-sm text-white">Real-Time Insights</h3>
             </div>
             
             <div className="grid grid-cols-3 gap-3">
-              <Card className="p-3 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
+              <Card className="p-3 bg-white/5 backdrop-blur-sm border-purple-500/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-purple-500" />
-                  <span className="text-xs text-muted-foreground">Velocity</span>
+                  <Zap className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs text-white/60">Velocity</span>
                 </div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   {aiInsights.engagementVelocity.toFixed(1)}/h
                 </div>
                 <Progress value={Math.min(100, aiInsights.engagementVelocity * 10)} className="h-1 mt-2" />
               </Card>
 
-              <Card className="p-3 bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
+              <Card className="p-3 bg-white/5 backdrop-blur-sm border-green-500/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-green-500" />
-                  <span className="text-xs text-muted-foreground">Growth</span>
+                  <TrendingUp className="w-4 h-4 text-green-400" />
+                  <span className="text-xs text-white/60">Growth</span>
                 </div>
-                <div className="text-2xl font-bold text-green-500">
+                <div className="text-2xl font-bold text-green-400">
                   {aiInsights.predictedGrowth.toFixed(0)}%
                 </div>
                 <Progress value={aiInsights.predictedGrowth} className="h-1 mt-2" />
               </Card>
 
-              <Card className="p-3 bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+              <Card className="p-3 bg-white/5 backdrop-blur-sm border-blue-500/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <Award className="w-4 h-4 text-blue-500" />
-                  <span className="text-xs text-muted-foreground">Quality</span>
+                  <Award className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs text-white/60">Quality</span>
                 </div>
-                <div className="text-2xl font-bold text-blue-500">
+                <div className="text-2xl font-bold text-blue-400">
                   {aiInsights.audienceQuality.toFixed(0)}%
                 </div>
                 <Progress value={aiInsights.audienceQuality} className="h-1 mt-2" />
@@ -174,12 +174,12 @@ export const EnhancedLikesDialog = ({
             </div>
 
             {aiInsights.topInfluencer && (
-              <Card className="p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+              <Card className="p-3 bg-yellow-500/10 border-yellow-500/30">
                 <div className="flex items-center gap-3">
                   <Target className="w-5 h-5 text-yellow-500" />
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Top Influencer</p>
-                    <p className="font-normal text-xs">@{aiInsights.topInfluencer.profiles.username}</p>
+                    <p className="text-xs text-white/60 mb-1">Top Influencer</p>
+                    <p className="font-normal text-xs text-white">@{aiInsights.topInfluencer.profiles.username}</p>
                   </div>
                 </div>
               </Card>
@@ -191,12 +191,12 @@ export const EnhancedLikesDialog = ({
         {likes.length > 3 && (
           <div className="px-6 pt-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
               <Input
                 placeholder="Search by name or username..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-background/50 border-border/50"
+                className="pl-10 bg-white/10 border-white/10 text-white placeholder:text-white/40"
               />
             </div>
           </div>
@@ -216,12 +216,12 @@ export const EnhancedLikesDialog = ({
               <div className="flex flex-col items-center justify-center h-40 text-center">
                 <div className="relative mb-4">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-30"></div>
-                  <Heart className="relative w-16 h-16 text-muted-foreground" />
+                  <Heart className="relative w-16 h-16 text-white/40" />
                 </div>
-                <p className="text-muted-foreground font-medium">
+                <p className="text-white/60 font-medium">
                   {searchQuery ? 'No users found' : 'No likes yet'}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-white/40 mt-1">
                   {searchQuery ? 'Try a different search term' : 'Be the first to show some love!'}
                 </p>
               </div>
@@ -240,11 +240,9 @@ export const EnhancedLikesDialog = ({
                         navigate(`/user/${like.user_id}`);
                         onOpenChange(false);
                       }}
-                      className="group relative flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card border border-border/50 hover:border-primary/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-primary/10"
+                      className="group relative flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 cursor-pointer transition-all"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      
-                      <Avatar className="relative ring-2 ring-border group-hover:ring-primary transition-all">
+                      <Avatar className="relative ring-2 ring-white/20 group-hover:ring-white/40 transition-all">
                         <AvatarImage src={like.profiles.avatar_url || undefined} />
                         <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
                           {like.profiles.username[0].toUpperCase()}
@@ -252,21 +250,21 @@ export const EnhancedLikesDialog = ({
                       </Avatar>
                       
                       <div className="relative flex-1 min-w-0">
-                        <p className="font-semibold truncate group-hover:text-primary transition-colors">
+                        <p className="font-semibold truncate text-white group-hover:text-purple-300 transition-colors">
                           {getAbbreviatedName(like.profiles.full_name)}
                         </p>
-                        <p className="text-sm text-muted-foreground truncate">
+                        <p className="text-sm text-white/60 truncate">
                           @{like.profiles.username}
                         </p>
                       </div>
                       
                       <div className="relative flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1 text-xs text-white/50">
                           <Clock className="w-3 h-3" />
                           {formatDistanceToNow(new Date(like.created_at), { addSuffix: true })}
                         </div>
                         {index === 0 && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-pink-500/20 text-pink-300 border-0">
                             <Sparkles className="w-2.5 h-2.5 mr-0.5" />
                             Recent
                           </Badge>

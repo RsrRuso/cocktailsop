@@ -91,16 +91,16 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
     <>
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin" />
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
         </div>
       ) : saves.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8 text-base">No saves yet</p>
+        <p className="text-center text-white/60 py-8 text-base">No saves yet</p>
       ) : (
         <div className="space-y-2">
           {saves.map((save) => (
             <div 
               key={save.id}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors"
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 active:bg-white/20 cursor-pointer transition-colors"
               onClick={() => {
                 navigate(`/user/${save.user_id}`);
                 onOpenChange(false);
@@ -108,13 +108,13 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
             >
               <Avatar className="w-12 h-12">
                 <AvatarImage src={save.avatar_url || undefined} />
-                <AvatarFallback className="text-base">{save.username?.[0] || '?'}</AvatarFallback>
+                <AvatarFallback className="text-base bg-white/20 text-white">{save.username?.[0] || '?'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate">
+                <p className="font-semibold text-base truncate text-white">
                   {save.full_name || save.username}
                 </p>
-                <p className="text-sm text-muted-foreground truncate">
+                <p className="text-sm text-white/60 truncate">
                   @{save.username}
                 </p>
               </div>
@@ -128,9 +128,9 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85vh] bg-background border-t border-border">
-          <DrawerHeader className="border-b border-border pb-3">
-            <DrawerTitle className="flex items-center justify-center gap-2 text-lg">
+        <DrawerContent className="max-h-[85vh] bg-black/80 backdrop-blur-xl border-0">
+          <DrawerHeader className="border-b border-white/10 pb-3">
+            <DrawerTitle className="flex items-center justify-center gap-2 text-lg text-white">
               <Bookmark className="w-5 h-5 text-yellow-500" />
               Saved By
             </DrawerTitle>
@@ -145,9 +145,9 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[80vh] bg-background border border-border shadow-xl z-50">
-        <DialogHeader className="border-b border-border pb-3">
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-sm max-h-[80vh] bg-black/70 backdrop-blur-xl border-0 z-50">
+        <DialogHeader className="border-b border-white/10 pb-3">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Bookmark className="w-5 h-5 text-yellow-500" />
             Saved By
           </DialogTitle>
