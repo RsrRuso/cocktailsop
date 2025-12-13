@@ -2,19 +2,23 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles, Loader2, Camera, Mic, Volume2, Wrench, X } from "lucide-react";
+import { Send, Sparkles, Loader2, Camera, Mic, Volume2, Wrench, X, Zap, Command } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { MatrixProactiveSuggestions } from "./MatrixProactiveSuggestions";
 import { MatrixToolsHelper } from "./MatrixToolsHelper";
+import { useMatrixCommandExecutor, ParsedCommand } from "@/hooks/useMatrixCommandExecutor";
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
   imageUrl?: string;
+  isCommand?: boolean;
+  commandResult?: any;
 }
 
 export function MatrixChatTab() {
@@ -26,10 +30,13 @@ export function MatrixChatTab() {
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [commandMode, setCommandMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  
+  const { executeCommand, handleNavigation } = useMatrixCommandExecutor();
 
   const handleAskMatrix = useCallback((question: string) => {
     setInput(question);
@@ -144,6 +151,54 @@ export function MatrixChatTab() {
     }
   };
 
+  // Try to execute as command first
+  const tryExecuteCommand = async (message: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("matrix-command-parser", {
+        body: { command: message }
+      });
+
+      if (error || !data?.parsedCommand) {
+        return false;
+      }
+
+      const parsed: ParsedCommand = data.parsedCommand;
+      
+      // Only execute if confidence is high enough
+      if (parsed.confidence < 0.7 || parsed.tool === 'general') {
+        return false;
+      }
+
+      // Execute the command
+      const result = await executeCommand(parsed);
+      
+      // Add command result to messages
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: result.message,
+          timestamp: new Date(),
+          isCommand: true,
+          commandResult: result
+        },
+      ]);
+
+      // Speak the result
+      speakText(result.message.replace(/[✅❌📦📅🧪📋⚠️📥🔄📊🍸📈]/g, ''));
+      
+      // Navigate if needed
+      if (result.navigateTo) {
+        handleNavigation(result);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Command execution error:', error);
+      return false;
+    }
+  };
+
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || loading) return;
 
@@ -160,6 +215,18 @@ export function MatrixChatTab() {
     setLoading(true);
 
     try {
+      // If command mode is on or message looks like a command, try executing
+      const looksLikeCommand = /^(add|create|make|show|check|view|assign|schedule|transfer|log|open)/i.test(userMessage);
+      
+      if ((commandMode || looksLikeCommand) && !imageUrl) {
+        const wasCommand = await tryExecuteCommand(userMessage);
+        if (wasCommand) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fall back to regular chat
       const { data, error } = await supabase.functions.invoke("matrix-chat", {
         body: { 
           message: userMessage,
@@ -246,9 +313,17 @@ export function MatrixChatTab() {
                 className={`max-w-[80%] rounded-lg px-4 py-2 ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
+                    : msg.isCommand
+                    ? "bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30"
                     : "bg-muted"
                 }`}
               >
+                {msg.isCommand && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <Badge variant="secondary" className="text-xs">Command Executed</Badge>
+                  </div>
+                )}
                 {msg.imageUrl && (
                   <img 
                     src={msg.imageUrl} 
@@ -319,6 +394,24 @@ export function MatrixChatTab() {
           </div>
         )}
         
+        {/* Command Mode Toggle */}
+        <div className="flex items-center justify-between mb-2">
+          <Button
+            variant={commandMode ? "default" : "ghost"}
+            size="sm"
+            className={`text-xs gap-1 ${commandMode ? 'bg-primary' : ''}`}
+            onClick={() => setCommandMode(!commandMode)}
+          >
+            <Command className="w-3 h-3" />
+            {commandMode ? 'Command Mode ON' : 'Enable Command Mode'}
+          </Button>
+          {commandMode && (
+            <p className="text-xs text-muted-foreground">
+              Say commands like "Add John as bartender" or "Check stock"
+            </p>
+          )}
+        </div>
+
         <div className="flex gap-2">
           <input
             ref={fileInputRef}
@@ -351,11 +444,14 @@ export function MatrixChatTab() {
           <Button
             variant={isRecording ? "destructive" : "outline"}
             size="icon"
-            className="h-[60px] w-[60px] shrink-0"
+            className="h-[60px] w-[60px] shrink-0 relative"
             onClick={isRecording ? stopRecording : startRecording}
             disabled={loading}
           >
             <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
+            {commandMode && !isRecording && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
+            )}
           </Button>
           
           <Textarea
@@ -367,8 +463,8 @@ export function MatrixChatTab() {
                 handleSend();
               }
             }}
-            placeholder="Ask MATRIX AI anything..."
-            className="min-h-[60px] resize-none flex-1"
+            placeholder={commandMode ? "Give a command... e.g. 'Add Sarah as senior bartender'" : "Ask MATRIX AI anything..."}
+            className={`min-h-[60px] resize-none flex-1 ${commandMode ? 'border-primary' : ''}`}
             disabled={loading}
           />
           
@@ -378,7 +474,7 @@ export function MatrixChatTab() {
             size="icon"
             className="h-[60px] w-[60px] shrink-0"
           >
-            <Send className="w-5 h-5" />
+            {commandMode ? <Zap className="w-5 h-5" /> : <Send className="w-5 h-5" />}
           </Button>
         </div>
       </div>

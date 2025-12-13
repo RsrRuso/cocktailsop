@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.recognize-music]
 verify_jwt = true
+
+[functions.matrix-command-parser]
+verify_jwt = true
