@@ -197,11 +197,18 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         });
       }
 
-      // Get master items to link
-      const { data: masterData } = await supabase
+      // Get master items to link (workspace-aware)
+      let masterQuery = supabase
         .from('purchase_order_master_items')
-        .select('id, item_name')
-        .eq('user_id', user?.id);
+        .select('id, item_name');
+      
+      if (workspaceId) {
+        masterQuery = masterQuery.eq('workspace_id', workspaceId);
+      } else {
+        masterQuery = masterQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data: masterData } = await masterQuery;
 
       const masterMap = new Map(masterData?.map(m => [m.item_name.toLowerCase(), m.id]) || []);
 
@@ -225,14 +232,21 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
     }
   };
 
-  // Sync all items from existing purchase orders
+  // Sync all items from existing purchase orders (workspace-aware)
   const syncFromExistingOrders = async () => {
     try {
-      // Get all purchase orders for user
-      const { data: orders, error: ordersError } = await supabase
+      // Get all purchase orders for user or workspace
+      let ordersQuery = supabase
         .from('purchase_orders')
-        .select('id')
-        .eq('user_id', user?.id);
+        .select('id');
+      
+      if (workspaceId) {
+        ordersQuery = ordersQuery.eq('workspace_id', workspaceId);
+      } else {
+        ordersQuery = ordersQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data: orders, error: ordersError } = await ordersQuery;
       
       if (ordersError) throw ordersError;
       if (!orders || orders.length === 0) {
@@ -252,11 +266,18 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         return;
       }
 
-      // Get existing master items to avoid duplicates
-      const { data: existingMaster } = await supabase
+      // Get existing master items to avoid duplicates (workspace-aware)
+      let existingMasterQuery = supabase
         .from('purchase_order_master_items')
-        .select('item_name')
-        .eq('user_id', user?.id);
+        .select('item_name');
+      
+      if (workspaceId) {
+        existingMasterQuery = existingMasterQuery.eq('workspace_id', workspaceId);
+      } else {
+        existingMasterQuery = existingMasterQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data: existingMaster } = await existingMasterQuery;
       
       const existingNames = new Set(
         (existingMaster || []).map(i => i.item_name.trim().toLowerCase())
@@ -351,11 +372,18 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
               return;
             }
             
-            // Get existing master items to avoid duplicates
-            const { data: existingMaster } = await supabase
+            // Get existing master items to avoid duplicates (workspace-aware)
+            let existingMasterQuery = supabase
               .from('purchase_order_master_items')
-              .select('item_name')
-              .eq('user_id', user?.id);
+              .select('item_name');
+            
+            if (workspaceId) {
+              existingMasterQuery = existingMasterQuery.eq('workspace_id', workspaceId);
+            } else {
+              existingMasterQuery = existingMasterQuery.eq('user_id', user?.id).is('workspace_id', null);
+            }
+            
+            const { data: existingMaster } = await existingMasterQuery;
             
             const existingNames = new Set(
               (existingMaster || []).map(i => i.item_name.trim().toLowerCase())
