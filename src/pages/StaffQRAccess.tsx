@@ -160,7 +160,7 @@ const StaffQRAccess = () => {
             <div className="bg-primary/5 rounded-lg p-4 space-y-2">
               <h4 className="font-medium text-sm">How staff install:</h4>
               <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-                <li>Staff scans QR code with phone camera</li>
+                <li>Staff uses the link on their phone</li>
                 <li>Opens the link in browser</li>
                 <li>Taps "Add to Home Screen" (iOS: Share → Add to Home Screen)</li>
                 <li>Opens SV Staff POS from home screen</li>

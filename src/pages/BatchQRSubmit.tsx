@@ -431,15 +431,15 @@ const BatchQRSubmit = () => {
             <QrCode className="w-8 h-8 text-amber-500" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-2">QR Code Outdated</h2>
+            <h2 className="text-lg font-semibold mb-2">Link Outdated</h2>
             <p className="text-muted-foreground text-sm mb-3">
-              This QR code needs to be regenerated for universal compatibility.
+              This link needs to be regenerated for universal compatibility.
             </p>
             <p className="text-xs text-muted-foreground/70 mb-2">
-              Please ask your team leader to generate a new QR code from the Batch Calculator.
+              Please ask your team leader to generate a new link from the Batch Calculator.
             </p>
             <p className="text-xs text-muted-foreground/50">
-              New QR codes work on all devices (iPhone & Android).
+              New links work on all devices (iPhone & Android).
             </p>
           </div>
           <div className="flex flex-col gap-2">

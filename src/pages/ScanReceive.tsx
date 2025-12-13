@@ -578,12 +578,12 @@ export default function ScanReceive() {
         <div className="container mx-auto p-4 pt-20">
           <Card className="p-6 max-w-2xl mx-auto text-center">
             <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">Invalid QR Code</h2>
+            <h2 className="text-xl font-bold mb-2">Invalid Code</h2>
             <p className="text-muted-foreground mb-4">
-              This QR code is invalid or expired. Please generate a new receiving QR code.
+              This code is invalid or expired. Please generate a new receiving code.
             </p>
             <Button onClick={() => navigate("/transfer-qr")}>
-              Generate New QR Code
+              Generate New Code
             </Button>
           </Card>
         </div>
