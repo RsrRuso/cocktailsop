@@ -61,6 +61,38 @@ export type Database = {
           },
         ]
       }
+      approval_comments: {
+        Row: {
+          approval_request_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          approval_request_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          approval_request_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_comments_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "studio_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       area_equipment: {
         Row: {
           area_id: string
@@ -1316,6 +1348,27 @@ export type Database = {
           is_group?: boolean | null
           last_message_at?: string | null
           participant_ids?: string[]
+        }
+        Relationships: []
+      }
+      creator_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["creator_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["creator_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["creator_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -3424,6 +3477,50 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      history_events: {
+        Row: {
+          created_at: string
+          draft_id: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          post_id: string | null
+          reel_id: string | null
+          user_id: string
+          version_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          draft_id?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          post_id?: string | null
+          reel_id?: string | null
+          user_id: string
+          version_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          post_id?: string | null
+          reel_id?: string | null
+          user_id?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "history_events_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "studio_drafts"
             referencedColumns: ["id"]
           },
         ]
@@ -6897,6 +6994,80 @@ export type Database = {
         }
         Relationships: []
       }
+      media_assets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          draft_id: string | null
+          duration_ms: number | null
+          file_size: number | null
+          height: number | null
+          hls_manifest_url: string | null
+          id: string
+          metadata_json: Json | null
+          mime_type: string | null
+          processing_error: string | null
+          public_url: string | null
+          renditions: Json | null
+          status: string
+          storage_path: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          draft_id?: string | null
+          duration_ms?: number | null
+          file_size?: number | null
+          height?: number | null
+          hls_manifest_url?: string | null
+          id?: string
+          metadata_json?: Json | null
+          mime_type?: string | null
+          processing_error?: string | null
+          public_url?: string | null
+          renditions?: Json | null
+          status?: string
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          draft_id?: string | null
+          duration_ms?: number | null
+          file_size?: number | null
+          height?: number | null
+          hls_manifest_url?: string | null
+          id?: string
+          metadata_json?: Json | null
+          mime_type?: string | null
+          processing_error?: string | null
+          public_url?: string | null
+          renditions?: Json | null
+          status?: string
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "studio_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_analysis: {
         Row: {
           analysis_date: string | null
@@ -8109,6 +8280,59 @@ export type Database = {
         }
         Relationships: []
       }
+      post_audio: {
+        Row: {
+          created_at: string
+          draft_id: string | null
+          id: string
+          mute_original: boolean | null
+          post_id: string | null
+          reel_id: string | null
+          start_time: number | null
+          track_artist: string | null
+          track_id: string | null
+          track_title: string | null
+          track_url: string | null
+          volume: number | null
+        }
+        Insert: {
+          created_at?: string
+          draft_id?: string | null
+          id?: string
+          mute_original?: boolean | null
+          post_id?: string | null
+          reel_id?: string | null
+          start_time?: number | null
+          track_artist?: string | null
+          track_id?: string | null
+          track_title?: string | null
+          track_url?: string | null
+          volume?: number | null
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string | null
+          id?: string
+          mute_original?: boolean | null
+          post_id?: string | null
+          reel_id?: string | null
+          start_time?: number | null
+          track_artist?: string | null
+          track_id?: string | null
+          track_title?: string | null
+          track_url?: string | null
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_audio_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "studio_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comment_reactions: {
         Row: {
           comment_id: string
@@ -8303,6 +8527,53 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_versions: {
+        Row: {
+          caption: string | null
+          created_at: string
+          hashtags: string[] | null
+          id: string
+          media_asset_id: string | null
+          metadata_json: Json | null
+          post_id: string | null
+          reel_id: string | null
+          status: string
+          version_number: number
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          media_asset_id?: string | null
+          metadata_json?: Json | null
+          post_id?: string | null
+          reel_id?: string | null
+          status?: string
+          version_number?: number
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          media_asset_id?: string | null
+          metadata_json?: Json | null
+          post_id?: string | null
+          reel_id?: string | null
+          status?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_versions_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -10159,6 +10430,178 @@ export type Database = {
           },
         ]
       }
+      studio_analytics_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata_json: Json | null
+          post_id: string | null
+          reel_id: string | null
+          viewer_id: string | null
+          watch_ms: number | null
+          watch_percent: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata_json?: Json | null
+          post_id?: string | null
+          reel_id?: string | null
+          viewer_id?: string | null
+          watch_ms?: number | null
+          watch_percent?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata_json?: Json | null
+          post_id?: string | null
+          reel_id?: string | null
+          viewer_id?: string | null
+          watch_ms?: number | null
+          watch_percent?: number | null
+        }
+        Relationships: []
+      }
+      studio_approval_requests: {
+        Row: {
+          created_at: string
+          draft_id: string
+          feedback: string | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          team_id: string | null
+          updated_at: string
+          user_id: string
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          draft_id: string
+          feedback?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+          user_id: string
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string
+          feedback?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_approval_requests_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "studio_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_drafts: {
+        Row: {
+          approval_venue_id: string | null
+          aspect_ratio: string | null
+          branch_label: string | null
+          caption: string | null
+          cover_asset_id: string | null
+          created_at: string
+          crop_data: Json | null
+          draft_type: string
+          hashtags: string[] | null
+          id: string
+          location: string | null
+          mentions: string[] | null
+          metadata_json: Json | null
+          needs_approval: boolean | null
+          parent_draft_id: string | null
+          scheduled_at: string | null
+          status: string
+          trim_end: number | null
+          trim_start: number | null
+          updated_at: string
+          user_id: string
+          venue_id: string | null
+          visibility: string
+        }
+        Insert: {
+          approval_venue_id?: string | null
+          aspect_ratio?: string | null
+          branch_label?: string | null
+          caption?: string | null
+          cover_asset_id?: string | null
+          created_at?: string
+          crop_data?: Json | null
+          draft_type?: string
+          hashtags?: string[] | null
+          id?: string
+          location?: string | null
+          mentions?: string[] | null
+          metadata_json?: Json | null
+          needs_approval?: boolean | null
+          parent_draft_id?: string | null
+          scheduled_at?: string | null
+          status?: string
+          trim_end?: number | null
+          trim_start?: number | null
+          updated_at?: string
+          user_id: string
+          venue_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          approval_venue_id?: string | null
+          aspect_ratio?: string | null
+          branch_label?: string | null
+          caption?: string | null
+          cover_asset_id?: string | null
+          created_at?: string
+          crop_data?: Json | null
+          draft_type?: string
+          hashtags?: string[] | null
+          id?: string
+          location?: string | null
+          mentions?: string[] | null
+          metadata_json?: Json | null
+          needs_approval?: boolean | null
+          parent_draft_id?: string | null
+          scheduled_at?: string | null
+          status?: string
+          trim_end?: number | null
+          trim_start?: number | null
+          updated_at?: string
+          user_id?: string
+          venue_id?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_drafts_parent_draft_id_fkey"
+            columns: ["parent_draft_id"]
+            isOneToOne: false
+            referencedRelation: "studio_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string | null
@@ -10803,6 +11246,109 @@ export type Database = {
             columns: ["transferred_by"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upload_chunks: {
+        Row: {
+          chunk_hash: string | null
+          chunk_index: number
+          chunk_size: number
+          created_at: string
+          id: string
+          session_id: string
+          storage_path: string | null
+          uploaded: boolean
+          verified: boolean
+        }
+        Insert: {
+          chunk_hash?: string | null
+          chunk_index: number
+          chunk_size: number
+          created_at?: string
+          id?: string
+          session_id: string
+          storage_path?: string | null
+          uploaded?: boolean
+          verified?: boolean
+        }
+        Update: {
+          chunk_hash?: string | null
+          chunk_index?: number
+          chunk_size?: number
+          created_at?: string
+          id?: string
+          session_id?: string
+          storage_path?: string | null
+          uploaded?: boolean
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_chunks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "upload_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upload_sessions: {
+        Row: {
+          chunk_size: number
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          media_asset_id: string | null
+          priority: number
+          status: string
+          total_chunks: number
+          updated_at: string
+          uploaded_chunks: number
+          user_id: string
+        }
+        Insert: {
+          chunk_size?: number
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          media_asset_id?: string | null
+          priority?: number
+          status?: string
+          total_chunks: number
+          updated_at?: string
+          uploaded_chunks?: number
+          user_id: string
+        }
+        Update: {
+          chunk_size?: number
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          media_asset_id?: string | null
+          priority?: number
+          status?: string
+          total_chunks?: number
+          updated_at?: string
+          uploaded_chunks?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_sessions_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -11510,6 +12056,13 @@ export type Database = {
         Args: { p_channel_id: string; p_user_id: string }
         Returns: number
       }
+      has_creator_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["creator_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -11565,6 +12118,7 @@ export type Database = {
         | "seller"
         | "buyer"
       badge_level: "bronze" | "silver" | "gold" | "platinum"
+      creator_role: "creator" | "pro_creator" | "venue_admin" | "moderator"
       equipment_type:
         | "fridge"
         | "freezer"
@@ -11766,6 +12320,7 @@ export const Constants = {
         "buyer",
       ],
       badge_level: ["bronze", "silver", "gold", "platinum"],
+      creator_role: ["creator", "pro_creator", "venue_admin", "moderator"],
       equipment_type: [
         "fridge",
         "freezer",
