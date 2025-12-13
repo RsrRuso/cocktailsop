@@ -458,45 +458,6 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       ctx.fillText(benefit, cardX + 75, yPos + 12);
     });
 
-    // QR Code section - bigger and positioned within card at bottom
-    const qrY = cardY + cardH - 240;
-    
-    try {
-      const qrDataUrl = await QRCode.toDataURL(toolUrl, {
-        width: 200,
-        margin: 1,
-        color: {
-          dark: '#ffffff',
-          light: '#00000000'
-        }
-      });
-      
-      const qrImg = new Image();
-      await new Promise<void>((resolve, reject) => {
-        qrImg.onload = () => resolve();
-        qrImg.onerror = reject;
-        qrImg.src = qrDataUrl;
-      });
-      
-      const qrSize = 200;
-      
-      // QR background - dark glass with larger padding
-      ctx.fillStyle = 'rgba(30, 30, 40, 0.9)';
-      ctx.beginPath();
-      ctx.roundRect(540 - qrSize/2 - 24, qrY - 24, qrSize + 48, qrSize + 48, 18);
-      ctx.fill();
-      
-      ctx.drawImage(qrImg, 540 - qrSize/2, qrY, qrSize, qrSize);
-      
-      // Scan text
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-      ctx.fillText('SCAN TO TRY FREE', 540, qrY + qrSize + 45);
-    } catch (err) {
-      console.log('QR generation failed:', err);
-    }
-
     // URL button outside card - gradient pill
     const urlBoxY = cardY + cardH + 25;
     
