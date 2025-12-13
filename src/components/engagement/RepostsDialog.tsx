@@ -86,9 +86,9 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[80vh] bg-background border border-border shadow-xl z-50">
-        <DialogHeader className="border-b border-border pb-3">
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-sm max-h-[80vh] bg-black/70 backdrop-blur-xl border-0 z-50">
+        <DialogHeader className="border-b border-white/10 pb-3">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Repeat2 className="w-5 h-5 text-green-500" />
             Reposts
           </DialogTitle>
@@ -97,16 +97,16 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
         <div className="overflow-y-auto max-h-[60vh] py-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin" />
+              <Loader2 className="w-6 h-6 animate-spin text-white" />
             </div>
           ) : reposts.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No reposts yet</p>
+            <p className="text-center text-white/60 py-8">No reposts yet</p>
           ) : (
             <div className="space-y-2">
               {reposts.map((repost) => (
                 <div 
                   key={repost.id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors"
                   onClick={() => {
                     navigate(`/user/${repost.user_id}`);
                     onOpenChange(false);
@@ -114,13 +114,13 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
                 >
                   <Avatar className="w-11 h-11">
                     <AvatarImage src={repost.avatar_url || undefined} />
-                    <AvatarFallback>{repost.username?.[0] || '?'}</AvatarFallback>
+                    <AvatarFallback className="bg-white/20 text-white">{repost.username?.[0] || '?'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">
+                    <p className="font-semibold text-sm truncate text-white">
                       {repost.full_name || repost.username}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-white/60 truncate">
                       @{repost.username}
                     </p>
                   </div>
