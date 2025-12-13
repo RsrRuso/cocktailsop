@@ -15,11 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Settings2
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users
 } from "lucide-react";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
-import { FormatTemplateDialog } from "@/components/procurement/FormatTemplateDialog";
 
 interface PurchaseOrderItem {
   id?: string;
@@ -79,7 +78,7 @@ const PurchaseOrders = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
   });
-  const [showFormatTemplateDialog, setShowFormatTemplateDialog] = useState(false);
+  
   
   // Hook must be called after state declaration
   const { addItemsFromPurchaseOrder } = usePurchaseOrderMaster(selectedWorkspaceId);
@@ -551,14 +550,6 @@ const PurchaseOrders = () => {
             <div className="flex justify-center gap-2 flex-wrap">
               <Button 
                 variant="outline" 
-                onClick={() => setShowFormatTemplateDialog(true)}
-                className="min-w-[100px]"
-              >
-                <Settings2 className="w-4 h-4 mr-2" />
-                Formats
-              </Button>
-              <Button 
-                variant="outline" 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex-1 min-w-[120px]"
@@ -939,13 +930,6 @@ Example format:
         </DialogContent>
       </Dialog>
 
-      {/* Format Template Dialog */}
-      <FormatTemplateDialog
-        open={showFormatTemplateDialog}
-        onOpenChange={setShowFormatTemplateDialog}
-        workspaceId={selectedWorkspaceId || undefined}
-        formatType="purchase_order"
-      />
     </div>
   );
 };
