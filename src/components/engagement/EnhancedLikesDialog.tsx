@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Search, TrendingUp, Clock, Brain, Sparkles, Target, Zap, Award } from 'lucide-react';
+import { Heart, Search, TrendingUp, Clock, Brain, Sparkles, Target, Zap, Award, Camera, Music, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ContentType, getEngagementConfig, Like } from '@/types/engagement';
 import { getAbbreviatedName } from '@/lib/profileUtils';
+import { toast } from 'sonner';
 
 interface EnhancedLikesDialogProps {
   open: boolean;
@@ -106,6 +107,23 @@ export const EnhancedLikesDialog = ({
     setLoading(false);
   };
 
+  const handleShareToStory = () => {
+    navigate('/create-story', { state: { shareContent: { type: contentType, id: contentId } } });
+    onOpenChange(false);
+    toast.success("Opening story creator...");
+  };
+
+  const handleShareToMusic = () => {
+    navigate('/music', { state: { shareContent: { type: contentType, id: contentId } } });
+    onOpenChange(false);
+    toast.success("Share to music...");
+  };
+
+  const handleShareToStatus = () => {
+    toast.success("Share to status...");
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 bg-background border border-border shadow-xl z-50 overflow-hidden">
@@ -129,6 +147,37 @@ export const EnhancedLikesDialog = ({
             </Badge>
           </div>
         </DialogHeader>
+
+        {/* Share Options */}
+        <div className="flex items-center justify-around py-4 border-b border-white/10 px-6">
+          <button
+            onClick={handleShareToStory}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white/80">Story</span>
+          </button>
+          <button
+            onClick={handleShareToMusic}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center">
+              <Music className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white/80">Music</span>
+          </button>
+          <button
+            onClick={handleShareToStatus}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white/80">Status</span>
+          </button>
+        </div>
 
         {/* AI Insights Section */}
         {likes.length > 0 && (
