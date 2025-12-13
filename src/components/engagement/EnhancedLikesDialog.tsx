@@ -252,8 +252,8 @@ export const EnhancedLikesDialog = ({
         )}
 
         {/* Likes List */}
-        <ScrollArea className="flex-1 max-h-[400px]">
-          <div className="p-6 pt-4">
+        <ScrollArea className="flex-1 max-h-[300px] overflow-y-auto">
+          <div className="p-6 pt-4 space-y-2">
             {loading ? (
               <div className="flex items-center justify-center h-40">
                 <div className="relative">
