@@ -299,55 +299,56 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     ctx.fillStyle = bottomGlow;
     ctx.fillRect(0, 1420, 1080, 500);
 
-    // Draw SV Logo at top center
-    const logoSize = 90;
+    // Draw SV Logo at top center - BIGGER
+    const logoSize = 110;
     const logoX = (1080 - logoSize) / 2;
-    const logoY = 60;
+    const logoY = 80;
     
     if (svLogo.complete && svLogo.naturalWidth > 0) {
       ctx.save();
       ctx.beginPath();
-      ctx.roundRect(logoX, logoY, logoSize, logoSize, 16);
+      ctx.roundRect(logoX, logoY, logoSize, logoSize, 20);
       ctx.clip();
       ctx.drawImage(svLogo, logoX, logoY, logoSize, logoSize);
       ctx.restore();
     }
 
-    // SpecVerse text below logo - using Grand Hotel font consistently
-    const headerY = logoY + logoSize + 15;
-    ctx.font = '42px "Grand Hotel", cursive, Georgia';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    // SpecVerse text below logo - BIGGER
+    const headerY = logoY + logoSize + 20;
+    ctx.font = '56px "Grand Hotel", cursive, Georgia';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.textAlign = 'center';
-    ctx.fillText('SpecVerse', 540, headerY + 10);
+    ctx.fillText('SpecVerse', 540, headerY + 15);
     
-    // Tagline
-    ctx.font = '18px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 40);
+    // Tagline - BIGGER
+    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.letterSpacing = '3px';
+    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 55);
 
-    // Main glass card container - no orb, starts right after tagline
-    const cardX = 55;
-    const cardY = headerY + 70;
-    const cardW = 970;
-    const cardH = 1480;
+    // Main glass card container - adjusted for bigger content
+    const cardX = 50;
+    const cardY = headerY + 100;
+    const cardW = 980;
+    const cardH = 1420;
     
-    // Card background - darker glass effect
-    ctx.fillStyle = 'rgba(40, 40, 50, 0.85)';
+    // Card background - elegant glass effect
+    ctx.fillStyle = 'rgba(35, 35, 45, 0.9)';
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 24);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 28);
     ctx.fill();
     
-    // Card border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1.5;
+    // Card border - subtle glow
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 24);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 28);
     ctx.stroke();
 
-    // Tool name with gradient - prominent at top of card
-    const toolNameY = cardY + 50;
-    ctx.font = 'bold 52px system-ui, -apple-system, sans-serif';
-    const titleGrad = ctx.createLinearGradient(300, toolNameY, 780, toolNameY);
+    // Tool name with gradient - MUCH BIGGER and bolder
+    const toolNameY = cardY + 70;
+    ctx.font = 'bold 68px system-ui, -apple-system, sans-serif';
+    const titleGrad = ctx.createLinearGradient(200, toolNameY, 880, toolNameY);
     titleGrad.addColorStop(0, gradientColors.start);
     titleGrad.addColorStop(0.5, gradientColors.end);
     titleGrad.addColorStop(1, '#ec4899');
@@ -356,10 +357,10 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     ctx.textBaseline = 'top';
     ctx.fillText(tool.name, 540, toolNameY);
 
-    // Tool tagline
-    ctx.font = '26px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText(tool.tagline, 540, toolNameY + 65);
+    // Tool tagline - BIGGER
+    ctx.font = '32px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(tool.tagline, 540, toolNameY + 85);
 
     // Helper function for text wrapping
     const wrapText = (text: string, x: number, y: number, maxW: number, lineHeight: number, align: CanvasTextAlign = 'center') => {
@@ -382,80 +383,80 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       return currentY + lineHeight;
     };
 
-    // PROBLEM SECTION - darker glass card
-    const problemY = toolNameY + 130;
-    const sectionPadding = 20;
+    // PROBLEM SECTION - BIGGER text
+    const problemY = toolNameY + 160;
+    const sectionPadding = 25;
     
-    ctx.fillStyle = 'rgba(30, 30, 40, 0.9)';
+    ctx.fillStyle = 'rgba(25, 25, 35, 0.95)';
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, 170, 16);
+    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, 200, 20);
     ctx.fill();
     
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, 170, 16);
+    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, 200, 20);
     ctx.stroke();
     
-    ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#ef4444';
     ctx.textAlign = 'center';
-    ctx.fillText('❌ THE PROBLEM', 540, problemY + 30);
+    ctx.fillText('❌ THE PROBLEM', 540, problemY + 40);
     
-    ctx.font = '21px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    wrapText(tool.problem, 540, problemY + 60, cardW - 80, 26);
+    ctx.font = '26px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    wrapText(tool.problem, 540, problemY + 80, cardW - 100, 32);
 
-    // SOLUTION SECTION - darker glass card
-    const solutionY = problemY + 190;
-    ctx.fillStyle = 'rgba(30, 30, 40, 0.9)';
+    // SOLUTION SECTION - BIGGER text
+    const solutionY = problemY + 230;
+    ctx.fillStyle = 'rgba(25, 25, 35, 0.95)';
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, 200, 16);
+    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, 230, 20);
     ctx.fill();
     
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.25)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.35)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, 200, 16);
+    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, 230, 20);
     ctx.stroke();
     
-    ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#22c55e';
     ctx.textAlign = 'center';
-    ctx.fillText('✅ THE SOLUTION', 540, solutionY + 30);
+    ctx.fillText('✅ THE SOLUTION', 540, solutionY + 40);
     
-    ctx.font = '21px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    wrapText(tool.solution, 540, solutionY + 60, cardW - 80, 26);
+    ctx.font = '26px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    wrapText(tool.solution, 540, solutionY + 80, cardW - 100, 32);
 
-    // BENEFITS SECTION
-    const benefitsY = solutionY + 220;
-    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+    // BENEFITS SECTION - BIGGER
+    const benefitsY = solutionY + 270;
+    ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = gradientColors.start;
     ctx.textAlign = 'center';
     ctx.fillText('✨ KEY BENEFITS', 540, benefitsY);
 
-    // Benefits list with dark backgrounds
+    // Benefits list with dark backgrounds - BIGGER
     ctx.textAlign = 'left';
     
     tool.benefits.forEach((benefit, i) => {
-      const yPos = benefitsY + 40 + (i * 48);
+      const yPos = benefitsY + 55 + (i * 58);
       
       // Dark benefit background
-      ctx.fillStyle = 'rgba(30, 30, 40, 0.8)';
+      ctx.fillStyle = 'rgba(25, 25, 35, 0.9)';
       ctx.beginPath();
-      ctx.roundRect(cardX + sectionPadding, yPos - 14, cardW - sectionPadding * 2, 42, 8);
+      ctx.roundRect(cardX + sectionPadding, yPos - 18, cardW - sectionPadding * 2, 52, 12);
       ctx.fill();
       
-      // Green check icon
+      // Green check icon - BIGGER
       ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 22px system-ui';
-      ctx.fillText('✓', cardX + 40, yPos + 12);
+      ctx.font = 'bold 28px system-ui';
+      ctx.fillText('✓', cardX + 50, yPos + 14);
       
-      // Benefit text
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.font = '21px system-ui, -apple-system, sans-serif';
-      ctx.fillText(benefit, cardX + 75, yPos + 12);
+      // Benefit text - BIGGER
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+      ctx.font = '26px system-ui, -apple-system, sans-serif';
+      ctx.fillText(benefit, cardX + 90, yPos + 14);
     });
 
 
