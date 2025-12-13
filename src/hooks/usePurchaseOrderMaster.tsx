@@ -82,13 +82,21 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       // Normalize item name - trim and consistent casing
       const normalizedName = item.item_name.trim();
       
-      // Check if item already exists (case-insensitive)
-      const { data: existing } = await supabase
+      // Check if item already exists (case-insensitive) - check by workspace for shared items
+      let existingQuery = supabase
         .from('purchase_order_master_items')
         .select('id, item_name')
-        .eq('user_id', user?.id)
-        .ilike('item_name', normalizedName)
-        .maybeSingle();
+        .ilike('item_name', normalizedName);
+      
+      if (workspaceId) {
+        // For workspace items, check by workspace_id (shared across all members)
+        existingQuery = existingQuery.eq('workspace_id', workspaceId);
+      } else {
+        // For personal items, check by user_id
+        existingQuery = existingQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data: existing } = await existingQuery.maybeSingle();
       
       if (existing) {
         // Update existing item with latest price if provided
