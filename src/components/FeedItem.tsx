@@ -74,7 +74,7 @@ export const FeedItem = memo(({
   const musicUrl = item.music_tracks?.preview_url || item.music_url;
   const shouldMuteVideo = hasAttachedMusic && item.mute_original_audio === true;
   const videoKey = item.id + (item.video_url || item.media_urls?.[0] || '');
-  const isUserMuted = !mutedVideos.has(videoKey);
+  const isUserMuted = mutedVideos.has(videoKey);
   
   // Handle visibility change from LazyVideo - controls audio muting
   const handleVisibilityChange = useCallback((visible: boolean) => {
