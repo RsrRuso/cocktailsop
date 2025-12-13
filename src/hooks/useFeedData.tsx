@@ -11,6 +11,8 @@ interface Post {
   repost_count: number;
   save_count: number;
   created_at: string;
+  music_url?: string | null;
+  music_track_id?: string | null;
   profiles: any;
 }
 
@@ -59,10 +61,10 @@ export const useFeedData = (selectedRegion: string | null) => {
 
   const fetchPosts = useCallback(async () => {
     try {
-      // Fetch posts WITHOUT expensive profile joins
+      // Fetch posts WITHOUT expensive profile joins, but include music fields
       const { data: postsData, error } = await supabase
         .from("posts")
-        .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at")
+        .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id")
         .order("created_at", { ascending: false })
         .limit(10);
 
