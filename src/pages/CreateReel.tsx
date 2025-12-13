@@ -1,176 +1,94 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Loader2, VolumeX, Volume2, Play, Pause } from "lucide-react";
+import { X, Settings, ChevronDown, Play, Undo2, Redo2, Plus, Volume2, Music, Type, Mic, Captions, Layers, Sparkles, UserMinus, Sticker, ArrowRight, Check, Image } from "lucide-react";
 import { toast } from "sonner";
-import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 import { useAutoMusicExtraction } from "@/hooks/useAutoMusicExtraction";
-import MusicSelector from "@/components/music-box/MusicSelector";
-import { compressVideo, needsCompression, getFileSizeMB, CompressionProgress } from "@/lib/videoCompression";
+import { compressVideo, needsCompression, getFileSizeMB } from "@/lib/videoCompression";
+import { Progress } from "@/components/ui/progress";
+
+interface MediaItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  duration?: number;
+  selected: boolean;
+  order: number;
+}
 
 const CreateReel = () => {
   const navigate = useNavigate();
-  const [caption, setCaption] = useState("");
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompressing, setIsCompressing] = useState(false);
-  const [compressionProgress, setCompressionProgress] = useState<CompressionProgress | null>(null);
-  const [showMusicSelector, setShowMusicSelector] = useState(false);
-  const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
-  const [muteOriginalAudio, setMuteOriginalAudio] = useState(false);
+  const [activeTab, setActiveTab] = useState<'edits' | 'drafts' | 'templates'>('edits');
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const { uploadState, uploadSingle } = usePowerfulUpload();
-  const { extractAndAnalyzeAudio, isExtracting, extractionProgress } = useAutoMusicExtraction();
-  
+  const [showEditor, setShowEditor] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const { uploadState, uploadSingle } = usePowerfulUpload();
+  const { extractAndAnalyzeAudio } = useAutoMusicExtraction();
 
-  // Sync audio with video playback
+  // Load recent media from device
   useEffect(() => {
-    const video = videoRef.current;
-    const audio = audioRef.current;
-    
-    if (!video || !selectedMusic) return;
-
-    const handlePlay = () => {
-      setIsPlaying(true);
-      if (audio && selectedMusic) {
-        audio.currentTime = video.currentTime;
-        audio.play().catch(console.error);
-      }
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-      audio?.pause();
-    };
-
-    const handleSeeked = () => {
-      if (audio && selectedMusic) {
-        audio.currentTime = video.currentTime;
-      }
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-      audio?.pause();
-      if (audio) audio.currentTime = 0;
-    };
-
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('seeked', handleSeeked);
-    video.addEventListener('ended', handleEnded);
-
-    return () => {
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('seeked', handleSeeked);
-      video.removeEventListener('ended', handleEnded);
-    };
-  }, [selectedMusic]);
-
-  // Update video muted state when muteOriginalAudio or selectedMusic changes
-  useEffect(() => {
-    if (videoRef.current) {
-      // When music is selected, always mute original by default
-      if (selectedMusic) {
-        videoRef.current.muted = muteOriginalAudio;
-      } else {
-        videoRef.current.muted = false;
-      }
-    }
-  }, [muteOriginalAudio, selectedMusic]);
-
-  // Auto-mute original audio when music is selected
-  useEffect(() => {
-    if (selectedMusic) {
-      setMuteOriginalAudio(true);
-    }
-  }, [selectedMusic]);
-
-  // Cleanup audio on unmount or music change
-  useEffect(() => {
-    return () => {
-      audioRef.current?.pause();
-    };
+    // Generate sample gallery items (in real app, would access device gallery)
+    const samples: MediaItem[] = [];
+    setMediaItems(samples);
   }, []);
 
-  const handlePlayPause = () => {
-    const video = videoRef.current;
-    if (!video) return;
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    files.forEach((file, index) => {
+      if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+        toast.error("Please select video or image files");
+        return;
+      }
 
-    if (video.paused) {
-      video.play();
+      const url = URL.createObjectURL(file);
+      const newItem: MediaItem = {
+        id: `${Date.now()}-${index}`,
+        url,
+        type: file.type.startsWith('video/') ? 'video' : 'image',
+        selected: false,
+        order: mediaItems.length + index
+      };
+
+      setMediaItems(prev => [newItem, ...prev]);
+    });
+  }, [mediaItems.length]);
+
+  const toggleItemSelection = (item: MediaItem) => {
+    const isSelected = selectedItems.find(i => i.id === item.id);
+    
+    if (isSelected) {
+      setSelectedItems(prev => prev.filter(i => i.id !== item.id));
     } else {
-      video.pause();
+      setSelectedItems(prev => [...prev, { ...item, order: prev.length + 1 }]);
     }
   };
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
+  const removeSelectedItem = (id: string) => {
+    setSelectedItems(prev => prev.filter(i => i.id !== id));
+  };
 
-    // Validate video file type - accept all common video formats
-    const allowedTypes = [
-      'video/mp4', 
-      'video/webm', 
-      'video/quicktime',  // .mov (iPhone)
-      'video/x-msvideo',  // .avi
-      'video/3gpp',       // .3gp (Android)
-      'video/x-matroska', // .mkv
-      'video/mpeg',       // .mpeg
-      'video/x-m4v'       // .m4v
-    ];
+  const handleNext = () => {
+    if (selectedItems.length === 0) {
+      toast.error("Please select at least one video or image");
+      return;
+    }
+    setShowEditor(true);
+  };
+
+  const handlePublish = async () => {
+    if (selectedItems.length === 0) return;
     
-    // More lenient - accept any video format
-    if (!file.type.startsWith('video/')) {
-      toast.error("Please upload a video file");
-      return;
-    }
-
-    if (file.size > 200 * 1024 * 1024) {
-      toast.error("Video size should be less than 200MB");
-      return;
-    }
-
-    setSelectedVideo(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-      toast.success("Video loaded!");
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "video/*": [".mp4", ".mov", ".avi", ".webm"],
-    },
-    maxFiles: 1,
-    multiple: false,
-  });
-
-  const handleCreateReel = async () => {
-    // Prevent double submission
-    if (isSubmitting || uploadState.isUploading || isCompressing) {
-      return;
-    }
-
-    if (!selectedVideo) {
-      toast.error("Please select a video");
-      return;
-    }
-
-    setIsSubmitting(true);
-
+    setIsUploading(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -178,348 +96,438 @@ const CreateReel = () => {
         return;
       }
 
-      let videoToUpload = selectedVideo;
-
-      // Compress video if needed (over 50MB)
-      if (needsCompression(selectedVideo)) {
-        const originalSize = getFileSizeMB(selectedVideo);
-        toast.info(`Compressing ${originalSize.toFixed(1)}MB video...`);
-        setIsCompressing(true);
-        
-        try {
-          videoToUpload = await compressVideo(selectedVideo, 45, (progress) => {
-            setCompressionProgress(progress);
-          });
-          
-          const newSize = getFileSizeMB(videoToUpload);
-          toast.success(`Compressed to ${newSize.toFixed(1)}MB`);
-        } catch (compressError) {
-          console.error('Compression failed:', compressError);
-          toast.error("Compression failed. Please try a smaller video.");
-          setIsCompressing(false);
-          setIsSubmitting(false);
-          return;
-        }
-        
-        setIsCompressing(false);
-        setCompressionProgress(null);
+      // For now, upload first selected video
+      const firstVideo = selectedItems.find(i => i.type === 'video');
+      if (!firstVideo) {
+        toast.error("Please select at least one video");
+        setIsUploading(false);
+        return;
       }
 
-      // Upload using powerful upload system
+      // Fetch the blob from the object URL
+      const response = await fetch(firstVideo.url);
+      const blob = await response.blob();
+      const file = new File([blob], 'reel.mp4', { type: 'video/mp4' });
+
+      let videoToUpload = file;
+
+      // Compress if needed
+      if (needsCompression(file)) {
+        toast.info(`Compressing ${getFileSizeMB(file).toFixed(1)}MB video...`);
+        videoToUpload = await compressVideo(file, 45);
+      }
+
       const result = await uploadSingle('reels', user.id, videoToUpload);
       
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
-      // Save to database with duplicate check
-      const { error: dbError } = await supabase.from("reels").insert({
+      await supabase.from("reels").insert({
         user_id: user.id,
         video_url: result.publicUrl,
-        caption: caption || "",
+        caption: "",
         thumbnail_url: result.publicUrl,
-        music_track_id: selectedMusic?.id || null,
-        music_url: selectedMusic?.preview_url || null,
-        mute_original_audio: muteOriginalAudio,
       });
 
-      // Ignore duplicate key errors (already uploaded)
-      if (dbError && dbError.code !== '23505') {
-        throw dbError;
-      }
-
-      toast.success("Reel uploaded successfully!");
-
-      // Save audio to Music Box instantly (no extraction needed - video URL works as audio)
-      if (!selectedMusic && selectedVideo) {
-        // Fire and forget - don't wait
-        extractAndAnalyzeAudio(result.publicUrl, selectedVideo.name);
-      }
-      
-      // Reset form and navigate immediately
-      setPreviewUrl("");
-      setSelectedVideo(null);
-      setCaption("");
+      toast.success("Reel uploaded!");
+      extractAndAnalyzeAudio(result.publicUrl, 'reel');
       navigate("/reels");
     } catch (error: any) {
       console.error("Error:", error);
-      toast.error("Upload failed: " + (error.message || "Unknown error"));
+      toast.error("Upload failed");
     } finally {
-      setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
-      <TopNav />
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
-      <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/create")}
-            className="glass-hover"
+  // Editor Tools
+  const editorTools = [
+    { id: 'audio', icon: Music, label: 'Audio' },
+    { id: 'text', icon: Type, label: 'Text' },
+    { id: 'voice', icon: Mic, label: 'Voice' },
+    { id: 'captions', icon: Captions, label: 'Captions' },
+    { id: 'overlay', icon: Layers, label: 'Overlay' },
+    { id: 'effects', icon: Sparkles, label: 'Sound FX' },
+    { id: 'cutout', icon: UserMinus, label: 'Cutout' },
+    { id: 'sticker', icon: Sticker, label: 'Sticker' },
+  ];
+
+  if (showEditor && selectedItems.length > 0) {
+    const mainVideo = selectedItems.find(i => i.type === 'video') || selectedItems[0];
+    
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col z-50">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-black/80">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowEditor(false)}
+            className="text-white hover:bg-white/10"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </Button>
-          <h1 className="text-xl font-bold">Create Reel</h1>
-          <Button
-            onClick={handleCreateReel}
-            disabled={isSubmitting || uploadState.isUploading || isCompressing || !previewUrl}
-            className="glow-primary"
-            size="sm"
-          >
-            {isCompressing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Compressing
-              </>
-            ) : isSubmitting || uploadState.isUploading ? (
-              <>
-                <Zap className="w-4 h-4 mr-2 animate-pulse" />
-                {uploadState.isUploading ? 'Uploading' : 'Saving...'}
-              </>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-white font-medium">New project</span>
+            <ChevronDown className="w-4 h-4 text-white/60" />
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <span className="text-white/60 text-sm">2K</span>
+            <Button 
+              onClick={handlePublish}
+              disabled={isUploading}
+              className="bg-white text-black hover:bg-white/90 rounded-full px-5 font-semibold"
+            >
+              {isUploading ? 'Exporting...' : 'Export'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Video Preview */}
+        <div className="flex-1 flex items-center justify-center px-4 py-2 overflow-hidden">
+          <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-lg overflow-hidden">
+            {mainVideo.type === 'video' ? (
+              <video
+                ref={videoRef}
+                src={mainVideo.url}
+                className="w-full h-full object-cover"
+                playsInline
+                loop
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+              />
             ) : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                Share
-              </>
+              <img 
+                src={mainVideo.url} 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
             )}
+          </div>
+        </div>
+
+        {/* Timeline Controls */}
+        <div className="px-4 py-3 bg-black/80">
+          <div className="flex items-center justify-center gap-6 text-white/80 text-sm">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                if (videoRef.current) {
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                  } else {
+                    videoRef.current.play();
+                  }
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+              className="text-white hover:bg-white/10"
+            >
+              <Play className={`w-6 h-6 ${isPlaying ? 'fill-white' : ''}`} />
+            </Button>
+            
+            <div className="text-center">
+              <span className="text-white font-mono">{formatTime(currentTime)}</span>
+              <span className="text-white/40 font-mono mx-1">/</span>
+              <span className="text-white/60 font-mono">{formatTime(duration)}</span>
+            </div>
+            
+            <span className="text-white/40">|</span>
+            <span>1s</span>
+            <span className="text-white/40">|</span>
+            
+            <Button variant="ghost" size="icon" className="text-white/60 hover:bg-white/10">
+              <Undo2 className="w-5 h-5" />
+              <span className="text-xs ml-1">2s</span>
+            </Button>
+            
+            <Button variant="ghost" size="icon" className="text-white/60 hover:bg-white/10">
+              <Redo2 className="w-5 h-5" />
+              <span className="text-xs ml-1">3s</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Add Audio Button */}
+        <div className="px-4 py-2 bg-zinc-900/80">
+          <Button 
+            variant="ghost" 
+            className="text-white/80 hover:bg-white/10 gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Add audio
           </Button>
         </div>
 
-        <div className="glass rounded-2xl p-6 space-y-6">
-          {/* Video Preview or Upload Area */}
-          {previewUrl ? (
-            <div className="space-y-4">
-              <div className="relative aspect-[9/16] max-w-sm mx-auto rounded-2xl overflow-hidden bg-black">
-                <video
-                  ref={videoRef}
-                  src={previewUrl}
-                  className="w-full h-full object-cover"
-                  muted={selectedMusic ? muteOriginalAudio : false}
-                  playsInline
-                  loop
-                />
-                
-                {/* Synced Audio for selected music */}
-                {selectedMusic && (
-                  <audio
-                    ref={audioRef}
-                    src={selectedMusic.preview_url}
-                    loop
-                    preload="auto"
+        {/* Timeline Thumbnails */}
+        <div className="px-4 py-3 bg-zinc-900">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="text-white/60 hover:bg-white/10 flex-shrink-0">
+              <Volume2 className="w-5 h-5" />
+            </Button>
+            
+            <div className="flex-1 flex gap-0.5 overflow-x-auto">
+              {selectedItems.map((item, idx) => (
+                <div 
+                  key={item.id}
+                  className="w-12 h-16 flex-shrink-0 rounded overflow-hidden border-2 border-white/20"
+                >
+                  {item.type === 'video' ? (
+                    <video src={item.url} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={item.url} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-white text-black hover:bg-white/90 rounded-lg flex-shrink-0"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Editor Tools */}
+        <div className="px-2 py-4 bg-black border-t border-white/10">
+          <div className="flex items-center justify-around overflow-x-auto gap-1 scrollbar-hide">
+            {editorTools.map((tool) => (
+              <button
+                key={tool.id}
+                className="flex flex-col items-center gap-1.5 min-w-[60px] p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <tool.icon className="w-6 h-6 text-white/80" />
+                <span className="text-[10px] text-white/60">{tool.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {uploadState.isUploading && (
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+            <div className="bg-zinc-900 rounded-2xl p-6 w-80 space-y-4">
+              <p className="text-white text-center font-medium">Exporting...</p>
+              <Progress value={uploadState.progress} className="h-2" />
+              <p className="text-white/60 text-center text-sm">{Math.round(uploadState.progress)}%</p>
+            </div>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*,image/*"
+          multiple
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black flex flex-col z-50">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate(-1)}
+          className="text-white hover:bg-white/10"
+        >
+          <X className="w-6 h-6" />
+        </Button>
+        
+        <h1 className="text-white font-semibold text-lg">New reel</h1>
+        
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-white/10"
+        >
+          <Settings className="w-6 h-6" />
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 px-4 py-2">
+        <button
+          onClick={() => setActiveTab('edits')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            activeTab === 'edits' 
+              ? 'bg-white/10 text-white' 
+              : 'text-white/60 hover:text-white'
+          }`}
+        >
+          <div className="w-4 h-4 rounded bg-gradient-to-r from-pink-500 to-purple-500" />
+          Edits
+        </button>
+        
+        <button
+          onClick={() => setActiveTab('drafts')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            activeTab === 'drafts' 
+              ? 'bg-white/10 text-white' 
+              : 'text-white/60 hover:text-white'
+          }`}
+        >
+          <Plus className="w-4 h-4" />
+          Drafts · 5
+        </button>
+        
+        <button
+          onClick={() => setActiveTab('templates')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            activeTab === 'templates' 
+              ? 'bg-white/10 text-white' 
+              : 'text-white/60 hover:text-white'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Templates
+        </button>
+      </div>
+
+      {/* Recents Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <button className="flex items-center gap-2 text-white">
+          <span className="text-lg font-semibold">Recents</span>
+          <ChevronDown className="w-5 h-5" />
+        </button>
+        
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-white/60 hover:bg-white/10"
+        >
+          <Layers className="w-5 h-5" />
+        </Button>
+      </div>
+
+      {/* Media Grid */}
+      <div className="flex-1 overflow-y-auto px-1">
+        <div className="grid grid-cols-3 gap-0.5">
+          {/* Camera/Add Button */}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="aspect-[3/4] bg-zinc-900 flex flex-col items-center justify-center gap-2 hover:bg-zinc-800 transition-colors"
+          >
+            <div className="w-14 h-14 rounded-full border-2 border-white/40 flex items-center justify-center">
+              <Image className="w-7 h-7 text-white/60" />
+            </div>
+          </button>
+
+          {/* Media Items */}
+          {mediaItems.map((item) => {
+            const isSelected = selectedItems.find(i => i.id === item.id);
+            const selectionOrder = selectedItems.findIndex(i => i.id === item.id) + 1;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => toggleItemSelection(item)}
+                className="aspect-[3/4] relative overflow-hidden group"
+              >
+                {item.type === 'video' ? (
+                  <video 
+                    src={item.url} 
+                    className="w-full h-full object-cover"
+                    muted
+                  />
+                ) : (
+                  <img 
+                    src={item.url} 
+                    alt="" 
+                    className="w-full h-full object-cover"
                   />
                 )}
+                
+                {/* Selection Circle */}
+                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  isSelected 
+                    ? 'bg-primary border-primary' 
+                    : 'border-white/60 bg-black/20'
+                }`}>
+                  {isSelected && (
+                    <span className="text-white text-xs font-bold">{selectionOrder}</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* Empty State - prompt to add media */}
+        {mediaItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-white/60">
+            <Image className="w-16 h-16 mb-4 opacity-40" />
+            <p className="text-center">Tap the camera to add videos or images</p>
+          </div>
+        )}
+      </div>
 
-                {/* Play/Pause overlay */}
-                <button
-                  onClick={handlePlayPause}
-                  className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"
-                >
-                  <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    {isPlaying ? (
-                      <Pause className="w-8 h-8 text-white" />
-                    ) : (
-                      <Play className="w-8 h-8 text-white ml-1" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Music indicator when playing */}
-                {selectedMusic && isPlaying && (
-                  <div className="absolute bottom-4 left-4 right-4 glass rounded-lg px-3 py-2 flex items-center gap-2 animate-pulse">
-                    <Music2 className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-medium truncate">{selectedMusic.title}</span>
-                    <span className="text-xs text-muted-foreground">- {selectedMusic.artist}</span>
-                  </div>
-                )}
-
-                <button
-                  onClick={() => {
-                    audioRef.current?.pause();
-                    setPreviewUrl("");
-                    setSelectedVideo(null);
-                    setSelectedMusic(null);
-                    setIsPlaying(false);
-                  }}
-                  className="absolute top-4 right-4 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center z-10 hover:bg-red-600 transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-
-              {/* Music Selection */}
-              <Button
-                variant="outline"
-                className="w-full glass-hover justify-start gap-3"
-                onClick={() => setShowMusicSelector(true)}
-              >
-                <Music2 className="w-5 h-5 text-primary" />
-                {selectedMusic ? (
-                  <span className="truncate">{selectedMusic.title} - {selectedMusic.artist}</span>
+      {/* Bottom Section */}
+      <div className="bg-black border-t border-white/10">
+        {/* Selected Items Preview */}
+        {selectedItems.length > 0 && (
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+            {selectedItems.map((item) => (
+              <div key={item.id} className="relative w-12 h-12 rounded overflow-hidden">
+                {item.type === 'video' ? (
+                  <video src={item.url} className="w-full h-full object-cover" muted />
                 ) : (
-                  <span className="text-muted-foreground">Add music from Music Box</span>
+                  <img src={item.url} alt="" className="w-full h-full object-cover" />
                 )}
-              </Button>
-
-              {/* Mute Original Audio Toggle - Only show when music is selected */}
-              {selectedMusic && (
                 <button
-                  onClick={() => setMuteOriginalAudio(!muteOriginalAudio)}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                    muteOriginalAudio 
-                      ? 'bg-primary/10 border-primary' 
-                      : 'bg-card/50 border-border/50 hover:border-primary/30'
-                  }`}
+                  onClick={() => removeSelectedItem(item.id)}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-black rounded-full flex items-center justify-center"
                 >
-                  <div className="flex items-center gap-3">
-                    {muteOriginalAudio ? (
-                      <VolumeX className="w-5 h-5 text-primary" />
-                    ) : (
-                      <Volume2 className="w-5 h-5 text-muted-foreground" />
-                    )}
-                    <span className="text-sm font-medium">
-                      {muteOriginalAudio ? 'Original audio muted' : 'Mute original video audio'}
-                    </span>
-                  </div>
-                  <div className={`w-10 h-6 rounded-full transition-colors ${
-                    muteOriginalAudio ? 'bg-primary' : 'bg-muted'
-                  }`}>
-                    <div className={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${
-                      muteOriginalAudio ? 'translate-x-5' : 'translate-x-1'
-                    }`} />
-                  </div>
+                  <X className="w-3 h-3 text-white" />
                 </button>
-              )}
-
-              <Textarea
-                placeholder="Write a caption..."
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                className="glass border-primary/20 min-h-[100px]"
-                disabled={uploadState.isUploading}
-              />
-
-              {/* Compression Progress */}
-              {isCompressing && compressionProgress && (
-                <div className="glass rounded-xl p-6 space-y-4 border border-orange-500/20">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                      <div>
-                        <p className="font-semibold text-sm">Compressing Video</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {compressionProgress.stage}...
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
-                        {Math.round(compressionProgress.progress)}%
-                      </p>
-                    </div>
-                  </div>
-                  <Progress value={compressionProgress.progress} className="h-3" />
-                </div>
-              )}
-
-              {/* Upload Progress */}
-              {uploadState.isUploading && (
-                <div className="glass rounded-xl p-6 space-y-4 border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {uploadState.progress === 100 ? (
-                        <CheckCircle2 className="w-6 h-6 text-green-500 animate-in zoom-in" />
-                      ) : (
-                        <Zap className="w-6 h-6 text-primary animate-pulse" />
-                      )}
-                      <div>
-                        <p className="font-semibold text-sm">{uploadState.stage}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {uploadState.progress < 100 ? "Please wait..." : "Complete!"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                        {Math.round(uploadState.progress)}%
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <Progress value={uploadState.progress} className="h-3" />
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div
-                {...getRootProps()}
-                className={`aspect-[9/16] max-w-sm mx-auto border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all ${
-                  isDragActive
-                    ? "border-primary bg-primary/10"
-                    : "border-muted-foreground/30 hover:border-primary/50 bg-gradient-to-br from-purple-600/20 to-pink-500/20"
-                }`}
-              >
-                <input {...getInputProps()} />
-                <Video
-                  className={`w-20 h-20 mb-4 ${
-                    isDragActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-                  strokeWidth={1.5}
-                />
-                <p className="text-sm font-medium mb-1 px-4 text-center">
-                  {isDragActive
-                    ? "Drop video here..."
-                    : "Drag and drop a video, or click to select"}
-                </p>
-                <p className="text-xs text-muted-foreground px-4 text-center flex items-center justify-center gap-2">
-                  <Zap className="w-3 h-3 text-primary" />
-                  <span>All video formats • Smart compression • Max 200MB</span>
-                </p>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => toast.info("Record feature coming soon!")}
-                  className="flex-1 glass-hover h-12"
-                  variant="outline"
-                >
-                  <Video className="w-5 h-5 mr-2" />
-                  Record
-                </Button>
-
-                <div {...getRootProps()} className="flex-1">
-                  <input {...getInputProps()} />
-                  <Button className="w-full glass-hover h-12" variant="outline">
-                    <Upload className="w-5 h-5 mr-2" />
-                    Upload
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Content Type Tabs & Next Button */}
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-6">
+            <button className="text-white/40 text-sm font-medium">POST</button>
+            <button className="text-white/40 text-sm font-medium">STORY</button>
+            <button className="text-white text-sm font-semibold">REEL</button>
+            <button className="text-white/40 text-sm font-medium">LIVE</button>
+          </div>
+          
+          <Button
+            onClick={handleNext}
+            disabled={selectedItems.length === 0}
+            className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 flex items-center gap-2"
+          >
+            Next
+            <ArrowRight className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
-      {/* Music Selector Dialog */}
-      <MusicSelector
-        open={showMusicSelector}
-        onOpenChange={setShowMusicSelector}
-        onSelect={(track) => {
-          setSelectedMusic({
-            id: track.id,
-            title: track.title,
-            artist: track.profiles?.username || 'Unknown',
-            preview_url: track.preview_url || track.original_url
-          });
-          setShowMusicSelector(false);
-          toast.success(`Added: ${track.title}`);
-        }}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*,image/*"
+        multiple
+        className="hidden"
+        onChange={handleFileSelect}
       />
     </div>
   );
