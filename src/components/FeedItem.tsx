@@ -55,6 +55,7 @@ export const FeedItem = memo(({
 }: FeedItemProps) => {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [showInsights, setShowInsights] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -66,9 +67,10 @@ export const FeedItem = memo(({
   const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
-  // Check if reel has attached music
-  const hasAttachedMusic = item.type === 'reel' && Boolean(item.music_track_id && (item.music_tracks?.preview_url || item.music_url));
+  // Check if post/reel has attached music - support both posts and reels
+  const hasAttachedMusic = Boolean(item.music_track_id || item.music_url);
   const musicUrl = item.music_tracks?.preview_url || item.music_url;
   const shouldMuteVideo = hasAttachedMusic && item.mute_original_audio === true;
   const videoKey = item.id + (item.video_url || item.media_urls?.[0] || '');
@@ -79,18 +81,44 @@ export const FeedItem = memo(({
     setIsVisible(visible);
   }, []);
 
+  // Track visibility for image/text posts using IntersectionObserver
+  useEffect(() => {
+    // Only use observer for non-video content
+    const hasVideo = item.media_urls?.some((url: string) => 
+      url.includes('.mp4') || url.includes('video')
+    );
+    if (hasVideo) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          setIsVisible(entry.isIntersecting && entry.intersectionRatio >= 0.5);
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [item.media_urls]);
+
   // Play/pause attached music based on visibility and user mute toggle
   useEffect(() => {
-    if (audioRef.current && hasAttachedMusic) {
+    if (audioRef.current && hasAttachedMusic && musicUrl) {
       if (isVisible && !isUserMuted) {
         audioRef.current.muted = false;
         audioRef.current.play().catch(() => {});
+        setIsMusicPlaying(true);
       } else {
         audioRef.current.muted = true;
         audioRef.current.pause();
+        setIsMusicPlaying(false);
       }
     }
-  }, [isVisible, isUserMuted, hasAttachedMusic]);
+  }, [isVisible, isUserMuted, hasAttachedMusic, musicUrl]);
 
   // Handle like - parent manages count via useLike hook
   const handleLikeClick = useCallback(() => {
@@ -261,7 +289,16 @@ export const FeedItem = memo(({
   }, [currentUserId, item.id, item.type, isSaved, onSaveChange]);
 
   return (
-    <div className="relative w-full bg-background">
+    <div ref={containerRef} className="relative w-full bg-background">
+      {/* Global audio element for music on image/text posts */}
+      {hasAttachedMusic && musicUrl && (
+        <audio
+          ref={audioRef}
+          src={musicUrl}
+          loop
+          preload="auto"
+        />
+      )}
       {/* Header - User Info */}
       <div className="flex items-center justify-between px-3 py-2">
         <div 
@@ -317,12 +354,42 @@ export const FeedItem = memo(({
       {/* Text-only posts - Twitter/X style */}
       {(!item.media_urls || item.media_urls.length === 0) && item.content && (
         <div 
-          className="px-3 py-4"
+          className="px-3 py-4 relative"
           onClick={handleDoubleTap}
         >
           <p className="text-base leading-relaxed whitespace-pre-wrap">
             {item.content}
           </p>
+          
+          {/* Music indicator for text-only posts */}
+          {hasAttachedMusic && (
+            <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-muted/50">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Music className={`w-5 h-5 text-primary ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {item.music_tracks?.title || 'Added Music'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {item.music_tracks?.artist || 'Unknown Artist'}
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMute(videoKey);
+                }}
+                className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
+              >
+                {mutedVideos.has(videoKey) ? (
+                  <Volume2 className="w-4 h-4 text-primary" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-primary" />
+                )}
+              </button>
+            </div>
+          )}
           
           {/* Double tap heart animation */}
           {doubleTapLike && (
@@ -400,11 +467,40 @@ export const FeedItem = memo(({
                   </button>
                 </div>
               ) : (
-                <LazyImage
-                  src={url}
-                  alt="Post media"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <LazyImage
+                    src={url}
+                    alt="Post media"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  
+                  {/* Music indicator for image posts */}
+                  {hasAttachedMusic && (
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
+                      <Music className={`w-3 h-3 text-white ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+                      <span className="text-[10px] text-white font-medium truncate max-w-[100px]">
+                        {item.music_tracks?.title || 'Added Music'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Mute toggle for image posts with music */}
+                  {hasAttachedMusic && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleMute(videoKey);
+                      }}
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+                    >
+                      {mutedVideos.has(videoKey) ? (
+                        <Volume2 className="w-4 h-4 text-white" />
+                      ) : (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Double tap heart animation */}
