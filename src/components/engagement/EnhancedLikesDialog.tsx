@@ -108,8 +108,8 @@ export const EnhancedLikesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+      <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 bg-background border border-border shadow-xl z-50 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 border-b border-border bg-gradient-to-r from-purple-500/10 to-pink-500/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -123,7 +123,7 @@ export const EnhancedLikesDialog = ({
                 <p className="text-sm text-muted-foreground">{likes.length} total engagements</p>
               </div>
             </div>
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="secondary" className="gap-1 bg-secondary">
               <Brain className="w-3 h-3" />
               Live AI
             </Badge>
