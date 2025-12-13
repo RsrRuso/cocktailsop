@@ -246,11 +246,11 @@ const QRAccessCode = () => {
       <main className="flex-1 container mx-auto px-4 py-8 pb-32 max-w-2xl overflow-y-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Store Management Workspace Access</CardTitle>
+            <CardTitle>Store Management Workspace QR Code</CardTitle>
             <CardDescription>
               {currentWorkspace 
-                ? `Share this link to invite people to ${currentWorkspace.name} (Store Management)`
-                : "Create or select a store management workspace to generate an access link"
+                ? `Share this QR code to invite people to ${currentWorkspace.name} (Store Management)`
+                : "Create or select a store management workspace to generate a QR code"
               }
             </CardDescription>
           </CardHeader>

@@ -673,12 +673,12 @@ export default function ScanTransfer() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="p-6 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <p className="text-lg font-semibold mb-2">Invalid Transfer Code</p>
+          <p className="text-lg font-semibold mb-2">Invalid Transfer QR Code</p>
           <p className="text-sm text-muted-foreground mb-4">
-            This code doesn't exist or has expired. Please generate a new one from Store Management.
+            This QR code doesn't exist or has expired. Please generate a new one from Store Management.
           </p>
           <Button onClick={() => navigate("/transfer-qr")} className="w-full">
-            Generate New Code
+            Generate New QR Code
           </Button>
         </Card>
       </div>

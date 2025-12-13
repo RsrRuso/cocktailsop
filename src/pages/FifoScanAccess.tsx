@@ -239,7 +239,7 @@ export default function FifoScanAccess() {
                 <CardTitle className="text-2xl">Request to Join FIFO Workspace</CardTitle>
               </div>
               <CardDescription>
-                The invite link may be invalid or expired. You can browse available workspaces or contact the workspace owner for a new invite link.
+                The QR code link may be invalid or expired. You can browse available workspaces or contact the workspace owner for a new invite link.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -94,9 +94,9 @@ const StaffQRAccess = () => {
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
               <Smartphone className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="text-xl">Staff POS Access</CardTitle>
+            <CardTitle className="text-xl">Staff POS Access QR</CardTitle>
             <CardDescription>
-              Share this link with staff to install the SV Staff POS app on their phones
+              Staff scan this QR code to install the SV Staff POS app on their phones
             </CardDescription>
           </CardHeader>
           
@@ -160,7 +160,7 @@ const StaffQRAccess = () => {
             <div className="bg-primary/5 rounded-lg p-4 space-y-2">
               <h4 className="font-medium text-sm">How staff install:</h4>
               <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-                <li>Staff uses the link on their phone</li>
+                <li>Staff scans QR code with phone camera</li>
                 <li>Opens the link in browser</li>
                 <li>Taps "Add to Home Screen" (iOS: Share → Add to Home Screen)</li>
                 <li>Opens SV Staff POS from home screen</li>

@@ -413,7 +413,7 @@ const OpsTools = () => {
       {
         name: "Label Generator",
         description: "Create professional inventory labels",
-        details: "Generate labels for inventory items. Include expiration dates, batch numbers, and storage instructions.",
+        details: "Generate QR codes and labels for inventory items. Include expiration dates, batch numbers, and storage instructions.",
         icon: Tags,
         gradient: "from-pink-600 to-rose-500",
         premium: true,

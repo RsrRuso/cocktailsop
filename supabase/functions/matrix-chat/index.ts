@@ -185,15 +185,15 @@ The hospitality industry lacks a dedicated digital ecosystem. SV fills this gap 
 **Purpose**: Central hub for all inventory operations
 **How to Use**:
 1. **Active Tab**: View current inventory with FIFO priority
-2. **Receive Tab**: Log new inventory arrivals via scan or manual entry
+2. **Receive Tab**: Log new inventory arrivals via QR scan or manual entry
 3. **FIFO Tab**: Track first-in-first-out with expiration dates
 4. **Transfer Tab**: Move items between stores
 
 ### Scan Receive (/scan-receive)
-**Purpose**: Quickly log inventory arrivals by scanning items
+**Purpose**: Quickly log inventory arrivals by scanning QR codes
 **How to Use**:
 1. Navigate to Receive tab or scan icon
-2. Point camera at item/delivery
+2. Point camera at QR code on item/delivery
 3. System auto-fills item details
 4. Enter quantity and expiration date
 5. Add photos for documentation
@@ -310,11 +310,11 @@ The hospitality industry lacks a dedicated digital ecosystem. SV fills this gap 
 2. Select recipe and enter quantity
 3. Add production date and notes
 4. Enter who produced it
-5. Submit - logs batch production
+5. Submit - generates QR code for batch
 
-**Batch Tracking**:
-- Each batch gets unique identifier
-- View batch details anytime
+**QR Codes**:
+- Each batch gets unique QR code
+- Scan to view batch details
 - Print on waterproof stickers
 - Track batch through service
 

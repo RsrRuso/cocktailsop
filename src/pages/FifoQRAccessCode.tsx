@@ -219,13 +219,13 @@ export default function FifoQRAccessCode() {
           </Button>
         </div>
 
-        <h1 className="text-3xl font-bold mb-6">FIFO Workspace Access</h1>
+        <h1 className="text-3xl font-bold mb-6">FIFO Workspace QR Access</h1>
 
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Select FIFO Workspace</CardTitle>
             <CardDescription>
-              Generate a link for members to request access to your FIFO workspace
+              Generate a QR code for members to request access to your FIFO workspace
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -247,9 +247,9 @@ export default function FifoQRAccessCode() {
         {qrCode && (
           <Card>
             <CardHeader>
-              <CardTitle>Workspace Access Code</CardTitle>
+              <CardTitle>Workspace Access QR Code</CardTitle>
               <CardDescription>
-                Share this code with team members to allow them to request access to your FIFO workspace
+                Share this QR code with team members to allow them to request access to your FIFO workspace
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

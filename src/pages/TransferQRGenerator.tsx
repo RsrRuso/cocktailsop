@@ -193,24 +193,24 @@ export default function TransferQRGenerator() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <QrCode className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">Transfer Generator</h1>
+            <h1 className="text-2xl font-bold">QR Code Generator</h1>
           </div>
 
           <Tabs defaultValue="transfer" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="transfer">Transfer</TabsTrigger>
-              <TabsTrigger value="receiving">Receiving</TabsTrigger>
+              <TabsTrigger value="transfer">Transfer QR</TabsTrigger>
+              <TabsTrigger value="receiving">Receiving QR</TabsTrigger>
             </TabsList>
 
-            {/* Transfer Tab */}
+            {/* Transfer QR Tab */}
             <TabsContent value="transfer" className="space-y-6">
               <div className="p-4 bg-muted/50 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
                   <StoreIcon className="w-5 h-5 text-primary" />
-                  <p className="font-semibold">Transfer Code</p>
+                  <p className="font-semibold">Transfer QR Code</p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Generate codes to transfer items from one store to another
+                  Generate QR codes to transfer items from one store to another
                 </p>
               </div>
 

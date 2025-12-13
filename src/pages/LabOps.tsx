@@ -493,7 +493,7 @@ export default function LabOps() {
                 className="h-9 px-3 rounded-lg border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
                 <QrCode className="h-3.5 w-3.5 mr-1.5" />
-                Staff Access
+                Staff QR
               </Button>
               
               <Button

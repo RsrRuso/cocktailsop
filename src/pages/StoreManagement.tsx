@@ -1764,7 +1764,7 @@ const StoreManagement = () => {
                   <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-emerald-600 transition-colors">Transfer</p>
+                  <p className="font-bold text-sm sm:text-base group-hover:text-emerald-600 transition-colors">Transfer QR</p>
                   <p className="text-[10px] sm:text-xs text-muted-foreground">Generate & scan</p>
                 </div>
                 <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />

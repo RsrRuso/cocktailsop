@@ -2685,7 +2685,7 @@ const BatchCalculator = () => {
         if (insertError) throw insertError;
         if (!newQR) throw new Error("No QR code created");
         qrCodeRecord = newQR;
-        toast.success(`Permanent code created for "${recipe.recipe_name}"!`);
+        toast.success(`Permanent QR code created for "${recipe.recipe_name}"!`);
       } else {
         // Update recipe data in existing QR to keep it current
         await supabase
@@ -2699,7 +2699,7 @@ const BatchCalculator = () => {
             },
           } as any)
           .eq("id", qrCodeRecord.id);
-        toast.success(`Permanent code loaded for "${recipe.recipe_name}"!`);
+        toast.success(`Permanent QR code loaded for "${recipe.recipe_name}"!`);
       }
 
       // Embed essential recipe data in URL as fallback for universal compatibility
@@ -2722,8 +2722,8 @@ const BatchCalculator = () => {
       setQrCodeUrl(qrDataUrl);
       setShowQRCode(true);
     } catch (error) {
-      console.error("Error generating code:", error);
-      toast.error("Failed to generate code");
+      console.error("Error generating QR:", error);
+      toast.error("Failed to generate QR code");
     }
   };
 
@@ -2740,7 +2740,7 @@ const BatchCalculator = () => {
     link.href = qrCodeDataUrl;
     link.download = `${group.name}-submission-qr.png`;
     link.click();
-    toast.success("Code downloaded!");
+    toast.success("QR code downloaded!");
   };
 
   const batchResults = calculateBatch();
@@ -3203,7 +3203,7 @@ const BatchCalculator = () => {
                       disabled={!targetLiters}
                     >
                       <QrCode className="w-5 h-5 mr-2" />
-                      {editingProductionId ? "Update Production" : "Submit Production"}
+                      {editingProductionId ? "Update Production" : "Submit & Generate QR Code"}
                     </Button>
                     {editingProductionId && (
                       <Button
@@ -3744,9 +3744,9 @@ const BatchCalculator = () => {
       <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Batch Submission</DialogTitle>
+            <DialogTitle>Batch Submission QR Code</DialogTitle>
             <DialogDescription>
-              Share this with your team to submit batch productions
+              Share this QR code with your team to submit batch productions
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
