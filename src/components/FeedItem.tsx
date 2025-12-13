@@ -465,7 +465,7 @@ export const FeedItem = memo(({
         </div>
 
         {/* Engagement Stats */}
-        <div className="flex items-center gap-3 mt-2 text-sm">
+        <div className="flex items-center gap-4 mt-2 text-sm">
           <button 
             onClick={() => setShowLikes(true)}
             className="font-semibold text-foreground hover:opacity-70 transition-opacity"
@@ -473,23 +473,19 @@ export const FeedItem = memo(({
             {(item.like_count || 0).toLocaleString()} likes
           </button>
           
-          {(item.repost_count || 0) > 0 && (
-            <button 
-              onClick={() => setShowReposts(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item.repost_count} reposts
-            </button>
-          )}
+          <button 
+            onClick={() => setShowReposts(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {(item.repost_count || 0).toLocaleString()} reposts
+          </button>
           
-          {(item.save_count || 0) > 0 && (
-            <button 
-              onClick={() => setShowSaves(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item.save_count} saves
-            </button>
-          )}
+          <button 
+            onClick={() => setShowSaves(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {(item.save_count || 0).toLocaleString()} saves
+          </button>
         </div>
 
         {/* Caption */}
