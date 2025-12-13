@@ -269,7 +269,6 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     canvas.width = 1080;
     canvas.height = 1920;
     const ctx = canvas.getContext('2d')!;
-    const toolUrl = `${appUrl}${tool.path}`;
 
     // Load SV logo
     const svLogo = new Image();
@@ -280,87 +279,99 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       svLogo.src = '/sv-logo.png';
     });
 
-    // Solid dark grey background - uniform color
-    ctx.fillStyle = '#1a1a1a';
+    const gradientColors = getGradientColors(tool.gradient);
+
+    // Rich gradient background
+    const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1920);
+    bgGrad.addColorStop(0, '#0f0f1a');
+    bgGrad.addColorStop(0.3, '#1a1a2e');
+    bgGrad.addColorStop(0.7, '#16162a');
+    bgGrad.addColorStop(1, '#0d0d18');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, 1080, 1920);
 
-    // Subtle gradient overlay at top and bottom for depth
-    const gradientColors = getGradientColors(tool.gradient);
-    
-    const topGlow = ctx.createRadialGradient(540, -100, 0, 540, -100, 600);
-    topGlow.addColorStop(0, gradientColors.start + '25');
+    // Colorful glow at top
+    const topGlow = ctx.createRadialGradient(540, 0, 0, 540, 0, 800);
+    topGlow.addColorStop(0, gradientColors.start + '40');
+    topGlow.addColorStop(0.5, gradientColors.end + '20');
     topGlow.addColorStop(1, 'transparent');
     ctx.fillStyle = topGlow;
-    ctx.fillRect(0, 0, 1080, 500);
+    ctx.fillRect(0, 0, 1080, 800);
 
-    const bottomGlow = ctx.createRadialGradient(540, 2020, 0, 540, 2020, 600);
-    bottomGlow.addColorStop(0, gradientColors.end + '20');
+    // Subtle glow at bottom
+    const bottomGlow = ctx.createRadialGradient(540, 1920, 0, 540, 1920, 600);
+    bottomGlow.addColorStop(0, gradientColors.end + '30');
     bottomGlow.addColorStop(1, 'transparent');
     ctx.fillStyle = bottomGlow;
-    ctx.fillRect(0, 1420, 1080, 500);
+    ctx.fillRect(0, 1400, 1080, 520);
 
-    // Draw SV Logo at top center - BIGGER
-    const logoSize = 110;
+    // Draw SV Logo at top center
+    const logoSize = 100;
     const logoX = (1080 - logoSize) / 2;
-    const logoY = 80;
+    const logoY = 70;
     
     if (svLogo.complete && svLogo.naturalWidth > 0) {
       ctx.save();
       ctx.beginPath();
-      ctx.roundRect(logoX, logoY, logoSize, logoSize, 20);
+      ctx.roundRect(logoX, logoY, logoSize, logoSize, 18);
       ctx.clip();
       ctx.drawImage(svLogo, logoX, logoY, logoSize, logoSize);
       ctx.restore();
     }
 
-    // SpecVerse text below logo - BIGGER
-    const headerY = logoY + logoSize + 20;
-    ctx.font = '56px "Grand Hotel", cursive, Georgia';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    // SpecVerse text - normal bold font
+    const headerY = logoY + logoSize + 15;
+    ctx.font = 'bold 48px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.fillText('SpecVerse', 540, headerY + 15);
     
-    // Tagline - BIGGER
-    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    // Tagline
+    ctx.font = '22px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.letterSpacing = '3px';
-    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 55);
+    ctx.fillText('THE HOSPITALITY PLATFORM', 540, headerY + 50);
 
-    // Main glass card container - adjusted for bigger content
-    const cardX = 50;
-    const cardY = headerY + 100;
-    const cardW = 980;
-    const cardH = 1420;
+    // Main glass card container
+    const cardX = 45;
+    const cardY = headerY + 85;
+    const cardW = 990;
+    const cardH = 1540;
     
-    // Card background - elegant glass effect
-    ctx.fillStyle = 'rgba(35, 35, 45, 0.9)';
+    // Card background with gradient overlay
+    const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
+    cardGrad.addColorStop(0, 'rgba(40, 40, 55, 0.95)');
+    cardGrad.addColorStop(1, 'rgba(30, 30, 45, 0.95)');
+    ctx.fillStyle = cardGrad;
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 28);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 24);
     ctx.fill();
     
-    // Card border - subtle glow
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 2;
+    // Card border with gradient glow
+    const borderGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+    borderGrad.addColorStop(0, gradientColors.start + '50');
+    borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
+    borderGrad.addColorStop(1, gradientColors.end + '50');
+    ctx.strokeStyle = borderGrad;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 28);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 24);
     ctx.stroke();
 
-    // Tool name with gradient - MUCH BIGGER and bolder
-    const toolNameY = cardY + 70;
-    ctx.font = 'bold 68px system-ui, -apple-system, sans-serif';
-    const titleGrad = ctx.createLinearGradient(200, toolNameY, 880, toolNameY);
+    // Tool name with gradient
+    const toolNameY = cardY + 60;
+    ctx.font = 'bold 62px system-ui, -apple-system, sans-serif';
+    const titleGrad = ctx.createLinearGradient(250, toolNameY, 830, toolNameY);
     titleGrad.addColorStop(0, gradientColors.start);
-    titleGrad.addColorStop(0.5, gradientColors.end);
-    titleGrad.addColorStop(1, '#ec4899');
+    titleGrad.addColorStop(1, gradientColors.end);
     ctx.fillStyle = titleGrad;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText(tool.name, 540, toolNameY);
 
-    // Tool tagline - BIGGER
-    ctx.font = '32px system-ui, -apple-system, sans-serif';
+    // Tool tagline
+    ctx.font = '30px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.fillText(tool.tagline, 540, toolNameY + 85);
+    ctx.fillText(tool.tagline, 540, toolNameY + 75);
 
     // Helper function for text wrapping
     const wrapText = (text: string, x: number, y: number, maxW: number, lineHeight: number, align: CanvasTextAlign = 'center') => {
@@ -383,83 +394,90 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       return currentY + lineHeight;
     };
 
-    // PROBLEM SECTION - BIGGER text
-    const problemY = toolNameY + 160;
+    // PROBLEM SECTION
+    const problemY = toolNameY + 150;
     const sectionPadding = 25;
+    const problemHeight = 220;
     
-    ctx.fillStyle = 'rgba(25, 25, 35, 0.95)';
+    ctx.fillStyle = 'rgba(20, 20, 30, 0.9)';
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, 200, 20);
+    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, problemHeight, 18);
     ctx.fill();
     
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, 200, 20);
+    ctx.roundRect(cardX + sectionPadding, problemY, cardW - sectionPadding * 2, problemHeight, 18);
     ctx.stroke();
     
-    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#ef4444';
     ctx.textAlign = 'center';
-    ctx.fillText('❌ THE PROBLEM', 540, problemY + 40);
+    ctx.fillText('❌ THE PROBLEM', 540, problemY + 38);
     
-    ctx.font = '26px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    wrapText(tool.problem, 540, problemY + 80, cardW - 100, 32);
+    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    wrapText(tool.problem, 540, problemY + 75, cardW - 120, 30);
 
-    // SOLUTION SECTION - BIGGER text
-    const solutionY = problemY + 230;
-    ctx.fillStyle = 'rgba(25, 25, 35, 0.95)';
+    // SOLUTION SECTION
+    const solutionY = problemY + problemHeight + 20;
+    const solutionHeight = 250;
+    
+    ctx.fillStyle = 'rgba(20, 20, 30, 0.9)';
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, 230, 20);
+    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, solutionHeight, 18);
     ctx.fill();
     
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.35)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, 230, 20);
+    ctx.roundRect(cardX + sectionPadding, solutionY, cardW - sectionPadding * 2, solutionHeight, 18);
     ctx.stroke();
     
-    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#22c55e';
     ctx.textAlign = 'center';
-    ctx.fillText('✅ THE SOLUTION', 540, solutionY + 40);
+    ctx.fillText('✅ THE SOLUTION', 540, solutionY + 38);
     
-    ctx.font = '26px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    wrapText(tool.solution, 540, solutionY + 80, cardW - 100, 32);
+    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    wrapText(tool.solution, 540, solutionY + 75, cardW - 120, 30);
 
-    // BENEFITS SECTION - BIGGER
-    const benefitsY = solutionY + 270;
-    ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = gradientColors.start;
+    // BENEFITS SECTION
+    const benefitsY = solutionY + solutionHeight + 30;
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    const benefitsTitleGrad = ctx.createLinearGradient(400, benefitsY, 680, benefitsY);
+    benefitsTitleGrad.addColorStop(0, '#fbbf24');
+    benefitsTitleGrad.addColorStop(1, '#f59e0b');
+    ctx.fillStyle = benefitsTitleGrad;
     ctx.textAlign = 'center';
     ctx.fillText('✨ KEY BENEFITS', 540, benefitsY);
 
-    // Benefits list with dark backgrounds - BIGGER
+    // Benefits list
     ctx.textAlign = 'left';
     
     tool.benefits.forEach((benefit, i) => {
-      const yPos = benefitsY + 55 + (i * 58);
+      const yPos = benefitsY + 50 + (i * 55);
       
-      // Dark benefit background
-      ctx.fillStyle = 'rgba(25, 25, 35, 0.9)';
+      // Benefit background with subtle gradient
+      const benefitGrad = ctx.createLinearGradient(cardX + sectionPadding, yPos - 15, cardX + cardW - sectionPadding, yPos - 15);
+      benefitGrad.addColorStop(0, 'rgba(34, 197, 94, 0.1)');
+      benefitGrad.addColorStop(1, 'rgba(20, 20, 30, 0.8)');
+      ctx.fillStyle = benefitGrad;
       ctx.beginPath();
-      ctx.roundRect(cardX + sectionPadding, yPos - 18, cardW - sectionPadding * 2, 52, 12);
+      ctx.roundRect(cardX + sectionPadding, yPos - 15, cardW - sectionPadding * 2, 48, 10);
       ctx.fill();
       
-      // Green check icon - BIGGER
+      // Green check icon
       ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 28px system-ui';
-      ctx.fillText('✓', cardX + 50, yPos + 14);
+      ctx.font = 'bold 26px system-ui';
+      ctx.fillText('✓', cardX + 48, yPos + 12);
       
-      // Benefit text - BIGGER
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-      ctx.font = '26px system-ui, -apple-system, sans-serif';
-      ctx.fillText(benefit, cardX + 90, yPos + 14);
+      // Benefit text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.font = '24px system-ui, -apple-system, sans-serif';
+      ctx.fillText(benefit, cardX + 88, yPos + 12);
     });
-
-
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob!), 'image/png', 1.0);
