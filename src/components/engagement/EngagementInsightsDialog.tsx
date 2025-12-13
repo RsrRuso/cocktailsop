@@ -108,16 +108,16 @@ export const EngagementInsightsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] sm:h-[90vh] p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50">
+      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] sm:h-[90vh] p-0 gap-0 bg-black/70 backdrop-blur-xl border-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Brain className="w-6 h-6 text-primary" />
+              <div className="p-2 rounded-lg bg-yellow-500/20">
+                <Brain className="w-6 h-6 text-yellow-500" />
               </div>
               <div>
-                <DialogTitle className="text-2xl">AI Engagement Intelligence</DialogTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <DialogTitle className="text-2xl text-white">AI Engagement Intelligence</DialogTitle>
+                <p className="text-sm text-white/60 mt-1">
                   {contentType === 'reel' ? 'Reel-based AI observations' : 'Advanced insights powered by AI'}
                 </p>
               </div>
@@ -127,11 +127,11 @@ export const EngagementInsightsDialog = ({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-3 sm:px-6 pt-4 flex-shrink-0">
-            <TabsList className="grid w-full grid-cols-4 h-auto">
-              <TabsTrigger value="insights" className="text-xs sm:text-sm px-2 sm:px-3">Insights</TabsTrigger>
-              <TabsTrigger value="boost" className="text-xs sm:text-sm px-2 sm:px-3">Boost</TabsTrigger>
-              <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3">Ads</TabsTrigger>
-              <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3">Trends</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 h-auto bg-white/10 border-0">
+              <TabsTrigger value="insights" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Insights</TabsTrigger>
+              <TabsTrigger value="boost" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Boost</TabsTrigger>
+              <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Ads</TabsTrigger>
+              <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Trends</TabsTrigger>
             </TabsList>
           </div>
 
@@ -145,47 +145,47 @@ export const EngagementInsightsDialog = ({
                 >
                   {/* Reel-specific AI Observations */}
                   {contentType === 'reel' && (
-                    <Card className="p-4 bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-pink-500/10 border-border/50">
+                    <Card className="p-4 bg-white/5 backdrop-blur-sm border-white/10">
                       <div className="flex items-center gap-2 mb-4">
-                        <Video className="w-5 h-5 text-violet-500" />
-                        <h3 className="font-semibold text-foreground">Reel AI Observations</h3>
-                        <Badge variant="secondary" className="ml-auto">AI Analysis</Badge>
+                        <Video className="w-5 h-5 text-violet-400" />
+                        <h3 className="font-semibold text-white">Reel AI Observations</h3>
+                        <Badge variant="secondary" className="ml-auto bg-yellow-500/20 text-yellow-400 border-0">AI Analysis</Badge>
                       </div>
                       
                       {isAnalyzing ? (
                         <div className="flex items-center justify-center py-8 gap-2">
                           <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                          <span className="text-sm text-muted-foreground">Analyzing reel content...</span>
+                          <span className="text-sm text-white/60">Analyzing reel content...</span>
                         </div>
                       ) : reelObservation && (
                         <div className="space-y-3">
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
-                            <Eye className="w-4 h-4 text-blue-500 mt-0.5" />
+                          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                            <Eye className="w-4 h-4 text-blue-400 mt-0.5" />
                             <div>
-                              <p className="text-xs font-medium text-muted-foreground mb-1">Visual Style</p>
-                              <p className="text-sm text-foreground">{reelObservation.visualStyle}</p>
+                              <p className="text-xs font-medium text-white/50 mb-1">Visual Style</p>
+                              <p className="text-sm text-white">{reelObservation.visualStyle}</p>
                             </div>
                           </div>
                           
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
-                            <Sparkles className="w-4 h-4 text-purple-500 mt-0.5" />
+                          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                            <Sparkles className="w-4 h-4 text-purple-400 mt-0.5" />
                             <div>
-                              <p className="text-xs font-medium text-muted-foreground mb-1">Content Tone</p>
-                              <p className="text-sm text-foreground">{reelObservation.contentTone}</p>
+                              <p className="text-xs font-medium text-white/50 mb-1">Content Tone</p>
+                              <p className="text-sm text-white">{reelObservation.contentTone}</p>
                             </div>
                           </div>
                           
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
-                            <Brain className="w-4 h-4 text-pink-500 mt-0.5" />
+                          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                            <Brain className="w-4 h-4 text-pink-400 mt-0.5" />
                             <div>
-                              <p className="text-xs font-medium text-muted-foreground mb-1">Audience Appeal</p>
-                              <p className="text-sm text-foreground">{reelObservation.audienceAppeal}</p>
+                              <p className="text-xs font-medium text-white/50 mb-1">Audience Appeal</p>
+                              <p className="text-sm text-white">{reelObservation.audienceAppeal}</p>
                             </div>
                           </div>
                           
-                          <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30">
-                            <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">💡 AI Improvement Tip</p>
-                            <p className="text-sm text-foreground">{reelObservation.improvement}</p>
+                          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                            <p className="text-xs font-medium text-green-400 mb-1">💡 AI Improvement Tip</p>
+                            <p className="text-sm text-white">{reelObservation.improvement}</p>
                           </div>
                         </div>
                       )}
