@@ -389,14 +389,18 @@ const POReceivedItems = () => {
     const orderedMap = new Map<string, any>();
     const receivedMap = new Map<string, any>();
     
-    // Build maps for comparison (normalize item names)
+    // Build maps for comparison (prioritize ML/item code, fall back to name only when no code)
     orderedItems.forEach(item => {
-      const key = (item.item_code || item.item_name).trim().toLowerCase();
+      const key = item.item_code
+        ? `code:${String(item.item_code).trim().toLowerCase()}`
+        : `name:${String(item.item_name).trim().toLowerCase()}`;
       orderedMap.set(key, item);
     });
     
     receivedItems.forEach(item => {
-      const key = (item.item_code || item.item_name).trim().toLowerCase();
+      const key = item.item_code
+        ? `code:${String(item.item_code).trim().toLowerCase()}`
+        : `name:${String(item.item_name).trim().toLowerCase()}`;
       receivedMap.set(key, item);
     });
     
