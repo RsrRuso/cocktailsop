@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Instagram, Download, Loader2, Share2, Copy, Link, ChevronLeft, Brain, Music, Calculator, ChefHat, FlaskConical, Users, BarChart3, Map, ShoppingBag, GraduationCap, Newspaper, Sparkles } from "lucide-react";
+import { Instagram, Download, Loader2, Share2, Copy, Link, ChevronLeft, Brain, Music, Calculator, ChefHat, FlaskConical, Users, BarChart3, Map, ShoppingBag, GraduationCap, Newspaper, Sparkles, Crown, FileText, Lightbulb, Zap, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import QRCode from "qrcode";
@@ -174,6 +174,78 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
     path: '/team-dashboard',
     gradient: 'from-cyan-500 to-blue-500',
     emoji: '👥'
+  },
+  {
+    id: 'gm-command',
+    name: 'GM Command',
+    tagline: 'Executive Intelligence Suite',
+    problem: 'General Managers spend hours compiling reports, chasing approvals, and tracking performance metrics manually. Critical data is scattered across spreadsheets, POS systems, and paper documents. Strategic decision-making is delayed by data collection. No unified view of venue health.',
+    solution: 'GM Command Intelligence Suite provides one-click leadership intelligence. Real-time financial dashboards, staff performance rankings, inventory variance alerts, automated meeting packets, universal approval workflows, AI-powered predictions, and risk radar panels. Everything a GM needs in one powerful command center.',
+    benefits: ['One-click executive meeting packets', 'Real-time financial & performance dashboards', 'AI-powered predictions & risk alerts', 'Universal approval workflow engine'],
+    icon: <Crown className="w-6 h-6" />,
+    path: '/gm-command',
+    gradient: 'from-amber-600 to-yellow-500',
+    emoji: '👑'
+  },
+  {
+    id: 'purchase-orders',
+    name: 'Purchase Orders',
+    tagline: 'Smart Procurement Hub',
+    problem: 'Tracking purchase orders is a nightmare. Paper invoices pile up, receiving documents get lost, and variance between ordered and received goods goes unnoticed. No visibility into spending patterns. Manual data entry wastes hours and introduces errors.',
+    solution: 'Purchase Orders tool provides AI-powered document parsing for instant PO entry. Track ordered vs received items with automatic variance analysis. Master item deduplication prevents duplicates. Aggregated reporting shows spending patterns. Workspace collaboration enables team-wide procurement visibility.',
+    benefits: ['AI-powered document scanning & parsing', 'Automatic variance analysis', 'Master items deduplication', 'Workspace collaboration for teams'],
+    icon: <FileText className="w-6 h-6" />,
+    path: '/purchase-orders',
+    gradient: 'from-blue-600 to-indigo-500',
+    emoji: '📋'
+  },
+  {
+    id: 'business-hub',
+    name: 'Business Hub',
+    tagline: 'Pitch & Connect',
+    problem: 'Hospitality entrepreneurs struggle to find investors, partners, and collaborators. Great business ideas stay hidden. Investors can\'t easily discover hospitality startups. There\'s no dedicated platform for hospitality-focused business matchmaking and investment opportunities.',
+    solution: 'Business Hub connects hospitality entrepreneurs with investors and partners. Pitch your business ideas, discover investment opportunities, find co-founders, and connect with industry mentors. A dedicated marketplace for hospitality business growth and partnership development.',
+    benefits: ['Pitch ideas to investors & partners', 'Discover hospitality investment opportunities', 'Find co-founders & collaborators', 'Connect with industry mentors'],
+    icon: <Lightbulb className="w-6 h-6" />,
+    path: '/business-hub',
+    gradient: 'from-purple-600 to-violet-500',
+    emoji: '💡'
+  },
+  {
+    id: 'automations',
+    name: 'Automations',
+    tagline: 'Automate Everything',
+    problem: 'Repetitive tasks drain productivity. Manual data entry, report generation, and notifications take hours every week. Integrating different systems requires technical expertise. Small venues can\'t afford custom automation solutions.',
+    solution: 'Automations enables no-code workflow automation. Create triggers, connect webhooks, schedule recurring tasks, and build custom workflows without coding. Automate inventory alerts, report generation, team notifications, and system integrations. Enterprise automation power for every venue.',
+    benefits: ['No-code workflow builder', 'Webhook integrations & triggers', 'Scheduled recurring automations', 'Custom notification workflows'],
+    icon: <Zap className="w-6 h-6" />,
+    path: '/automations',
+    gradient: 'from-orange-500 to-red-500',
+    emoji: '⚡'
+  },
+  {
+    id: 'crm',
+    name: 'CRM',
+    tagline: 'Manage Relationships',
+    problem: 'Customer and contact relationships are managed in scattered notes and spreadsheets. Lead tracking is inconsistent. Deal pipeline visibility is poor. Important follow-ups are missed. There\'s no centralized system for hospitality business development.',
+    solution: 'CRM provides complete contact and deal management. Track leads, manage contacts, monitor deal pipelines, schedule activities, and log interactions. Purpose-built for hospitality business development with supplier, partner, and customer relationship management.',
+    benefits: ['Complete contact & lead management', 'Visual deal pipeline tracking', 'Activity scheduling & reminders', 'Supplier & partner relationship tools'],
+    icon: <Users className="w-6 h-6" />,
+    path: '/crm',
+    gradient: 'from-teal-500 to-cyan-500',
+    emoji: '🤝'
+  },
+  {
+    id: 'ops-tools',
+    name: 'Ops Tools',
+    tagline: 'Professional Operations',
+    problem: 'Hospitality operations require dozens of specialized calculators and tools. ABV calculators, scaling tools, yield calculators, cost analysis - each requires separate apps or spreadsheets. No unified professional toolkit exists for bar and restaurant operations.',
+    solution: 'Ops Tools is a comprehensive professional operations suite. ABV calculators, scaling tools, yield calculators, pour cost analysis, variance reports, temperature logs, and more. 50+ specialized tools in one unified professional toolkit built specifically for hospitality operations.',
+    benefits: ['50+ professional operational tools', 'ABV, scaling, yield calculators', 'Pour cost & variance analysis', 'Temperature logging & compliance'],
+    icon: <Wrench className="w-6 h-6" />,
+    path: '/ops-tools',
+    gradient: 'from-gray-600 to-slate-500',
+    emoji: '🔧'
   }
 ];
 
