@@ -21,22 +21,17 @@ interface ApprovalRequest {
   status: string;
   feedback: string | null;
   created_at: string;
+  user_id: string;
   draft: {
     id: string;
     draft_type: string;
     caption: string;
     media_url?: string;
-  };
-  profile: {
-    username: string;
-    full_name: string;
-    avatar_url: string;
-  };
+  } | null;
   comments: Array<{
     id: string;
     content: string;
     created_at: string;
-    user: { username: string; avatar_url: string };
   }>;
 }
 
@@ -61,7 +56,11 @@ export default function Approvals() {
     let query = supabase
       .from('studio_approval_requests')
       .select(`
-        *,
+        id,
+        status,
+        feedback,
+        created_at,
+        user_id,
         draft:studio_drafts(id, draft_type, caption),
         comments:approval_comments(id, content, created_at)
       `)
@@ -76,7 +75,7 @@ export default function Approvals() {
     if (error) {
       toast.error('Failed to load requests');
     } else {
-      setRequests(data || []);
+      setRequests((data || []) as ApprovalRequest[]);
     }
     setLoading(false);
   };
@@ -180,18 +179,15 @@ export default function Approvals() {
                   <div className="flex items-start gap-3">
                     {/* User Avatar */}
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={request.profile?.avatar_url} />
-                      <AvatarFallback>
-                        {request.profile?.username?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
+                      <AvatarFallback>U</AvatarFallback>
                     </Avatar>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="font-medium">{request.profile?.full_name || request.profile?.username}</p>
-                          <p className="text-xs text-muted-foreground">@{request.profile?.username}</p>
+                          <p className="font-medium">User</p>
+                          <p className="text-xs text-muted-foreground">Submission</p>
                         </div>
                         
                         <Badge variant="secondary" className={status.color}>
@@ -243,14 +239,11 @@ export default function Approvals() {
                 {/* Submitter Info */}
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={selectedRequest.profile?.avatar_url} />
-                    <AvatarFallback>
-                      {selectedRequest.profile?.username?.[0]?.toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarFallback>U</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{selectedRequest.profile?.full_name}</p>
-                    <p className="text-sm text-muted-foreground">@{selectedRequest.profile?.username}</p>
+                    <p className="font-medium">Submitter</p>
+                    <p className="text-sm text-muted-foreground">Awaiting review</p>
                   </div>
                 </div>
 
@@ -270,13 +263,10 @@ export default function Approvals() {
                       {selectedRequest.comments.map(comment => (
                         <div key={comment.id} className="flex gap-2 p-2 bg-muted/50 rounded-lg">
                           <Avatar className="w-6 h-6">
-                            <AvatarImage src={comment.user?.avatar_url} />
-                            <AvatarFallback className="text-xs">
-                              {comment.user?.username?.[0]}
-                            </AvatarFallback>
+                            <AvatarFallback className="text-xs">U</AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <p className="text-xs font-medium">{comment.user?.username}</p>
+                            <p className="text-xs font-medium">User</p>
                             <p className="text-sm">{comment.content}</p>
                           </div>
                         </div>
