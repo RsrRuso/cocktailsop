@@ -42,9 +42,32 @@ export default function Studio() {
   const [activeTool, setActiveTool] = useState('caption');
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
 
-  // Load draft
+  // Load draft or create new one
   useEffect(() => {
-    if (!draftId || !user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // If no draftId, create a new draft
+    if (!draftId) {
+      const createDraft = async () => {
+        const { data, error } = await supabase
+          .from('studio_drafts')
+          .insert({ user_id: user.id, draft_type: 'reel', status: 'draft' })
+          .select()
+          .single();
+        
+        if (error || !data) {
+          toast.error('Failed to create draft');
+          navigate('/create');
+          return;
+        }
+        navigate(`/studio/${data.id}`, { replace: true });
+      };
+      createDraft();
+      return;
+    }
 
     const loadDraft = async () => {
       setLoading(true);
