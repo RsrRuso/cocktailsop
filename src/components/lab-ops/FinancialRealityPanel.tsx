@@ -66,12 +66,15 @@ export function FinancialRealityPanel({ outletId }: FinancialRealityPanelProps) 
       // Fetch physical consumption (pourer readings)
       const { data: pourings } = await supabase
         .from('lab_ops_pourer_readings')
-        .select(`
-          ml_dispensed,
-          bottle:lab_ops_bottles(spirit_type, bottle_size_ml)
-        `)
+        .select('id, ml_dispensed, bottle_id, outlet_id')
         .eq('outlet_id', outletId)
         .gte('reading_timestamp', daysAgo.toISOString());
+
+      // Fetch bottles for spirit type mapping
+      const { data: bottles } = await supabase
+        .from('lab_ops_bottles')
+        .select('id, spirit_type, bottle_size_ml')
+        .eq('outlet_id', outletId);
 
       // Fetch virtual sales
       const { data: salesData } = await supabase
@@ -80,16 +83,18 @@ export function FinancialRealityPanel({ outletId }: FinancialRealityPanelProps) 
         .eq('outlet_id', outletId)
         .gte('sold_at', daysAgo.toISOString());
 
-      // Fetch recipes for cost calculation
-      const { data: recipes } = await supabase
-        .from('lab_ops_recipes')
-        .select('*')
-        .eq('outlet_id', outletId);
+      // Create bottle id to spirit type map
+      const bottleMap: Record<string, string> = {};
+      if (bottles) {
+        bottles.forEach((b) => {
+          bottleMap[b.id] = b.spirit_type || 'Unknown';
+        });
+      }
 
       const physicalBySpirit: Record<string, number> = {};
       if (pourings) {
-        pourings.forEach((p: any) => {
-          const spirit = p.lab_ops_bottles?.spirit_type || 'Unknown';
+        pourings.forEach((p) => {
+          const spirit = bottleMap[p.bottle_id] || 'Unknown';
           physicalBySpirit[spirit] = (physicalBySpirit[spirit] || 0) + (p.ml_dispensed || 0);
         });
       }
@@ -98,14 +103,14 @@ export function FinancialRealityPanel({ outletId }: FinancialRealityPanelProps) 
       if (salesData) {
         salesData.forEach((s: any) => {
           const spirit = s.spirit_type || 'Unknown';
-        if (!virtualBySpirit[spirit]) {
-          virtualBySpirit[spirit] = { ml: 0, revenue: 0, cost: 0 };
-        }
-        virtualBySpirit[spirit].ml += s.total_ml_sold || 0;
-        virtualBySpirit[spirit].revenue += s.revenue || 0;
-        virtualBySpirit[spirit].cost += s.cost || 0;
-      });
-
+          if (!virtualBySpirit[spirit]) {
+            virtualBySpirit[spirit] = { ml: 0, revenue: 0, cost: 0 };
+          }
+          virtualBySpirit[spirit].ml += s.total_ml_sold || 0;
+          virtualBySpirit[spirit].revenue += s.revenue || 0;
+          virtualBySpirit[spirit].cost += s.cost || 0;
+        });
+      }
       // Average cost per ml by spirit type (estimated)
       const costPerMl: Record<string, number> = {
         'Vodka': 0.04,
@@ -153,7 +158,7 @@ export function FinancialRealityPanel({ outletId }: FinancialRealityPanelProps) 
           variancePct,
           grossProfit,
           gpPct,
-          pourCount: (pourings || []).filter((p: any) => p.bottle?.spirit_type === spirit).length
+          pourCount: (pourings || []).filter((p) => bottleMap[p.bottle_id] === spirit).length
         };
       }).sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
 
