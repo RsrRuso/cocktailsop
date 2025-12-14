@@ -370,7 +370,7 @@ export const LivestreamComments = ({
       )}
       
       <motion.div 
-        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col pointer-events-none ${expanded ? 'max-h-[70%]' : 'max-h-[50%]'}`}
+        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col ${expanded ? 'max-h-[70%]' : 'max-h-[50%]'}`}
         animate={{ height: expanded ? '70%' : 'auto' }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
