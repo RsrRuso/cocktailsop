@@ -1225,13 +1225,13 @@ export default function StoryViewer() {
         )}
       </div>
 
-      {/* Swipe Up Indicator - Icon only, opens comments */}
+      {/* Swipe Up Indicator - Icon opens views/likes panel */}
       {currentUserId === userId && !showViewersPanel && (
         <motion.div 
           className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 1.2, repeat: Infinity }}
-          onClick={() => setShowComments(true)}
+          onClick={() => setShowViewersPanel(true)}
         >
           <ChevronUp className="w-6 h-6 text-white/70" />
         </motion.div>
