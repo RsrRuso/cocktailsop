@@ -37,8 +37,8 @@ const BottomNav = () => {
             }}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/home") 
-                ? "text-foreground scale-110" 
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-white scale-110" 
+                : "text-white/70 hover:text-white"
             }`}
           >
             <Home className={`w-7 h-7 ${isActive("/home") ? "fill-current" : ""}`} />
@@ -48,8 +48,8 @@ const BottomNav = () => {
             onClick={() => navigate("/explore")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/explore") 
-                ? "text-foreground scale-110" 
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-white scale-110" 
+                : "text-white/70 hover:text-white"
             }`}
           >
             <Search className={`w-7 h-7 ${isActive("/explore") ? "stroke-[2.5]" : ""}`} />
@@ -59,8 +59,8 @@ const BottomNav = () => {
             onClick={() => navigate("/create/reel")}
             className="flex items-center justify-center -mt-2"
           >
-            <div className="w-12 h-12 rounded-xl border-2 border-foreground/20 hover:border-foreground/40 transition-all flex items-center justify-center bg-background">
-              <PlusSquare className="w-7 h-7 text-foreground" />
+            <div className="w-12 h-12 rounded-xl border-2 border-white/20 hover:border-white/40 transition-all flex items-center justify-center bg-background">
+              <PlusSquare className="w-7 h-7 text-white" />
             </div>
           </button>
 
@@ -68,8 +68,8 @@ const BottomNav = () => {
             onClick={() => navigate("/map")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/map") 
-                ? "text-foreground scale-110" 
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-white scale-110" 
+                : "text-white/70 hover:text-white"
             }`}
           >
             <MapPin className={`w-7 h-7 ${isActive("/map") ? "fill-current" : ""}`} />
@@ -88,7 +88,7 @@ const BottomNav = () => {
               alt={username}
               fallback={username[0] || "U"}
               userId={userId}
-              className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-foreground" : "ring-2 ring-muted-foreground/50"}`}
+              className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-white" : "ring-2 ring-white/50"}`}
               showStatus={false}
               showAddButton={false}
             />
