@@ -88,6 +88,9 @@ export default function StaffPOS() {
   const [kdsItems, setKdsItems] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"pos" | "kds" | "orders">("pos");
   
+  // Mobile view state for POS
+  const [mobileView, setMobileView] = useState<"menu" | "bill">("menu");
+  
   // Open Orders State
   const [openOrders, setOpenOrders] = useState<any[]>([]);
   const [closedOrders, setClosedOrders] = useState<any[]>([]);
@@ -372,6 +375,8 @@ export default function StaffPOS() {
         price: item.base_price
       }]);
     }
+    // Auto-navigate to bill on mobile
+    setMobileView("bill");
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
@@ -932,10 +937,41 @@ export default function StaffPOS() {
             </div>
           </div>
 
+          {/* Mobile Tab Toggle */}
+          <div className="flex lg:hidden border-b bg-muted/30">
+            <button
+              onClick={() => setMobileView("menu")}
+              className={`flex-1 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                mobileView === "menu" 
+                  ? "bg-card text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground"
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              Menu
+            </button>
+            <button
+              onClick={() => setMobileView("bill")}
+              className={`flex-1 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                mobileView === "bill" 
+                  ? "bg-card text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground"
+              }`}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Bill ({orderItems.length})
+              {orderItems.length > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
+                  ${orderTotal.toFixed(0)}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Main Content */}
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-            {/* Menu Section */}
-            <div className="flex-1 flex flex-col border-r">
+            {/* Menu Section - Hidden on mobile when bill is active */}
+            <div className={`flex-1 flex flex-col border-r ${mobileView === "bill" ? "hidden lg:flex" : "flex"}`}>
               {/* Search */}
               <div className="p-1.5 border-b">
                 <div className="relative">
@@ -955,7 +991,7 @@ export default function StaffPOS() {
                   value={selectedCategory || "all"} 
                   onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
                 >
-                  <SelectTrigger className="w-full h-10 text-sm bg-card">
+                  <SelectTrigger className="w-full h-9 text-sm bg-card">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent className="bg-card border z-50">
@@ -969,26 +1005,26 @@ export default function StaffPOS() {
                 </Select>
               </div>
 
-              {/* Menu Items */}
+              {/* Menu Items - More compact grid */}
               <ScrollArea className="flex-1">
-                <div className="grid grid-cols-2 gap-1 p-1.5">
+                <div className="grid grid-cols-2 gap-1 p-1">
                   {filteredItems.map(item => {
                     const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
                     return (
                       <Button
                         key={item.id}
                         variant="outline"
-                        className={`h-14 flex flex-col items-start justify-between p-2 transition-all ${
+                        className={`h-12 flex flex-col items-start justify-between p-1.5 transition-all ${
                           isInOrder 
                             ? 'bg-amber-500/90 border-amber-400 text-amber-950 hover:bg-amber-400' 
                             : 'bg-card hover:bg-muted'
                         }`}
                         onClick={() => addToOrder(item)}
                       >
-                        <span className={`text-xs font-medium text-left line-clamp-1 ${isInOrder ? 'text-amber-950' : ''}`}>
+                        <span className={`text-[11px] font-medium text-left line-clamp-1 leading-tight ${isInOrder ? 'text-amber-950' : ''}`}>
                           {item.name}
                         </span>
-                        <span className={`text-sm font-semibold ${isInOrder ? 'text-amber-800' : 'text-primary'}`}>
+                        <span className={`text-xs font-semibold ${isInOrder ? 'text-amber-800' : 'text-primary'}`}>
                           ${item.base_price.toFixed(2)}
                         </span>
                       </Button>
@@ -998,28 +1034,36 @@ export default function StaffPOS() {
               </ScrollArea>
             </div>
 
-            {/* Order Summary */}
-            <div className="w-full lg:w-80 flex flex-col bg-card">
-              <div className="p-3 border-b">
-                <h3 className="font-semibold flex items-center gap-2">
+            {/* Order Summary - Hidden on mobile when menu is active */}
+            <div className={`w-full lg:w-80 flex flex-col bg-card ${mobileView === "menu" ? "hidden lg:flex" : "flex"}`}>
+              <div className="p-2 border-b flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2 text-sm">
                   <ShoppingCart className="w-4 h-4" /> 
                   Order ({orderItems.length})
                 </h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="lg:hidden text-xs"
+                  onClick={() => setMobileView("menu")}
+                >
+                  + Add More
+                </Button>
               </div>
 
               <ScrollArea className="flex-1">
-                <div className="p-2 space-y-2">
+                <div className="p-1.5 space-y-1.5">
                   {orderItems.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
+                    <p className="text-center text-muted-foreground py-8 text-sm">
                       Tap menu items to add
                     </p>
                   ) : (
                     orderItems.map(item => (
-                      <div key={item.menu_item_id} className="p-2 bg-muted/50 rounded space-y-2">
+                      <div key={item.menu_item_id} className="p-2 bg-muted/50 rounded space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">${(item.price * item.qty).toFixed(2)}</p>
                           </div>
                           <div className="flex items-center gap-1">
                             <Button 
@@ -1030,7 +1074,7 @@ export default function StaffPOS() {
                             >
                               <Minus className="w-3 h-3" />
                             </Button>
-                            <span className="w-6 text-center text-sm">{item.qty}</span>
+                            <span className="w-6 text-center text-sm font-medium">{item.qty}</span>
                             <Button 
                               variant="outline" 
                               size="icon" 
@@ -1050,10 +1094,10 @@ export default function StaffPOS() {
                           </div>
                         </div>
                         <Input
-                          placeholder="Add note (e.g., no onions, extra spicy...)"
+                          placeholder="Add note..."
                           value={item.note || ""}
                           onChange={(e) => updateItemNote(item.menu_item_id, e.target.value)}
-                          className="h-8 text-xs"
+                          className="h-7 text-xs"
                         />
                       </div>
                     ))
@@ -1062,13 +1106,13 @@ export default function StaffPOS() {
               </ScrollArea>
 
               {/* Order Actions */}
-              <div className="p-3 border-t space-y-2">
-                <div className="flex justify-between text-lg font-semibold">
+              <div className="p-2 border-t space-y-2">
+                <div className="flex justify-between text-base font-semibold">
                   <span>Total</span>
                   <span>${orderTotal.toFixed(2)}</span>
                 </div>
                 <Button 
-                  className="w-full h-12"
+                  className="w-full h-11"
                   disabled={orderItems.length === 0 || sendingOrder}
                   onClick={sendOrder}
                 >
