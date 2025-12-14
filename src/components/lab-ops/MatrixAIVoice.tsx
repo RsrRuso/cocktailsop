@@ -130,7 +130,6 @@ export function MatrixAIVoice({ outletId, outletName }: MatrixAIVoiceProps) {
       const systemPrompt = `You are LUMX, an AI assistant for LAB Ops - a restaurant/bar management system. 
 You have access to real-time data for ${outletName}:
 
-INVENTORY: ${JSON.stringify(contextData.inventory.slice(0, 10))}
 BOTTLES: ${JSON.stringify(contextData.bottles.slice(0, 10))}
 RECENT SALES: ${JSON.stringify(contextData.sales.slice(0, 5))}
 STAFF: ${JSON.stringify(contextData.staff.slice(0, 5))}

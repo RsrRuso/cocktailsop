@@ -76,23 +76,23 @@ export function RiskRadarPanel({ outletId }: RiskRadarPanelProps) {
         });
       }
 
-      // 2. Supplier dependency - single supplier for multiple items
-      const supplierCounts: Record<string, number> = {};
-      inventory.forEach((inv: any) => {
-        const supplier = inv.supplier || 'Unknown';
-        supplierCounts[supplier] = (supplierCounts[supplier] || 0) + 1;
+      // 2. Supplier dependency - analyze by spirit type concentration
+      const spiritTypeCounts: Record<string, number> = {};
+      bottles.forEach((b: any) => {
+        const spiritType = b.spirit_type || 'Unknown';
+        spiritTypeCounts[spiritType] = (spiritTypeCounts[spiritType] || 0) + 1;
       });
 
-      const dominantSupplier = Object.entries(supplierCounts).find(([_, count]) => count > 5);
-      if (dominantSupplier) {
+      const dominantSpirit = Object.entries(spiritTypeCounts).find(([_, count]) => count > 5);
+      if (dominantSpirit && bottles.length > 0) {
         detectedRisks.push({
           id: 'supplier-1',
           type: 'supplier',
           severity: 'medium',
-          title: 'High supplier dependency detected',
-          description: `${dominantSupplier[0]} supplies ${dominantSupplier[1]} items - diversify to reduce risk`,
-          metric: `${Math.round((dominantSupplier[1] / inventory.length) * 100)}% dependency`,
-          action: 'Consider alternate suppliers for critical items'
+          title: 'High product concentration detected',
+          description: `${dominantSpirit[0]} accounts for ${dominantSpirit[1]} bottles - consider diversifying`,
+          metric: `${Math.round((dominantSpirit[1] / bottles.length) * 100)}% concentration`,
+          action: 'Consider diversifying product selection'
         });
       }
 
