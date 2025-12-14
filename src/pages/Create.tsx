@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Image, Video, Clock } from "lucide-react";
+import { Image, Video, Clock, Radio } from "lucide-react";
 
 const Create = () => {
   const navigate = useNavigate();
@@ -43,6 +43,13 @@ const Create = () => {
       description: "24h content",
       action: () => navigate("/create/story"),
       gradient: "from-orange-500 to-yellow-500"
+    },
+    {
+      icon: Radio,
+      label: "Live",
+      description: "Go live now",
+      action: () => navigate("/live"),
+      gradient: "from-red-500 to-pink-500"
     }
   ];
 
@@ -53,12 +60,12 @@ const Create = () => {
       <div className="px-6 py-8">
         <h1 className="text-xl font-semibold text-center mb-8">Create</h1>
 
-        <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
+        <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
           {options.map((option) => (
             <button
               key={option.label}
               onClick={option.action}
-              className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-card/50 hover:bg-card active:scale-95 transition-all"
+              className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-card/50 hover:bg-card active:scale-95 transition-all"
             >
               <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg`}>
                 <option.icon className="w-6 h-6 text-white" />
