@@ -25,11 +25,11 @@ const BottomNav = () => {
       
       // Only trigger after scrolling more than 10px to avoid jitter
       if (Math.abs(scrollDelta) > 10) {
-        if (scrollDelta > 0 && currentScrollY > 50) {
-          // Scrolling down - hide nav
+        if (scrollDelta < 0) {
+          // Scrolling up (towards top) - hide nav
           setIsVisible(false);
-        } else {
-          // Scrolling up - show nav
+        } else if (scrollDelta > 0) {
+          // Scrolling down (towards bottom) - show nav
           setIsVisible(true);
         }
         lastScrollY.current = currentScrollY;
