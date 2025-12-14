@@ -640,9 +640,9 @@ const POReceivedItems = () => {
       head: [['Item', 'Previous Price', 'Current Price', 'Change', 'Change %', 'Date']],
       body: priceHistory.map((item: any) => [
         item.item_name,
-        `$${(item.previous_price || 0).toFixed(2)}`,
-        `$${(item.current_price || 0).toFixed(2)}`,
-        `${item.change_amount > 0 ? '+' : ''}$${(item.change_amount || 0).toFixed(2)}`,
+        `${currencySymbols[currency]}${(item.previous_price || 0).toFixed(2)}`,
+        `${currencySymbols[currency]}${(item.current_price || 0).toFixed(2)}`,
+        `${item.change_amount > 0 ? '+' : ''}${currencySymbols[currency]}${(item.change_amount || 0).toFixed(2)}`,
         `${item.change_pct > 0 ? '+' : ''}${(item.change_pct || 0).toFixed(1)}%`,
         format(new Date(item.changed_at || item.date), 'PP')
       ]),
@@ -719,8 +719,8 @@ const POReceivedItems = () => {
     
     doc.setFillColor(240, 240, 240);
     doc.roundedRect(14, 35, pageWidth - 28, 20, 3, 3, 'F');
-    doc.text(`Weekly: ${totalWeeklyQty.toFixed(0)} units | $${totalWeeklyCost.toFixed(2)}`, 20, 47);
-    doc.text(`Monthly: ${totalMonthlyQty.toFixed(0)} units | $${totalMonthlyCost.toFixed(2)}`, 120, 47);
+    doc.text(`Weekly: ${totalWeeklyQty.toFixed(0)} units | ${currencySymbols[currency]}${totalWeeklyCost.toFixed(2)}`, 20, 47);
+    doc.text(`Monthly: ${totalMonthlyQty.toFixed(0)} units | ${currencySymbols[currency]}${totalMonthlyCost.toFixed(2)}`, 120, 47);
     doc.text(`Weekly Par (20% buffer): ${Math.ceil(totalWeeklyQty * 1.2)} units`, 220, 47);
     
     autoTable(doc, {
@@ -731,10 +731,10 @@ const POReceivedItems = () => {
         item.total_qty.toFixed(0),
         item.weekly_qty.toFixed(0),
         item.weekly_par.toString(),
-        `$${item.weekly_cost.toFixed(2)}`,
+        `${currencySymbols[currency]}${item.weekly_cost.toFixed(2)}`,
         item.monthly_qty.toFixed(0),
         item.monthly_par.toString(),
-        `$${item.monthly_cost.toFixed(2)}`
+        `${currencySymbols[currency]}${item.monthly_cost.toFixed(2)}`
       ]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [34, 197, 94] },
