@@ -116,3 +116,6 @@ verify_jwt = true
 
 [functions.matrix-command-parser]
 verify_jwt = true
+
+[functions.ai-post-generator]
+verify_jwt = false
