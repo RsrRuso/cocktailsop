@@ -11,7 +11,8 @@ import { MatrixProactiveSuggestions } from "./MatrixProactiveSuggestions";
 import { MatrixToolsHelper } from "./MatrixToolsHelper";
 import { useMatrixCommandExecutor, ParsedCommand } from "@/hooks/useMatrixCommandExecutor";
 import { Badge } from "@/components/ui/badge";
-
+import { MatrixVoiceOrb } from "./MatrixVoiceOrb";
+import { useMatrixVoice } from "@/hooks/useMatrixVoice";
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -37,6 +38,22 @@ export function MatrixChatTab() {
   const audioChunksRef = useRef<Blob[]>([]);
   
   const { executeCommand, handleNavigation } = useMatrixCommandExecutor();
+  
+  // Voice assistant hook
+  const matrixVoice = useMatrixVoice({
+    onResponse: (response) => {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: response.text, timestamp: new Date() }
+      ]);
+    },
+    onTranscript: (transcript) => {
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: transcript, timestamp: new Date() }
+      ]);
+    }
+  });
 
   const handleAskMatrix = useCallback((question: string) => {
     setInput(question);
@@ -259,7 +276,16 @@ export function MatrixChatTab() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      {/* Voice Orb - Floating */}
+      <MatrixVoiceOrb
+        isListening={matrixVoice.isListening}
+        isSpeaking={matrixVoice.isSpeaking}
+        isProcessing={matrixVoice.isProcessing}
+        transcript={matrixVoice.transcript}
+        onToggle={matrixVoice.toggleListening}
+      />
+      
       {/* Messages Area */}
       <ScrollArea className="flex-1 pr-4 mb-4">
         <div className="space-y-4">
