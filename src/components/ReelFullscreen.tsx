@@ -1,5 +1,5 @@
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Edit, Trash2, X, Volume2, VolumeX } from "lucide-react";
-import { useState } from "react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Edit, Trash2, X, Volume2, VolumeX, Music } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,9 @@ interface ReelFullscreenProps {
   isLiked: boolean;
   isOwnPost: boolean;
   userId: string;
+  musicUrl?: string;
+  musicTitle?: string;
+  musicArtist?: string;
   onLike: () => void;
   onComment: () => void;
   onShare: () => void;
@@ -35,6 +38,9 @@ export const ReelFullscreen = ({
   commentCount,
   isLiked,
   isOwnPost,
+  musicUrl,
+  musicTitle,
+  musicArtist,
   onLike,
   onComment,
   onShare,
@@ -42,6 +48,14 @@ export const ReelFullscreen = ({
   onDelete,
 }: ReelFullscreenProps) => {
   const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Handle audio mute sync
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   if (!isOpen) return null;
 
@@ -64,8 +78,31 @@ export const ReelFullscreen = ({
           loop
           playsInline
           autoPlay
-          muted={isMuted}
+          muted={musicUrl ? true : isMuted}
         />
+        
+        {/* Audio element for attached music */}
+        {musicUrl && (
+          <audio
+            ref={audioRef}
+            src={musicUrl}
+            loop
+            autoPlay
+            muted={isMuted}
+            preload="auto"
+          />
+        )}
+        
+        {/* Music indicator */}
+        {musicUrl && (
+          <div className="absolute bottom-24 left-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1.5 z-20">
+            <Music className="w-4 h-4 text-white animate-pulse" />
+            <div className="max-w-[150px]">
+              <p className="text-xs text-white font-medium truncate">{musicTitle || 'Music'}</p>
+              {musicArtist && <p className="text-[10px] text-white/70 truncate">{musicArtist}</p>}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mute/Unmute Button */}
