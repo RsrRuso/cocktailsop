@@ -5,7 +5,7 @@ import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, S
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useLike } from "@/hooks/useLike";
-// Simple comment input - no livestream overlay
+import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1110,12 +1110,6 @@ export default function StoryViewer() {
 
           </div>
 
-          {/* Individual story engagement badge */}
-          <StoryEngagementBadge 
-            likeCount={currentMedia?.likeCount || 0} 
-            viewCount={currentMedia?.viewCount || 0} 
-          />
-
           {/* Music display */}
           <MusicDisplay musicData={musicData} />
 
@@ -1141,7 +1135,13 @@ export default function StoryViewer() {
             </div>
           )}
 
-          {/* Comments removed - using bottom reply input instead */}
+          {/* Comments section - opens on swipe up */}
+          <LivestreamComments 
+            contentId={currentStory.id} 
+            onPauseChange={(paused) => setIsPaused(paused)}
+            expanded={showComments}
+            onExpandedChange={setShowComments}
+          />
         </div>
       </div>
 
@@ -1226,15 +1226,14 @@ export default function StoryViewer() {
         )}
       </div>
 
-      {/* Swipe Up Indicator - Icon opens views/likes panel */}
-      {currentUserId === userId && !showViewersPanel && (
+      {/* Swipe up hint for comments (subtle indicator) */}
+      {!showComments && (
         <motion.div 
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-          onClick={() => setShowViewersPanel(true)}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <ChevronUp className="w-6 h-6 text-white/70" />
+          <ChevronUp className="w-5 h-5 text-white/40" />
         </motion.div>
       )}
 
