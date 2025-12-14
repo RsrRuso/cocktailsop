@@ -20,114 +20,106 @@ export default function MatrixAI() {
   const [activeTab, setActiveTab] = useState("chat");
 
   return (
-    <div className="h-screen bg-background overflow-hidden flex flex-col">
-      <div className="container mx-auto px-3 py-3 max-w-5xl flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="mb-4 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="mb-3"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-
-          <div className="flex items-center gap-3 mb-2">
-            <motion.div 
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center relative shadow-[0_8px_16px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)] transition-all duration-300"
-              style={{
-                transform: 'perspective(100px) rotateX(5deg)',
-                transformStyle: 'preserve-3d'
-              }}
-              whileHover={{ 
-                scale: 1.05,
-                rotateY: 5,
-                transition: { duration: 0.3 }
-              }}
-              animate={{
-                rotateY: [0, 5, 0, -5, 0],
-                transition: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-              }}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden flex flex-col">
+      <div className="container mx-auto px-3 py-3 max-w-4xl flex-1 flex flex-col overflow-hidden">
+        {/* Compact Header */}
+        <div className="mb-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="h-8 px-2 text-muted-foreground hover:text-foreground"
             >
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 to-transparent" style={{ transform: 'translateZ(-1px)' }} />
-              <Brain className="w-6 h-6 text-white relative z-10" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
-            </motion.div>
-            <div>
-              <h1 className="text-2xl font-bold">MATRIX AI</h1>
-              <p className="text-sm text-muted-foreground">
-                Collective Intelligence System
-              </p>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <motion.div 
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-primary/40 backdrop-blur-sm flex items-center justify-center border border-white/10"
+                animate={{
+                  boxShadow: ['0 0 20px rgba(var(--primary), 0.3)', '0 0 30px rgba(var(--primary), 0.5)', '0 0 20px rgba(var(--primary), 0.3)'],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Brain className="w-4 h-4 text-primary-foreground" />
+              </motion.div>
+              <div>
+                <h1 className="text-lg font-semibold leading-none">MATRIX</h1>
+                <p className="text-[10px] text-muted-foreground">AI Assistant</p>
+              </div>
             </div>
+
+            <div className="w-8" /> {/* Spacer for balance */}
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="bg-card border rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
+        {/* Main Glass Container */}
+        <div className="flex-1 flex flex-col overflow-hidden rounded-2xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-2xl">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0">
+            {/* Compact Tab Navigation */}
+            <TabsList className="w-full justify-start rounded-none border-b border-white/10 bg-white/5 backdrop-blur-sm h-auto p-1 gap-0.5 overflow-x-auto scrollbar-hide">
               <TabsTrigger
                 value="chat"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
+                <MessageSquare className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Chat</span>
               </TabsTrigger>
               <TabsTrigger
                 value="career"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <Target className="w-4 h-4 mr-2" />
+                <Target className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Career</span>
               </TabsTrigger>
               <TabsTrigger
                 value="bugs"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <Bug className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Bug Testing</span>
+                <Bug className="w-3.5 h-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Bugs</span>
               </TabsTrigger>
               <TabsTrigger
                 value="music"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <Music className="w-4 h-4 mr-2" />
+                <Music className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Music</span>
               </TabsTrigger>
               <TabsTrigger
                 value="insights"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <Lightbulb className="w-4 h-4 mr-2" />
+                <Lightbulb className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Insights</span>
               </TabsTrigger>
               <TabsTrigger
                 value="patterns"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Patterns</span>
               </TabsTrigger>
               <TabsTrigger
                 value="roadmap"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
               >
-                <Brain className="w-4 h-4 mr-2" />
+                <Brain className="w-3.5 h-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Roadmap</span>
               </TabsTrigger>
               {profile?.user_type === "founder" && (
                 <TabsTrigger
                   value="admin"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                  className="rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:backdrop-blur-sm border-0"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
+                  <Settings className="w-3.5 h-3.5 sm:mr-1.5" />
                   <span className="hidden sm:inline">Admin</span>
                 </TabsTrigger>
               )}
             </TabsList>
 
-            <div className="p-4 flex-1 overflow-hidden">
+            <div className="p-3 flex-1 overflow-hidden">
               <TabsContent value="chat" className="mt-0 h-full">
                 <MatrixChatTab />
               </TabsContent>
