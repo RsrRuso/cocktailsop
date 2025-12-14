@@ -10571,6 +10571,33 @@ export type Database = {
           },
         ]
       }
+      story_highlights: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          id: string
+          story_id: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          story_id: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          story_id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       story_likes: {
         Row: {
           created_at: string | null

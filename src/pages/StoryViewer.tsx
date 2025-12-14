@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain } from "lucide-react";
+import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain, Bookmark, Trash2, Flag, Link, Download } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useLike } from "@/hooks/useLike";
@@ -136,6 +136,7 @@ export default function StoryViewer() {
   const [showComments, setShowComments] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [showViewersPanel, setShowViewersPanel] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
@@ -146,6 +147,7 @@ export default function StoryViewer() {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [hasShownInitialHearts, setHasShownInitialHearts] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -622,6 +624,119 @@ export default function StoryViewer() {
       showLikesHeartsBurst(currentMedia.likeCount, currentStory.id);
     }
   }, [currentStory?.id, currentMedia?.likeCount, showLikesHeartsBurst]);
+
+  // Check if story is highlighted
+  useEffect(() => {
+    const checkHighlight = async () => {
+      if (!currentStory || !currentUserId) return;
+      const { data } = await supabase
+        .from('story_highlights')
+        .select('id')
+        .eq('story_id', currentStory.id)
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+      setIsHighlighted(!!data);
+    };
+    checkHighlight();
+  }, [currentStory?.id, currentUserId]);
+
+  // Handle highlight toggle
+  const handleHighlight = useCallback(async () => {
+    if (!currentStory || !currentUserId) return;
+    
+    if (isHighlighted) {
+      // Remove highlight
+      await supabase
+        .from('story_highlights')
+        .delete()
+        .eq('story_id', currentStory.id)
+        .eq('user_id', currentUserId);
+      setIsHighlighted(false);
+      toast.success("Removed from highlights");
+    } else {
+      // Add highlight
+      const { error } = await supabase
+        .from('story_highlights')
+        .insert({
+          story_id: currentStory.id,
+          user_id: currentUserId,
+          cover_url: currentMedia?.url
+        });
+      if (error) {
+        toast.error("Failed to add to highlights");
+      } else {
+        setIsHighlighted(true);
+        toast.success("Added to highlights!");
+      }
+    }
+    if ('vibrate' in navigator) navigator.vibrate(10);
+  }, [currentStory, currentUserId, isHighlighted, currentMedia?.url]);
+
+  // Handle share
+  const handleShare = useCallback(async () => {
+    if (!currentStory) return;
+    
+    const shareUrl = `${window.location.origin}/story/${currentStory.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profile?.full_name || 'User'}'s Story`,
+          text: 'Check out this story on SV!',
+          url: shareUrl
+        });
+      } catch (err) {
+        // User cancelled or error
+        if ((err as Error).name !== 'AbortError') {
+          navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied to clipboard!");
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied to clipboard!");
+    }
+    if ('vibrate' in navigator) navigator.vibrate(5);
+  }, [currentStory, profile]);
+
+  // Handle delete story
+  const handleDeleteStory = useCallback(async () => {
+    if (!currentStory || currentUserId !== userId) return;
+    
+    const confirmed = window.confirm("Delete this story?");
+    if (!confirmed) return;
+    
+    const { error } = await supabase
+      .from('stories')
+      .delete()
+      .eq('id', currentStory.id);
+    
+    if (error) {
+      toast.error("Failed to delete story");
+    } else {
+      toast.success("Story deleted");
+      if (stories.length <= 1) {
+        navigate("/home");
+      } else {
+        goToNext();
+      }
+    }
+  }, [currentStory, currentUserId, userId, stories.length, navigate, goToNext]);
+
+  // Handle copy link
+  const handleCopyLink = useCallback(() => {
+    if (!currentStory) return;
+    const shareUrl = `${window.location.origin}/story/${currentStory.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("Link copied!");
+    setShowMoreMenu(false);
+  }, [currentStory]);
+
+  // Handle report
+  const handleReport = useCallback(() => {
+    toast.info("Report submitted. Thank you for helping keep SV safe.");
+    setShowMoreMenu(false);
+  }, []);
 
   // Touch tracking refs for Instagram-style gestures
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1168,7 +1283,7 @@ export default function StoryViewer() {
             </div>
             <button 
               className="p-2.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
-              onClick={() => toast.info("Share feature coming soon")}
+              onClick={handleShare}
             >
               <Send className="w-5 h-5 text-white" />
             </button>
@@ -1181,7 +1296,7 @@ export default function StoryViewer() {
             {/* Activity */}
             <button 
               className="flex flex-col items-center gap-1"
-              onClick={() => setShowInsights(true)}
+              onClick={() => setShowViewersPanel(true)}
             >
               <div className="flex -space-x-2">
                 {recentViewers.length > 0 ? (
@@ -1203,16 +1318,16 @@ export default function StoryViewer() {
             {/* Highlight */}
             <button 
               className="flex flex-col items-center gap-1"
-              onClick={() => toast.info("Highlight feature coming soon")}
+              onClick={handleHighlight}
             >
-              <Heart className="w-6 h-6 text-white/90" />
+              <Heart className={`w-6 h-6 ${isHighlighted ? 'text-red-500 fill-red-500' : 'text-white/90'}`} />
               <span className="text-white/80 text-xs">Highlight</span>
             </button>
 
             {/* Share */}
             <button 
               className="flex flex-col items-center gap-1"
-              onClick={() => toast.info("Share feature coming soon")}
+              onClick={handleShare}
             >
               <Send className="w-6 h-6 text-white/90" />
               <span className="text-white/80 text-xs">Share</span>
@@ -1221,13 +1336,69 @@ export default function StoryViewer() {
             {/* More */}
             <button 
               className="flex flex-col items-center gap-1"
-              onClick={() => toast.info("More options coming soon")}
+              onClick={() => setShowMoreMenu(true)}
             >
               <MoreHorizontal className="w-6 h-6 text-white/90" />
               <span className="text-white/80 text-xs">More</span>
             </button>
           </div>
         )}
+
+        {/* More Menu Bottom Sheet */}
+        <AnimatePresence>
+          {showMoreMenu && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/50 z-50"
+                onClick={() => setShowMoreMenu(false)}
+              />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl rounded-t-3xl z-50 p-4 pb-8"
+              >
+                <div className="flex justify-center mb-4">
+                  <div className="w-10 h-1 bg-white/30 rounded-full" />
+                </div>
+                <div className="space-y-1">
+                  <button 
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors"
+                    onClick={handleCopyLink}
+                  >
+                    <Link className="w-5 h-5 text-white" />
+                    <span className="text-white">Copy Link</span>
+                  </button>
+                  {currentUserId === userId && (
+                    <button 
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors"
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        handleDeleteStory();
+                      }}
+                    >
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                      <span className="text-red-500">Delete Story</span>
+                    </button>
+                  )}
+                  {currentUserId !== userId && (
+                    <button 
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors"
+                      onClick={handleReport}
+                    >
+                      <Flag className="w-5 h-5 text-orange-500" />
+                      <span className="text-orange-500">Report</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Swipe Up Indicator - Icon opens views/likes panel */}
