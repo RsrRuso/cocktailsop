@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Home, PlusSquare, Search, Video, MapPin, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -7,12 +8,43 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   const isActive = (path: string) => location.pathname === path;
 
   // Hide bottom nav on fullscreen pages (Reels, Story Viewer)
   const hideOnRoutes = ['/reels', '/story-viewer'];
   const shouldHide = hideOnRoutes.some(route => location.pathname.startsWith(route));
+
+  // Scroll detection for hide/show
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY.current;
+      
+      // Only trigger after scrolling more than 10px to avoid jitter
+      if (Math.abs(scrollDelta) > 10) {
+        if (scrollDelta > 0 && currentScrollY > 50) {
+          // Scrolling down - hide nav
+          setIsVisible(false);
+        } else {
+          // Scrolling up - show nav
+          setIsVisible(true);
+        }
+        lastScrollY.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Reset visibility on route change
+  useEffect(() => {
+    setIsVisible(true);
+    lastScrollY.current = 0;
+  }, [location.pathname]);
   
   if (shouldHide) {
     return null;
@@ -24,7 +56,11 @@ const BottomNav = () => {
   const userId = profile?.id || user?.id;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div 
+      className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
+        isVisible ? 'translate-y-0' : 'translate-y-full'
+      }`}
+    >
       <div>
         <div className="flex items-center justify-around px-2 py-2 max-w-2xl mx-auto">
           <button
