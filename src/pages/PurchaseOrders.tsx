@@ -15,8 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
 
@@ -78,6 +79,23 @@ const PurchaseOrders = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
   });
+  
+  // Shared currency state - syncs with POReceivedItems
+  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>(() => {
+    const saved = localStorage.getItem('po-currency');
+    return (saved as 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') || 'USD';
+  });
+  
+  const currencySymbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$' };
+  
+  const formatCurrency = (amount: number) => {
+    return `${currencySymbols[currency]}${amount.toFixed(2)}`;
+  };
+  
+  const handleCurrencyChange = (newCurrency: 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') => {
+    setCurrency(newCurrency);
+    localStorage.setItem('po-currency', newCurrency);
+  };
   
   
   // Hook must be called after state declaration
@@ -481,7 +499,23 @@ const PurchaseOrders = () => {
           onSelectWorkspace={handleWorkspaceChange}
         />
 
-        {/* Stats Cards */}
+        {/* Currency Selector + Stats Cards */}
+        <div className="flex items-center justify-end mb-2">
+          <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
+            <SelectTrigger className="w-28 h-9">
+              <Coins className="w-4 h-4 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">$ USD</SelectItem>
+              <SelectItem value="EUR">€ EUR</SelectItem>
+              <SelectItem value="GBP">£ GBP</SelectItem>
+              <SelectItem value="AED">د.إ AED</SelectItem>
+              <SelectItem value="AUD">A$ AUD</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4 bg-card">
             <div className="flex items-center gap-3">
@@ -490,7 +524,7 @@ const PurchaseOrders = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Spent</p>
-                <p className="text-lg font-bold text-foreground">${totalSpent.toFixed(2)}</p>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(totalSpent)}</p>
               </div>
             </div>
           </Card>
@@ -622,7 +656,7 @@ const PurchaseOrders = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" />
-                          ${Number(order.total_amount).toFixed(2)}
+                          {formatCurrency(Number(order.total_amount))}
                         </span>
                         {(order.submitted_by_name || order.submitted_by_email) && (
                           <span className="flex items-center gap-1 text-blue-500">
@@ -777,7 +811,7 @@ const PurchaseOrders = () => {
               <div className="flex justify-end">
                 <div className="text-right">
                   <span className="text-sm text-muted-foreground">Grand Total: </span>
-                  <span className="text-lg font-bold text-primary">${grandTotal.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-primary">{formatCurrency(grandTotal)}</span>
                 </div>
               </div>
             </div>
@@ -848,8 +882,8 @@ const PurchaseOrders = () => {
                         <TableCell className="text-xs">{item.item_code || '-'}</TableCell>
                         <TableCell className="text-xs">{item.item_name}</TableCell>
                         <TableCell className="text-xs">{item.quantity}</TableCell>
-                        <TableCell className="text-xs">${Number(item.price_per_unit).toFixed(2)}</TableCell>
-                        <TableCell className="text-xs font-medium">${Number(item.price_total).toFixed(2)}</TableCell>
+                        <TableCell className="text-xs">{formatCurrency(Number(item.price_per_unit))}</TableCell>
+                        <TableCell className="text-xs font-medium">{formatCurrency(Number(item.price_total))}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -860,7 +894,7 @@ const PurchaseOrders = () => {
                 <div>
                   <span className="text-muted-foreground">Total: </span>
                   <span className="text-xl font-bold text-primary">
-                    ${Number(selectedOrder.total_amount).toFixed(2)}
+                    {formatCurrency(Number(selectedOrder.total_amount))}
                   </span>
                 </div>
               </div>
