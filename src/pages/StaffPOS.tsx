@@ -937,12 +937,12 @@ export default function StaffPOS() {
             {/* Menu Section */}
             <div className="flex-1 flex flex-col border-r">
               {/* Search */}
-              <div className="p-2 border-b">
+              <div className="p-1.5 border-b">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input 
                     placeholder="Search menu..." 
-                    className="pl-9"
+                    className="pl-8 h-9 text-sm"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                   />
@@ -950,18 +950,18 @@ export default function StaffPOS() {
               </div>
 
               {/* Categories Dropdown */}
-              <div className="border-b p-2">
+              <div className="border-b p-1.5">
                 <Select 
                   value={selectedCategory || "all"} 
                   onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
                 >
-                  <SelectTrigger className="w-full h-12 text-base bg-card">
+                  <SelectTrigger className="w-full h-10 text-sm bg-card">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent className="bg-card border z-50">
-                    <SelectItem value="all" className="text-base py-3">All Categories</SelectItem>
+                    <SelectItem value="all" className="text-sm py-2">All Categories</SelectItem>
                     {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id} className="text-base py-3">
+                      <SelectItem key={cat.id} value={cat.id} className="text-sm py-2">
                         {cat.name}
                       </SelectItem>
                     ))}
@@ -971,18 +971,29 @@ export default function StaffPOS() {
 
               {/* Menu Items */}
               <ScrollArea className="flex-1">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">
-                  {filteredItems.map(item => (
-                    <Button
-                      key={item.id}
-                      variant="outline"
-                      className="h-20 flex flex-col items-start justify-between p-2"
-                      onClick={() => addToOrder(item)}
-                    >
-                      <span className="text-sm font-medium text-left line-clamp-2">{item.name}</span>
-                      <span className="text-primary font-semibold">${item.base_price.toFixed(2)}</span>
-                    </Button>
-                  ))}
+                <div className="grid grid-cols-2 gap-1 p-1.5">
+                  {filteredItems.map(item => {
+                    const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
+                    return (
+                      <Button
+                        key={item.id}
+                        variant="outline"
+                        className={`h-14 flex flex-col items-start justify-between p-2 transition-all ${
+                          isInOrder 
+                            ? 'bg-amber-500/90 border-amber-400 text-amber-950 hover:bg-amber-400' 
+                            : 'bg-card hover:bg-muted'
+                        }`}
+                        onClick={() => addToOrder(item)}
+                      >
+                        <span className={`text-xs font-medium text-left line-clamp-1 ${isInOrder ? 'text-amber-950' : ''}`}>
+                          {item.name}
+                        </span>
+                        <span className={`text-sm font-semibold ${isInOrder ? 'text-amber-800' : 'text-primary'}`}>
+                          ${item.base_price.toFixed(2)}
+                        </span>
+                      </Button>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </div>
