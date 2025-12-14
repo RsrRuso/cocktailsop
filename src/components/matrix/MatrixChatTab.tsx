@@ -446,21 +446,8 @@ export function MatrixChatTab() {
           )}
         </AnimatePresence>
 
-        {/* Command Mode Toggle */}
-        <button
-          onClick={() => setCommandMode(!commandMode)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] transition-all ${
-            commandMode 
-              ? 'bg-primary/20 text-primary border border-primary/30' 
-              : 'bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10'
-          }`}
-        >
-          <Command className="w-3 h-3" />
-          {commandMode ? 'Commands ON' : 'Commands'}
-        </button>
-
-        {/* Input Row */}
-        <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-1.5">
+        {/* Input Row - Touch-friendly */}
+        <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-xl rounded-full border border-white/10 p-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -470,28 +457,38 @@ export function MatrixChatTab() {
             className="hidden"
           />
           
-          {/* Action Buttons */}
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50"
-            >
-              <Camera className="w-4 h-4 text-muted-foreground" />
-            </button>
-            
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={loading}
-              className={`p-2 rounded-xl transition-colors ${
-                isRecording 
-                  ? 'bg-destructive/20 text-destructive' 
-                  : 'hover:bg-white/10 text-muted-foreground'
-              }`}
-            >
-              <Mic className={`w-4 h-4 ${isRecording ? 'animate-pulse' : ''}`} />
-            </button>
-          </div>
+          {/* Action Buttons - Touch targets 44px */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-50"
+          >
+            <Camera className="w-5 h-5 text-muted-foreground" />
+          </button>
+          
+          <button
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={loading}
+            className={`h-10 w-10 flex items-center justify-center rounded-full transition-colors ${
+              isRecording 
+                ? 'bg-destructive text-destructive-foreground' 
+                : 'hover:bg-white/10 active:bg-white/20 text-muted-foreground'
+            }`}
+          >
+            <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
+          </button>
+          
+          {/* Command Toggle */}
+          <button
+            onClick={() => setCommandMode(!commandMode)}
+            className={`h-10 w-10 flex items-center justify-center rounded-full transition-colors ${
+              commandMode 
+                ? 'bg-primary/20 text-primary' 
+                : 'hover:bg-white/10 active:bg-white/20 text-muted-foreground'
+            }`}
+          >
+            <Command className="w-5 h-5" />
+          </button>
           
           {/* Text Input */}
           <input
@@ -505,26 +502,25 @@ export function MatrixChatTab() {
                 handleSend();
               }
             }}
-            placeholder={commandMode ? "Type a command..." : "Ask anything..."}
-            className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground/50 px-2"
+            placeholder={commandMode ? "Command..." : "Message..."}
+            className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground/50 min-w-0"
             disabled={loading}
           />
           
-          {/* Send Button */}
-          <Button
+          {/* Send Button - Touch target */}
+          <button
             onClick={handleSend}
             disabled={(!input.trim() && !selectedImage) || loading}
-            size="sm"
-            className="h-8 w-8 rounded-xl p-0 shrink-0"
+            className="h-10 w-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50 shrink-0"
           >
             {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : commandMode ? (
-              <Zap className="w-4 h-4" />
+              <Zap className="w-5 h-5" />
             ) : (
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             )}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
