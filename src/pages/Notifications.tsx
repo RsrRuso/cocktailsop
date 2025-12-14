@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package, FlaskConical, ClipboardList, Trash2, Users, Award } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package, FlaskConical, ClipboardList, Trash2, Users, Award, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { NotificationSoundPicker } from "@/components/NotificationSoundPicker";
 
 interface Notification {
   id: string;
@@ -343,11 +344,19 @@ const Notifications = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Notifications</h2>
           <div className="flex items-center gap-2">
+            {/* Sound Settings */}
+            <NotificationSoundPicker 
+              trigger={
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full glass-hover">
+                  <Volume2 className="w-4 h-4" />
+                </Button>
+              }
+            />
             <Button
               variant="outline"
               size="sm"
               onClick={handleTestNotification}
-              className="glass-hover"
+              className="glass-hover h-9"
             >
               <Bell className="w-4 h-4 mr-2" />
               Test
@@ -357,10 +366,10 @@ const Notifications = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleMarkAllAsRead}
-                className="glass-hover"
+                className="glass-hover h-9"
               >
                 <CheckCheck className="w-4 h-4 mr-2" />
-                Mark all read
+                Mark all
               </Button>
             )}
           </div>
