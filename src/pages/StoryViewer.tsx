@@ -1136,12 +1136,16 @@ export default function StoryViewer() {
           )}
 
           {/* Comments section - opens on swipe up */}
-          <LivestreamComments 
-            contentId={currentStory.id} 
-            onPauseChange={(paused) => setIsPaused(paused)}
-            expanded={showComments}
-            onExpandedChange={setShowComments}
-          />
+          {showComments && (
+            <LivestreamComments 
+              contentId={currentStory.id} 
+              onPauseChange={(paused) => setIsPaused(paused)}
+              expanded={true}
+              onExpandedChange={(expanded) => {
+                if (!expanded) setShowComments(false);
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -1226,15 +1230,15 @@ export default function StoryViewer() {
         )}
       </div>
 
-      {/* Tap chevron to open comments */}
-      {!showComments && (
+      {/* Swipe Up Indicator - Icon opens views/likes panel */}
+      {currentUserId === userId && !showViewersPanel && !showComments && (
         <motion.div 
           className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          onClick={() => setShowComments(true)}
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+          onClick={() => setShowViewersPanel(true)}
         >
-          <ChevronUp className="w-5 h-5 text-white/60" />
+          <ChevronUp className="w-6 h-6 text-white/70" />
         </motion.div>
       )}
 
