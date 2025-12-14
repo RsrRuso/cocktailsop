@@ -562,10 +562,10 @@ export default function StoryViewer() {
     
     setFlyingHearts(prev => [...prev, ...newHearts]);
     
-    // Remove hearts after animation
+    // Remove hearts after animation (5.5s to match new duration)
     setTimeout(() => {
       setFlyingHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
-    }, 2200);
+    }, 5500);
     
     if ('vibrate' in navigator) navigator.vibrate(wasLiked ? [10] : [15, 30, 15]);
   }, [currentStory, currentUserId, isLiked, toggleLike, heartColors]);
@@ -603,10 +603,10 @@ export default function StoryViewer() {
     setTimeout(() => {
       setFlyingHearts(prev => [...prev, ...newHearts]);
       
-      // Remove hearts after animation
+      // Remove hearts after animation (5.5s to match new duration)
       setTimeout(() => {
         setFlyingHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
-      }, 2500);
+      }, 5500);
     }, 500);
   }, [heartColors]);
 
@@ -688,7 +688,7 @@ export default function StoryViewer() {
       return;
     }
     
-    // Vertical swipe for viewers panel (up) / close (down)
+    // Vertical swipe for comments (up) / close (down)
     if (deltaTime < 400 && absY > 60 && absY > absX * 1.2) {
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
@@ -698,13 +698,10 @@ export default function StoryViewer() {
       lastTapTimeRef.current = 0;
       lastTapPosRef.current = null;
       
-      if (deltaY < 0 && currentUserId === userId) {
-        // Swipe up - open viewers panel with animation
-        setShowViewersPanel(true);
-        if (currentStory) {
-          fetchAllViewers(currentStory.id);
-          fetchAllLikers(currentStory.id);
-        }
+      if (deltaY < 0) {
+        // Swipe up - open comments section and story starts looping
+        setShowComments(true);
+        if ('vibrate' in navigator) navigator.vibrate(5);
       } else if (deltaY > 0) {
         // Swipe down - close with smooth animation
         setIsClosing(true);
@@ -1054,13 +1051,13 @@ export default function StoryViewer() {
               )}
             </AnimatePresence>
 
-            {/* Floating hearts animation - space-like inertia physics */}
+            {/* Floating hearts animation - smooth space-like floating */}
             <AnimatePresence>
               {flyingHearts.map((heart) => {
-                // Pre-calculate drift values for smooth space-like floating
-                const driftX = (Math.random() - 0.5) * 180;
-                const driftY = -280 - Math.random() * 180;
-                const rotateZ = Math.random() * 40 - 20;
+                // Pre-calculate drift values for slow, smooth space-like floating
+                const driftX = (Math.random() - 0.5) * 120;
+                const driftY = -350 - Math.random() * 150;
+                const rotateZ = Math.random() * 25 - 12;
                 
                 return (
                   <motion.div
@@ -1080,36 +1077,36 @@ export default function StoryViewer() {
                     animate={{ 
                       y: driftY,
                       x: driftX,
-                      scale: [0, 1.3, 1.1, 0.95, 0.75, 0.5, 0.2],
-                      opacity: [0, 1, 1, 0.95, 0.8, 0.5, 0],
+                      scale: [0, 1.1, 1, 0.9, 0.7, 0.4, 0],
+                      opacity: [0, 0.9, 1, 1, 0.85, 0.5, 0],
                       rotate: rotateZ,
                     }}
                     exit={{ opacity: 0 }}
                     transition={{ 
-                      duration: 3.2,
+                      duration: 5,
                       delay: heart.delay / 1000,
-                      // Space-like inertia: fast start, very slow deceleration (like zero gravity)
+                      // Smooth space-like inertia: gentle start, very slow deceleration
                       y: { 
-                        duration: 3.5, 
-                        ease: [0.05, 0.7, 0.15, 1] // Aggressive ease-out for floating effect
+                        duration: 5.5, 
+                        ease: [0.02, 0.4, 0.1, 1] // Ultra smooth floating upward
                       },
                       x: { 
-                        duration: 3.5, 
-                        ease: [0.1, 0.75, 0.2, 1] // Gentle horizontal drift
+                        duration: 5.5, 
+                        ease: [0.05, 0.5, 0.15, 1] // Gentle horizontal drift
                       },
                       scale: { 
-                        duration: 3.2, 
-                        times: [0, 0.08, 0.2, 0.4, 0.65, 0.85, 1],
+                        duration: 5, 
+                        times: [0, 0.1, 0.25, 0.5, 0.7, 0.88, 1],
                         ease: "easeOut"
                       },
                       opacity: { 
-                        duration: 3.2, 
-                        times: [0, 0.08, 0.3, 0.5, 0.7, 0.88, 1],
+                        duration: 5, 
+                        times: [0, 0.1, 0.3, 0.55, 0.75, 0.9, 1],
                         ease: "easeOut"
                       },
                       rotate: { 
-                        duration: 3.5, 
-                        ease: [0.1, 0.6, 0.2, 1] // Very slow rotation deceleration
+                        duration: 5.5, 
+                        ease: [0.05, 0.4, 0.1, 1] // Very slow gentle rotation
                       },
                     }}
                   >
@@ -1119,7 +1116,7 @@ export default function StoryViewer() {
                         height: heart.size, 
                         color: heart.color,
                         fill: heart.color,
-                        filter: `drop-shadow(0 8px 24px ${heart.color}70) drop-shadow(0 2px 6px rgba(0,0,0,0.25))`,
+                        filter: `drop-shadow(0 10px 30px ${heart.color}60) drop-shadow(0 3px 8px rgba(0,0,0,0.2))`,
                       }} 
                     />
                   </motion.div>
