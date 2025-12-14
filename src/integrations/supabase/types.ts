@@ -4216,6 +4216,72 @@ export type Database = {
           },
         ]
       }
+      lab_ops_bottles: {
+        Row: {
+          bottle_name: string
+          bottle_size_ml: number
+          created_at: string
+          current_level_ml: number
+          id: string
+          initial_level_ml: number
+          item_id: string | null
+          outlet_id: string
+          pourer_id: string | null
+          registered_at: string
+          registered_by: string | null
+          spirit_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bottle_name: string
+          bottle_size_ml?: number
+          created_at?: string
+          current_level_ml?: number
+          id?: string
+          initial_level_ml?: number
+          item_id?: string | null
+          outlet_id: string
+          pourer_id?: string | null
+          registered_at?: string
+          registered_by?: string | null
+          spirit_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bottle_name?: string
+          bottle_size_ml?: number
+          created_at?: string
+          current_level_ml?: number
+          id?: string
+          initial_level_ml?: number
+          item_id?: string | null
+          outlet_id?: string
+          pourer_id?: string | null
+          registered_at?: string
+          registered_by?: string | null
+          spirit_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_bottles_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bottles_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_categories: {
         Row: {
           created_at: string | null
@@ -5534,6 +5600,66 @@ export type Database = {
           },
         ]
       }
+      lab_ops_pourer_readings: {
+        Row: {
+          bottle_id: string
+          created_at: string
+          id: string
+          ml_dispensed: number
+          new_level_ml: number | null
+          notes: string | null
+          outlet_id: string
+          pour_duration_seconds: number | null
+          previous_level_ml: number | null
+          reading_timestamp: string
+          recorded_by: string | null
+          source: string | null
+        }
+        Insert: {
+          bottle_id: string
+          created_at?: string
+          id?: string
+          ml_dispensed: number
+          new_level_ml?: number | null
+          notes?: string | null
+          outlet_id: string
+          pour_duration_seconds?: number | null
+          previous_level_ml?: number | null
+          reading_timestamp?: string
+          recorded_by?: string | null
+          source?: string | null
+        }
+        Update: {
+          bottle_id?: string
+          created_at?: string
+          id?: string
+          ml_dispensed?: number
+          new_level_ml?: number | null
+          notes?: string | null
+          outlet_id?: string
+          pour_duration_seconds?: number | null
+          previous_level_ml?: number | null
+          reading_timestamp?: string
+          recorded_by?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_pourer_readings_bottle_id_fkey"
+            columns: ["bottle_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_bottles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_pourer_readings_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_price_changes: {
         Row: {
           created_at: string | null
@@ -5840,6 +5966,72 @@ export type Database = {
             columns: ["menu_item_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_sales: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          ml_per_serving: number
+          order_id: string | null
+          outlet_id: string
+          pos_transaction_id: string | null
+          quantity: number
+          sold_at: string
+          sold_by: string | null
+          spirit_type: string | null
+          total_ml_sold: number
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          ml_per_serving: number
+          order_id?: string | null
+          outlet_id: string
+          pos_transaction_id?: string | null
+          quantity?: number
+          sold_at?: string
+          sold_by?: string | null
+          spirit_type?: string | null
+          total_ml_sold: number
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          ml_per_serving?: number
+          order_id?: string | null
+          outlet_id?: string
+          pos_transaction_id?: string | null
+          quantity?: number
+          sold_at?: string
+          sold_by?: string | null
+          spirit_type?: string | null
+          total_ml_sold?: number
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_sales_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_sales_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
             referencedColumns: ["id"]
           },
         ]
@@ -6449,6 +6641,106 @@ export type Database = {
           },
           {
             foreignKeyName: "lab_ops_tables_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_variance_reports: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          outlet_id: string
+          period_end: string
+          period_start: string
+          physical_ml_consumed: number
+          report_date: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          spirit_type: string | null
+          status: string | null
+          variance_ml: number
+          variance_percentage: number
+          virtual_ml_sold: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outlet_id: string
+          period_end: string
+          period_start: string
+          physical_ml_consumed?: number
+          report_date?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          spirit_type?: string | null
+          status?: string | null
+          variance_ml?: number
+          variance_percentage?: number
+          virtual_ml_sold?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outlet_id?: string
+          period_end?: string
+          period_start?: string
+          physical_ml_consumed?: number
+          report_date?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          spirit_type?: string | null
+          status?: string | null
+          variance_ml?: number
+          variance_percentage?: number
+          virtual_ml_sold?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_variance_reports_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_variance_thresholds: {
+        Row: {
+          created_at: string
+          critical_threshold_percentage: number
+          id: string
+          outlet_id: string
+          spirit_type: string | null
+          updated_at: string
+          warning_threshold_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          critical_threshold_percentage?: number
+          id?: string
+          outlet_id: string
+          spirit_type?: string | null
+          updated_at?: string
+          warning_threshold_percentage?: number
+        }
+        Update: {
+          created_at?: string
+          critical_threshold_percentage?: number
+          id?: string
+          outlet_id?: string
+          spirit_type?: string | null
+          updated_at?: string
+          warning_threshold_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_variance_thresholds_outlet_id_fkey"
             columns: ["outlet_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_outlets"
@@ -12257,6 +12549,21 @@ export type Database = {
       calculate_fifo_priority: {
         Args: { p_expiration_date: string; p_received_date: string }
         Returns: number
+      }
+      calculate_lab_ops_variance: {
+        Args: {
+          p_end_time: string
+          p_outlet_id: string
+          p_spirit_type?: string
+          p_start_time: string
+        }
+        Returns: {
+          physical_ml: number
+          spirit: string
+          variance_ml: number
+          variance_pct: number
+          virtual_ml: number
+        }[]
       }
       can_manage_batch_production: {
         Args: { production_id: string }
