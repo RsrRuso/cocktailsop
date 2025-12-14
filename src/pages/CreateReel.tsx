@@ -396,141 +396,135 @@ const CreateReel = () => {
     
     return (
       <div className="fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
-        {/* Swipeable Content */}
+        {/* Header - Always visible */}
+        <AnimatePresence>
+          {!isFullscreen && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black/80"
+            >
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowEditor(false)}
+                className="text-white hover:bg-white/10"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-white font-medium">New project</span>
+                <ChevronDown className="w-4 h-4 text-white/60" />
+              </div>
+              
+              <Button 
+                onClick={handlePublish}
+                disabled={isUploading}
+                className="bg-white text-black hover:bg-white/90 rounded-full px-5 font-semibold"
+              >
+                {isUploading ? 'Exporting...' : 'Export'}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Swipeable Video Preview - Constrained height */}
         <motion.div
-          className="flex-1 flex flex-col"
+          className={`flex-shrink-0 flex items-center justify-center px-4 py-2 ${
+            isFullscreen ? 'flex-1' : 'h-[45vh] max-h-[400px]'
+          }`}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}
           onDragEnd={handleDragEnd}
         >
-          {/* Header */}
-          <AnimatePresence>
-            {!isFullscreen && (
-              <motion.div 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex items-center justify-between px-4 py-3 bg-black/80"
+          <div 
+            className={`relative bg-black rounded-lg overflow-hidden transition-all duration-300 h-full ${
+              isFullscreen ? 'w-full' : 'aspect-[9/16] max-w-[225px]'
+            }`}
+            style={getFilterStyle()}
+          >
+            {mainVideo.type === 'video' ? (
+              <video
+                ref={videoRef}
+                src={mainVideo.url}
+                className="w-full h-full object-cover"
+                playsInline
+                loop
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                onClick={() => {
+                  if (videoRef.current) {
+                    if (isPlaying) {
+                      videoRef.current.pause();
+                    } else {
+                      videoRef.current.play();
+                    }
+                    setIsPlaying(!isPlaying);
+                  }
+                }}
+              />
+            ) : (
+              <img src={mainVideo.url} alt="" className="w-full h-full object-cover" />
+            )}
+            
+            {/* Text Overlays */}
+            {textOverlays.map((overlay) => (
+              <div
+                key={overlay.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: overlay.x,
+                  top: overlay.y,
+                  fontSize: overlay.fontSize * 0.5,
+                  color: overlay.color,
+                  fontFamily: overlay.fontFamily,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                  transform: 'translate(-50%, -50%)'
+                }}
               >
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setShowEditor(false)}
-                  className="text-white hover:bg-white/10"
-                >
-                  <X className="w-6 h-6" />
-                </Button>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-medium">New project</span>
-                  <ChevronDown className="w-4 h-4 text-white/60" />
-                </div>
-                
-                <Button 
-                  onClick={handlePublish}
-                  disabled={isUploading}
-                  className="bg-white text-black hover:bg-white/90 rounded-full px-5 font-semibold"
-                >
-                  {isUploading ? 'Exporting...' : 'Export'}
-                </Button>
+                {overlay.text}
+              </div>
+            ))}
+            
+            {/* Stickers */}
+            {stickers.map((sticker) => (
+              <div
+                key={sticker.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: sticker.x,
+                  top: sticker.y,
+                  fontSize: sticker.size * 0.5,
+                  transform: 'translate(-50%, -50%)'
+                }}
+              >
+                {sticker.content}
+              </div>
+            ))}
+
+            {/* Selected Music Indicator */}
+            {selectedMusic && (
+              <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg p-2 flex items-center gap-2">
+                <Music className="w-3 h-3 text-white" />
+                <span className="text-white text-xs truncate">{selectedMusic.title} - {selectedMusic.artist}</span>
+              </div>
+            )}
+            
+            {isFullscreen && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center"
+              >
+                <ChevronUp className="w-6 h-6 text-white/60 animate-bounce" />
+                <span className="text-white/60 text-xs">Swipe up to edit</span>
               </motion.div>
             )}
-          </AnimatePresence>
-
-          {/* Video Preview */}
-          <motion.div 
-            className="flex-1 flex items-center justify-center px-4 py-2 overflow-hidden"
-            animate={{ 
-              paddingTop: isFullscreen ? 60 : 8,
-              paddingBottom: isFullscreen ? 60 : 8 
-            }}
-          >
-            <div 
-              className={`relative bg-black rounded-lg overflow-hidden transition-all duration-300 ${
-                isFullscreen ? 'w-full h-full' : 'w-full max-w-sm aspect-[9/16]'
-              }`}
-              style={getFilterStyle()}
-            >
-              {mainVideo.type === 'video' ? (
-                <video
-                  ref={videoRef}
-                  src={mainVideo.url}
-                  className="w-full h-full object-cover"
-                  playsInline
-                  loop
-                  onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                  onClick={() => {
-                    if (videoRef.current) {
-                      if (isPlaying) {
-                        videoRef.current.pause();
-                      } else {
-                        videoRef.current.play();
-                      }
-                      setIsPlaying(!isPlaying);
-                    }
-                  }}
-                />
-              ) : (
-                <img src={mainVideo.url} alt="" className="w-full h-full object-cover" />
-              )}
-              
-              {/* Text Overlays */}
-              {textOverlays.map((overlay) => (
-                <div
-                  key={overlay.id}
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: overlay.x,
-                    top: overlay.y,
-                    fontSize: overlay.fontSize,
-                    color: overlay.color,
-                    fontFamily: overlay.fontFamily,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                >
-                  {overlay.text}
-                </div>
-              ))}
-              
-              {/* Stickers */}
-              {stickers.map((sticker) => (
-                <div
-                  key={sticker.id}
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: sticker.x,
-                    top: sticker.y,
-                    fontSize: sticker.size,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                >
-                  {sticker.content}
-                </div>
-              ))}
-
-              {/* Selected Music Indicator */}
-              {selectedMusic && (
-                <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm rounded-lg p-2 flex items-center gap-2">
-                  <Music className="w-4 h-4 text-white" />
-                  <span className="text-white text-sm truncate">{selectedMusic.title} - {selectedMusic.artist}</span>
-                </div>
-              )}
-              
-              {isFullscreen && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center"
-                >
-                  <ChevronUp className="w-6 h-6 text-white/60 animate-bounce" />
-                  <span className="text-white/60 text-xs">Swipe up to edit</span>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
           {/* Timeline & Tools */}
           <AnimatePresence>
@@ -634,7 +628,6 @@ const CreateReel = () => {
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
 
         {/* Tool Bottom Sheets */}
         <AnimatePresence>
