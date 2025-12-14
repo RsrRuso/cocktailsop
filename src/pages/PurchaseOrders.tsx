@@ -658,6 +658,11 @@ const PurchaseOrders = () => {
                           <DollarSign className="w-3 h-3" />
                           {formatCurrency(Number(order.total_amount))}
                         </span>
+                        {order.created_at && (
+                          <span className="flex items-center gap-1 text-muted-foreground/70">
+                            @ {format(new Date(order.created_at), 'h:mm a')}
+                          </span>
+                        )}
                         {(order.submitted_by_name || order.submitted_by_email) && (
                           <span className="flex items-center gap-1 text-blue-500">
                             <Users className="w-3 h-3" />
