@@ -34,8 +34,6 @@ export function MatrixChatTab() {
   const [commandMode, setCommandMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   
   const { executeCommand, handleNavigation } = useMatrixCommandExecutor();
   
@@ -104,24 +102,46 @@ export function MatrixChatTab() {
     reader.readAsDataURL(file);
   };
 
+  // Browser Speech Recognition for recording button
+  const speechRecognitionRef = useRef<any>(null);
+  
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        audioChunksRef.current.push(e.data);
+      // Use Browser Speech API instead of edge function
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognitionAPI) {
+        toast.error("Speech recognition not supported in this browser");
+        return;
+      }
+      
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInput((prev) => prev ? prev + " " + transcript : transcript);
+        }
+        setIsRecording(false);
       };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        await transcribeAudio(audioBlob);
-        stream.getTracks().forEach((track) => track.stop());
+      
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error !== 'no-speech') {
+          toast.error("Failed to recognize speech");
+        }
+        setIsRecording(false);
       };
-
-      mediaRecorder.start();
+      
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+      
+      speechRecognitionRef.current = recognition;
+      recognition.start();
       setIsRecording(true);
     } catch (error) {
       toast.error("Failed to access microphone");
@@ -130,32 +150,9 @@ export function MatrixChatTab() {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (speechRecognitionRef.current && isRecording) {
+      speechRecognitionRef.current.stop();
       setIsRecording(false);
-    }
-  };
-
-  const transcribeAudio = async (audioBlob: Blob) => {
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(",")[1];
-        
-        const { data, error } = await supabase.functions.invoke("transcribe-audio", {
-          body: { audio: base64Audio },
-        });
-
-        if (error) throw error;
-        
-        if (data.text) {
-          setInput((prev) => prev + " " + data.text);
-        }
-      };
-    } catch (error) {
-      toast.error("Failed to transcribe audio");
-      console.error("Transcription error:", error);
     }
   };
 
