@@ -922,6 +922,7 @@ export default function StoryViewer() {
             onTouchMove={showComments ? undefined : handleTouchMove}
             onTouchEnd={showComments ? undefined : handleTouchEnd}
             style={{ 
+              pointerEvents: showComments ? "none" : "auto",
               touchAction: showComments ? "pan-y" : "none",
               WebkitTouchCallout: "none",
               WebkitUserSelect: "none",
