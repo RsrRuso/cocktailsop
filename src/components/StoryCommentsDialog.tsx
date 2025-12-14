@@ -142,25 +142,45 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
   if (!open) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 pointer-events-none"
+    <motion.div 
+      className="fixed inset-0 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Comments stream - bottom portion */}
-      <div className="absolute bottom-0 left-0 right-0 pb-20 px-4 pointer-events-auto">
+      {/* Semi-transparent backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/40"
+        onClick={() => onOpenChange(false)}
+      />
+      
+      {/* Comments bottom sheet */}
+      <motion.div 
+        className="absolute bottom-0 left-0 right-0 pointer-events-auto"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      >
+        {/* Grab handle */}
+        <div className="flex justify-center py-3">
+          <div className="w-12 h-1.5 bg-white/40 rounded-full" />
+        </div>
+        
         {/* Close button */}
         <Button
           onClick={() => onOpenChange(false)}
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-6 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white z-10"
+          className="absolute top-2 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white z-10"
         >
           <X className="w-5 h-5" />
         </Button>
 
         {/* Comments list - live stream style */}
-        <div className="max-h-[50vh] overflow-y-auto space-y-2 pb-4 scrollbar-hide">
+        <div className="max-h-[50vh] overflow-y-auto space-y-2 pb-4 px-4 scrollbar-hide">
           <AnimatePresence mode="popLayout">
             {comments.slice(-10).reverse().map((comment) => (
               <motion.div
@@ -216,8 +236,8 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
             <Send className="w-5 h-5" />
           </Button>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
