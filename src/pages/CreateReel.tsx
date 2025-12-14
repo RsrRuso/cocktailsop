@@ -33,12 +33,30 @@ const CreateReel = () => {
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio } = useAutoMusicExtraction();
 
-  // Auto-trigger file picker on mount
+  // Load pre-selected media from Create page or trigger file picker
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fileInputRef.current?.click();
-    }, 100);
-    return () => clearTimeout(timer);
+    const storedMedia = sessionStorage.getItem('reelMedia');
+    if (storedMedia) {
+      try {
+        const fileData = JSON.parse(storedMedia);
+        const items: MediaItem[] = fileData.map((file: any, index: number) => ({
+          id: `${Date.now()}-${index}`,
+          url: file.url,
+          type: file.type.startsWith('video/') ? 'video' : 'image',
+          selected: false,
+          order: index
+        }));
+        setMediaItems(items);
+        // Auto-select first item
+        if (items.length > 0) {
+          setSelectedItems([{ ...items[0], order: 1 }]);
+          setShowEditor(true);
+        }
+        sessionStorage.removeItem('reelMedia');
+      } catch (e) {
+        console.error('Error parsing stored media:', e);
+      }
+    }
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
