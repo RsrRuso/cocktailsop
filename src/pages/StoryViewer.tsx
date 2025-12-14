@@ -5,7 +5,7 @@ import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, S
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useLike } from "@/hooks/useLike";
-import { LivestreamComments } from "@/components/story/LivestreamComments";
+// Simple comment input - no livestream overlay
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,9 +88,14 @@ const StoryEngagementBadge = memo(({ likeCount, viewCount }: { likeCount: number
 
 StoryEngagementBadge.displayName = "StoryEngagementBadge";
 
-// Music display component
+// Music display component - shows when music URL exists
 const MusicDisplay = memo(({ musicData }: { musicData: any }) => {
-  if (!musicData?.name) return null;
+  // Show if there's a URL (even without name)
+  if (!musicData?.url) return null;
+  
+  // Extract display name from URL if no name provided
+  const displayName = musicData.name || 'Music';
+  const displayArtist = musicData.artist;
   
   return (
     <motion.div 
@@ -106,9 +111,9 @@ const MusicDisplay = memo(({ musicData }: { musicData: any }) => {
         <Music className="w-4 h-4 text-primary shrink-0" />
       </motion.div>
       <div className="min-w-0">
-        <p className="text-white text-xs font-medium truncate">{musicData.name}</p>
-        {musicData.artist && (
-          <p className="text-white/60 text-[10px] truncate">{musicData.artist}</p>
+        <p className="text-white text-xs font-medium truncate">{displayName}</p>
+        {displayArtist && (
+          <p className="text-white/60 text-[10px] truncate">{displayArtist}</p>
         )}
       </div>
     </motion.div>
@@ -178,7 +183,8 @@ export default function StoryViewer() {
   const getMusicData = useCallback(() => {
     if (!currentMedia?.musicData) return null;
     const musicData = currentMedia.musicData;
-    if (!musicData?.url && !musicData?.name) return null;
+    // Show music if there's a URL (name is optional)
+    if (!musicData?.url) return null;
     return musicData;
   }, [currentMedia?.musicData]);
   
@@ -1135,13 +1141,7 @@ export default function StoryViewer() {
             </div>
           )}
 
-          {/* Livestream Comments Overlay - Inside story card */}
-          <LivestreamComments 
-            contentId={currentStory.id} 
-            onPauseChange={(paused) => setIsPaused(paused)}
-            expanded={showComments}
-            onExpandedChange={setShowComments}
-          />
+          {/* Comments removed - using bottom reply input instead */}
         </div>
       </div>
 
