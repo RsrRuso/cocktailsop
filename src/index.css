@@ -1573,6 +1573,41 @@ All colors MUST be HSL.
   }
 }
 
+/* Safe Area Utilities for Mobile */
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
