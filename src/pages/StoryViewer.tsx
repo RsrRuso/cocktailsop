@@ -1036,7 +1036,7 @@ export default function StoryViewer() {
             </AnimatePresence>
             
             {musicData?.url && !musicData.url.startsWith('spotify:') && (
-              <audio ref={audioRef} src={musicData.url} loop={false} preload="auto" />
+              <audio ref={audioRef} src={musicData.url} loop autoPlay preload="auto" />
             )}
 
             {/* Instagram-style big center heart on double-tap */}

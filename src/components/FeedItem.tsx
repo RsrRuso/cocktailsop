@@ -363,32 +363,45 @@ export const FeedItem = memo(({
           
           {/* Music indicator for text-only posts */}
           {hasAttachedMusic && (
-            <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-muted/50">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Music className={`w-5 h-5 text-primary ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+            <>
+              {/* Audio element for text posts with music */}
+              {musicUrl && isVisible && (
+                <audio
+                  ref={audioRef}
+                  src={musicUrl}
+                  loop
+                  autoPlay
+                  muted={mutedVideos.has(videoKey)}
+                  preload="auto"
+                />
+              )}
+              <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-muted/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Music className={`w-5 h-5 text-primary ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {item.music_tracks?.title || 'Added Music'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {item.music_tracks?.artist || 'Unknown Artist'}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleMute(videoKey);
+                  }}
+                  className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
+                >
+                  {mutedVideos.has(videoKey) ? (
+                    <Volume2 className="w-4 h-4 text-primary" />
+                  ) : (
+                    <VolumeX className="w-4 h-4 text-primary" />
+                  )}
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {item.music_tracks?.title || 'Added Music'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {item.music_tracks?.artist || 'Unknown Artist'}
-                </p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleMute(videoKey);
-                }}
-                className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
-              >
-                {mutedVideos.has(videoKey) ? (
-                  <Volume2 className="w-4 h-4 text-primary" />
-                ) : (
-                  <VolumeX className="w-4 h-4 text-primary" />
-                )}
-              </button>
-            </div>
+            </>
           )}
           
           {/* Double tap heart animation */}
