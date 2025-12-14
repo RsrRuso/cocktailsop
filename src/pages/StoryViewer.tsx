@@ -676,17 +676,8 @@ export default function StoryViewer() {
       lastTapPosRef.current = null;
       
       if (deltaY < 0) {
-        // Swipe up - open comments and restart story from beginning
-        setShowComments(true);
-        setProgress(0);
-        if (videoRef.current) {
-          videoRef.current.currentTime = 0;
-          videoRef.current.play().catch(console.error);
-        }
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(console.error);
-        }
+        // Swipe up - open viewers/likes panel
+        setShowViewersPanel(true);
         if ('vibrate' in navigator) navigator.vibrate(5);
       } else if (deltaY > 0) {
         // Swipe down - close with smooth animation
@@ -1240,7 +1231,7 @@ export default function StoryViewer() {
           className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 1.2, repeat: Infinity }}
-          onClick={() => setShowComments(true)}
+          onClick={() => setShowViewersPanel(true)}
         >
           <ChevronUp className="w-6 h-6 text-white/70" />
         </motion.div>
