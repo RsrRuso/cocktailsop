@@ -1255,7 +1255,7 @@ export default function StoryViewer() {
               onClick={() => setShowViewersPanel(false)}
             />
             
-            {/* Bottom Sheet */}
+            {/* Bottom Sheet - Glassmorphism */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -1267,25 +1267,25 @@ export default function StoryViewer() {
               onDragEnd={(_, info: PanInfo) => {
                 if (info.offset.y > 100) setShowViewersPanel(false);
               }}
-              className="absolute bottom-0 left-0 right-0 bg-background rounded-t-3xl z-50 max-h-[70vh] overflow-hidden"
+              className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl rounded-t-3xl z-50 max-h-[70vh] overflow-hidden border-t border-white/10"
             >
               {/* Handle bar */}
               <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+                <div className="w-10 h-1 bg-white/30 rounded-full" />
               </div>
               
               {/* Header */}
-              <div className="px-4 pb-3 border-b border-border">
+              <div className="px-4 pb-3 border-b border-white/10">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Story Activity</h3>
+                  <h3 className="text-lg font-semibold text-white">Story Activity</h3>
                   <button 
                     onClick={() => setShowViewersPanel(false)}
-                    className="p-1 hover:bg-muted rounded-full"
+                    className="p-1 hover:bg-white/10 rounded-full"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-5 h-5 text-white" />
                   </button>
                 </div>
-                <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                <div className="flex gap-4 mt-2 text-sm text-white/70">
                   <span className="flex items-center gap-1">
                     <Eye className="w-4 h-4" />
                     {allViewers.length} views
@@ -1302,7 +1302,7 @@ export default function StoryViewer() {
                 {/* Likers Section */}
                 {allLikers.length > 0 && (
                   <div className="px-4 py-3">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
                       <Heart className="w-4 h-4 text-red-500 fill-red-500" />
                       Liked by
                     </h4>
@@ -1315,11 +1315,11 @@ export default function StoryViewer() {
                             className="w-10 h-10"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">
+                            <p className="font-medium text-sm text-white truncate">
                               {liker.full_name || liker.username}
                             </p>
                             {liker.username && (
-                              <p className="text-xs text-muted-foreground truncate">
+                              <p className="text-xs text-white/50 truncate">
                                 @{liker.username}
                               </p>
                             )}
@@ -1333,7 +1333,7 @@ export default function StoryViewer() {
                 
                 {/* Viewers Section */}
                 <div className="px-4 py-3">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
                     <Eye className="w-4 h-4" />
                     Viewers
                   </h4>
@@ -1347,11 +1347,11 @@ export default function StoryViewer() {
                             className="w-10 h-10"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">
+                            <p className="font-medium text-sm text-white truncate">
                               {viewer.full_name || viewer.username}
                             </p>
                             {viewer.username && (
-                              <p className="text-xs text-muted-foreground truncate">
+                              <p className="text-xs text-white/50 truncate">
                                 @{viewer.username}
                               </p>
                             )}
@@ -1360,7 +1360,7 @@ export default function StoryViewer() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
+                    <p className="text-sm text-white/50 text-center py-4">
                       No viewers yet
                     </p>
                   )}
