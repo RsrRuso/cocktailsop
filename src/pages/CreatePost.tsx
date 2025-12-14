@@ -4,8 +4,9 @@ import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Send, Image as ImageIcon, X, Crop, Music, Music2 } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, X, Crop, Music, Music2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import ImageCropDialog from "@/components/ImageCropDialog";
@@ -20,8 +21,10 @@ interface MediaFile {
 
 const CreatePost = () => {
   const navigate = useNavigate();
+  const [headline, setHeadline] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
@@ -29,13 +32,46 @@ const CreatePost = () => {
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
 
+  const generateContent = async () => {
+    if (!headline.trim()) {
+      toast.error("Enter a headline first");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-post-generator', {
+        body: { headline: headline.trim() }
+      });
+
+      if (error) throw error;
+
+      if (data?.content) {
+        setContent(data.content);
+        toast.success("Content generated!");
+      } else {
+        throw new Error("No content generated");
+      }
+    } catch (error: any) {
+      console.error("Error generating content:", error);
+      if (error.message?.includes('429') || error.status === 429) {
+        toast.error("Rate limit exceeded, try again later");
+      } else if (error.message?.includes('402') || error.status === 402) {
+        toast.error("AI credits exhausted");
+      } else {
+        toast.error("Failed to generate content");
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (mediaFiles.length + acceptedFiles.length > 10) {
       toast.error("Maximum 10 media files allowed");
       return;
     }
 
-    // Validate MIME types
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm'];
     
     for (const file of acceptedFiles) {
@@ -102,10 +138,8 @@ const CreatePost = () => {
     let blob: Blob;
     
     if (mediaFile.type === 'audio') {
-      // For audio, use the original file
       blob = mediaFile.file;
     } else {
-      // For images, convert base64 to blob (may be cropped)
       const imageToUpload = mediaFile.cropped || mediaFile.preview;
       blob = await fetch(imageToUpload).then((res) => res.blob());
     }
@@ -142,7 +176,6 @@ const CreatePost = () => {
         return;
       }
 
-      // Upload media files to storage
       const uploadedUrls: string[] = [];
       for (let i = 0; i < mediaFiles.length; i++) {
         const url = await uploadToStorage(mediaFiles[i], user.id, i);
@@ -150,7 +183,6 @@ const CreatePost = () => {
         setUploadProgress(((i + 1) / mediaFiles.length) * 100);
       }
 
-      // Create post with uploaded media URLs
       const { error } = await supabase.from("posts").insert({
         user_id: user.id,
         content: content,
@@ -198,7 +230,7 @@ const CreatePost = () => {
           </Button>
         </div>
 
-        <div className="glass rounded-2xl p-6 space-y-6">
+        <div className="glass rounded-2xl p-6 space-y-4">
           {/* Music Selection Button */}
           <Button
             variant="outline"
@@ -213,12 +245,45 @@ const CreatePost = () => {
             )}
           </Button>
 
+          {/* AI Headline Input */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="What's your post about? (headline for AI)"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                className="flex-1 glass border-primary/20"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && headline.trim()) {
+                    e.preventDefault();
+                    generateContent();
+                  }
+                }}
+              />
+              <Button
+                onClick={generateContent}
+                disabled={generating || !headline.trim()}
+                variant="secondary"
+                size="icon"
+                className="shrink-0"
+              >
+                {generating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Type a topic and tap ✨ to generate content with AI
+            </p>
+          </div>
+
           <Textarea
             placeholder="What's happening?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="glass border-primary/20 min-h-[140px] text-lg resize-none"
-            autoFocus
           />
 
           {/* Optional Media - Collapsible */}
