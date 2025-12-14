@@ -536,9 +536,15 @@ export function MatrixChatTab() {
             onClick={handleSend}
             disabled={(!input.trim() && !selectedImage) || loading}
             size="icon"
-            className="h-[60px] w-[60px] shrink-0"
+            className="h-[60px] w-[60px] shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            {commandMode ? <Zap className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : commandMode ? (
+              <Zap className="w-5 h-5" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </Button>
         </div>
       </div>
