@@ -429,27 +429,7 @@ export const LivestreamComments = ({
         </AnimatePresence>
 
         {/* Floating comments section */}
-        <div 
-          className="flex flex-col flex-1"
-          onTouchStart={(e) => {
-            const touch = e.touches[0];
-            const startY = touch.clientY;
-            let hasMoved = false;
-            
-            const handleMove = (moveEvent: TouchEvent) => {
-              const deltaY = moveEvent.touches[0].clientY - startY;
-              if (!hasMoved && deltaY < -50 && !expanded) {
-                hasMoved = true;
-                onExpandedChange?.(true);
-              }
-            };
-            
-            document.addEventListener('touchmove', handleMove, { passive: true });
-            document.addEventListener('touchend', () => {
-              document.removeEventListener('touchmove', handleMove);
-            }, { once: true });
-          }}
-        >
+        <div className="flex flex-col flex-1">
           {/* Comments flowing up */}
           <div 
             ref={commentsContainerRef}
@@ -459,14 +439,6 @@ export const LivestreamComments = ({
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
             }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              if (!expanded) onPauseChange?.(true);
-            }}
-            onTouchEnd={() => {
-              if (!expanded) onPauseChange?.(false);
-            }}
-            onTouchMove={(e) => e.stopPropagation()}
           >
             <div className="space-y-2">
             <AnimatePresence mode="popLayout">
