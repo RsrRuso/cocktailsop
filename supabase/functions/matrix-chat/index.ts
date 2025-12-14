@@ -66,6 +66,118 @@ serve(async (req) => {
       .in('status', ['proposed', 'in_progress'])
       .limit(5);
 
+    // Detect what data the user is asking about and fetch relevant data
+    const messageLower = message?.toLowerCase() || '';
+    
+    // Fetch inventory data if user asks about stock/inventory
+    let inventoryData = null;
+    if (messageLower.includes('inventory') || messageLower.includes('stock') || messageLower.includes('low stock') || messageLower.includes('items')) {
+      const { data: inventory } = await supabaseClient
+        .from('store_inventory')
+        .select('*, store:stores(name)')
+        .order('quantity', { ascending: true })
+        .limit(20);
+      inventoryData = inventory;
+    }
+
+    // Fetch batch production data if user asks about batches
+    let batchData = null;
+    if (messageLower.includes('batch') || messageLower.includes('production') || messageLower.includes('recipe')) {
+      const { data: batches } = await supabaseClient
+        .from('batch_productions')
+        .select('*, recipe:batch_recipes(recipe_name)')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      batchData = batches;
+      
+      const { data: recipes } = await supabaseClient
+        .from('batch_recipes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (recipes) {
+        batchData = { productions: batches, recipes };
+      }
+    }
+
+    // Fetch staff data if user asks about staff/scheduling
+    let staffData = null;
+    if (messageLower.includes('staff') || messageLower.includes('schedule') || messageLower.includes('bartender') || messageLower.includes('employee')) {
+      const { data: staff } = await supabaseClient
+        .from('staff_members')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      staffData = staff;
+    }
+
+    // Fetch cocktail SOPs if user asks about cocktails/drinks
+    let cocktailData = null;
+    if (messageLower.includes('cocktail') || messageLower.includes('drink') || messageLower.includes('sop') || messageLower.includes('recipe')) {
+      const { data: cocktails } = await supabaseClient
+        .from('cocktail_sops')
+        .select('drink_name, technique, glass, ice, garnish, total_ml, cost_per_serving, selling_price')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      cocktailData = cocktails;
+    }
+
+    // Fetch CRM data if user asks about customers/leads/deals
+    let crmData = null;
+    if (messageLower.includes('crm') || messageLower.includes('customer') || messageLower.includes('lead') || messageLower.includes('deal') || messageLower.includes('contact')) {
+      const { data: contacts } = await supabaseClient.from('crm_contacts').select('*').eq('user_id', user.id).limit(10);
+      const { data: leads } = await supabaseClient.from('crm_leads').select('*').eq('user_id', user.id).limit(10);
+      const { data: deals } = await supabaseClient.from('crm_deals').select('*').eq('user_id', user.id).limit(10);
+      crmData = { contacts, leads, deals };
+    }
+
+    // Fetch tasks if user asks about tasks/todos
+    let taskData = null;
+    if (messageLower.includes('task') || messageLower.includes('todo') || messageLower.includes('to-do') || messageLower.includes('work')) {
+      const { data: tasks } = await supabaseClient
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      taskData = tasks;
+    }
+
+    // Fetch events/calendar if user asks about events
+    let eventData = null;
+    if (messageLower.includes('event') || messageLower.includes('calendar') || messageLower.includes('schedule') || messageLower.includes('meeting')) {
+      const { data: events } = await supabaseClient
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true })
+        .limit(10);
+      eventData = events;
+    }
+
+    // Fetch workspaces if user asks about workspaces/stores
+    let workspaceData = null;
+    if (messageLower.includes('workspace') || messageLower.includes('store') || messageLower.includes('venue')) {
+      const { data: workspaces } = await supabaseClient
+        .from('workspaces')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      workspaceData = workspaces;
+    }
+
+    // Fetch purchase orders if user asks about orders/purchasing
+    let purchaseData = null;
+    if (messageLower.includes('purchase') || messageLower.includes('order') || messageLower.includes('supplier')) {
+      const { data: orders } = await supabaseClient
+        .from('purchase_orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      purchaseData = orders;
+    }
+
     // Detect if user is asking about a specific person
     const userMentionPatterns = /@(\w+)|who is (\w+)|tell me about (\w+)|profile of (\w+)|know (\w+)/i;
     const mentionMatch = message?.match(userMentionPatterns);
@@ -522,7 +634,17 @@ ${regionalKnowledge}
       userProfile: userProfile || null,
       recentHistory: chatHistory?.reverse() || [],
       mentionedUser: mentionedUserProfile,
-      appKnowledge
+      appKnowledge,
+      // Real operational data
+      inventoryData,
+      batchData,
+      staffData,
+      cocktailData,
+      crmData,
+      taskData,
+      eventData,
+      workspaceData,
+      purchaseData
     };
 
     const messages: any[] = [{
@@ -638,6 +760,46 @@ You are an expert in modern digital marketing:
 - Recent Patterns: ${JSON.stringify(context.patterns)}
 - Upcoming Features: ${JSON.stringify(context.features)}
 - User Insights: ${JSON.stringify(context.memories.slice(0, 3))}
+
+## REAL-TIME OPERATIONAL DATA (Use this to answer specific questions!)
+${context.inventoryData ? `
+### Inventory Data (${context.inventoryData.length} items):
+${JSON.stringify(context.inventoryData.slice(0, 10), null, 2)}
+` : ''}
+${context.batchData ? `
+### Batch Production Data:
+${JSON.stringify(context.batchData, null, 2)}
+` : ''}
+${context.staffData ? `
+### Staff Data (${context.staffData.length} staff members):
+${JSON.stringify(context.staffData, null, 2)}
+` : ''}
+${context.cocktailData ? `
+### Cocktail SOPs (${context.cocktailData.length} recipes):
+${JSON.stringify(context.cocktailData, null, 2)}
+` : ''}
+${context.crmData ? `
+### CRM Data:
+- Contacts: ${JSON.stringify(context.crmData.contacts?.slice(0, 5))}
+- Leads: ${JSON.stringify(context.crmData.leads?.slice(0, 5))}
+- Deals: ${JSON.stringify(context.crmData.deals?.slice(0, 5))}
+` : ''}
+${context.taskData ? `
+### Tasks (${context.taskData.length} tasks):
+${JSON.stringify(context.taskData.slice(0, 10), null, 2)}
+` : ''}
+${context.eventData ? `
+### Upcoming Events:
+${JSON.stringify(context.eventData, null, 2)}
+` : ''}
+${context.workspaceData ? `
+### Workspaces:
+${JSON.stringify(context.workspaceData, null, 2)}
+` : ''}
+${context.purchaseData ? `
+### Purchase Orders:
+${JSON.stringify(context.purchaseData, null, 2)}
+` : ''}
 
 ## CRITICAL BEHAVIOR RULES - FOLLOW STRICTLY
 
