@@ -433,7 +433,12 @@ export const LivestreamComments = ({
           {/* Comments flowing up */}
           <div 
             ref={commentsContainerRef}
-            className={`${expanded ? 'flex-1 max-h-none' : 'max-h-36 sm:max-h-44'} overflow-y-auto px-3 pb-2 pointer-events-auto scrollbar-hide`}
+            className={`${expanded ? 'flex-1' : 'max-h-48 sm:max-h-56'} overflow-y-auto overscroll-contain px-3 pb-2 pointer-events-auto`}
+            style={{ 
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
             onTouchStart={(e) => {
               e.stopPropagation();
               if (!expanded) onPauseChange?.(true);
