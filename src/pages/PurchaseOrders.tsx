@@ -654,8 +654,7 @@ const PurchaseOrders = () => {
                           <Calendar className="w-3 h-3" />
                           {format(new Date(order.order_date), 'MMM d, yyyy')}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" />
+                        <span className="flex items-center gap-1 font-medium">
                           {formatCurrency(Number(order.total_amount))}
                         </span>
                         {order.created_at && (

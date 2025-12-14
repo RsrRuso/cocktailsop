@@ -964,8 +964,7 @@ const POReceivedItems = () => {
                             <Calendar className="w-3 h-3" />
                             {format(new Date(record.received_date), 'MMM d, yyyy')}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />
+                          <span className="flex items-center gap-1 font-medium">
                             {formatCurrency(Number(record.total_value || 0))}
                           </span>
                           {record.created_at && (
