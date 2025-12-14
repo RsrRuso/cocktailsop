@@ -8,7 +8,8 @@ import {
   ClipboardList, BarChart3, Settings, Users, Wine, DollarSign,
   ArrowRight, ArrowLeft, Check, Sparkles, Calculator, Printer,
   Clock, AlertTriangle, FileText, Truck, Database, RefreshCw,
-  CreditCard, Receipt, Calendar, Target, TrendingUp, Percent
+  CreditCard, Receipt, Calendar, Target, TrendingUp, Percent,
+  Mic, Brain, Shield, Lightbulb, Volume2, MessageSquare
 } from "lucide-react";
 
 interface LabOpsOnboardingProps {
@@ -348,32 +349,135 @@ const onboardingSteps = [
     ),
   },
   {
+    id: "ai-intelligence",
+    title: "AI & Intelligence Tools",
+    icon: Brain,
+    description: "Smart automation and predictive insights",
+    content: (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Powerful AI modules to optimize your operations:
+        </p>
+        
+        {/* LUMX AI Voice Assistant */}
+        <div className="p-3 border rounded-lg bg-gradient-to-r from-purple-500/10 to-transparent">
+          <h4 className="font-semibold mb-1.5 flex items-center gap-2 text-sm">
+            <Mic className="h-4 w-4 text-purple-500" /> LUMX AI Voice Assistant
+          </h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            Natural language queries with voice & text input
+          </p>
+          <div className="grid grid-cols-2 gap-1.5 text-xs">
+            <div className="flex items-center gap-1.5 p-1.5 bg-muted/50 rounded">
+              <Volume2 className="h-3 w-3" />
+              <span>Voice Response</span>
+            </div>
+            <div className="flex items-center gap-1.5 p-1.5 bg-muted/50 rounded">
+              <MessageSquare className="h-3 w-3" />
+              <span>Text Input</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 italic">
+            Try: "What's my current stock?" or "Who's working today?"
+          </p>
+        </div>
+
+        {/* Predictive Purchasing */}
+        <div className="p-3 border rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent">
+          <h4 className="font-semibold mb-1.5 flex items-center gap-2 text-sm">
+            <ShoppingCart className="h-4 w-4 text-blue-500" /> Predictive Purchasing
+          </h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            AI analyzes consumption patterns to predict reorder timing
+          </p>
+          <div className="flex flex-wrap gap-1.5 text-xs">
+            <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full">Critical</span>
+            <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full">High</span>
+            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Medium</span>
+            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">Low</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Shows days until empty & one-click ordering
+          </p>
+        </div>
+
+        {/* Risk Radar Panel */}
+        <div className="p-3 border rounded-lg bg-gradient-to-r from-red-500/10 to-transparent">
+          <h4 className="font-semibold mb-1.5 flex items-center gap-2 text-sm">
+            <Shield className="h-4 w-4 text-red-500" /> Risk Radar Panel
+          </h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            Proactive risk detection and alerts
+          </p>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            <li className="flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3 text-amber-500" />
+              Shelf-life expiration warnings
+            </li>
+            <li className="flex items-center gap-1.5">
+              <Package className="h-3 w-3 text-red-500" />
+              Low stock critical alerts
+            </li>
+            <li className="flex items-center gap-1.5">
+              <TrendingUp className="h-3 w-3 text-purple-500" />
+              Consumption variance detection
+            </li>
+          </ul>
+        </div>
+
+        {/* Opportunity Unlock */}
+        <div className="p-3 border rounded-lg bg-gradient-to-r from-green-500/10 to-transparent">
+          <h4 className="font-semibold mb-1.5 flex items-center gap-2 text-sm">
+            <Lightbulb className="h-4 w-4 text-green-500" /> Opportunity Unlock System
+          </h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            AI-powered cost savings suggestions
+          </p>
+          <div className="grid grid-cols-3 gap-1.5 text-xs text-center">
+            <div className="p-1.5 bg-green-500/20 rounded">
+              <DollarSign className="h-3 w-3 mx-auto mb-0.5" />
+              Savings
+            </div>
+            <div className="p-1.5 bg-blue-500/20 rounded">
+              <Target className="h-3 w-3 mx-auto mb-0.5" />
+              Impact
+            </div>
+            <div className="p-1.5 bg-purple-500/20 rounded">
+              <Check className="h-3 w-3 mx-auto mb-0.5" />
+              Track
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
     id: "tips",
     title: "Pro Tips",
     icon: Sparkles,
     description: "Get the most out of LAB Ops",
     content: (
-      <div className="space-y-4">
-        <div className="grid gap-3">
-          <div className="p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
-            <h4 className="font-semibold mb-2">💡 Quick Actions</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
+      <div className="space-y-3">
+        <div className="grid gap-2">
+          <div className="p-3 border-2 border-primary/30 rounded-lg bg-primary/5">
+            <h4 className="font-semibold mb-1.5 text-sm">💡 Quick Actions</h4>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
               <li>• Double-tap table to quick-start new order</li>
               <li>• Swipe order items left to delete</li>
               <li>• Long-press menu item for modifiers</li>
             </ul>
           </div>
-          <div className="p-4 border-2 border-amber-500/30 rounded-lg bg-amber-500/5">
-            <h4 className="font-semibold mb-2">⚡ Keyboard Shortcuts</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
+          <div className="p-3 border-2 border-amber-500/30 rounded-lg bg-amber-500/5">
+            <h4 className="font-semibold mb-1.5 text-sm">⚡ Keyboard Shortcuts</h4>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
               <li>• Search items: Start typing anywhere</li>
               <li>• Send order: Ctrl/Cmd + Enter</li>
               <li>• Open payment: Ctrl/Cmd + P</li>
             </ul>
           </div>
-          <div className="p-4 border-2 border-green-500/30 rounded-lg bg-green-500/5">
-            <h4 className="font-semibold mb-2">📊 Best Practices</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
+          <div className="p-3 border-2 border-green-500/30 rounded-lg bg-green-500/5">
+            <h4 className="font-semibold mb-1.5 text-sm">📊 Best Practices</h4>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
               <li>• Review daily reports before closing</li>
               <li>• Update inventory counts weekly</li>
               <li>• Check bar variance for theft prevention</li>
@@ -407,21 +511,21 @@ export default function LabOpsOnboarding({ open, onOpenChange }: LabOpsOnboardin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <step.icon className="h-6 w-6 text-primary-foreground" />
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col p-4 sm:p-6">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+              <step.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <div>
-              <DialogTitle className="text-xl">{step.title}</DialogTitle>
-              <DialogDescription>{step.description}</DialogDescription>
+            <div className="min-w-0">
+              <DialogTitle className="text-base sm:text-xl truncate">{step.title}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm line-clamp-1">{step.description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="py-4">
+        <ScrollArea className="flex-1 min-h-0 -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <div className="py-2 sm:py-4">
             {step.content}
           </div>
         </ScrollArea>
