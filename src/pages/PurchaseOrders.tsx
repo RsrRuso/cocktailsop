@@ -692,146 +692,149 @@ const PurchaseOrders = () => {
 
       {/* Create Order Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle>New Purchase Order</DialogTitle>
+            <DialogTitle className="text-lg">New Purchase Order</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Supplier Name</Label>
+          <div className="space-y-3">
+            {/* Supplier & Order Number - Stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Supplier Name</Label>
                 <Input
                   value={newOrder.supplier_name}
                   onChange={(e) => setNewOrder({ ...newOrder, supplier_name: e.target.value })}
                   placeholder="Supplier name"
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Order Number</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Order Number</Label>
                 <Input
                   value={newOrder.order_number}
                   onChange={(e) => setNewOrder({ ...newOrder, order_number: e.target.value })}
                   placeholder="PO-001"
+                  className="h-9"
                 />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label>Order Date</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">Order Date</Label>
               <Input
                 type="date"
                 value={newOrder.order_date}
                 onChange={(e) => setNewOrder({ ...newOrder, order_date: e.target.value })}
+                className="h-9"
               />
             </div>
 
-            {/* Items Table */}
+            {/* Items - Mobile-friendly cards */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Items</Label>
-                <Button variant="outline" size="sm" onClick={handleAddItem}>
+                <Label className="text-xs">Items ({newItems.length})</Label>
+                <Button variant="outline" size="sm" onClick={handleAddItem} className="h-7 text-xs">
                   <Plus className="w-3 h-3 mr-1" />
-                  Add Item
+                  Add
                 </Button>
               </div>
               
-              <div className="border rounded-lg overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-20 min-w-[80px]">Code</TableHead>
-                      <TableHead className="min-w-[120px]">Name</TableHead>
-                      <TableHead className="w-14 min-w-[56px]">Unit</TableHead>
-                      <TableHead className="w-14 min-w-[56px]">Qty</TableHead>
-                      <TableHead className="w-16 min-w-[64px]">Price</TableHead>
-                      <TableHead className="w-18 min-w-[72px]">Value</TableHead>
-                      <TableHead className="w-8"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {newItems.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="p-1">
-                          <Input
-                            value={item.item_code}
-                            onChange={(e) => handleItemChange(index, 'item_code', e.target.value)}
-                            placeholder="Code"
-                            className="h-8 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            value={item.item_name}
-                            onChange={(e) => handleItemChange(index, 'item_name', e.target.value)}
-                            placeholder="Item name"
-                            className="h-8 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            value={item.unit || ''}
-                            onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
-                            placeholder="KG"
-                            className="h-8 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            type="number"
-                            value={item.quantity || ''}
-                            onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-                            className="h-8 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.price_per_unit || ''}
-                            onChange={(e) => handleItemChange(index, 'price_per_unit', parseFloat(e.target.value) || 0)}
-                            className="h-8 text-xs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1 text-xs font-medium text-foreground">
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                {newItems.map((item, index) => (
+                  <div key={index} className="border rounded-lg p-2 bg-card space-y-2">
+                    {/* Row 1: Code & Name */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground">Code</span>
+                        <Input
+                          value={item.item_code}
+                          onChange={(e) => handleItemChange(index, 'item_code', e.target.value)}
+                          placeholder="Code"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground">Name</span>
+                        <Input
+                          value={item.item_name}
+                          onChange={(e) => handleItemChange(index, 'item_name', e.target.value)}
+                          placeholder="Item name"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Row 2: Unit, Qty, Price, Value, Delete */}
+                    <div className="flex items-end gap-1.5">
+                      <div className="flex-1 space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground">Unit</span>
+                        <Input
+                          value={item.unit || ''}
+                          onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                          placeholder="KG"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground">Qty</span>
+                        <Input
+                          type="number"
+                          value={item.quantity || ''}
+                          onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground">Price</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.price_per_unit || ''}
+                          onChange={(e) => handleItemChange(index, 'price_per_unit', parseFloat(e.target.value) || 0)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground">Value</span>
+                        <div className="h-7 flex items-center text-xs font-medium text-primary">
                           {item.price_total.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleRemoveItem(index)}
-                          >
-                            <Trash2 className="w-3 h-3 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => handleRemoveItem(index)}
+                      >
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
               
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-1 border-t">
                 <div className="text-right">
-                  <span className="text-sm text-muted-foreground">Grand Total: </span>
-                  <span className="text-lg font-bold text-primary">{formatCurrency(grandTotal)}</span>
+                  <span className="text-xs text-muted-foreground">Grand Total: </span>
+                  <span className="text-base font-bold text-primary">{formatCurrency(grandTotal)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Notes</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">Notes</Label>
               <Textarea
                 value={newOrder.notes}
                 onChange={(e) => setNewOrder({ ...newOrder, notes: e.target.value })}
                 placeholder="Additional notes..."
                 rows={2}
+                className="text-sm"
               />
             </div>
 
             <Button 
-              className="w-full" 
+              className="w-full h-10" 
               onClick={() => createOrderMutation.mutate()}
               disabled={createOrderMutation.isPending}
             >
