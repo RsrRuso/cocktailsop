@@ -107,7 +107,6 @@ export function MatrixChatTab() {
   
   const startRecording = async () => {
     try {
-      // Use Browser Speech API instead of edge function
       const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
       if (!SpeechRecognitionAPI) {
@@ -120,12 +119,54 @@ export function MatrixChatTab() {
       recognition.interimResults = false;
       recognition.lang = 'en-US';
       
-      recognition.onresult = (event: any) => {
+      recognition.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setInput((prev) => prev ? prev + " " + transcript : transcript);
+        if (transcript && transcript.trim()) {
+          setIsRecording(false);
+          
+          // Add user message immediately
+          setMessages((prev) => [
+            ...prev,
+            { role: "user", content: transcript, timestamp: new Date() },
+          ]);
+          
+          setLoading(true);
+          
+          try {
+            // Check if it's a command
+            const looksLikeCommand = /^(add|create|make|show|check|view|assign|schedule|transfer|log|open)/i.test(transcript);
+            
+            if (commandMode || looksLikeCommand) {
+              const wasCommand = await tryExecuteCommand(transcript);
+              if (wasCommand) {
+                setLoading(false);
+                return;
+              }
+            }
+            
+            // Fall back to regular chat
+            const { data, error } = await supabase.functions.invoke("matrix-chat", {
+              body: { message: transcript },
+            });
+
+            if (error) throw error;
+
+            setMessages((prev) => [
+              ...prev,
+              { role: "assistant", content: data.response, timestamp: new Date() },
+            ]);
+
+            // Speak the response automatically
+            if (data.response) {
+              speakText(data.response);
+            }
+          } catch (error) {
+            toast.error("Failed to get Matrix AI response");
+            console.error("Voice chat error:", error);
+          } finally {
+            setLoading(false);
+          }
         }
-        setIsRecording(false);
       };
       
       recognition.onerror = (event: any) => {
