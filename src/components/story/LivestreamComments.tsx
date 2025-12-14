@@ -364,13 +364,13 @@ export const LivestreamComments = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/40 z-15"
+          className="fixed inset-0 bg-black/40 z-40"
           onClick={() => onExpandedChange?.(false)}
         />
       )}
       
       <motion.div 
-        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col ${expanded ? 'max-h-[70%]' : 'max-h-[50%]'}`}
+        className={`fixed inset-x-0 bottom-0 z-50 flex flex-col ${expanded ? 'max-h-[70%]' : 'max-h-[50%]'} pb-safe`}
         animate={{ height: expanded ? '70%' : 'auto' }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
@@ -433,7 +433,7 @@ export const LivestreamComments = ({
           {/* Comments flowing up */}
           <div 
             ref={commentsContainerRef}
-            className={`${expanded ? 'flex-1' : 'max-h-48 sm:max-h-56'} overflow-y-scroll overscroll-contain px-3 pb-2`}
+            className={`${expanded ? 'flex-1' : 'max-h-52'} overflow-y-auto px-4 pb-3 pointer-events-auto`}
             style={{ 
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
