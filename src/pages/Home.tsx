@@ -27,11 +27,11 @@ const LikesDialog = lazy(() => import("@/components/LikesDialog"));
 
 // Story skeleton for instant UI
 const StorySkeleton = () => (
-  <div className="flex gap-4 px-4 py-3">
+  <div className="flex gap-3 px-4 py-2">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex flex-col items-center gap-2">
-        <Skeleton className="w-[84px] h-[84px] rounded-full" />
-        <Skeleton className="w-12 h-3" />
+      <div key={i} className="flex flex-col items-center gap-1.5">
+        <Skeleton className="w-[88px] h-[88px] rounded-full" />
+        <Skeleton className="w-14 h-3" />
       </div>
     ))}
   </div>
@@ -443,10 +443,10 @@ const Home = () => {
       <TopNav isVisible={showTopNav} />
 
       {/* Stories */}
-      <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4">
+      <div className="px-3 py-2 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-3">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-fit">
+          <div className="flex flex-col items-center gap-1.5 min-w-fit">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <div className="relative overflow-visible">
                 {/* White glow when has active story - constant until expires */}
@@ -457,7 +457,7 @@ const Home = () => {
                   onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
                   className={`relative group ${hasActiveStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
                 >
-                  <Avatar className="w-[84px] h-[84px] rounded-full">
+                  <Avatar className="w-[88px] h-[88px] rounded-full">
                     <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
                     <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                   </Avatar>
@@ -496,7 +496,7 @@ const Home = () => {
             const isVideo = previewType?.startsWith('video');
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[90px] pt-5">
+              <div key={story.id} className="flex flex-col items-center gap-1.5 min-w-[92px] pt-4">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <div className="relative">
                     {/* User Status Indicator */}
@@ -515,7 +515,7 @@ const Home = () => {
                       )}
                       
                       {/* Live Preview Content */}
-                      <div className={`w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80' : ''}`}>
+                      <div className={`w-[88px] h-[88px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80' : ''}`}>
                         {previewMedia ? (
                           <>
                             {isVideo ? (
