@@ -570,8 +570,20 @@ const CreateReel = () => {
 
                 {/* Timeline Track */}
                 <div className="px-4 py-2 bg-zinc-900/80">
-                  <div className="relative">
-                    <div className="flex gap-0.5 overflow-x-auto py-1">
+                  <div 
+                    className="relative cursor-pointer"
+                    onClick={(e) => {
+                      if (videoRef.current && duration > 0) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const percentage = clickX / rect.width;
+                        const newTime = percentage * duration;
+                        videoRef.current.currentTime = newTime;
+                        setCurrentTime(newTime);
+                      }
+                    }}
+                  >
+                    <div className="flex gap-0.5 overflow-hidden py-1">
                       {selectedItems.map((item) => (
                         <div key={item.id} className="w-16 h-12 flex-shrink-0 rounded overflow-hidden border border-white/20">
                           {item.type === 'video' ? (
@@ -582,7 +594,16 @@ const CreateReel = () => {
                         </div>
                       ))}
                     </div>
-                    <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white pointer-events-none" />
+                    {/* Animated Playhead */}
+                    <div 
+                      className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none transition-all duration-100"
+                      style={{ 
+                        left: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%'
+                      }}
+                    >
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
+                    </div>
                   </div>
                 </div>
 
