@@ -7,8 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, Search, List, RefreshCw, Upload } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+
+const currencySymbols: Record<string, string> = {
+  'USD': '$',
+  'EUR': '€',
+  'GBP': '£',
+  'AED': 'د.إ',
+  'AUD': 'A$'
+};
 
 const POMasterItems = () => {
   const navigate = useNavigate();
@@ -17,6 +25,23 @@ const POMasterItems = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currency, setCurrency] = useState(() => localStorage.getItem('po-currency') || 'USD');
+
+  // Listen for currency changes from other tabs/pages
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newCurrency = localStorage.getItem('po-currency') || 'USD';
+      setCurrency(newCurrency);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(handleStorageChange, 500);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const formatCurrency = (amount: number) => `${currencySymbols[currency]}${amount.toFixed(2)}`;
   
   // Workspace state
   const [selectedWorkspaceId] = useState<string | null>(() => {
@@ -167,7 +192,7 @@ const POMasterItems = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      {item.last_price ? `$${item.last_price.toFixed(2)}` : '-'}
+                      {item.last_price ? formatCurrency(item.last_price) : '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(item.updated_at), 'MMM dd, yyyy')}

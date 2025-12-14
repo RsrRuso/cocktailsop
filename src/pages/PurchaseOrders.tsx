@@ -338,7 +338,7 @@ const PurchaseOrders = () => {
               }
               
               setShowCreateDialog(true);
-              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: AED ${parsed.total_amount.toFixed(2)})`);
+              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: ${currencySymbols[currency]}${parsed.total_amount.toFixed(2)})`);
             }
             setIsUploading(false);
             return;
@@ -384,7 +384,7 @@ const PurchaseOrders = () => {
               }
               
               setShowCreateDialog(true);
-              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: AED ${parsed.total_amount.toFixed(2)})`);
+              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: ${currencySymbols[currency]}${parsed.total_amount.toFixed(2)})`);
             }
           }
         } catch (err) {
@@ -452,7 +452,7 @@ const PurchaseOrders = () => {
         }
         
         setShowCreateDialog(true);
-        toast.success(`Parsed ${parsed.items?.length || 0} items (Total: AED ${parsed.total_amount.toFixed(2)})`);
+        toast.success(`Parsed ${parsed.items?.length || 0} items (Total: ${currencySymbols[currency]}${parsed.total_amount.toFixed(2)})`);
       }
     } catch (err) {
       console.error('Parse error:', err);
