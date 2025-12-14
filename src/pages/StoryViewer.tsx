@@ -6,7 +6,6 @@ import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useLike } from "@/hooks/useLike";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
-import StoryCommentsDialog from "@/components/StoryCommentsDialog";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1148,6 +1147,8 @@ export default function StoryViewer() {
           <LivestreamComments 
             contentId={currentStory.id} 
             onPauseChange={(paused) => setIsPaused(paused)}
+            expanded={showComments}
+            onExpandedChange={setShowComments}
           />
         </div>
       </div>
@@ -1373,12 +1374,6 @@ export default function StoryViewer() {
         )}
       </AnimatePresence>
 
-      {/* Comments Overlay - Transparent bottom sheet */}
-      <StoryCommentsDialog 
-        open={showComments} 
-        onOpenChange={setShowComments} 
-        storyId={currentStory.id} 
-      />
 
       {/* Story Insights */}
       <Sheet open={showInsights} onOpenChange={setShowInsights}>

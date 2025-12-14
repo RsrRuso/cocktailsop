@@ -35,12 +35,16 @@ interface LivestreamCommentsProps {
   contentId: string;
   onPauseChange?: (paused: boolean) => void;
   onForwardComment?: (comment: StoryComment) => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 export const LivestreamComments = ({
   contentId,
   onPauseChange,
   onForwardComment,
+  expanded = false,
+  onExpandedChange,
 }: LivestreamCommentsProps) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<StoryComment[]>([]);
@@ -353,50 +357,93 @@ export const LivestreamComments = ({
   const reactionEmojis = ["❤️", "😂", "😮", "😢", "😍", "🙏", "👍", "🔥"];
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col pointer-events-none max-h-[50%]">
-      {/* Flying hearts */}
-      <AnimatePresence>
-        {flyingHearts.map((heart) => (
-          <motion.div
-            key={heart.id}
-            initial={{ opacity: 0, y: 0, scale: 0.5 }}
-            animate={{ 
-              opacity: [0, 1, 1, 0],
-              y: -200,
-              x: [0, Math.random() * 40 - 20, Math.random() * 60 - 30],
-              scale: [0.5, 1.2, 1, 0.8],
-              rotate: [0, Math.random() * 20 - 10, Math.random() * 30 - 15]
-            }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2, ease: "easeOut" }}
-            className="absolute pointer-events-none"
-            style={{
-              left: heart.x,
-              bottom: 100,
+    <>
+      {/* Expanded backdrop */}
+      {expanded && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/40 z-15"
+          onClick={() => onExpandedChange?.(false)}
+        />
+      )}
+      
+      <motion.div 
+        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col pointer-events-none ${expanded ? 'max-h-[70%]' : 'max-h-[50%]'}`}
+        animate={{ height: expanded ? '70%' : 'auto' }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      >
+        {/* Grab handle for expanded mode */}
+        {expanded && (
+          <div 
+            className="flex justify-center py-3 pointer-events-auto cursor-grab"
+            onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const handleTouchMove = (moveEvent: TouchEvent) => {
+                const deltaY = moveEvent.touches[0].clientY - startY;
+                if (deltaY > 80) {
+                  onExpandedChange?.(false);
+                  document.removeEventListener('touchmove', handleTouchMove);
+                }
+              };
+              document.addEventListener('touchmove', handleTouchMove, { passive: true });
+              document.addEventListener('touchend', () => {
+                document.removeEventListener('touchmove', handleTouchMove);
+              }, { once: true });
             }}
           >
-            <Heart 
-              className="w-8 h-8" 
-              fill={heart.color}
-              color={heart.color}
-              style={{ filter: "drop-shadow(0 0 8px rgba(255,255,255,0.5))" }}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
+            <div className="w-12 h-1.5 bg-white/40 rounded-full" />
+          </div>
+        )}
 
-      {/* Floating comments section - always visible at bottom */}
-      <div className="flex flex-col">
-        {/* Comments flowing up */}
-        <div 
-          ref={commentsContainerRef}
-          className="max-h-36 sm:max-h-44 overflow-y-auto px-3 pb-2 pointer-events-auto scrollbar-hide"
-          onTouchStart={() => onPauseChange?.(true)}
-          onTouchEnd={() => onPauseChange?.(false)}
-          onMouseEnter={() => onPauseChange?.(true)}
-          onMouseLeave={() => onPauseChange?.(false)}
-        >
-          <div className="space-y-2">
+        {/* Flying hearts */}
+        <AnimatePresence>
+          {flyingHearts.map((heart) => (
+            <motion.div
+              key={heart.id}
+              initial={{ opacity: 0, y: 0, scale: 0.5 }}
+              animate={{ 
+                opacity: [0, 1, 1, 0],
+                y: -200,
+                x: [0, Math.random() * 40 - 20, Math.random() * 60 - 30],
+                scale: [0.5, 1.2, 1, 0.8],
+                rotate: [0, Math.random() * 20 - 10, Math.random() * 30 - 15]
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2, ease: "easeOut" }}
+              className="absolute pointer-events-none"
+              style={{
+                left: heart.x,
+                bottom: 100,
+              }}
+            >
+              <Heart 
+                className="w-8 h-8" 
+                fill={heart.color}
+                color={heart.color}
+                style={{ filter: "drop-shadow(0 0 8px rgba(255,255,255,0.5))" }}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* Floating comments section */}
+        <div className="flex flex-col flex-1">
+          {/* Comments flowing up */}
+          <div 
+            ref={commentsContainerRef}
+            className={`${expanded ? 'flex-1 max-h-none' : 'max-h-36 sm:max-h-44'} overflow-y-auto px-3 pb-2 pointer-events-auto scrollbar-hide`}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              if (!expanded) onPauseChange?.(true);
+            }}
+            onTouchEnd={() => {
+              if (!expanded) onPauseChange?.(false);
+            }}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-2">
             <AnimatePresence mode="popLayout">
               {comments.map((comment) => {
                 const reactionCount = comment.reactions ? Object.keys(comment.reactions).length : 0;
@@ -465,9 +512,9 @@ export const LivestreamComments = ({
                 Be the first to comment!
               </motion.div>
             )}
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Emoji Picker */}
       <AnimatePresence>
@@ -533,6 +580,7 @@ export const LivestreamComments = ({
           </Button>
         </div>
       </form>
-    </div>
+      </motion.div>
+    </>
   );
 };
