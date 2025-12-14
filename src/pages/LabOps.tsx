@@ -10,6 +10,10 @@ import LiveOpsDashboard from "@/components/lab-ops/LiveOpsDashboard";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import InviteLabOpsStaffDialog from "@/components/lab-ops/InviteLabOpsStaffDialog";
 import { SalesVarianceTab } from "@/components/lab-ops/SalesVarianceTab";
+import { StaffPerformancePanel } from "@/components/lab-ops/StaffPerformancePanel";
+import { FinancialRealityPanel } from "@/components/lab-ops/FinancialRealityPanel";
+import { BLEPourerIntegration } from "@/components/lab-ops/BLEPourerIntegration";
+import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -620,6 +624,22 @@ export default function LabOps() {
                     <DollarSign className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Sales</span>
                   </TabsTrigger>
+                  <TabsTrigger value="performance" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <TrendingUp className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Perf</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="financial" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Percent className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">GP%</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="pourers" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Wine className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Pourers</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="export" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Download className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Export</span>
+                  </TabsTrigger>
                   <TabsTrigger value="settings" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
                     <Settings className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Setup</span>
@@ -668,6 +688,22 @@ export default function LabOps() {
 
             <TabsContent value="sales">
               <SalesVarianceTab outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
+            </TabsContent>
+
+            <TabsContent value="performance">
+              <StaffPerformancePanel outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="financial">
+              <FinancialRealityPanel outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="pourers">
+              <BLEPourerIntegration outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="export">
+              <ReportExportEngine outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
             </TabsContent>
 
             <TabsContent value="settings">
