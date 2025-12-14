@@ -429,19 +429,17 @@ export const LivestreamComments = ({
         </AnimatePresence>
 
         {/* Floating comments section */}
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 pointer-events-auto">
           {/* Comments flowing up */}
           <div 
             ref={commentsContainerRef}
-            className={`${expanded ? 'flex-1' : 'max-h-48 sm:max-h-56'} overflow-y-auto overscroll-contain px-3 pb-2 pointer-events-auto touch-pan-y`}
+            className={`${expanded ? 'flex-1' : 'max-h-48 sm:max-h-56'} overflow-y-scroll overscroll-contain px-3 pb-2`}
             style={{ 
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
+              msOverflowStyle: 'none',
+              touchAction: 'pan-y',
             }}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
           >
             <div className="space-y-2">
             <AnimatePresence mode="popLayout">
