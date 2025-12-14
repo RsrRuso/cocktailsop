@@ -17,6 +17,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
+import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt";
 
 // Eager load critical routes for instant display
 import Index from "./pages/Index";
@@ -204,6 +205,7 @@ const AppContent = () => {
       <Sonner />
       <InstallPrompt />
       <PWAUpdatePrompt />
+      <NotificationPermissionPrompt />
       <Suspense fallback={<PageLoader />}>
               <Routes>
           <Route path="/" element={<Index />} />
