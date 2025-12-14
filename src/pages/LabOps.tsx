@@ -9,6 +9,7 @@ import LabOpsOnboarding from "@/components/lab-ops/LabOpsOnboarding";
 import LiveOpsDashboard from "@/components/lab-ops/LiveOpsDashboard";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import InviteLabOpsStaffDialog from "@/components/lab-ops/InviteLabOpsStaffDialog";
+import { SalesVarianceTab } from "@/components/lab-ops/SalesVarianceTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -615,6 +616,10 @@ export default function LabOps() {
                     <BarChart3 className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Stats</span>
                   </TabsTrigger>
+                  <TabsTrigger value="sales" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <DollarSign className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Sales</span>
+                  </TabsTrigger>
                   <TabsTrigger value="settings" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
                     <Settings className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Setup</span>
@@ -659,6 +664,10 @@ export default function LabOps() {
 
             <TabsContent value="reports">
               <LabOpsAnalytics outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="sales">
+              <SalesVarianceTab outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
             </TabsContent>
 
             <TabsContent value="settings">
