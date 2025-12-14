@@ -665,31 +665,8 @@ export default function StoryViewer() {
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
     
-    // Horizontal swipe detection (> 40px, faster than 400ms) - PRIORITY
-    if (deltaTime < 400 && absX > 40 && absX > absY * 1.2) {
-      // Clear any pending single tap
-      if (singleTapTimerRef.current) {
-        clearTimeout(singleTapTimerRef.current);
-        singleTapTimerRef.current = null;
-      }
-      pendingTapRef.current = null;
-      lastTapTimeRef.current = 0;
-      lastTapPosRef.current = null;
-      
-      if (deltaX > 0) {
-        // Swipe right = previous
-        goToPrevious();
-      } else {
-        // Swipe left = next
-        goToNext();
-      }
-      if ('vibrate' in navigator) navigator.vibrate(5);
-      touchStartRef.current = null;
-      return;
-    }
-    
-    // Vertical swipe for comments (up) / close (down)
-    if (deltaTime < 400 && absY > 60 && absY > absX * 1.2) {
+    // Vertical swipe detection FIRST (swipe up for comments) - > 50px, faster than 400ms
+    if (deltaTime < 400 && absY > 50 && absY > absX * 1.5) {
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
         singleTapTimerRef.current = null;
@@ -715,16 +692,36 @@ export default function StoryViewer() {
         // Swipe down - close with smooth animation
         setIsClosing(true);
         if ('vibrate' in navigator) navigator.vibrate(5);
-        // Navigate after animation completes
         setTimeout(() => {
           navigate("/home");
         }, 300);
+      }
+      touchStartRef.current = null;
+      return;
+    }
+    
+    // Horizontal swipe detection (> 40px, faster than 400ms)
+    if (deltaTime < 400 && absX > 40 && absX > absY * 1.2) {
+      // Clear any pending single tap
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      pendingTapRef.current = null;
+      lastTapTimeRef.current = 0;
+      lastTapPosRef.current = null;
+      
+      if (deltaX > 0) {
+        // Swipe right = previous
+        goToPrevious();
+      } else {
+        // Swipe left = next
+        goToNext();
       }
       if ('vibrate' in navigator) navigator.vibrate(5);
       touchStartRef.current = null;
       return;
     }
-    
     // Tap detection (minimal movement)
     if (absX < 20 && absY < 20 && deltaTime < 300) {
       const rect = containerRef.current?.getBoundingClientRect();
