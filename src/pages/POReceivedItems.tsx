@@ -968,6 +968,11 @@ const POReceivedItems = () => {
                             <DollarSign className="w-3 h-3" />
                             {formatCurrency(Number(record.total_value || 0))}
                           </span>
+                          {record.created_at && (
+                            <span className="flex items-center gap-1 text-muted-foreground/70">
+                              @ {format(new Date(record.created_at), 'h:mm a')}
+                            </span>
+                          )}
                           {(record.received_by_name || record.received_by_email) && (
                             <span className="flex items-center gap-1 text-green-500">
                               <Package className="w-3 h-3" />
