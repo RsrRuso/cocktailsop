@@ -182,24 +182,25 @@ Be helpful, concise, and provide actionable insights. When discussing inventory 
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Bot className="w-6 h-6 text-primary" />
+          <div className="relative flex-shrink-0">
+            <Bot className="w-5 sm:w-6 h-5 sm:h-6 text-primary" />
             {isSpeaking && (
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             )}
           </div>
-          <div>
-            <h2 className="font-semibold">LUMX Voice Assistant</h2>
-            <p className="text-xs text-muted-foreground">Natural language operations</p>
+          <div className="min-w-0">
+            <h2 className="font-semibold text-sm sm:text-base truncate">LUMX Voice Assistant</h2>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Natural language ops</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="icon"
+          className="flex-shrink-0 h-8 w-8"
           onClick={() => setVoiceEnabled(!voiceEnabled)}
         >
           {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -207,13 +208,13 @@ Be helpful, concise, and provide actionable insights. When discussing inventory 
       </div>
 
       {/* Quick Queries */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex overflow-x-auto gap-2 pb-1 -mx-1 px-1 scrollbar-hide">
         {quickQueries.map((q, i) => (
           <Button
             key={i}
             variant="outline"
             size="sm"
-            className="text-xs"
+            className="text-[10px] sm:text-xs flex-shrink-0 px-2 sm:px-3"
             onClick={() => handleSend(q.query)}
             disabled={isLoading}
           >
@@ -226,7 +227,7 @@ Be helpful, concise, and provide actionable insights. When discussing inventory 
       {/* Chat Messages */}
       <Card className="bg-black/40 backdrop-blur-xl border-white/10">
         <CardContent className="p-0">
-          <ScrollArea className="h-[350px] p-4" ref={scrollRef}>
+          <ScrollArea className="h-[280px] sm:h-[350px] p-3 sm:p-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div

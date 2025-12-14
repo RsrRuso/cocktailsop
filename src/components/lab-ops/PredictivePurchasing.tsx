@@ -146,21 +146,21 @@ export function PredictivePurchasing({ outletId }: PredictivePurchasingProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Predictive Purchasing</h2>
+          <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+          <h2 className="font-semibold text-sm sm:text-base">Predictive Purchasing</h2>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 self-start sm:self-auto overflow-x-auto">
           {['all', 'critical', 'planned'].map(v => (
             <Button
               key={v}
               variant={view === v ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setView(v as any)}
-              className="text-xs"
+              className="text-xs px-2 sm:px-3"
             >
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </Button>
@@ -246,7 +246,7 @@ export function PredictivePurchasing({ outletId }: PredictivePurchasingProps) {
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 text-xs mb-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] sm:text-xs mb-2">
                       <div>
                         <p className="text-muted-foreground">Current</p>
                         <p className="font-semibold">{pred.currentStock}ml</p>

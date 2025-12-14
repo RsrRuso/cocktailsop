@@ -211,21 +211,21 @@ export function RiskRadarPanel({ outletId }: RiskRadarPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Risk Radar</h2>
+          <Shield className="w-5 h-5 text-primary flex-shrink-0" />
+          <h2 className="font-semibold text-sm sm:text-base">Risk Radar</h2>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 self-start sm:self-auto">
           {['all', 'critical', 'high'].map(f => (
             <Button
               key={f}
               variant={filter === f ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setFilter(f as any)}
-              className="text-xs"
+              className="text-xs px-2 sm:px-3"
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </Button>
@@ -235,17 +235,17 @@ export function RiskRadarPanel({ outletId }: RiskRadarPanelProps) {
 
       {/* Risk Score */}
       <Card className={`${riskScore > 70 ? 'bg-green-500/10 border-green-500/30' : riskScore > 40 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-2 gap-2">
             <div>
-              <p className="text-sm text-muted-foreground">Overall Risk Score</p>
-              <p className={`text-3xl font-bold ${riskScore > 70 ? 'text-green-500' : riskScore > 40 ? 'text-yellow-500' : 'text-red-500'}`}>
+              <p className="text-xs sm:text-sm text-muted-foreground">Overall Risk Score</p>
+              <p className={`text-2xl sm:text-3xl font-bold ${riskScore > 70 ? 'text-green-500' : riskScore > 40 ? 'text-yellow-500' : 'text-red-500'}`}>
                 {riskScore}/100
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm font-medium">{risks.length} issues detected</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs sm:text-sm font-medium">{risks.length} issues</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {risks.filter(r => r.severity === 'critical').length} critical
               </p>
             </div>
