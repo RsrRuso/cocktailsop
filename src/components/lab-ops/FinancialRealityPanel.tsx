@@ -211,19 +211,19 @@ export function FinancialRealityPanel({ outletId }: FinancialRealityPanelProps) 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Financial Reality</h2>
+          <DollarSign className="w-5 h-5 text-primary flex-shrink-0" />
+          <h2 className="font-semibold text-sm sm:text-base">Financial Reality</h2>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 self-start sm:self-auto">
           {['1d', '7d', '30d'].map(p => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
+              className={`px-2.5 sm:px-3 py-1 text-xs rounded-full transition-colors ${
                 period === p 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted hover:bg-muted/80'
@@ -362,7 +362,7 @@ export function FinancialRealityPanel({ outletId }: FinancialRealityPanelProps) 
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] sm:text-xs">
                       <div>
                         <p className="text-muted-foreground">Physical</p>
                         <p className="font-semibold">{Math.round(brand.totalCostMl)}ml</p>

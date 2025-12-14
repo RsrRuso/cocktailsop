@@ -240,35 +240,35 @@ export function OpportunityUnlock({ outletId }: OpportunityUnlockProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Opportunity Unlock</h2>
+          <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+          <h2 className="font-semibold text-sm sm:text-base">Opportunity Unlock</h2>
         </div>
-        <Badge variant="outline" className="text-primary">
-          {opportunities.length} opportunities
+        <Badge variant="outline" className="text-primary text-[10px] sm:text-xs">
+          {opportunities.length} opps
         </Badge>
       </div>
 
       {/* Savings Summary */}
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-3 gap-2">
             <div>
-              <p className="text-sm text-muted-foreground">Total Potential Savings</p>
-              <p className="text-3xl font-bold text-primary">€{totalPotential.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">per year</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Savings</p>
+              <p className="text-2xl sm:text-3xl font-bold text-primary">€{totalPotential.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">per year</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Unlocked</p>
-              <p className="text-2xl font-bold text-green-500">€{implementedSavings.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Unlocked</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-500">€{implementedSavings.toLocaleString()}</p>
             </div>
           </div>
           <Progress value={(implementedSavings / totalPotential) * 100} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-1">
-            {Math.round((implementedSavings / totalPotential) * 100)}% of opportunities implemented
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+            {Math.round((implementedSavings / totalPotential) * 100)}% implemented
           </p>
         </CardContent>
       </Card>

@@ -198,19 +198,19 @@ export function StaffPerformancePanel({ outletId }: StaffPerformancePanelProps) 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Staff Pour Performance</h2>
+          <Users className="w-5 h-5 text-primary flex-shrink-0" />
+          <h2 className="font-semibold text-sm sm:text-base">Staff Pour Performance</h2>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 self-start sm:self-auto">
           {['1d', '7d', '30d'].map(p => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
+              className={`px-2.5 sm:px-3 py-1 text-xs rounded-full transition-colors ${
                 period === p 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted hover:bg-muted/80'
@@ -327,14 +327,14 @@ export function StaffPerformancePanel({ outletId }: StaffPerformancePanelProps) 
                         </div>
 
                         {/* Metrics */}
-                        <div className="grid grid-cols-4 gap-2 mt-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                           <div>
-                            <p className="text-xs text-muted-foreground">Pours</p>
-                            <p className="font-semibold text-sm">{staff.totalPours}</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Pours</p>
+                            <p className="font-semibold text-xs sm:text-sm">{staff.totalPours}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Avg Pour</p>
-                            <p className={`font-semibold text-sm ${
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Avg Pour</p>
+                            <p className={`font-semibold text-xs sm:text-sm ${
                               Math.abs(staff.avgPourAmount - TARGET_POUR_ML) <= ACCURACY_THRESHOLD 
                                 ? 'text-green-500' 
                                 : 'text-yellow-500'
@@ -343,16 +343,16 @@ export function StaffPerformancePanel({ outletId }: StaffPerformancePanelProps) 
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                               <TrendingUp className="w-3 h-3 text-red-400" /> Over
                             </p>
-                            <p className="font-semibold text-sm text-red-400">{staff.overPours}</p>
+                            <p className="font-semibold text-xs sm:text-sm text-red-400">{staff.overPours}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                               <TrendingDown className="w-3 h-3 text-blue-400" /> Under
                             </p>
-                            <p className="font-semibold text-sm text-blue-400">{staff.underPours}</p>
+                            <p className="font-semibold text-xs sm:text-sm text-blue-400">{staff.underPours}</p>
                           </div>
                         </div>
 
