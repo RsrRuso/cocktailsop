@@ -1096,10 +1096,10 @@ const CreateReel = () => {
 
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-6">
-            <button className="text-white/40 text-sm font-medium">POST</button>
-            <button className="text-white/40 text-sm font-medium">STORY</button>
+            <button onClick={() => navigate('/create/post')} className="text-white/40 text-sm font-medium hover:text-white/60 transition-colors">POST</button>
+            <button onClick={() => navigate('/create/story')} className="text-white/40 text-sm font-medium hover:text-white/60 transition-colors">STORY</button>
             <button className="text-white text-sm font-semibold">REEL</button>
-            <button className="text-white/40 text-sm font-medium">LIVE</button>
+            <button onClick={() => navigate('/live')} className="text-white/40 text-sm font-medium hover:text-white/60 transition-colors">LIVE</button>
           </div>
           
           <Button onClick={handleNext} disabled={selectedItems.length === 0} className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 flex items-center gap-2">
