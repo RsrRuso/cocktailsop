@@ -439,6 +439,9 @@ export const LivestreamComments = ({
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
             }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
           >
             <div className="space-y-2">
             <AnimatePresence mode="popLayout">
