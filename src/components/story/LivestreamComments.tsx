@@ -429,11 +429,31 @@ export const LivestreamComments = ({
         </AnimatePresence>
 
         {/* Floating comments section */}
-        <div className="flex flex-col flex-1">
+        <div 
+          className="flex flex-col flex-1"
+          onTouchStart={(e) => {
+            const touch = e.touches[0];
+            const startY = touch.clientY;
+            let hasMoved = false;
+            
+            const handleMove = (moveEvent: TouchEvent) => {
+              const deltaY = moveEvent.touches[0].clientY - startY;
+              if (!hasMoved && deltaY < -50 && !expanded) {
+                hasMoved = true;
+                onExpandedChange?.(true);
+              }
+            };
+            
+            document.addEventListener('touchmove', handleMove, { passive: true });
+            document.addEventListener('touchend', () => {
+              document.removeEventListener('touchmove', handleMove);
+            }, { once: true });
+          }}
+        >
           {/* Comments flowing up */}
           <div 
             ref={commentsContainerRef}
-            className={`${expanded ? 'flex-1' : 'max-h-48 sm:max-h-56'} overflow-y-auto overscroll-contain px-3 pb-2 pointer-events-auto`}
+            className={`${expanded ? 'flex-1' : 'max-h-48 sm:max-h-56'} overflow-y-auto overscroll-contain px-3 pb-2 pointer-events-auto touch-pan-y`}
             style={{ 
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
