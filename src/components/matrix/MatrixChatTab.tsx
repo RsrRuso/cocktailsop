@@ -1,18 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles, Loader2, Camera, Mic, Volume2, Wrench, X, Zap, Command } from "lucide-react";
+import { Send, Sparkles, Loader2, Camera, Mic, Volume2, Zap, Command } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { MatrixProactiveSuggestions } from "./MatrixProactiveSuggestions";
-import { MatrixToolsHelper } from "./MatrixToolsHelper";
 import { useMatrixCommandExecutor, ParsedCommand } from "@/hooks/useMatrixCommandExecutor";
 import { Badge } from "@/components/ui/badge";
 import { MatrixVoiceOrb } from "./MatrixVoiceOrb";
 import { useMatrixVoice } from "@/hooks/useMatrixVoice";
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -30,14 +29,13 @@ export function MatrixChatTab() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [showTools, setShowTools] = useState(false);
   const [commandMode, setCommandMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const { executeCommand, handleNavigation } = useMatrixCommandExecutor();
   
-  // Voice assistant hook
   const matrixVoice = useMatrixVoice({
     onResponse: (response) => {
       setMessages((prev) => [
@@ -55,6 +53,7 @@ export function MatrixChatTab() {
 
   const handleAskMatrix = useCallback((question: string) => {
     setInput(question);
+    inputRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -102,7 +101,6 @@ export function MatrixChatTab() {
     reader.readAsDataURL(file);
   };
 
-  // Browser Speech Recognition for recording button
   const speechRecognitionRef = useRef<any>(null);
   
   const startRecording = async () => {
@@ -110,7 +108,7 @@ export function MatrixChatTab() {
       const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
       if (!SpeechRecognitionAPI) {
-        toast.error("Speech recognition not supported in this browser");
+        toast.error("Speech recognition not supported");
         return;
       }
       
@@ -124,7 +122,6 @@ export function MatrixChatTab() {
         if (transcript && transcript.trim()) {
           setIsRecording(false);
           
-          // Add user message immediately
           setMessages((prev) => [
             ...prev,
             { role: "user", content: transcript, timestamp: new Date() },
@@ -133,7 +130,6 @@ export function MatrixChatTab() {
           setLoading(true);
           
           try {
-            // Check if it's a command
             const looksLikeCommand = /^(add|create|make|show|check|view|assign|schedule|transfer|log|open)/i.test(transcript);
             
             if (commandMode || looksLikeCommand) {
@@ -144,7 +140,6 @@ export function MatrixChatTab() {
               }
             }
             
-            // Fall back to regular chat
             const { data, error } = await supabase.functions.invoke("matrix-chat", {
               body: { message: transcript },
             });
@@ -156,12 +151,11 @@ export function MatrixChatTab() {
               { role: "assistant", content: data.response, timestamp: new Date() },
             ]);
 
-            // Speak the response automatically
             if (data.response) {
               speakText(data.response);
             }
           } catch (error) {
-            toast.error("Failed to get Matrix AI response");
+            toast.error("Failed to get response");
             console.error("Voice chat error:", error);
           } finally {
             setLoading(false);
@@ -206,7 +200,6 @@ export function MatrixChatTab() {
     }
   };
 
-  // Try to execute as command first
   const tryExecuteCommand = async (message: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.functions.invoke("matrix-command-parser", {
@@ -219,15 +212,12 @@ export function MatrixChatTab() {
 
       const parsed: ParsedCommand = data.parsedCommand;
       
-      // Only execute if confidence is high enough
       if (parsed.confidence < 0.7 || parsed.tool === 'general') {
         return false;
       }
 
-      // Execute the command
       const result = await executeCommand(parsed);
       
-      // Add command result to messages
       setMessages((prev) => [
         ...prev,
         {
@@ -239,10 +229,8 @@ export function MatrixChatTab() {
         },
       ]);
 
-      // Speak the result
       speakText(result.message.replace(/[✅❌📦📅🧪📋⚠️📥🔄📊🍸📈]/g, ''));
       
-      // Navigate if needed
       if (result.navigateTo) {
         handleNavigation(result);
       }
@@ -270,7 +258,6 @@ export function MatrixChatTab() {
     setLoading(true);
 
     try {
-      // If command mode is on or message looks like a command, try executing
       const looksLikeCommand = /^(add|create|make|show|check|view|assign|schedule|transfer|log|open)/i.test(userMessage);
       
       if ((commandMode || looksLikeCommand) && !imageUrl) {
@@ -281,7 +268,6 @@ export function MatrixChatTab() {
         }
       }
 
-      // Fall back to regular chat
       const { data, error } = await supabase.functions.invoke("matrix-chat", {
         body: { 
           message: userMessage,
@@ -300,14 +286,13 @@ export function MatrixChatTab() {
         },
       ]);
 
-      // Auto-speak AI response
       if (data.response) {
         speakText(data.response);
       }
     } catch (error: any) {
-      toast.error("Failed to get response from MATRIX AI");
+      toast.error("Failed to get response");
       console.error("Chat error:", error);
-      setMessages((prev) => prev.slice(0, -1)); // Remove user message on error
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);
     }
@@ -315,7 +300,7 @@ export function MatrixChatTab() {
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Voice Orb - Floating */}
+      {/* Voice Orb */}
       <MatrixVoiceOrb
         isListening={matrixVoice.isListening}
         isSpeaking={matrixVoice.isSpeaking}
@@ -325,158 +310,157 @@ export function MatrixChatTab() {
       />
       
       {/* Messages Area */}
-      <ScrollArea className="flex-1 pr-4 mb-4">
-        <div className="space-y-4">
-          {/* Proactive Suggestions - Show when no messages */}
+      <ScrollArea className="flex-1 pr-2 mb-3">
+        <div className="space-y-3">
+          {/* Welcome State */}
           {messages.length === 0 && (
-            <>
-              <MatrixProactiveSuggestions onAskMatrix={handleAskMatrix} />
+            <div className="text-center py-6">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 backdrop-blur-sm mb-3"
+              >
+                <Sparkles className="w-6 h-6 text-primary" />
+              </motion.div>
+              <h3 className="text-sm font-medium mb-1">Ask me anything</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Inventory, staff, recipes, career tips...
+              </p>
               
-              <div className="text-center py-8">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
-                <h3 className="text-lg font-semibold mb-2">
-                  Welcome to MATRIX AI
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Ask me about platform insights, tools, or get guidance
-                </p>
-                
-                {/* Quick Actions */}
-                <div className="flex flex-wrap justify-center gap-2 mb-4">
-                  {[
-                    "How do I track inventory?",
-                    "Help me schedule staff",
-                    "What's new on the platform?",
-                    "Career tips for bartenders"
-                  ].map((q) => (
-                    <Button
-                      key={q}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => setInput(q)}
-                    >
-                      {q}
-                    </Button>
-                  ))}
-                </div>
+              {/* Quick Suggestions */}
+              <div className="flex flex-wrap justify-center gap-1.5 mb-4">
+                {[
+                  "Check stock levels",
+                  "Schedule tips",
+                  "Recipe help",
+                  "Career advice"
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleAskMatrix(q)}
+                    className="px-2.5 py-1 text-[11px] rounded-full bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-sm transition-all"
+                  >
+                    {q}
+                  </button>
+                ))}
               </div>
-            </>
+              
+              <MatrixProactiveSuggestions onAskMatrix={handleAskMatrix} />
+            </div>
           )}
 
+          {/* Messages */}
           {messages.map((msg, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              transition={{ duration: 0.2 }}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                className={`max-w-[85%] rounded-2xl px-3 py-2 ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : msg.isCommand
-                    ? "bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30"
-                    : "bg-muted"
+                    ? "bg-primary/10 backdrop-blur-sm border border-primary/20"
+                    : "bg-white/5 backdrop-blur-sm border border-white/10"
                 }`}
               >
                 {msg.isCommand && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <Badge variant="secondary" className="text-xs">Command Executed</Badge>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Zap className="w-3 h-3 text-primary" />
+                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Command</Badge>
                   </div>
                 )}
                 {msg.imageUrl && (
                   <img 
                     src={msg.imageUrl} 
                     alt="Uploaded" 
-                    className="rounded-lg mb-2 max-w-full h-auto max-h-64 object-cover"
+                    className="rounded-lg mb-2 max-w-full h-auto max-h-40 object-cover"
                   />
                 )}
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                <p className="text-xs opacity-60 mt-1">
-                  {msg.timestamp.toLocaleTimeString()}
-                </p>
-                {msg.role === "assistant" && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-1 h-6 px-2"
-                    onClick={() => speakText(msg.content)}
-                  >
-                    <Volume2 className="w-3 h-3" />
-                  </Button>
-                )}
+                <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] opacity-50">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {msg.role === "assistant" && (
+                    <button
+                      onClick={() => speakText(msg.content)}
+                      className="p-1 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                      <Volume2 className="w-3 h-3 opacity-50 hover:opacity-100" />
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
 
+          {/* Loading */}
           {loading && (
-            <div className="flex justify-start">
-              <div className="bg-muted rounded-lg px-4 py-3">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start"
+            >
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
               </div>
-            </div>
+            </motion.div>
           )}
           <div ref={scrollRef} />
         </div>
       </ScrollArea>
 
-      {/* Tools Helper Panel */}
-      <AnimatePresence>
-        {showTools && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="border-t pt-3 mb-2 overflow-hidden"
-          >
-            <MatrixToolsHelper />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Input Area */}
-      <div className="border-t pt-4 flex-shrink-0 space-y-2">
-        {selectedImage && (
-          <div className="relative inline-block">
-            <img 
-              src={selectedImage} 
-              alt="Selected" 
-              className="h-20 rounded-lg"
-            />
-            <Button
-              size="sm"
-              variant="destructive"
-              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-              onClick={() => setSelectedImage(null)}
+      {/* Input Area - Compact Glass Design */}
+      <div className="flex-shrink-0 space-y-2">
+        {/* Selected Image Preview */}
+        <AnimatePresence>
+          {selectedImage && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="relative inline-block"
             >
-              ×
-            </Button>
-          </div>
-        )}
-        
-        {/* Command Mode Toggle */}
-        <div className="flex items-center justify-between mb-2">
-          <Button
-            variant={commandMode ? "default" : "ghost"}
-            size="sm"
-            className={`text-xs gap-1 ${commandMode ? 'bg-primary' : ''}`}
-            onClick={() => setCommandMode(!commandMode)}
-          >
-            <Command className="w-3 h-3" />
-            {commandMode ? 'Command Mode ON' : 'Enable Command Mode'}
-          </Button>
-          {commandMode && (
-            <p className="text-xs text-muted-foreground">
-              Say commands like "Add John as bartender" or "Check stock"
-            </p>
+              <img 
+                src={selectedImage} 
+                alt="Selected" 
+                className="h-16 rounded-lg border border-white/10"
+              />
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs"
+              >
+                ×
+              </button>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        <div className="flex gap-2">
+        {/* Command Mode Toggle */}
+        <button
+          onClick={() => setCommandMode(!commandMode)}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] transition-all ${
+            commandMode 
+              ? 'bg-primary/20 text-primary border border-primary/30' 
+              : 'bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10'
+          }`}
+        >
+          <Command className="w-3 h-3" />
+          {commandMode ? 'Commands ON' : 'Commands'}
+        </button>
+
+        {/* Input Row */}
+        <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-1.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -486,39 +470,33 @@ export function MatrixChatTab() {
             className="hidden"
           />
           
-          <Button
-            variant={showTools ? "default" : "outline"}
-            size="icon"
-            className="h-[60px] w-[60px] shrink-0"
-            onClick={() => setShowTools(!showTools)}
-          >
-            {showTools ? <X className="w-5 h-5" /> : <Wrench className="w-5 h-5" />}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              <Camera className="w-4 h-4 text-muted-foreground" />
+            </button>
+            
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={loading}
+              className={`p-2 rounded-xl transition-colors ${
+                isRecording 
+                  ? 'bg-destructive/20 text-destructive' 
+                  : 'hover:bg-white/10 text-muted-foreground'
+              }`}
+            >
+              <Mic className={`w-4 h-4 ${isRecording ? 'animate-pulse' : ''}`} />
+            </button>
+          </div>
           
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-[60px] w-[60px] shrink-0"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-          >
-            <Camera className="w-5 h-5" />
-          </Button>
-
-          <Button
-            variant={isRecording ? "destructive" : "outline"}
-            size="icon"
-            className="h-[60px] w-[60px] shrink-0 relative"
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={loading}
-          >
-            <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
-            {commandMode && !isRecording && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
-            )}
-          </Button>
-          
-          <Textarea
+          {/* Text Input */}
+          <input
+            ref={inputRef}
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -527,23 +505,24 @@ export function MatrixChatTab() {
                 handleSend();
               }
             }}
-            placeholder={commandMode ? "Give a command... e.g. 'Add Sarah as senior bartender'" : "Ask MATRIX AI anything..."}
-            className={`min-h-[60px] resize-none flex-1 ${commandMode ? 'border-primary' : ''}`}
+            placeholder={commandMode ? "Type a command..." : "Ask anything..."}
+            className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground/50 px-2"
             disabled={loading}
           />
           
+          {/* Send Button */}
           <Button
             onClick={handleSend}
             disabled={(!input.trim() && !selectedImage) || loading}
-            size="icon"
-            className="h-[60px] w-[60px] shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
+            size="sm"
+            className="h-8 w-8 rounded-xl p-0 shrink-0"
           >
             {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : commandMode ? (
-              <Zap className="w-5 h-5" />
+              <Zap className="w-4 h-4" />
             ) : (
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4" />
             )}
           </Button>
         </div>
