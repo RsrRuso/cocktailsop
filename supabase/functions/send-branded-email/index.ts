@@ -29,9 +29,10 @@ const getPasswordResetTemplate = (resetLink: string, userName?: string) => `
     <tr>
       <td align="center">
         <table width="100%" max-width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; overflow: hidden; max-width: 600px;">
-          <!-- Header -->
+          <!-- Header with SV Icon -->
           <tr>
             <td style="padding: 40px 40px 20px 40px; text-align: center;">
+              <img src="https://specverse.app/sv-icon.png" alt="SpecVerse" width="64" height="64" style="border-radius: 12px; margin-bottom: 16px;" />
               <h1 style="margin: 0; font-size: 32px; font-weight: bold; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                 SpecVerse
               </h1>
@@ -43,11 +44,11 @@ const getPasswordResetTemplate = (resetLink: string, userName?: string) => `
           <tr>
             <td style="padding: 20px 40px 40px 40px;">
               <h2 style="margin: 0 0 16px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
-                Reset Your Password
+                Reset your password
               </h2>
               <p style="margin: 0 0 24px 0; color: #b0b0b0; font-size: 16px; line-height: 1.6;">
                 ${userName ? `Hi ${userName},` : 'Hi there,'}<br><br>
-                We received a request to reset your password. Click the button below to create a new password.
+                You recently requested to reset your password. Click the button below to choose a new one:
               </p>
               
               <!-- Button -->
@@ -62,7 +63,7 @@ const getPasswordResetTemplate = (resetLink: string, userName?: string) => `
               </table>
               
               <p style="margin: 24px 0 0 0; color: #888; font-size: 14px; line-height: 1.6;">
-                If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
+                If you didn't request this, you can safely ignore this email.
               </p>
               
               <p style="margin: 16px 0 0 0; color: #666; font-size: 12px;">
@@ -71,10 +72,11 @@ const getPasswordResetTemplate = (resetLink: string, userName?: string) => `
             </td>
           </tr>
           
-          <!-- Footer -->
+          <!-- Footer with SV branding -->
           <tr>
             <td style="padding: 20px 40px; background-color: rgba(0,0,0,0.3); text-align: center;">
-              <p style="margin: 0; color: #666; font-size: 12px;">
+              <img src="https://specverse.app/sv-icon.png" alt="SV" width="24" height="24" style="border-radius: 4px; margin-bottom: 8px;" />
+              <p style="margin: 0; color: #888; font-size: 12px;">
                 © ${new Date().getFullYear()} SpecVerse. All rights reserved.
               </p>
             </td>
