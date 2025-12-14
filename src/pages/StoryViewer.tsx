@@ -927,11 +927,11 @@ export default function StoryViewer() {
           <div
             ref={containerRef}
             className="w-full h-full flex items-center justify-center relative select-none"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            onTouchStart={showComments ? undefined : handleTouchStart}
+            onTouchMove={showComments ? undefined : handleTouchMove}
+            onTouchEnd={showComments ? undefined : handleTouchEnd}
             style={{ 
-              touchAction: "none",
+              touchAction: showComments ? "pan-y" : "none",
               WebkitTouchCallout: "none",
               WebkitUserSelect: "none",
               userSelect: "none",
