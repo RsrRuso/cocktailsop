@@ -350,107 +350,7 @@ export default function StoryViewer() {
     return isVideo ? 15000 : 5000;
   }, [musicData, isVideo]);
 
-  // Auto-progress timer
-  useEffect(() => {
-    if (!currentStory || isPaused || showComments || !mediaLoaded) return;
-
-    const duration = getStoryDuration();
-    const interval = 50;
-    const increment = (interval / duration) * 100;
-
-    progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          goToNext();
-          return 0;
-        }
-        return prev + increment;
-      });
-    }, interval);
-
-    return () => {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    };
-  }, [currentMediaIndex, isPaused, showComments, allMediaItems, musicData, mediaLoaded]);
-
-  // Video sync
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !isVideo) return;
-
-    const handleTimeUpdate = () => {
-      if (video.duration && !isPaused && !showComments) {
-        setProgress((video.currentTime / video.duration) * 100);
-      }
-    };
-
-    const handleEnded = () => goToNext();
-    const handleLoadedData = () => setMediaLoaded(true);
-
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    video.addEventListener("ended", handleEnded);
-    video.addEventListener("loadeddata", handleLoadedData);
-
-    return () => {
-      video.removeEventListener("timeupdate", handleTimeUpdate);
-      video.removeEventListener("ended", handleEnded);
-      video.removeEventListener("loadeddata", handleLoadedData);
-    };
-  }, [currentStory, isPaused, showComments]);
-
-  // Pause/resume video
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !isVideo) return;
-
-    if (isPaused || showComments) {
-      video.pause();
-    } else {
-      video.play().catch(console.error);
-    }
-  }, [isPaused, showComments, isVideo]);
-  
-  // Handle music playback
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !musicData?.url) return;
-    
-    audio.currentTime = musicData.trimStart || 0;
-    audio.muted = isMuted;
-    
-    if (isPaused || showComments) {
-      audio.pause();
-    } else {
-      audio.play().catch(console.error);
-    }
-  }, [isPaused, showComments, musicData, currentMediaIndex, isMuted]);
-  
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) audio.muted = isMuted;
-  }, [isMuted]);
-  
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !musicData?.url) return;
-    
-    const handleTimeUpdate = () => {
-      const trimEnd = musicData.trimEnd || 45;
-      if (audio.currentTime >= trimEnd) {
-        audio.currentTime = musicData.trimStart || 0;
-      }
-    };
-    
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
-  }, [musicData]);
-
-  // Reset media loaded state on media change - immediately set to true for preloaded content
-  useEffect(() => {
-    setMediaLoaded(true);
-  }, [currentMediaIndex]);
-
-  // Navigation with smooth transitions
+  // Navigation with smooth transitions - defined early for use in effects
   const goToNext = useCallback(() => {
     setSlideDirection('left');
     setCurrentMediaIndex(prev => {
@@ -482,6 +382,128 @@ export default function StoryViewer() {
       }
     });
   }, []);
+
+  // Auto-progress timer - keeps looping when comments are open
+  useEffect(() => {
+    if (!currentStory || isPaused || !mediaLoaded) return;
+
+    const duration = getStoryDuration();
+    const interval = 50;
+    const increment = (interval / duration) * 100;
+
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          // When comments are open, loop the current story instead of going to next
+          if (showComments) {
+            // Replay current media
+            if (videoRef.current) {
+              videoRef.current.currentTime = 0;
+              videoRef.current.play().catch(console.error);
+            }
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(console.error);
+            }
+            return 0;
+          }
+          goToNext();
+          return 0;
+        }
+        return prev + increment;
+      });
+    }, interval);
+
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [currentMediaIndex, isPaused, showComments, allMediaItems, musicData, mediaLoaded]);
+
+  // Video sync - keeps playing when comments are open
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo) return;
+
+    const handleTimeUpdate = () => {
+      if (video.duration && !isPaused) {
+        setProgress((video.currentTime / video.duration) * 100);
+      }
+    };
+
+    const handleEnded = () => {
+      // When comments are open, loop the video instead of going to next
+      if (showComments) {
+        video.currentTime = 0;
+        video.play().catch(console.error);
+      } else {
+        goToNext();
+      }
+    };
+    const handleLoadedData = () => setMediaLoaded(true);
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+    video.addEventListener("loadeddata", handleLoadedData);
+
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("loadeddata", handleLoadedData);
+    };
+  }, [currentStory, isPaused, showComments, goToNext]);
+
+  // Pause/resume video - video keeps playing when comments are open
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo) return;
+
+    if (isPaused) {
+      video.pause();
+    } else {
+      video.play().catch(console.error);
+    }
+  }, [isPaused, isVideo]);
+  
+  // Handle music playback - music keeps playing when comments are open
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !musicData?.url) return;
+    
+    audio.currentTime = musicData.trimStart || 0;
+    audio.muted = isMuted;
+    
+    if (isPaused) {
+      audio.pause();
+    } else {
+      audio.play().catch(console.error);
+    }
+  }, [isPaused, musicData, currentMediaIndex, isMuted]);
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) audio.muted = isMuted;
+  }, [isMuted]);
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !musicData?.url) return;
+    
+    const handleTimeUpdate = () => {
+      const trimEnd = musicData.trimEnd || 45;
+      if (audio.currentTime >= trimEnd) {
+        audio.currentTime = musicData.trimStart || 0;
+      }
+    };
+    
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [musicData]);
+
+  // Reset media loaded state on media change - immediately set to true for preloaded content
+  useEffect(() => {
+    setMediaLoaded(true);
+  }, [currentMediaIndex]);
+
 
   // Replay current story (reset progress)
   const replayCurrent = useCallback(() => {
