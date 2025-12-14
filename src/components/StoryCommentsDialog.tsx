@@ -147,8 +147,6 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       {/* Semi-transparent backdrop */}
       <div 
@@ -156,16 +154,24 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
         onClick={() => onOpenChange(false)}
       />
       
-      {/* Comments bottom sheet */}
+      {/* Comments bottom sheet - stop all touch events from bubbling */}
       <motion.div 
         className="absolute bottom-0 left-0 right-0 pointer-events-auto"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Grab handle */}
-        <div className="flex justify-center py-3">
+        {/* Grab handle - only this triggers swipe down to close */}
+        <div 
+          className="flex justify-center py-3 cursor-grab"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="w-12 h-1.5 bg-white/40 rounded-full" />
         </div>
         
@@ -179,8 +185,12 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
           <X className="w-5 h-5" />
         </Button>
 
-        {/* Comments list - live stream style */}
-        <div className="max-h-[50vh] overflow-y-auto space-y-2 pb-4 px-4 scrollbar-hide">
+        {/* Comments list - scrolling here won't affect story */}
+        <div 
+          className="max-h-[50vh] overflow-y-auto space-y-2 pb-4 px-4 scrollbar-hide"
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           <AnimatePresence mode="popLayout">
             {comments.slice(-10).reverse().map((comment) => (
               <motion.div
