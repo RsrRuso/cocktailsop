@@ -192,13 +192,27 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
           onTouchMove={(e) => e.stopPropagation()}
         >
           <AnimatePresence mode="popLayout">
-            {comments.slice(-10).reverse().map((comment) => (
+            {comments.slice(-15).map((comment, index) => (
               <motion.div
                 key={comment.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                layout
+                initial={{ opacity: 0, y: 50, x: -20 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0, 
+                  x: 0,
+                  transition: { 
+                    type: "spring", 
+                    stiffness: 300, 
+                    damping: 25,
+                    delay: index * 0.05
+                  }
+                }}
+                exit={{ 
+                  opacity: 0, 
+                  y: -30,
+                  transition: { duration: 0.2 }
+                }}
                 className="bg-black/60 backdrop-blur-md rounded-2xl px-3 py-2 max-w-[85%]"
               >
                 <div className="flex items-start gap-2">
