@@ -33,7 +33,7 @@ const CreateReel = () => {
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio } = useAutoMusicExtraction();
 
-  // Auto-trigger file picker on mount
+  // Auto-trigger file picker immediately on mount
   useEffect(() => {
     const storedMedia = sessionStorage.getItem('reelMedia');
     if (storedMedia) {
@@ -56,11 +56,8 @@ const CreateReel = () => {
         console.error('Error parsing stored media:', e);
       }
     } else {
-      // Trigger file picker automatically
-      const timer = setTimeout(() => {
-        fileInputRef.current?.click();
-      }, 100);
-      return () => clearTimeout(timer);
+      // Trigger file picker immediately - no delay
+      fileInputRef.current?.click();
     }
   }, []);
 
