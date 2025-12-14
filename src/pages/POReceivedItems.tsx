@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown } from "lucide-react";
+import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -899,7 +899,7 @@ const POReceivedItems = () => {
         <Card className="p-3">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-green-500/10 rounded-lg">
-              <DollarSign className="h-4 w-4 text-green-500" />
+              <Coins className="h-4 w-4 text-green-500" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Value</p>
