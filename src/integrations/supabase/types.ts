@@ -3981,6 +3981,39 @@ export type Database = {
         }
         Relationships: []
       }
+      item_aliases: {
+        Row: {
+          alias: string
+          category: string | null
+          created_at: string | null
+          id: string
+          is_global: boolean | null
+          item_name: string
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          alias: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          item_name: string
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          alias?: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          item_name?: string
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       items: {
         Row: {
           barcode: string | null
@@ -6802,6 +6835,92 @@ export type Database = {
         }
         Relationships: []
       }
+      matrix_document_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_text: string
+          created_at: string | null
+          document_id: string
+          id: string
+          keywords: string[] | null
+          metadata: Json | null
+        }
+        Insert: {
+          chunk_index: number
+          chunk_text: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          keywords?: string[] | null
+          metadata?: Json | null
+        }
+        Update: {
+          chunk_index?: number
+          chunk_text?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          keywords?: string[] | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matrix_document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "matrix_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matrix_documents: {
+        Row: {
+          created_at: string | null
+          document_type: string | null
+          extracted_text: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          filename: string
+          id: string
+          is_processed: boolean | null
+          metadata: Json | null
+          updated_at: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type?: string | null
+          extracted_text?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          filename: string
+          id?: string
+          is_processed?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type?: string | null
+          extracted_text?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          filename?: string
+          id?: string
+          is_processed?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       matrix_insights: {
         Row: {
           category: string | null
@@ -6850,6 +6969,51 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      matrix_logs: {
+        Row: {
+          created_at: string | null
+          device: string | null
+          entities: Json | null
+          error_message: string | null
+          id: string
+          intent: string | null
+          raw_transcript: string | null
+          response_summary: string | null
+          response_time_ms: number | null
+          success: boolean | null
+          user_id: string
+          wake_phrase: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device?: string | null
+          entities?: Json | null
+          error_message?: string | null
+          id?: string
+          intent?: string | null
+          raw_transcript?: string | null
+          response_summary?: string | null
+          response_time_ms?: number | null
+          success?: boolean | null
+          user_id: string
+          wake_phrase?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device?: string | null
+          entities?: Json | null
+          error_message?: string | null
+          id?: string
+          intent?: string | null
+          raw_transcript?: string | null
+          response_summary?: string | null
+          response_time_ms?: number | null
+          success?: boolean | null
+          user_id?: string
+          wake_phrase?: string | null
         }
         Relationships: []
       }
@@ -6991,6 +7155,69 @@ export type Database = {
           source_pattern_ids?: string[] | null
           status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      matrix_user_preferences: {
+        Row: {
+          created_at: string | null
+          custom_wake_phrases: string[] | null
+          id: string
+          tone_mode: string | null
+          updated_at: string | null
+          user_id: string
+          voice_pitch: number | null
+          voice_speed: number | null
+          wake_phrase_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_wake_phrases?: string[] | null
+          id?: string
+          tone_mode?: string | null
+          updated_at?: string | null
+          user_id: string
+          voice_pitch?: number | null
+          voice_speed?: number | null
+          wake_phrase_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_wake_phrases?: string[] | null
+          id?: string
+          tone_mode?: string | null
+          updated_at?: string | null
+          user_id?: string
+          voice_pitch?: number | null
+          voice_speed?: number | null
+          wake_phrase_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      matrix_wake_phrases: {
+        Row: {
+          created_at: string | null
+          device: string | null
+          id: string
+          phrase_text: string
+          recognized: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device?: string | null
+          id?: string
+          phrase_text: string
+          recognized?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device?: string | null
+          id?: string
+          phrase_text?: string
+          recognized?: boolean | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -12104,6 +12331,17 @@ export type Database = {
       notify_friends_birthday: { Args: never; Returns: undefined }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       refresh_music_popularity: { Args: never; Returns: undefined }
+      search_matrix_documents: {
+        Args: { p_keywords: string[]; p_user_id: string }
+        Returns: {
+          chunk_id: string
+          chunk_text: string
+          document_id: string
+          document_type: string
+          filename: string
+          relevance_score: number
+        }[]
+      }
       update_business_analytics: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }
     }

@@ -119,3 +119,6 @@ verify_jwt = true
 
 [functions.ai-post-generator]
 verify_jwt = false
+
+[functions.matrix-voice-assistant]
+verify_jwt = true
