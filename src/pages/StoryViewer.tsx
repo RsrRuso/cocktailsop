@@ -1226,14 +1226,15 @@ export default function StoryViewer() {
         )}
       </div>
 
-      {/* Swipe up hint for comments (subtle indicator) */}
+      {/* Tap chevron to open comments */}
       {!showComments && (
         <motion.div 
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
+          onClick={() => setShowComments(true)}
         >
-          <ChevronUp className="w-5 h-5 text-white/40" />
+          <ChevronUp className="w-5 h-5 text-white/60" />
         </motion.div>
       )}
 
