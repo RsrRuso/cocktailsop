@@ -433,7 +433,7 @@ export const LivestreamComments = ({
           {/* Comments flowing up */}
           <div 
             ref={commentsContainerRef}
-            className={`${expanded ? 'flex-1' : 'max-h-52'} overflow-y-auto px-4 pb-3 pointer-events-auto`}
+            className={`${expanded ? 'flex-1 max-h-[70vh]' : 'max-h-52'} overflow-y-scroll px-4 pb-3 pointer-events-auto`}
             style={{ 
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
