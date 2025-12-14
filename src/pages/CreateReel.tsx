@@ -33,11 +33,12 @@ const CreateReel = () => {
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio } = useAutoMusicExtraction();
 
-  // Load recent media from device
+  // Auto-trigger file picker on mount
   useEffect(() => {
-    // Generate sample gallery items (in real app, would access device gallery)
-    const samples: MediaItem[] = [];
-    setMediaItems(samples);
+    const timer = setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
