@@ -1234,12 +1234,13 @@ export default function StoryViewer() {
         )}
       </div>
 
-      {/* Swipe Up Indicator - Icon only */}
+      {/* Swipe Up Indicator - Icon only, tappable */}
       {currentUserId === userId && !showViewersPanel && (
         <motion.div 
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 1.2, repeat: Infinity }}
+          onClick={() => setShowComments(true)}
         >
           <ChevronUp className="w-6 h-6 text-white/70" />
         </motion.div>
