@@ -395,7 +395,7 @@ const CreateReel = () => {
     const mainVideo = selectedItems.find(i => i.type === 'video') || selectedItems[0];
     
     return (
-      <div className="fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
+      <div className="fixed inset-0 bg-black flex flex-col z-50 overflow-hidden safe-bottom">
         {/* Header - Always visible */}
         <AnimatePresence>
           {!isFullscreen && (
@@ -526,13 +526,14 @@ const CreateReel = () => {
           </div>
         </motion.div>
 
-          {/* Timeline & Tools */}
+          {/* Timeline & Tools - Scrollable section */}
           <AnimatePresence>
             {!isFullscreen && activeTool === 'none' && (
               <motion.div
                 initial={{ opacity: 0, y: 100 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 100 }}
+                className="flex-1 overflow-y-auto pb-safe"
               >
                 {/* Timeline Controls */}
                 <div className="px-4 py-3 bg-black/80">
@@ -586,44 +587,50 @@ const CreateReel = () => {
                 </div>
 
                 {/* Audio Track */}
-                <div 
-                  className="px-4 py-3 bg-zinc-900/60 border-t border-white/5 flex items-center gap-2 cursor-pointer hover:bg-zinc-900/80"
+                <button 
+                  className="w-full px-4 py-4 bg-zinc-900/60 border-t border-white/5 flex items-center gap-3 cursor-pointer hover:bg-zinc-900/80 active:bg-zinc-800 transition-colors text-left"
                   onClick={() => setActiveTool('audio')}
                 >
-                  <Music className="w-4 h-4 text-white/40" />
-                  <span className="text-sm text-white/40">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                    <Music className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm text-white/70">
                     {selectedMusic ? `${selectedMusic.title} - ${selectedMusic.artist}` : 'Tap to add audio'}
                   </span>
-                </div>
+                </button>
 
                 {/* Text Track */}
-                <div 
-                  className="px-4 py-3 bg-zinc-900/40 border-t border-white/5 flex items-center gap-2 cursor-pointer hover:bg-zinc-900/60"
+                <button 
+                  className="w-full px-4 py-4 bg-zinc-900/40 border-t border-white/5 flex items-center gap-3 cursor-pointer hover:bg-zinc-900/60 active:bg-zinc-800 transition-colors text-left"
                   onClick={() => setActiveTool('text')}
                 >
-                  <Type className="w-4 h-4 text-white/40" />
-                  <span className="text-sm text-white/40">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <Type className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm text-white/70">
                     {textOverlays.length > 0 ? `${textOverlays.length} text overlay(s)` : 'Tap to add text'}
                   </span>
-                </div>
+                </button>
 
-                {/* Editor Tools */}
-                <div className="px-2 py-4 bg-black border-t border-white/10">
-                  <div className="flex items-center justify-around overflow-x-auto gap-1 scrollbar-hide">
-                    {editorTools.map((tool) => {
-                      const IconComponent = tool.icon;
-                      return (
-                        <button
-                          key={tool.id}
-                          onClick={() => setActiveTool(tool.id)}
-                          className="flex flex-col items-center gap-1.5 min-w-[60px] p-2 rounded-lg hover:bg-white/10 transition-colors"
-                        >
-                          <IconComponent className="w-6 h-6 text-white/80" />
-                          <span className="text-[10px] text-white/60">{tool.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Editor Tools - Fixed at bottom */}
+                <div className="px-2 py-4 bg-black border-t border-white/10 sticky bottom-0">
+                  <ScrollArea className="w-full">
+                    <div className="flex items-center justify-start gap-2 px-2 min-w-max">
+                      {editorTools.map((tool) => {
+                        const IconComponent = tool.icon;
+                        return (
+                          <button
+                            key={tool.id}
+                            onClick={() => setActiveTool(tool.id)}
+                            className="flex flex-col items-center gap-1.5 min-w-[56px] p-2 rounded-lg hover:bg-white/10 active:bg-white/20 transition-colors"
+                          >
+                            <IconComponent className="w-6 h-6 text-white/80" />
+                            <span className="text-[10px] text-white/60 whitespace-nowrap">{tool.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 </div>
               </motion.div>
             )}
@@ -643,15 +650,21 @@ const CreateReel = () => {
               onDragEnd={(e, info) => {
                 if (info.offset.y > 100) closeTool();
               }}
-              className="absolute bottom-0 left-0 right-0 bg-zinc-900 rounded-t-3xl max-h-[70vh] overflow-hidden z-10"
+              className="absolute bottom-0 left-0 right-0 bg-zinc-900 rounded-t-3xl max-h-[70vh] overflow-hidden z-20"
             >
-              {/* Handle */}
-              <div className="flex justify-center py-3">
+              {/* Handle & Close Button */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                <button onClick={closeTool} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
                 <div className="w-12 h-1 bg-white/30 rounded-full" />
+                <button onClick={closeTool} className="px-3 py-1.5 text-primary text-sm font-medium">
+                  Done
+                </button>
               </div>
 
-              <ScrollArea className="max-h-[60vh]">
-                <div className="px-4 pb-8">
+              <ScrollArea className="max-h-[55vh]">
+                <div className="px-4 pb-8 pt-4">
                   {/* TEXT TOOL */}
                   {activeTool === 'text' && (
                     <div className="space-y-4">
