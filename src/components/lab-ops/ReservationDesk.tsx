@@ -235,25 +235,25 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10">
-        <div className="flex items-center justify-between mb-4">
+      {/* Header - Mobile Optimized */}
+      <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div>
-            <h2 className="text-xl font-bold">Reservation Desk</h2>
-            <p className="text-sm text-muted-foreground">Manage guest bookings</p>
+            <h2 className="text-lg sm:text-xl font-bold">Reservations</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">Manage bookings</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={fetchReservations}>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={fetchReservations}>
               <RefreshCw className="w-4 h-4" />
             </Button>
             <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
               <DialogTrigger asChild>
-                <Button className="gap-2">
+                <Button size="sm" className="gap-1.5 h-9">
                   <Plus className="w-4 h-4" />
-                  New Reservation
+                  <span className="hidden xs:inline">New</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>New Reservation</DialogTitle>
                 </DialogHeader>
@@ -266,7 +266,7 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                       placeholder="Guest name"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Phone</Label>
                       <Input
@@ -285,9 +285,9 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     <div>
-                      <Label>Party Size</Label>
+                      <Label className="text-xs sm:text-sm">Party</Label>
                       <Input
                         type="number"
                         min={1}
@@ -296,7 +296,7 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                       />
                     </div>
                     <div>
-                      <Label>Date</Label>
+                      <Label className="text-xs sm:text-sm">Date</Label>
                       <Input
                         type="date"
                         value={newReservation.reservation_date}
@@ -304,7 +304,7 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                       />
                     </div>
                     <div>
-                      <Label>Time</Label>
+                      <Label className="text-xs sm:text-sm">Time</Label>
                       <Input
                         type="time"
                         value={newReservation.reservation_time}
@@ -350,21 +350,22 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowNewDialog(false)}>Cancel</Button>
-                  <Button onClick={createReservation}>Create Reservation</Button>
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button variant="outline" onClick={() => setShowNewDialog(false)} className="w-full sm:w-auto">Cancel</Button>
+                  <Button onClick={createReservation} className="w-full sm:w-auto">Create Reservation</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
         </div>
 
-        {/* Date & Search */}
-        <div className="flex gap-3 items-center">
-          <div className="flex gap-1">
+        {/* Date & Search - Mobile Stack */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
+          <div className="flex gap-1 flex-wrap">
             <Button
               variant={selectedDate === new Date().toISOString().split('T')[0] ? "default" : "outline"}
               size="sm"
+              className="h-8 text-xs"
               onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
             >
               Today
@@ -372,6 +373,7 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
             <Button
               variant={selectedDate === addDays(new Date(), 1).toISOString().split('T')[0] ? "default" : "outline"}
               size="sm"
+              className="h-8 text-xs"
               onClick={() => setSelectedDate(addDays(new Date(), 1).toISOString().split('T')[0])}
             >
               Tomorrow
@@ -380,112 +382,119 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-auto"
+              className="w-auto h-8 text-xs"
             />
           </div>
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search guest..."
-              className="pl-9"
+              className="pl-9 h-8 text-sm"
             />
           </div>
         </div>
       </div>
 
-      {/* Status Tabs */}
+      {/* Status Tabs - Horizontal Scroll on Mobile */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-          {[
-            { value: "upcoming", label: "Upcoming", icon: Clock },
-            { value: "seated", label: "Seated", icon: Armchair },
-            { value: "completed", label: "Completed", icon: CheckCircle },
-            { value: "left", label: "Left", icon: LogOut },
-            { value: "all", label: "All", icon: Calendar },
-          ].map(tab => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                {getTabCount(tab.value)}
-              </Badge>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-hide border-b">
+          <TabsList className="w-max min-w-full justify-start rounded-none bg-transparent p-0">
+            {[
+              { value: "upcoming", label: "Upcoming", icon: Clock },
+              { value: "seated", label: "Seated", icon: Armchair },
+              { value: "completed", label: "Done", icon: CheckCircle },
+              { value: "left", label: "Left", icon: LogOut },
+              { value: "all", label: "All", icon: Calendar },
+            ].map(tab => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="gap-1.5 px-3 py-2 text-xs sm:text-sm rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent whitespace-nowrap"
+              >
+                <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">{tab.label}</span>
+                <Badge variant="secondary" className="ml-0.5 h-4 sm:h-5 px-1 sm:px-1.5 text-[10px] sm:text-xs">
+                  {getTabCount(tab.value)}
+                </Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-4 space-y-3">
+          <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
             ) : getFilteredReservations().length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground text-sm">
                 No {activeTab === "all" ? "" : activeTab} reservations for this date
               </div>
             ) : (
               getFilteredReservations().map(reservation => (
                 <Card key={reservation.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg font-bold">
-                            {reservation.reservation_time.slice(0, 5)}
-                          </span>
-                          <Badge className={getStatusColor(reservation.status)}>
-                            {getStatusIcon(reservation.status)}
-                            <span className="ml-1 capitalize">{reservation.status}</span>
+                  <CardContent className="p-3 sm:p-4">
+                    {/* Mobile-first layout */}
+                    <div className="space-y-3">
+                      {/* Top row: Time, Status, Table */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-base sm:text-lg font-bold">
+                          {reservation.reservation_time.slice(0, 5)}
+                        </span>
+                        <Badge className={`${getStatusColor(reservation.status)} text-xs`}>
+                          {getStatusIcon(reservation.status)}
+                          <span className="ml-1 capitalize">{reservation.status}</span>
+                        </Badge>
+                        {reservation.lab_ops_tables && (
+                          <Badge variant="outline" className="text-xs">
+                            {reservation.lab_ops_tables.table_number 
+                              ? `T${reservation.lab_ops_tables.table_number}` 
+                              : reservation.lab_ops_tables.name}
                           </Badge>
-                          {reservation.lab_ops_tables && (
-                            <Badge variant="outline">
-                              {reservation.lab_ops_tables.table_number 
-                                ? `T${reservation.lab_ops_tables.table_number}` 
-                                : reservation.lab_ops_tables.name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-medium text-lg">{reservation.guest_name}</span>
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <Users className="w-4 h-4" />
-                            {reservation.party_size} guests
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                          {reservation.guest_phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {reservation.guest_phone}
-                            </span>
-                          )}
-                          {reservation.guest_email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {reservation.guest_email}
-                            </span>
-                          )}
-                        </div>
-                        {reservation.special_requests && (
-                          <p className="text-sm bg-amber-500/10 text-amber-600 px-2 py-1 rounded">
-                            ⚠️ {reservation.special_requests}
-                          </p>
                         )}
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex flex-col gap-2">
+                      {/* Guest info */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-medium text-base sm:text-lg">{reservation.guest_name}</span>
+                        <span className="flex items-center gap-1 text-muted-foreground text-sm">
+                          <Users className="w-3.5 h-3.5" />
+                          {reservation.party_size}
+                        </span>
+                      </div>
+
+                      {/* Contact info - stacked on mobile */}
+                      <div className="flex flex-col xs:flex-row xs:flex-wrap gap-1 xs:gap-3 text-xs sm:text-sm text-muted-foreground">
+                        {reservation.guest_phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {reservation.guest_phone}
+                          </span>
+                        )}
+                        {reservation.guest_email && (
+                          <span className="flex items-center gap-1 truncate max-w-[200px]">
+                            <Mail className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{reservation.guest_email}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {reservation.special_requests && (
+                        <p className="text-xs bg-amber-500/10 text-amber-600 px-2 py-1.5 rounded">
+                          ⚠️ {reservation.special_requests}
+                        </p>
+                      )}
+
+                      {/* Actions - Full width on mobile */}
+                      <div className="flex flex-wrap gap-2 pt-1">
                         {reservation.status === "upcoming" && (
                           <>
                             {availableTables.length > 0 ? (
                               <Select
                                 onValueChange={(tableId) => updateReservationStatus(reservation.id, "seated", tableId)}
                               >
-                                <SelectTrigger className="w-32">
+                                <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px]">
                                   <SelectValue placeholder="Seat Guest" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -497,13 +506,14 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <Button size="sm" disabled variant="outline">
+                              <Button size="sm" disabled variant="outline" className="h-8 text-xs flex-1">
                                 No tables free
                               </Button>
                             )}
                             <Button
                               size="sm"
                               variant="destructive"
+                              className="h-8 text-xs"
                               onClick={() => updateReservationStatus(reservation.id, "no_show")}
                             >
                               No Show
@@ -514,18 +524,19 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                           <>
                             <Button
                               size="sm"
-                              className="bg-purple-600 hover:bg-purple-700"
+                              className="bg-purple-600 hover:bg-purple-700 h-8 text-xs flex-1"
                               onClick={() => updateReservationStatus(reservation.id, "completed")}
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
+                              <CheckCircle className="w-3.5 h-3.5 mr-1" />
                               Complete
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
+                              className="h-8 text-xs"
                               onClick={() => updateReservationStatus(reservation.id, "left")}
                             >
-                              <LogOut className="w-4 h-4 mr-1" />
+                              <LogOut className="w-3.5 h-3.5 mr-1" />
                               Left
                             </Button>
                           </>
