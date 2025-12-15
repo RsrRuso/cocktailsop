@@ -2946,7 +2946,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
       .insert({
         menu_item_id: selectedMenuItem,
         version_number: 1,
-        yield_quantity: parseFloat(recipeYield) || 1,
+        yield_qty: parseFloat(recipeYield) || 1,
         instructions: recipeInstructions || null,
       })
       .select()
@@ -2994,7 +2994,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
     for (const ing of recipeIngredients) {
       const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
       const cost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
-      totalCost += cost * ing.quantity;
+      totalCost += cost * (ing.qty || 0);
     }
 
     return totalCost;
@@ -3123,7 +3123,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                         <div>
                           <h3 className="font-semibold">{recipe.lab_ops_menu_items?.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            Version {recipe.version_number} • Yield: {recipe.yield_quantity}
+                            Version {recipe.version_number} • Yield: {recipe.yield_qty}
                           </p>
                         </div>
                         <div className="text-right">
