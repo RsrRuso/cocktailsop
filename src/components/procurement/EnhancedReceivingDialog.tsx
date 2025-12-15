@@ -258,49 +258,49 @@ export const EnhancedReceivingDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-4 pb-2 border-b shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-3 sm:p-4 pb-2 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
             Review Receiving - {receivingData.doc_no || 'Parsed Items'}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Stats Summary */}
-        <div className="px-4 py-3 bg-muted/30 border-b">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Card className="p-2 text-center bg-green-500/10 border-green-500/30">
-              <CheckCircle className="h-4 w-4 text-green-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-green-500">{stats.received}</p>
-              <p className="text-[10px] text-muted-foreground">Received</p>
+        {/* Stats Summary - Compact for mobile */}
+        <div className="px-3 sm:px-4 py-2 bg-muted/30 border-b shrink-0">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            <Card className="p-1.5 sm:p-2 text-center bg-green-500/10 border-green-500/30">
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mx-auto" />
+              <p className="text-base sm:text-lg font-bold text-green-500">{stats.received}</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Received</p>
             </Card>
-            <Card className="p-2 text-center bg-red-500/10 border-red-500/30">
-              <XCircle className="h-4 w-4 text-red-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-red-500">{stats.missing}</p>
-              <p className="text-[10px] text-muted-foreground">Missing</p>
+            <Card className="p-1.5 sm:p-2 text-center bg-red-500/10 border-red-500/30">
+              <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mx-auto" />
+              <p className="text-base sm:text-lg font-bold text-red-500">{stats.missing}</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Missing</p>
             </Card>
-            <Card className="p-2 text-center bg-purple-500/10 border-purple-500/30">
-              <AlertTriangle className="h-4 w-4 text-purple-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-purple-500">{stats.unmatched}</p>
-              <p className="text-[10px] text-muted-foreground">Rejected</p>
+            <Card className="p-1.5 sm:p-2 text-center bg-purple-500/10 border-purple-500/30">
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 mx-auto" />
+              <p className="text-base sm:text-lg font-bold text-purple-500">{stats.unmatched}</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Rejected</p>
             </Card>
-            <Card className="p-2 text-center bg-primary/10 border-primary/30">
-              <Package className="h-4 w-4 text-primary mx-auto mb-1" />
-              <p className="text-lg font-bold text-primary">{currencySymbol}{stats.receivedValue.toFixed(0)}</p>
-              <p className="text-[10px] text-muted-foreground">Total Value</p>
+            <Card className="p-1.5 sm:p-2 text-center bg-primary/10 border-primary/30">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-primary mx-auto" />
+              <p className="text-base sm:text-lg font-bold text-primary">{currencySymbol}{stats.receivedValue.toFixed(0)}</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Total Value</p>
             </Card>
           </div>
           
           {/* Market vs Material breakdown */}
-          <div className="flex gap-4 mt-3 text-xs">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="h-3.5 w-3.5 text-blue-500" />
+          <div className="flex gap-3 sm:gap-4 mt-2 text-[10px] sm:text-xs">
+            <div className="flex items-center gap-1">
+              <ShoppingCart className="h-3 w-3 text-blue-500" />
               <span className="text-muted-foreground">Market:</span>
               <span className="font-semibold">{stats.marketReceivedCount}/{stats.marketCount}</span>
               <span className="text-blue-500">{currencySymbol}{stats.marketValue.toFixed(2)}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Wrench className="h-3.5 w-3.5 text-orange-500" />
+            <div className="flex items-center gap-1">
+              <Wrench className="h-3 w-3 text-orange-500" />
               <span className="text-muted-foreground">Material:</span>
               <span className="font-semibold">{stats.materialReceivedCount}/{stats.materialCount}</span>
               <span className="text-orange-500">{currencySymbol}{stats.materialValue.toFixed(2)}</span>
@@ -309,17 +309,17 @@ export const EnhancedReceivingDialog = ({
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-4 pt-2">
+        <div className="px-3 sm:px-4 pt-2 shrink-0">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all" className="text-xs">
+            <TabsList className="grid w-full grid-cols-3 h-8">
+              <TabsTrigger value="all" className="text-[10px] sm:text-xs h-7">
                 All ({items.length})
               </TabsTrigger>
-              <TabsTrigger value="market" className="text-xs">
+              <TabsTrigger value="market" className="text-[10px] sm:text-xs h-7">
                 <ShoppingCart className="h-3 w-3 mr-1" />
                 Market ({stats.marketCount})
               </TabsTrigger>
-              <TabsTrigger value="material" className="text-xs">
+              <TabsTrigger value="material" className="text-[10px] sm:text-xs h-7">
                 <Wrench className="h-3 w-3 mr-1" />
                 Material ({stats.materialCount})
               </TabsTrigger>
@@ -328,94 +328,82 @@ export const EnhancedReceivingDialog = ({
         </div>
 
         {/* Quick Actions */}
-        <div className="px-4 py-2 flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => toggleAll(true)} className="text-xs">
+        <div className="px-3 sm:px-4 py-2 flex gap-2 shrink-0">
+          <Button size="sm" variant="outline" onClick={() => toggleAll(true)} className="text-[10px] sm:text-xs h-7 px-2">
             <CheckCircle className="h-3 w-3 mr-1" />
-            Tick All Matched
+            Tick All
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toggleAll(false)} className="text-xs">
+          <Button size="sm" variant="outline" onClick={() => toggleAll(false)} className="text-[10px] sm:text-xs h-7 px-2">
             <XCircle className="h-3 w-3 mr-1" />
             Untick All
           </Button>
         </div>
 
-        {/* Items List - Scrollable area with fixed height */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full px-4">
-            <div className="space-y-2 py-2">
-              {filteredItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mb-3 opacity-50" />
-                  <p>No items to display</p>
-                </div>
-              ) : (
-                filteredItems.map((item, index) => {
-                  const originalIndex = items.findIndex(i => i === item);
-                  return (
-                    <Card 
-                      key={index}
-                      className={`p-3 transition-all ${
-                        !item.matchedInPO 
-                          ? 'bg-purple-500/5 border-purple-500/30 opacity-60' 
-                          : item.isReceived 
-                            ? 'bg-green-500/5 border-green-500/30' 
-                            : 'bg-red-500/5 border-red-500/30'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Checkbox - always enabled for manual tick/untick */}
-                        <div className="pt-1">
-                          <Checkbox
-                            checked={item.isReceived}
-                            onCheckedChange={() => toggleItemReceived(originalIndex)}
-                            className="cursor-pointer"
-                          />
+        {/* Items List - Scrollable area */}
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 pb-2">
+          <div className="space-y-2">
+            {filteredItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Package className="h-10 w-10 mb-2 opacity-50" />
+                <p className="text-sm">No items to display</p>
+              </div>
+            ) : (
+              filteredItems.map((item, index) => {
+                const originalIndex = items.findIndex(i => i === item);
+                return (
+                  <Card 
+                    key={index}
+                    className={`p-2.5 sm:p-3 transition-all ${
+                      !item.matchedInPO 
+                        ? 'bg-purple-500/5 border-purple-500/30 opacity-60' 
+                        : item.isReceived 
+                          ? 'bg-green-500/5 border-green-500/30' 
+                          : 'bg-red-500/5 border-red-500/30'
+                    }`}
+                    onClick={() => toggleItemReceived(originalIndex)}
+                  >
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      {/* Checkbox */}
+                      <div className="pt-0.5">
+                        <Checkbox
+                          checked={item.isReceived}
+                          onCheckedChange={() => toggleItemReceived(originalIndex)}
+                          className="cursor-pointer h-5 w-5"
+                        />
+                      </div>
+                      
+                      {/* Item Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {getItemCodeBadge(item)}
+                          <span className="font-mono text-[10px] sm:text-xs text-muted-foreground">
+                            {item.item_code || 'No Code'}
+                          </span>
+                          {item.isReceived && (
+                            <Badge variant="outline" className="text-[8px] sm:text-[10px] bg-green-500/10 text-green-500 border-green-500/30 px-1">
+                              ✓
+                            </Badge>
+                          )}
                         </div>
-                        
-                        {/* Item Details */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {getItemCodeBadge(item)}
-                            <span className="font-mono text-xs text-muted-foreground">
-                              {item.item_code || 'No Code'}
-                            </span>
-                            {!item.matchedInPO && (
-                              <Badge variant="destructive" className="text-[10px]">
-                                NOT IN PO - REJECTED
-                              </Badge>
-                            )}
-                            {item.matchedInPO && !item.isReceived && (
-                              <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-500 border-red-500/30">
-                                MISSING
-                              </Badge>
-                            )}
-                            {item.isReceived && (
-                              <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">
-                                RECEIVED
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="font-medium text-sm mt-1 truncate">{item.item_name}</p>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                            <span>Qty: <span className="font-semibold text-foreground">{item.quantity}</span></span>
-                            {item.unit && <span>Unit: {item.unit}</span>}
-                            <span>Price: {currencySymbol}{item.price_per_unit.toFixed(2)}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Total */}
-                        <div className="text-right">
-                          <p className={`font-bold ${item.isReceived ? 'text-green-500' : 'text-muted-foreground'}`}>
-                            {currencySymbol}{item.price_total.toFixed(2)}
-                          </p>
+                        <p className="font-medium text-xs sm:text-sm mt-0.5 line-clamp-2">{item.item_name}</p>
+                        <div className="flex items-center gap-2 sm:gap-4 mt-1 text-[10px] sm:text-xs text-muted-foreground">
+                          <span>Qty: <span className="font-semibold text-foreground">{item.quantity}</span></span>
+                          <span>@ {currencySymbol}{item.price_per_unit.toFixed(2)}</span>
                         </div>
                       </div>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
+                      
+                      {/* Total */}
+                      <div className="text-right shrink-0">
+                        <p className={`font-bold text-xs sm:text-sm ${item.isReceived ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {currencySymbol}{item.price_total.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Footer Actions */}
