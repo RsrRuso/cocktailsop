@@ -35,8 +35,9 @@ import {
   Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck
 } from "lucide-react";
+import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 
 interface Outlet {
   id: string;
@@ -635,6 +636,10 @@ export default function LabOps() {
             <div className="relative">
               <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-xl min-w-max">
+                  <TabsTrigger value="reservations" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <CalendarCheck className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Book</span>
+                  </TabsTrigger>
                   <TabsTrigger value="pos" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
                     <Smartphone className="h-4 w-4" />
                     <span className="text-[10px] font-medium">POS</span>
@@ -700,6 +705,12 @@ export default function LabOps() {
               {/* Fade indicator showing more tabs */}
               <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
             </div>
+
+            <TabsContent value="reservations">
+              <Card className="h-[calc(100vh-280px)]">
+                <ReservationDesk outletId={selectedOutlet.id} />
+              </Card>
+            </TabsContent>
 
             <TabsContent value="pos">
               <POSModule outletId={selectedOutlet.id} />
