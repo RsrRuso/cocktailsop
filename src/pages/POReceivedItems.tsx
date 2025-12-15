@@ -158,6 +158,60 @@ const POReceivedItems = () => {
     enabled: !!user?.id
   });
 
+  // Fetch all purchase orders to compare with received - workspace aware
+  const { data: allPurchaseOrders } = useQuery({
+    queryKey: ['po-all-orders', user?.id, selectedWorkspaceId],
+    queryFn: async () => {
+      let query = supabase
+        .from('purchase_orders')
+        .select('id, order_number, supplier_name, order_date, status')
+        .order('created_at', { ascending: false });
+      
+      if (selectedWorkspaceId) {
+        query = query.eq('workspace_id', selectedWorkspaceId);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
+  // Calculate PO completion stats by matching doc codes
+  const poCompletionStats = (() => {
+    if (!allPurchaseOrders || !recentReceived) return { total: 0, completed: 0, pending: 0, completedCodes: [] as string[] };
+    
+    const receivedDocCodes = new Set(
+      recentReceived
+        .filter(r => r.document_number)
+        .map(r => normalizeItemCode(r.document_number || ''))
+    );
+    
+    let completed = 0;
+    let pending = 0;
+    const completedCodes: string[] = [];
+    
+    allPurchaseOrders.forEach((po: any) => {
+      const poCode = normalizeItemCode(po.order_number || '');
+      if (receivedDocCodes.has(poCode)) {
+        completed++;
+        completedCodes.push(po.order_number);
+      } else {
+        pending++;
+      }
+    });
+    
+    return {
+      total: allPurchaseOrders.length,
+      completed,
+      pending,
+      completedCodes
+    };
+  })();
+
   // Calculate total from recent received records for accurate display
   const calculatedTotalValue = recentReceived?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
 
@@ -1002,6 +1056,43 @@ const POReceivedItems = () => {
               <SelectItem value="AUD">A$ AUD</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        
+        {/* PO Completion Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <FileText className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total POs</p>
+                <p className="text-lg font-bold">{poCompletionStats.total}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Completed</p>
+                <p className="text-lg font-bold text-green-500">{poCompletionStats.completed}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-lg font-bold text-amber-500">{poCompletionStats.pending}</p>
+              </div>
+            </div>
+          </Card>
         </div>
         
         <Card className="p-3">
