@@ -217,17 +217,57 @@ export default function BarKDS() {
     audio.play().catch(() => {});
   };
 
-  const startItem = async (itemId: string) => {
+  const startItem = async (itemId: string, orderId: string) => {
     try {
       await supabase
         .from("lab_ops_order_items")
         .update({ status: "in_progress" })
         .eq("id", itemId);
 
-      toast({ title: "Started preparing item" });
+      // Notify server that item is being prepared
+      await notifyServerStarted(orderId, itemId);
+
+      toast({ title: "Started preparing item - Server notified!" });
       if (selectedOutlet) fetchOrders(selectedOutlet);
     } catch (error) {
       console.error("Error updating item:", error);
+    }
+  };
+
+  const notifyServerStarted = async (orderId: string, itemId: string) => {
+    try {
+      // Get order details to find server
+      const { data: order } = await supabase
+        .from("lab_ops_orders")
+        .select("id, server_id, outlet_id, table:lab_ops_tables(name)")
+        .eq("id", orderId)
+        .single();
+      
+      if (!order?.server_id) return;
+      
+      const tableName = (order.table as any)?.name || "Unknown";
+      
+      // Get item name
+      const { data: item } = await supabase
+        .from("lab_ops_order_items")
+        .select("menu_item:lab_ops_menu_items(name)")
+        .eq("id", itemId)
+        .single();
+      
+      const itemName = (item?.menu_item as any)?.name || "Item";
+      
+      await supabase
+        .from("lab_ops_order_notifications")
+        .insert({
+          outlet_id: order.outlet_id,
+          order_id: orderId,
+          order_item_id: itemId,
+          server_id: order.server_id,
+          notification_type: "item_started",
+          message: `🔥 ${itemName} for ${tableName} is being prepared!`,
+        });
+    } catch (error) {
+      console.error("Error notifying server:", error);
     }
   };
 
@@ -461,7 +501,7 @@ export default function BarKDS() {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() => startItem(item.id)}
+                                      onClick={() => startItem(item.id, order.id)}
                                       className="text-amber-400 hover:bg-amber-900/50"
                                     >
                                       Start
