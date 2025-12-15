@@ -511,39 +511,39 @@ export default function LabOpsOnboarding({ open, onOpenChange }: LabOpsOnboardin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col p-4 sm:p-6">
-        <DialogHeader className="pb-2">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <step.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+      <DialogContent className="w-[95vw] max-w-2xl h-[85dvh] sm:h-[90dvh] flex flex-col p-3 sm:p-6 overflow-hidden">
+        <DialogHeader className="pb-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+              <step.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
-            <div className="min-w-0">
-              <DialogTitle className="text-base sm:text-xl truncate">{step.title}</DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm line-clamp-1">{step.description}</DialogDescription>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-sm sm:text-lg">{step.title}</DialogTitle>
+              <DialogDescription className="text-xs">{step.description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 -mx-4 px-4 sm:-mx-6 sm:px-6">
-          <div className="py-2 sm:py-4">
+        <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+          <div className="py-2 pr-2 text-sm">
             {step.content}
           </div>
         </ScrollArea>
 
         {/* Progress & Navigation */}
-        <div className="border-t pt-4 space-y-4">
+        <div className="border-t pt-3 space-y-2 shrink-0">
           {/* Step Indicators */}
-          <div className="flex justify-center gap-1.5">
+          <div className="flex justify-center gap-1">
             {onboardingSteps.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentStep(index)}
-                className={`h-2 rounded-full transition-all ${
+                className={`h-1.5 rounded-full transition-all ${
                   index === currentStep 
-                    ? "w-6 bg-primary" 
+                    ? "w-5 bg-primary" 
                     : index < currentStep 
-                    ? "w-2 bg-primary/50" 
-                    : "w-2 bg-muted"
+                    ? "w-1.5 bg-primary/50" 
+                    : "w-1.5 bg-muted"
                 }`}
               />
             ))}
@@ -553,26 +553,28 @@ export default function LabOpsOnboarding({ open, onOpenChange }: LabOpsOnboardin
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
+              size="sm"
               onClick={goPrev}
               disabled={isFirstStep}
+              className="h-8 text-xs px-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Previous
+              <ArrowLeft className="h-3 w-3 mr-1" />
+              Prev
             </Button>
 
-            <span className="text-sm text-muted-foreground">
-              {currentStep + 1} of {onboardingSteps.length}
+            <span className="text-xs text-muted-foreground">
+              {currentStep + 1}/{onboardingSteps.length}
             </span>
 
             {isLastStep ? (
-              <Button onClick={finish}>
-                <Check className="h-4 w-4 mr-1" />
-                Get Started
+              <Button size="sm" onClick={finish} className="h-8 text-xs px-3">
+                <Check className="h-3 w-3 mr-1" />
+                Start
               </Button>
             ) : (
-              <Button onClick={goNext}>
+              <Button size="sm" onClick={goNext} className="h-8 text-xs px-3">
                 Next
-                <ArrowRight className="h-4 w-4 ml-1" />
+                <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             )}
           </div>
