@@ -6914,6 +6914,7 @@ export type Database = {
           standing_capacity: number | null
           status: Database["public"]["Enums"]["lab_ops_table_status"] | null
           table_number: number | null
+          turnover_count: number | null
           updated_at: string | null
           width: number | null
         }
@@ -6935,6 +6936,7 @@ export type Database = {
           standing_capacity?: number | null
           status?: Database["public"]["Enums"]["lab_ops_table_status"] | null
           table_number?: number | null
+          turnover_count?: number | null
           updated_at?: string | null
           width?: number | null
         }
@@ -6956,6 +6958,7 @@ export type Database = {
           standing_capacity?: number | null
           status?: Database["public"]["Enums"]["lab_ops_table_status"] | null
           table_number?: number | null
+          turnover_count?: number | null
           updated_at?: string | null
           width?: number | null
         }
