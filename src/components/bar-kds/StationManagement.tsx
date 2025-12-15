@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, User, Trash2, Settings, Save } from "lucide-react";
+import { Plus, User, Trash2, Settings, Save, LayoutGrid } from "lucide-react";
 
 interface Station {
   id: string;
@@ -20,6 +20,7 @@ interface Station {
   max_orders_capacity: number;
   current_load: number;
   occupancy_threshold: number;
+  assigned_tables: number[];
 }
 
 interface Staff {
@@ -30,6 +31,12 @@ interface Staff {
 
 interface Category {
   id: string;
+  name: string;
+}
+
+interface FloorTable {
+  id: string;
+  table_number: number | null;
   name: string;
 }
 
@@ -44,6 +51,7 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
   const [stations, setStations] = useState<Station[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
   const [newStationName, setNewStationName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -56,7 +64,7 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [stationsRes, staffRes, categoriesRes] = await Promise.all([
+      const [stationsRes, staffRes, categoriesRes, tablesRes] = await Promise.all([
         supabase
           .from("lab_ops_stations")
           .select("*")
@@ -73,7 +81,12 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
           .from("lab_ops_categories")
           .select("id, name")
           .eq("outlet_id", outletId)
-          .eq("type", "drink")
+          .eq("type", "drink"),
+        supabase
+          .from("lab_ops_tables")
+          .select("id, table_number, name")
+          .eq("outlet_id", outletId)
+          .order("table_number", { ascending: true })
       ]);
 
       setStations((stationsRes.data || []).map(s => ({
@@ -86,10 +99,14 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
           : [],
         max_orders_capacity: s.max_orders_capacity || 10,
         current_load: s.current_load || 0,
-        occupancy_threshold: s.occupancy_threshold || 80
+        occupancy_threshold: s.occupancy_threshold || 80,
+        assigned_tables: Array.isArray(s.assigned_tables) 
+          ? (s.assigned_tables as number[]) 
+          : []
       })));
       setStaff(staffRes.data || []);
       setCategories(categoriesRes.data || []);
+      setFloorTables(tablesRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -126,7 +143,8 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
           assigned_bartender_id: station.assigned_bartender_id,
           category_filter: station.category_filter,
           max_orders_capacity: station.max_orders_capacity,
-          occupancy_threshold: station.occupancy_threshold
+          occupancy_threshold: station.occupancy_threshold,
+          assigned_tables: station.assigned_tables
         })
         .eq("id", station.id);
       
@@ -135,6 +153,17 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
+  };
+
+  const toggleTable = (stationId: string, tableNumber: number) => {
+    setStations(prev => prev.map(s => {
+      if (s.id !== stationId) return s;
+      const current = s.assigned_tables || [];
+      const updated = current.includes(tableNumber)
+        ? current.filter(t => t !== tableNumber)
+        : [...current, tableNumber].sort((a, b) => a - b);
+      return { ...s, assigned_tables: updated };
+    }));
   };
 
   const deleteStation = async (id: string) => {
@@ -268,6 +297,41 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
                             </Badge>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Assigned Tables */}
+                      <div className="space-y-2">
+                        <Label className="text-sm text-gray-400 flex items-center gap-2">
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                          Assigned Tables (leave empty for all)
+                        </Label>
+                        {floorTables.length === 0 ? (
+                          <p className="text-xs text-gray-500">No tables configured in floor plan</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {floorTables
+                              .filter(t => t.table_number !== null)
+                              .map((table) => (
+                                <Badge
+                                  key={table.id}
+                                  variant="outline"
+                                  className={`cursor-pointer transition-colors text-xs px-2 py-0.5 ${
+                                    station.assigned_tables?.includes(table.table_number!)
+                                      ? "bg-blue-600 text-white border-blue-600"
+                                      : "text-gray-400 border-gray-600 hover:border-blue-400"
+                                  }`}
+                                  onClick={() => toggleTable(station.id, table.table_number!)}
+                                >
+                                  T{table.table_number}
+                                </Badge>
+                              ))}
+                          </div>
+                        )}
+                        {station.assigned_tables?.length > 0 && (
+                          <p className="text-xs text-blue-400">
+                            Only orders from tables {station.assigned_tables.join(", ")} will route here
+                          </p>
+                        )}
                       </div>
 
                       {/* Capacity Settings */}
