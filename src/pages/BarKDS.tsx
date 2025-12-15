@@ -10,6 +10,7 @@ import {
   Volume2, VolumeX, Timer, AlertTriangle
 } from "lucide-react";
 import { differenceInMinutes } from "date-fns";
+import { RecipeDialog } from "@/components/bar-kds/RecipeDialog";
 
 interface OrderItem {
   id: string;
@@ -45,6 +46,14 @@ export default function BarKDS() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedOutlet, setSelectedOutlet] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'new' | 'completed'>('new');
+  const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{
+    id: string;
+    name: string;
+    menuItemId: string;
+    qty: number;
+    orderId: string;
+  } | null>(null);
 
   useEffect(() => {
     const outletId = localStorage.getItem('lab_ops_outlet_id');
@@ -217,15 +226,25 @@ export default function BarKDS() {
     audio.play().catch(() => {});
   };
 
-  const startItem = async (itemId: string, orderId: string) => {
+  const startItem = async (item: OrderItem, orderId: string) => {
     try {
       await supabase
         .from("lab_ops_order_items")
         .update({ status: "in_progress" })
-        .eq("id", itemId);
+        .eq("id", item.id);
 
       // Notify server that item is being prepared
-      await notifyServerStarted(orderId, itemId);
+      await notifyServerStarted(orderId, item.id);
+
+      // Open recipe dialog
+      setSelectedItem({
+        id: item.id,
+        name: item.menu_item?.name || "Unknown",
+        menuItemId: item.menu_item_id,
+        qty: item.qty,
+        orderId
+      });
+      setRecipeDialogOpen(true);
 
       toast({ title: "Started preparing item - Server notified!" });
       if (selectedOutlet) fetchOrders(selectedOutlet);
@@ -501,7 +520,7 @@ export default function BarKDS() {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() => startItem(item.id, order.id)}
+                                      onClick={() => startItem(item, order.id)}
                                       className="text-amber-400 hover:bg-amber-900/50"
                                     >
                                       Start
@@ -595,6 +614,23 @@ export default function BarKDS() {
           )
         )}
       </div>
+
+      {/* Recipe Dialog */}
+      {selectedItem && (
+        <RecipeDialog
+          open={recipeDialogOpen}
+          onClose={() => {
+            setRecipeDialogOpen(false);
+            setSelectedItem(null);
+          }}
+          itemId={selectedItem.id}
+          itemName={selectedItem.name}
+          menuItemId={selectedItem.menuItemId}
+          qty={selectedItem.qty}
+          orderId={selectedItem.orderId}
+          onComplete={() => markItemComplete(selectedItem.id, selectedItem.orderId)}
+        />
+      )}
     </div>
   );
 }
