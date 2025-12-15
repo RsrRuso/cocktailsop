@@ -15,8 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle
 } from "lucide-react";
+import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
@@ -72,6 +73,7 @@ const PurchaseOrders = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -520,14 +522,19 @@ const PurchaseOrders = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/ops-tools')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Purchase Orders</h1>
-            <p className="text-xs text-muted-foreground">Track and manage your purchases</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/ops-tools')}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Purchase Orders</h1>
+              <p className="text-xs text-muted-foreground">Track and manage your purchases</p>
+            </div>
           </div>
+          <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
+            <HelpCircle className="w-5 h-5 text-muted-foreground" />
+          </Button>
         </div>
       </div>
 
@@ -1021,6 +1028,9 @@ Example format:
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Guide Dialog */}
+      <PurchaseOrdersGuide open={showGuide} onOpenChange={setShowGuide} />
 
     </div>
   );
