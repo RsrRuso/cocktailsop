@@ -164,6 +164,26 @@ const PurchaseOrders = () => {
     mutationFn: async () => {
       const totalAmount = newItems.reduce((sum, item) => sum + item.price_total, 0);
       
+      // Check for duplicate document code if order_number is provided
+      if (newOrder.order_number?.trim()) {
+        let duplicateQuery = supabase
+          .from('purchase_orders')
+          .select('id, order_number')
+          .eq('order_number', newOrder.order_number.trim());
+        
+        if (selectedWorkspaceId) {
+          duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+        } else {
+          duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+        }
+        
+        const { data: existingPO } = await duplicateQuery;
+        
+        if (existingPO && existingPO.length > 0) {
+          throw new Error(`Purchase Order with document code "${newOrder.order_number}" already exists. Duplicate codes are not allowed.`);
+        }
+      }
+      
       // Create order
       const { data: orderData, error: orderError } = await supabase
         .from('purchase_orders')
