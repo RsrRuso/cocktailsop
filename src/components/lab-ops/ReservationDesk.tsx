@@ -253,75 +253,81 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                   <span className="hidden xs:inline">New</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
                 <DialogHeader>
-                  <DialogTitle>New Reservation</DialogTitle>
+                  <DialogTitle className="text-foreground">New Reservation</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div>
-                    <Label>Guest Name *</Label>
+                    <Label className="text-foreground">Guest Name *</Label>
                     <Input
                       value={newReservation.guest_name}
                       onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })}
                       placeholder="Guest name"
+                      className="bg-background border-border"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label>Phone</Label>
+                      <Label className="text-foreground">Phone</Label>
                       <Input
                         value={newReservation.guest_phone}
                         onChange={(e) => setNewReservation({ ...newReservation, guest_phone: e.target.value })}
                         placeholder="+1 234..."
+                        className="bg-background border-border"
                       />
                     </div>
                     <div>
-                      <Label>Email</Label>
+                      <Label className="text-foreground">Email</Label>
                       <Input
                         type="email"
                         value={newReservation.guest_email}
                         onChange={(e) => setNewReservation({ ...newReservation, guest_email: e.target.value })}
                         placeholder="email@..."
+                        className="bg-background border-border"
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     <div>
-                      <Label className="text-xs sm:text-sm">Party</Label>
+                      <Label className="text-xs sm:text-sm text-foreground">Party</Label>
                       <Input
                         type="number"
                         min={1}
                         value={newReservation.party_size}
                         onChange={(e) => setNewReservation({ ...newReservation, party_size: parseInt(e.target.value) || 2 })}
+                        className="bg-background border-border"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs sm:text-sm">Date</Label>
+                      <Label className="text-xs sm:text-sm text-foreground">Date</Label>
                       <Input
                         type="date"
                         value={newReservation.reservation_date}
                         onChange={(e) => setNewReservation({ ...newReservation, reservation_date: e.target.value })}
+                        className="bg-background border-border"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs sm:text-sm">Time</Label>
+                      <Label className="text-xs sm:text-sm text-foreground">Time</Label>
                       <Input
                         type="time"
                         value={newReservation.reservation_time}
                         onChange={(e) => setNewReservation({ ...newReservation, reservation_time: e.target.value })}
+                        className="bg-background border-border"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label>Assign Table (optional)</Label>
+                    <Label className="text-foreground">Assign Table (optional)</Label>
                     <Select
                       value={newReservation.table_id}
                       onValueChange={(v) => setNewReservation({ ...newReservation, table_id: v })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background border-border">
                         <SelectValue placeholder="Select table" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card border-border">
                         <SelectItem value="">No table assigned</SelectItem>
                         {tables.map(t => (
                           <SelectItem key={t.id} value={t.id}>
@@ -332,21 +338,23 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                     </Select>
                   </div>
                   <div>
-                    <Label>Special Requests</Label>
+                    <Label className="text-foreground">Special Requests</Label>
                     <Textarea
                       value={newReservation.special_requests}
                       onChange={(e) => setNewReservation({ ...newReservation, special_requests: e.target.value })}
                       placeholder="Dietary requirements, occasions..."
                       rows={2}
+                      className="bg-background border-border"
                     />
                   </div>
                   <div>
-                    <Label>Internal Notes</Label>
+                    <Label className="text-foreground">Internal Notes</Label>
                     <Textarea
                       value={newReservation.notes}
                       onChange={(e) => setNewReservation({ ...newReservation, notes: e.target.value })}
                       placeholder="Staff notes..."
                       rows={2}
+                      className="bg-background border-border"
                     />
                   </div>
                 </div>
@@ -406,6 +414,7 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
               { value: "seated", label: "Seated", icon: Armchair },
               { value: "completed", label: "Done", icon: CheckCircle },
               { value: "left", label: "Left", icon: LogOut },
+              { value: "cancelled", label: "Cancelled", icon: XCircle },
               { value: "all", label: "All", icon: Calendar },
             ].map(tab => (
               <TabsTrigger
@@ -494,10 +503,10 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                               <Select
                                 onValueChange={(tableId) => updateReservationStatus(reservation.id, "seated", tableId)}
                               >
-                                <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px]">
+                                <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px] bg-background border-border">
                                   <SelectValue placeholder="Seat Guest" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-card border-border">
                                   {availableTables.map(t => (
                                     <SelectItem key={t.id} value={t.id}>
                                       {t.table_number ? `T${t.table_number}` : t.name}
@@ -510,6 +519,14 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                                 No tables free
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10"
+                              onClick={() => updateReservationStatus(reservation.id, "cancelled")}
+                            >
+                              Cancel
+                            </Button>
                             <Button
                               size="sm"
                               variant="destructive"
@@ -540,6 +557,17 @@ export default function ReservationDesk({ outletId }: ReservationDeskProps) {
                               Left
                             </Button>
                           </>
+                        )}
+                        {(reservation.status === "cancelled" || reservation.status === "no_show") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs"
+                            onClick={() => updateReservationStatus(reservation.id, "upcoming")}
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                            Restore
+                          </Button>
                         )}
                       </div>
                     </div>
