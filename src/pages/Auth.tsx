@@ -191,6 +191,10 @@ const Auth = () => {
             src={svLogo} 
             alt="SV" 
             className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl shadow-lg"
+            style={{
+              filter: 'sepia(15%) saturate(1.2) hue-rotate(-5deg)',
+              boxShadow: '0 0 30px rgba(234, 179, 8, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4)'
+            }}
           />
           <p className="text-muted-foreground">
             {isSignUp ? "Join the Professional Network for Beverage Industry" : "Sign in to your account"}
