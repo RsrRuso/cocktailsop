@@ -430,12 +430,13 @@ export const EnhancedReceivingDialog = ({
   );
 };
 
-// Helper function to detect document type from item code
+// Helper function to detect document type from DocNo prefix
+// RQ prefix = Material Group, ML prefix = Procurement (market)
 export const detectDocumentType = (itemCode: string): 'market' | 'material' | 'unknown' => {
   if (!itemCode) return 'unknown';
   const code = itemCode.toUpperCase().trim();
-  if (code.startsWith('ML') || /^[0-9.]+$/.test(code)) return 'market'; // ML codes or numeric-only codes
-  if (code.startsWith('RQ')) return 'material';
+  if (code.startsWith('ML') || /^[0-9.]+$/.test(code)) return 'market'; // ML = Procurement
+  if (code.startsWith('RQ')) return 'material'; // RQ = Material Group
   return 'unknown';
 };
 
