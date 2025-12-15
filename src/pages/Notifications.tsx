@@ -3,13 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package, FlaskConical, ClipboardList, Trash2, Users, Award, Volume2 } from "lucide-react";
+import { Bell, CheckCheck, Volume2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { NotificationSoundPicker } from "@/components/NotificationSoundPicker";
+import { NotificationGroup } from "@/components/notifications/NotificationGroup";
+import { NotificationSkeleton } from "@/components/notifications/NotificationSkeleton";
+import { EmptyNotifications } from "@/components/notifications/EmptyNotifications";
+import { motion, AnimatePresence } from "framer-motion";
+import { isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
 
 interface Notification {
   id: string;
@@ -27,11 +32,15 @@ interface Notification {
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
   const { showNotification } = useInAppNotificationContext();
   const { showNotification: showPushNotification } = usePushNotifications();
   const processedNotificationsRef = useRef<Set<string>>(new Set());
   const subscriptionRef = useRef<any>(null);
+
+  // Deduplicate notifications
   const dedupedNotifications = useMemo(() => {
     const seen = new Set<string>();
     const result: Notification[] = [];
@@ -58,6 +67,30 @@ const Notifications = () => {
     return result;
   }, [notifications]);
 
+  // Group notifications by time
+  const groupedNotifications = useMemo(() => {
+    const today: Notification[] = [];
+    const yesterday: Notification[] = [];
+    const thisWeek: Notification[] = [];
+    const earlier: Notification[] = [];
+
+    dedupedNotifications.forEach((notification) => {
+      const date = parseISO(notification.created_at);
+      
+      if (isToday(date)) {
+        today.push(notification);
+      } else if (isYesterday(date)) {
+        yesterday.push(notification);
+      } else if (isThisWeek(date)) {
+        thisWeek.push(notification);
+      } else {
+        earlier.push(notification);
+      }
+    });
+
+    return { today, yesterday, thisWeek, earlier };
+  }, [dedupedNotifications]);
+
   const handleTestNotification = async () => {
     await showPushNotification(
       "Test Notification 🔔",
@@ -71,30 +104,41 @@ const Notifications = () => {
     toast.success("Test notification sent!");
   };
 
-  const fetchNotifications = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  const fetchNotifications = useCallback(async (showLoadingState = true) => {
+    if (showLoadingState) setIsLoading(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .neq("type", "message")
-      .order("created_at", { ascending: false })
-      .limit(50);
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .neq("type", "message")
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-    if (data) setNotifications(data as Notification[]);
+      if (data) setNotifications(data as Notification[]);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchNotifications(false);
+    toast.success("Refreshed");
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const setupSubscription = async () => {
-      // Clean up existing subscription first
       if (subscriptionRef.current) {
         await supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
 
-      // Request notification permissions
       try {
         await LocalNotifications.requestPermissions();
       } catch (error) {
@@ -106,56 +150,50 @@ const Notifications = () => {
       
       fetchNotifications();
       
-      // Set up realtime subscription for new notifications - ONLY for current user
       subscriptionRef.current = supabase
-        .channel(`notifications-${user.id}-${Date.now()}`) // Add timestamp for uniqueness
+        .channel(`notifications-${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'notifications',
-            filter: `user_id=eq.${user.id}` // Only listen to notifications for current user
+            filter: `user_id=eq.${user.id}`
           },
           async (payload) => {
             const newNotification = payload.new as Notification;
             
-            // Deduplicate notifications
             if (processedNotificationsRef.current.has(newNotification.id)) {
               return;
             }
             processedNotificationsRef.current.add(newNotification.id);
             
-            // Clean up old processed IDs (keep last 100)
             if (processedNotificationsRef.current.size > 100) {
               const items = Array.from(processedNotificationsRef.current);
               processedNotificationsRef.current = new Set(items.slice(-50));
             }
             
-            fetchNotifications();
+            fetchNotifications(false);
             
-            // Send in-app notification for ALL types
             showNotification(
               'New Notification',
               newNotification.content,
               newNotification.type as any
             );
             
-            // Send PWA push notification with sound
             await showPushNotification(
               'New Notification',
               newNotification.content,
               {
-                tag: newNotification.id, // Use notification ID as tag to prevent duplicates
+                tag: newNotification.id,
                 data: {
                   type: newNotification.type,
                   url: window.location.origin + '/notifications'
                 },
-                silent: false // Enable sound
+                silent: false
               }
             );
             
-            // Send mobile push notification (Capacitor)
             try {
               await LocalNotifications.schedule({
                 notifications: [
@@ -189,7 +227,6 @@ const Notifications = () => {
     };
   }, [fetchNotifications, showNotification, showPushNotification]);
 
-
   const handleMarkAllAsRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -203,72 +240,21 @@ const Notifications = () => {
     if (error) {
       toast.error("Failed to mark all as read");
     } else {
-      toast.success("All notifications marked as read");
-      fetchNotifications();
-    }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'like':
-        return <Heart className="w-5 h-5 text-red-500" fill="currentColor" />;
-      case 'comment':
-        return <MessageCircle className="w-5 h-5 text-blue-500" />;
-      case 'follow':
-        return <UserPlus className="w-5 h-5 text-green-500" />;
-      case 'unfollow':
-        return <UserMinus className="w-5 h-5 text-orange-500" />;
-      case 'profile_view':
-        return <Eye className="w-5 h-5 text-purple-500" />;
-      case 'message':
-        return <Send className="w-5 h-5 text-cyan-500" />;
-      case 'new_post':
-        return <Image className="w-5 h-5 text-blue-400" />;
-      case 'new_reel':
-        return <Video className="w-5 h-5 text-pink-500" />;
-      case 'new_music':
-        return <Music className="w-5 h-5 text-green-400" />;
-      case 'new_story':
-        return <MessageSquare className="w-5 h-5 text-yellow-500" />;
-      case 'new_event':
-        return <Calendar className="w-5 h-5 text-purple-500" />;
-      case 'event_attendance':
-        return <CalendarCheck className="w-5 h-5 text-indigo-500" />;
-      case 'new_user':
-        return <UserCheck className="w-5 h-5 text-emerald-500" />;
-      case 'access_request':
-        return <Settings className="w-5 h-5 text-orange-500" />;
-      case 'stock_alert':
-        return <Package className="w-5 h-5 text-red-500" />;
-      case 'batch_submission':
-        return <FlaskConical className="w-5 h-5 text-blue-500" />;
-      case 'batch_edit':
-        return <ClipboardList className="w-5 h-5 text-yellow-500" />;
-      case 'batch_delete':
-        return <Trash2 className="w-5 h-5 text-red-500" />;
-      case 'recipe_created':
-        return <ClipboardList className="w-5 h-5 text-green-500" />;
-      case 'member_added':
-        return <Users className="w-5 h-5 text-cyan-500" />;
-      case 'certificate_earned':
-        return <Award className="w-5 h-5 text-amber-500" />;
-      default:
-        return <Bell className="w-5 h-5 text-primary" />;
+      toast.success("All marked as read");
+      fetchNotifications(false);
     }
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if not already
     if (!notification.read) {
       await supabase
         .from("notifications")
         .update({ read: true })
         .eq("id", notification.id);
-      fetchNotifications();
+      fetchNotifications(false);
     }
 
-    // Navigate based on notification type and reference IDs
-    // LIKE/COMMENT notifications - prioritize content-specific navigation
+    // Navigation logic
     if (notification.type === 'like' || notification.type === 'comment') {
       if (notification.reel_id) {
         navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
@@ -336,80 +322,146 @@ const Notifications = () => {
     }
   };
 
+  const unreadCount = dedupedNotifications.filter(n => !n.read).length;
+  let runningIndex = 0;
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Notifications</h2>
-          <div className="flex items-center gap-2">
-            {/* Sound Settings */}
+      <div className="px-4 py-4 space-y-4">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Activity
+            </h1>
+            {unreadCount > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground"
+              >
+                {unreadCount}
+              </motion.span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-9 w-9 rounded-full"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            
             <NotificationSoundPicker 
               trigger={
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full glass-hover">
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
                   <Volume2 className="w-4 h-4" />
                 </Button>
               }
             />
+            
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={handleTestNotification}
-              className="glass-hover h-9"
+              className="h-9 w-9 rounded-full"
             >
-              <Bell className="w-4 h-4 mr-2" />
-              Test
+              <Bell className="w-4 h-4" />
             </Button>
-            {notifications.some(n => !n.read) && (
+            
+            {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleMarkAllAsRead}
-                className="glass-hover h-9"
+                className="h-9 px-3 rounded-full text-xs font-medium"
               >
-                <CheckCheck className="w-4 h-4 mr-2" />
-                Mark all
+                <CheckCheck className="w-4 h-4 mr-1.5" />
+                Read all
               </Button>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {notifications.length === 0 ? (
-          <div className="glass rounded-2xl p-8 text-center space-y-4">
-            <div className="mx-auto w-20 h-20 rounded-full glass-hover flex items-center justify-center">
-              <Bell className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground">No notifications yet</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {dedupedNotifications.map((notification) => (
-              <div
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`glass rounded-xl p-4 cursor-pointer hover:glass-hover transition-all ${
-                  !notification.read ? "border-l-4 border-primary bg-primary/5" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm">{notification.content}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(notification.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  {!notification.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Content */}
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              key="skeleton"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <NotificationSkeleton />
+            </motion.div>
+          ) : dedupedNotifications.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <EmptyNotifications />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="notifications"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-6"
+            >
+              {groupedNotifications.today.length > 0 && (
+                <NotificationGroup
+                  title="Today"
+                  notifications={groupedNotifications.today}
+                  onNotificationClick={handleNotificationClick}
+                  startIndex={runningIndex}
+                />
+              )}
+              {(runningIndex += groupedNotifications.today.length, null)}
+
+              {groupedNotifications.yesterday.length > 0 && (
+                <NotificationGroup
+                  title="Yesterday"
+                  notifications={groupedNotifications.yesterday}
+                  onNotificationClick={handleNotificationClick}
+                  startIndex={runningIndex}
+                />
+              )}
+              {(runningIndex += groupedNotifications.yesterday.length, null)}
+
+              {groupedNotifications.thisWeek.length > 0 && (
+                <NotificationGroup
+                  title="This Week"
+                  notifications={groupedNotifications.thisWeek}
+                  onNotificationClick={handleNotificationClick}
+                  startIndex={runningIndex}
+                />
+              )}
+              {(runningIndex += groupedNotifications.thisWeek.length, null)}
+
+              {groupedNotifications.earlier.length > 0 && (
+                <NotificationGroup
+                  title="Earlier"
+                  notifications={groupedNotifications.earlier}
+                  onNotificationClick={handleNotificationClick}
+                  startIndex={runningIndex}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <BottomNav />
