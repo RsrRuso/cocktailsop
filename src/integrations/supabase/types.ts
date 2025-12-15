@@ -6199,6 +6199,81 @@ export type Database = {
           },
         ]
       }
+      lab_ops_reservations: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          guest_email: string | null
+          guest_name: string
+          guest_phone: string | null
+          id: string
+          notes: string | null
+          outlet_id: string
+          party_size: number
+          reservation_date: string
+          reservation_time: string
+          seated_at: string | null
+          special_requests: string | null
+          status: string
+          table_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          guest_email?: string | null
+          guest_name: string
+          guest_phone?: string | null
+          id?: string
+          notes?: string | null
+          outlet_id: string
+          party_size?: number
+          reservation_date: string
+          reservation_time: string
+          seated_at?: string | null
+          special_requests?: string | null
+          status?: string
+          table_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          guest_email?: string | null
+          guest_name?: string
+          guest_phone?: string | null
+          id?: string
+          notes?: string | null
+          outlet_id?: string
+          party_size?: number
+          reservation_date?: string
+          reservation_time?: string
+          seated_at?: string | null
+          special_requests?: string | null
+          status?: string
+          table_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_reservations_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_reservations_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_sales: {
         Row: {
           created_at: string
