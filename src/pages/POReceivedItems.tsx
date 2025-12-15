@@ -18,6 +18,13 @@ import autoTable from "jspdf-autotable";
 import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
+import { 
+  EnhancedReceivingDialog, 
+  EnhancedReceivingData, 
+  ParsedReceivingItem,
+  detectDocumentType,
+  normalizeItemCode 
+} from "@/components/procurement/EnhancedReceivingDialog";
 
 interface VarianceItem {
   item_code?: string;
@@ -93,7 +100,10 @@ const POReceivedItems = () => {
     return (saved as 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') || 'USD';
   });
   const [showRecordContent, setShowRecordContent] = useState<RecentReceived | null>(null);
-  
+  const [showEnhancedReceiving, setShowEnhancedReceiving] = useState(false);
+  const [enhancedReceivingData, setEnhancedReceivingData] = useState<EnhancedReceivingData | null>(null);
+  const [pendingMatchedOrder, setPendingMatchedOrder] = useState<any>(null);
+
 
   // Workspace state - declare before hook usage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
@@ -258,19 +268,7 @@ const POReceivedItems = () => {
             return;
           }
           
-          // Get ALL purchase order items for comparison by ML code
-          // This matches items regardless of who submitted the PO
-          const orderNumber = parsed.doc_no;
-          let orderedItems: any[] = [];
-          let matchedOrder: any = null;
-          
-          // Helper to normalize item code for matching
-          const normalizeItemCode = (code: string): string => {
-            return String(code || '').replace(/[.\s]/g, '').replace(/^0+/, '').trim().toLowerCase();
-          };
-          
-          // First, get ALL purchase order items from the workspace/personal scope
-          // This ensures we match by ML code regardless of who submitted the PO
+          // Get ALL purchase order items for code validation
           let allItemsQuery = supabase
             .from('purchase_order_items')
             .select('*, purchase_orders!inner(id, order_number, supplier_name, order_date, user_id, workspace_id)');
@@ -283,154 +281,95 @@ const POReceivedItems = () => {
           
           const { data: allPOItems } = await allItemsQuery;
           
-          // Build a map of normalized item_code -> ordered item for matching
+          // Build maps for code matching
           const orderedItemsByCode = new Map<string, any>();
           const orderedItemsByName = new Map<string, any>();
           
           (allPOItems || []).forEach((item: any) => {
             if (item.item_code) {
               const normalizedCode = normalizeItemCode(item.item_code);
-              // Keep the most recent order for each item code
               if (!orderedItemsByCode.has(normalizedCode) || 
                   new Date(item.purchase_orders.order_date) > new Date(orderedItemsByCode.get(normalizedCode).purchase_orders.order_date)) {
                 orderedItemsByCode.set(normalizedCode, item);
               }
             }
-            // Also track by name as fallback
             const normalizedName = item.item_name?.trim().toLowerCase();
             if (normalizedName && !orderedItemsByName.has(normalizedName)) {
               orderedItemsByName.set(normalizedName, item);
             }
           });
           
-          // Match each received item to ordered items by ML code first, then by name
-          const matchedOrderedItems: any[] = [];
-          const receivedCodes = new Set<string>();
+          // Process items with enhanced validation
+          let matchedOrder: any = null;
+          let marketCount = 0;
+          let materialCount = 0;
           
-          parsed.items.forEach((receivedItem: any) => {
-            const receivedCode = normalizeItemCode(receivedItem.item_code);
-            const receivedName = receivedItem.item_name?.trim().toLowerCase();
+          const enhancedItems: ParsedReceivingItem[] = parsed.items.map((item: any) => {
+            const itemCode = item.item_code || '';
+            const docType = detectDocumentType(itemCode);
+            const normalizedCode = normalizeItemCode(itemCode);
+            const normalizedName = item.item_name?.trim().toLowerCase();
             
-            // Try to match by code first
-            if (receivedCode && orderedItemsByCode.has(receivedCode)) {
-              const matchedItem = orderedItemsByCode.get(receivedCode);
-              if (!receivedCodes.has(receivedCode)) {
-                matchedOrderedItems.push(matchedItem);
-                receivedCodes.add(receivedCode);
+            // Check if code exists in PO
+            let matchedInPO = false;
+            let matchedPOItem = null;
+            
+            if (normalizedCode && orderedItemsByCode.has(normalizedCode)) {
+              matchedInPO = true;
+              matchedPOItem = orderedItemsByCode.get(normalizedCode);
+              if (!matchedOrder && matchedPOItem.purchase_orders) {
+                matchedOrder = matchedPOItem.purchase_orders;
               }
-              if (!matchedOrder && matchedItem.purchase_orders) {
-                matchedOrder = matchedItem.purchase_orders;
-              }
-            }
-            // Fallback to name matching if no code match
-            else if (receivedName && orderedItemsByName.has(receivedName)) {
-              const matchedItem = orderedItemsByName.get(receivedName);
-              matchedOrderedItems.push(matchedItem);
-              if (!matchedOrder && matchedItem.purchase_orders) {
-                matchedOrder = matchedItem.purchase_orders;
+            } else if (normalizedName && orderedItemsByName.has(normalizedName)) {
+              matchedInPO = true;
+              matchedPOItem = orderedItemsByName.get(normalizedName);
+              if (!matchedOrder && matchedPOItem.purchase_orders) {
+                matchedOrder = matchedPOItem.purchase_orders;
               }
             }
+            
+            if (docType === 'market') marketCount++;
+            if (docType === 'material') materialCount++;
+            
+            return {
+              item_code: itemCode,
+              item_name: item.item_name || item.name || '',
+              unit: item.unit,
+              quantity: item.quantity || 0,
+              price_per_unit: item.price_per_unit || 0,
+              price_total: (item.quantity || 0) * (item.price_per_unit || 0),
+              delivery_date: item.delivery_date,
+              isReceived: matchedInPO, // Auto-tick if matched
+              documentType: docType,
+              matchedInPO,
+              matchedPOItem
+            };
           });
           
-          // If we found matches, use them; otherwise fall back to specific order search
-          if (matchedOrderedItems.length > 0) {
-            orderedItems = matchedOrderedItems;
-            if (matchedOrder) {
-              setSelectedOrderId(matchedOrder.id);
-            }
-          } else if (orderNumber) {
-            // Fallback: search by order number if no item matches found
-            let orderQuery = supabase
-              .from('purchase_orders')
-              .select('id, order_number, supplier_name, order_date')
-              .ilike('order_number', `%${orderNumber}%`)
-              .limit(1);
-            
-            if (selectedWorkspaceId) {
-              orderQuery = orderQuery.eq('workspace_id', selectedWorkspaceId);
-            } else {
-              orderQuery = orderQuery.eq('user_id', user?.id).is('workspace_id', null);
-            }
-            
-            const { data: orders } = await orderQuery;
-            
-            if (orders && orders.length > 0) {
-              matchedOrder = orders[0];
-              setSelectedOrderId(matchedOrder.id);
-              
-              const { data: items } = await supabase
-                .from('purchase_order_items')
-                .select('*')
-                .eq('purchase_order_id', matchedOrder.id);
-              
-              orderedItems = items || [];
-            }
+          // Determine overall document type
+          const docType: 'market' | 'material' | 'mixed' = 
+            marketCount > 0 && materialCount > 0 ? 'mixed' :
+            marketCount > 0 ? 'market' :
+            materialCount > 0 ? 'material' : 'mixed';
+          
+          // Check for unmatched items
+          const unmatchedCount = enhancedItems.filter(i => !i.matchedInPO).length;
+          if (unmatchedCount > 0) {
+            toast.warning(`${unmatchedCount} items not found in Purchase Orders - marked for rejection`);
           }
           
-          // Generate variance report
-          const report = generateVarianceReport(
-            orderedItems,
-            parsed.items,
-            matchedOrder?.order_number,
-            matchedOrder?.order_date,
-            matchedOrder?.supplier_name || parsed.location
-          );
+          // Store matched order and show enhanced dialog for confirmation
+          setPendingMatchedOrder(matchedOrder);
+          setEnhancedReceivingData({
+            doc_no: parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`,
+            doc_date: parsed.doc_date,
+            location: matchedOrder?.supplier_name || parsed.location,
+            items: enhancedItems,
+            documentType: docType
+          });
+          setShowEnhancedReceiving(true);
           
-          // Calculate totals for the received record
-          const totalQty = parsed.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
-          const totalValue = parsed.items.reduce((sum: number, i: any) => sum + ((i.quantity || 0) * (i.price_per_unit || 0)), 0);
-          
-          // Auto-save the receiving record immediately and get its ID
-          const receivedDate = new Date().toISOString().split('T')[0];
-          const docNumber = parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`;
-          
-          const { data: savedRecord, error: recordError } = await (supabase as any)
-            .from('po_received_records')
-            .insert({
-              user_id: user?.id,
-              workspace_id: selectedWorkspaceId || null,
-              supplier_name: matchedOrder?.supplier_name || parsed.location || 'Unknown Supplier',
-              document_number: docNumber,
-              received_date: receivedDate,
-              total_items: parsed.items.length,
-              total_quantity: totalQty,
-              total_value: totalValue,
-              status: 'received',
-              variance_data: report,
-              received_by_name: profile?.full_name || profile?.username || null,
-              received_by_email: profile?.email || user?.email || null
-            })
-            .select('id')
-            .single();
-          
-          if (recordError) throw recordError;
-          const recordId = savedRecord?.id;
-          
-          // Auto-save items to purchase_order_received_items linked to record_id
-          for (const item of parsed.items) {
-            if (item.quantity > 0) {
-              const unitPrice = item.price_per_unit || 0;
-              await addReceivedItem({
-                purchase_order_id: matchedOrder?.id || undefined,
-                item_name: item.item_name || item.name,
-                quantity: item.quantity,
-                unit: item.unit,
-                unit_price: unitPrice,
-                total_price: item.quantity * unitPrice,
-                received_date: receivedDate,
-                document_number: docNumber,
-                record_id: recordId
-              });
-            }
-          }
-          
-          queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
-          queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
-          
-          setVarianceReport(report);
-          setShowVarianceDialog(true);
-          
-          toast.success(`Received ${parsed.items.length} items saved`);
+          toast.success(`Parsed ${enhancedItems.length} items - Review and confirm to save`);
         } catch (err: any) {
           toast.error("Failed to process: " + err.message);
         } finally {
@@ -457,6 +396,82 @@ const POReceivedItems = () => {
       toast.error("Failed to upload: " + error.message);
       setIsUploading(false);
     }
+  };
+
+  // Handle confirmed save from enhanced receiving dialog
+  const handleConfirmSave = async (receivedItemsList: ParsedReceivingItem[]) => {
+    if (!user) return;
+    
+    const receivedDate = new Date().toISOString().split('T')[0];
+    const docNumber = enhancedReceivingData?.doc_no || `RCV-${Date.now()}`;
+    
+    // Calculate totals from confirmed items only
+    const totalQty = receivedItemsList.reduce((sum, i) => sum + i.quantity, 0);
+    const totalValue = receivedItemsList.reduce((sum, i) => sum + i.price_total, 0);
+    
+    // Generate variance report for confirmed items
+    const orderedItems = receivedItemsList
+      .filter(i => i.matchedPOItem)
+      .map(i => i.matchedPOItem);
+    
+    const report = generateVarianceReport(
+      orderedItems,
+      receivedItemsList,
+      pendingMatchedOrder?.order_number,
+      pendingMatchedOrder?.order_date,
+      pendingMatchedOrder?.supplier_name || enhancedReceivingData?.location
+    );
+    
+    // Save the receiving record
+    const { data: savedRecord, error: recordError } = await (supabase as any)
+      .from('po_received_records')
+      .insert({
+        user_id: user.id,
+        workspace_id: selectedWorkspaceId || null,
+        supplier_name: pendingMatchedOrder?.supplier_name || enhancedReceivingData?.location || 'Unknown Supplier',
+        document_number: docNumber,
+        received_date: receivedDate,
+        total_items: receivedItemsList.length,
+        total_quantity: totalQty,
+        total_value: totalValue,
+        status: 'received',
+        variance_data: report,
+        received_by_name: profile?.full_name || profile?.username || null,
+        received_by_email: profile?.email || user?.email || null
+      })
+      .select('id')
+      .single();
+    
+    if (recordError) throw recordError;
+    const recordId = savedRecord?.id;
+    
+    // Save individual items
+    for (const item of receivedItemsList) {
+      if (item.quantity > 0) {
+        await addReceivedItem({
+          purchase_order_id: pendingMatchedOrder?.id || undefined,
+          item_name: item.item_name,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.price_per_unit,
+          total_price: item.price_total,
+          received_date: receivedDate,
+          document_number: docNumber,
+          record_id: recordId
+        });
+      }
+    }
+    
+    // Refresh data and show variance report
+    queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+    queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
+    
+    setVarianceReport(report);
+    setShowVarianceDialog(true);
+    
+    // Clear pending state
+    setPendingMatchedOrder(null);
+    setEnhancedReceivingData(null);
   };
 
   const generateVarianceReport = (
@@ -1539,6 +1554,21 @@ const POReceivedItems = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Enhanced Receiving Dialog with checkboxes and validation */}
+      <EnhancedReceivingDialog
+        open={showEnhancedReceiving}
+        onOpenChange={(open) => {
+          setShowEnhancedReceiving(open);
+          if (!open) {
+            setEnhancedReceivingData(null);
+            setPendingMatchedOrder(null);
+          }
+        }}
+        receivingData={enhancedReceivingData}
+        onConfirmSave={handleConfirmSave}
+        currencySymbol={currencySymbols[currency]}
+      />
 
     </div>
   );
