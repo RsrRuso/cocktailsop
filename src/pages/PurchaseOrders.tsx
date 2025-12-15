@@ -696,7 +696,19 @@ const PurchaseOrders = () => {
       </div>
 
       {/* Create Order Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) {
+          // Reset form state when dialog closes to prevent issues on next upload
+          setNewOrder({
+            supplier_name: "",
+            order_number: "",
+            order_date: format(new Date(), "yyyy-MM-dd"),
+            notes: ""
+          });
+          setNewItems([{ item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }]);
+        }
+      }}>
         <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle className="text-lg">New Purchase Order</DialogTitle>
