@@ -55,7 +55,7 @@ const Landing = () => {
             </Button>
             <Button
               onClick={() => navigate("/auth")}
-              className="glass glow-primary border-primary/30 hover:border-primary/50 text-sm sm:text-base px-3 sm:px-4"
+              className="glass glow-primary border-primary/30 hover:border-primary/50 text-sm sm:text-base px-3 sm:px-4 text-white"
             >
               Get Started
             </Button>
@@ -97,7 +97,7 @@ const Landing = () => {
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
-                className="glass glow-primary border-primary/30 hover:border-primary/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg"
+                className="glass glow-primary border-primary/30 hover:border-primary/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg text-white"
               >
                 Join the Network
               </Button>
@@ -105,7 +105,7 @@ const Landing = () => {
                 size="lg"
                 variant="outline"
                 onClick={() => navigate("/introduction")}
-                className="glass hover:border-accent/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg"
+                className="glass hover:border-accent/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg text-white"
               >
                 Learn More
               </Button>
