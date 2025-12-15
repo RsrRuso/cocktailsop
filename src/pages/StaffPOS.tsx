@@ -51,8 +51,10 @@ interface OrderItem {
 interface Table {
   id: string;
   name: string;
+  table_number: number | null;
   capacity: number;
   status: string;
+  allocation: string | null;
 }
 
 interface Category {
@@ -301,9 +303,9 @@ export default function StaffPOS() {
   const fetchTables = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_tables")
-      .select("*")
+      .select("id, name, table_number, capacity, status, allocation")
       .eq("outlet_id", outletId)
-      .order("name");
+      .order("table_number", { ascending: true, nullsFirst: false });
     setTables(data || []);
   };
 
@@ -1060,21 +1062,27 @@ export default function StaffPOS() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
             {tables.map(table => {
               const isOccupied = table.status === "seated" || table.status === "occupied";
+              const isOutdoor = table.allocation === "outdoor";
               return (
                 <Button
                   key={table.id}
                   variant="outline"
-                  className={`h-12 flex flex-col py-1 px-2 transition-all ${
+                  className={`h-14 flex flex-col py-1 px-2 transition-all ${
                     isOccupied 
                       ? "bg-amber-500/90 hover:bg-amber-500 text-amber-950 border-amber-600 shadow-md shadow-amber-500/30" 
-                      : "hover:bg-muted"
+                      : isOutdoor
+                        ? "bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/50"
+                        : "hover:bg-muted"
                   }`}
                   onClick={() => setSelectedTable(table)}
                 >
-                  <span className="font-medium text-xs truncate w-full text-center">{table.name}</span>
-                  <span className={`text-[10px] flex items-center ${isOccupied ? "text-amber-800" : "text-muted-foreground"}`}>
-                    <Users className="w-3 h-3 mr-0.5" />{table.capacity}
-                    {isOccupied && " •"}
+                  <span className="font-bold text-sm truncate w-full text-center">
+                    {table.table_number ? `T${table.table_number}` : table.name}
+                  </span>
+                  <span className={`text-[10px] flex items-center gap-1 ${isOccupied ? "text-amber-800" : "text-muted-foreground"}`}>
+                    <Users className="w-3 h-3" />{table.capacity}
+                    {isOutdoor && <span className="text-emerald-600">•Out</span>}
+                    {isOccupied && <span>•Busy</span>}
                   </span>
                 </Button>
               );
@@ -1089,7 +1097,9 @@ export default function StaffPOS() {
               <Button variant="ghost" size="sm" onClick={() => setSelectedTable(null)}>
                 ← Tables
               </Button>
-              <span className="font-semibold">{selectedTable.name}</span>
+              <span className="font-semibold">
+                {selectedTable.table_number ? `Table ${selectedTable.table_number}` : selectedTable.name}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setCovers(Math.max(1, covers - 1))}>
