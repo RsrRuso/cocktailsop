@@ -199,7 +199,9 @@ const POReceivedItems = () => {
       reader.onload = async (e) => {
         try {
           let parsePayload: any = {};
+          const fileName = file.name.toLowerCase();
           
+          // Handle PDF files
           if (file.type === 'application/pdf') {
             const arrayBuffer = e.target?.result as ArrayBuffer;
             const bytes = new Uint8Array(arrayBuffer);
@@ -208,7 +210,33 @@ const POReceivedItems = () => {
               binary += String.fromCharCode(bytes[i]);
             }
             parsePayload.pdfBase64 = btoa(binary);
-          } else {
+          }
+          // Handle image files (PNG, JPG, JPEG)
+          else if (file.type.startsWith('image/') || fileName.match(/\.(png|jpg|jpeg|gif|webp)$/)) {
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            parsePayload.imageBase64 = btoa(binary);
+            parsePayload.imageMimeType = file.type || 'image/png';
+          }
+          // Handle Excel files
+          else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                   file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                   file.type === 'application/vnd.ms-excel') {
+            const { read, utils } = await import('xlsx');
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const workbook = read(arrayBuffer, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = utils.sheet_to_json(sheet, { header: 1 });
+            // Convert to text format for AI parsing
+            parsePayload.content = jsonData.map((row: any) => row.join('\t')).join('\n');
+          }
+          // Handle text/CSV files
+          else {
             parsePayload.content = e.target?.result as string;
           }
           
@@ -416,7 +444,11 @@ const POReceivedItems = () => {
         setIsUploading(false);
       };
       
-      if (file.type === 'application/pdf') {
+      // Read as ArrayBuffer for binary files (PDF, images, Excel), as text for others
+      const fileName = file.name.toLowerCase();
+      if (file.type === 'application/pdf' || 
+          file.type.startsWith('image/') || 
+          fileName.match(/\.(png|jpg|jpeg|gif|webp|xlsx|xls)$/)) {
         reader.readAsArrayBuffer(file);
       } else {
         reader.readAsText(file);

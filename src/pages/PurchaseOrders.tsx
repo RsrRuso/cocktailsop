@@ -293,104 +293,90 @@ const PurchaseOrders = () => {
       
       reader.onload = async (e) => {
         try {
-          let textContent = '';
+          let parsePayload: any = {};
+          const fileName = file.name.toLowerCase();
           
+          // Handle PDF files
           if (file.type === 'application/pdf') {
-            // For PDF, read as base64 and send to AI parser
             const arrayBuffer = e.target?.result as ArrayBuffer;
             const bytes = new Uint8Array(arrayBuffer);
             let binary = '';
             for (let i = 0; i < bytes.byteLength; i++) {
               binary += String.fromCharCode(bytes[i]);
             }
-            const pdfBase64 = btoa(binary);
-            
+            parsePayload.pdfBase64 = btoa(binary);
             toast.info("Parsing PDF with AI...");
-            
-            const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
-              body: { pdfBase64 }
-            });
-            
-            if (error || !data?.success) {
-              console.error('Parse error:', error || data?.error);
-              toast.error(error?.message || data?.error || "Failed to parse PDF");
-              setIsUploading(false);
-              return;
+          }
+          // Handle image files (PNG, JPG, JPEG)
+          else if (file.type.startsWith('image/') || fileName.match(/\.(png|jpg|jpeg|gif|webp)$/)) {
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
             }
-            
-            const parsed = data.data as ParsedOrderData;
-            
-            if (parsed) {
-              setNewOrder({
-                supplier_name: parsed.location || '',
-                order_number: parsed.doc_no || '',
-                order_date: parsed.doc_date 
-                  ? format(new Date(parsed.doc_date.split('/').reverse().join('-')), 'yyyy-MM-dd')
-                  : format(new Date(), 'yyyy-MM-dd'),
-                notes: ''
-              });
-              
-              if (parsed.items && parsed.items.length > 0) {
-                setNewItems(parsed.items.map(item => ({
-                  item_code: item.item_code,
-                  item_name: item.item_name,
-                  unit: item.unit,
-                  delivery_date: item.delivery_date,
-                  quantity: item.quantity,
-                  price_per_unit: item.price_per_unit,
-                  price_total: item.price_total
-                })));
-              }
-              
-              setShowCreateDialog(true);
-              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: ${currencySymbols[currency]}${parsed.total_amount.toFixed(2)})`);
-            }
-            setIsUploading(false);
-            return;
-          } else if (file.type.includes('text') || file.name.endsWith('.csv')) {
-            textContent = e.target?.result as string;
+            parsePayload.imageBase64 = btoa(binary);
+            parsePayload.imageMimeType = file.type || 'image/png';
+            toast.info("Parsing image with AI...");
+          }
+          // Handle Excel files
+          else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                   file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                   file.type === 'application/vnd.ms-excel') {
+            const { read, utils } = await import('xlsx');
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const workbook = read(arrayBuffer, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = utils.sheet_to_json(sheet, { header: 1 });
+            // Convert to text format for AI parsing
+            parsePayload.content = jsonData.map((row: any) => row.join('\t')).join('\n');
+            toast.info("Parsing Excel with AI...");
+          }
+          // Handle text/CSV files
+          else {
+            parsePayload.content = e.target?.result as string;
+            toast.info("Parsing document with AI...");
           }
           
-          if (textContent) {
-            // Parse the content
-            const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
-              body: { content: textContent }
+          // Send to AI parser
+          const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
+            body: parsePayload
+          });
+          
+          if (error || !data?.success) {
+            console.error('Parse error:', error || data?.error);
+            toast.error(error?.message || data?.error || "Failed to parse document");
+            setIsUploading(false);
+            return;
+          }
+          
+          const parsed = data.data as ParsedOrderData;
+          
+          if (parsed) {
+            setNewOrder({
+              supplier_name: parsed.location || '',
+              order_number: parsed.doc_no || '',
+              order_date: parsed.doc_date 
+                ? format(new Date(parsed.doc_date.split('/').reverse().join('-')), 'yyyy-MM-dd')
+                : format(new Date(), 'yyyy-MM-dd'),
+              notes: ''
             });
             
-            if (error || !data?.success) {
-              toast.error(error?.message || data?.error || "Failed to parse document");
-              setIsUploading(false);
-              return;
+            if (parsed.items && parsed.items.length > 0) {
+              setNewItems(parsed.items.map(item => ({
+                item_code: item.item_code,
+                item_name: item.item_name,
+                unit: item.unit,
+                delivery_date: item.delivery_date,
+                quantity: item.quantity,
+                price_per_unit: item.price_per_unit,
+                price_total: item.price_total
+              })));
             }
             
-            const parsed = data.data as ParsedOrderData;
-            
-            // Populate form with parsed data
-            if (parsed) {
-              setNewOrder({
-                supplier_name: parsed.location || '',
-                order_number: parsed.doc_no || '',
-                order_date: parsed.doc_date 
-                  ? format(new Date(parsed.doc_date.split('/').reverse().join('-')), 'yyyy-MM-dd')
-                  : format(new Date(), 'yyyy-MM-dd'),
-                notes: ''
-              });
-              
-              if (parsed.items && parsed.items.length > 0) {
-                setNewItems(parsed.items.map(item => ({
-                  item_code: item.item_code,
-                  item_name: item.item_name,
-                  unit: item.unit,
-                  delivery_date: item.delivery_date,
-                  quantity: item.quantity,
-                  price_per_unit: item.price_per_unit,
-                  price_total: item.price_total
-                })));
-              }
-              
-              setShowCreateDialog(true);
-              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: ${currencySymbols[currency]}${parsed.total_amount.toFixed(2)})`);
-            }
+            setShowCreateDialog(true);
+            toast.success(`Parsed ${parsed.items?.length || 0} items (Total: ${currencySymbols[currency]}${parsed.total_amount.toFixed(2)})`);
           }
         } catch (err) {
           console.error('Parse error:', err);
@@ -404,8 +390,11 @@ const PurchaseOrders = () => {
         setIsUploading(false);
       };
       
-      // Read as ArrayBuffer for PDFs, as text for others
-      if (file.type === 'application/pdf') {
+      // Read as ArrayBuffer for binary files (PDF, images, Excel), as text for others
+      const fileName = file.name.toLowerCase();
+      if (file.type === 'application/pdf' || 
+          file.type.startsWith('image/') || 
+          fileName.match(/\.(png|jpg|jpeg|gif|webp|xlsx|xls)$/)) {
         reader.readAsArrayBuffer(file);
       } else {
         reader.readAsText(file);
