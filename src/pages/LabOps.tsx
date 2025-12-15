@@ -3442,6 +3442,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
       .from("lab_ops_staff")
       .select("*")
       .eq("outlet_id", outletId)
+      .eq("is_active", true)
       .order("full_name");
     setStaff(data || []);
   };
