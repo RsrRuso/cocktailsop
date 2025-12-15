@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   CheckCircle, XCircle, AlertTriangle, Package, ShoppingCart, 
-  Wrench, FileText, Save, X, Download, Filter
+  Wrench, FileText, Save, X, Download, Filter, Coins
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -92,7 +92,7 @@ export const EnhancedReceivingDialog = ({
     const materialItems = items.filter(i => i.documentType === 'material');
     
     const receivedItems = items.filter(i => i.isReceived);
-    const missingItems = items.filter(i => !i.isReceived && i.matchedInPO);
+    const excludedItems = items.filter(i => !i.isReceived); // Unticked = excluded
     const unmatchedItems = items.filter(i => !i.matchedInPO);
     
     const receivedMarket = marketItems.filter(i => i.isReceived);
@@ -100,8 +100,9 @@ export const EnhancedReceivingDialog = ({
     
     return {
       total: items.length,
-      received: receivedItems.length,
-      missing: missingItems.length,
+      placed: items.length, // Total items in document = placed
+      received: receivedItems.length, // Ticked items = received
+      pending: excludedItems.length, // Unticked items = pending/excluded
       unmatched: unmatchedItems.length,
       
       marketCount: marketItems.length,
@@ -116,7 +117,7 @@ export const EnhancedReceivingDialog = ({
       
       totalAllValue: items.reduce((sum, i) => sum + i.price_total, 0),
       receivedValue: receivedItems.reduce((sum, i) => sum + i.price_total, 0),
-      missingValue: missingItems.reduce((sum, i) => sum + i.price_total, 0)
+      excludedValue: excludedItems.reduce((sum, i) => sum + i.price_total, 0)
     };
   }, [items]);
 
@@ -163,9 +164,9 @@ export const EnhancedReceivingDialog = ({
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Total Items: ${stats.total}`, 14, 70);
-    doc.text(`Received: ${stats.received}`, 14, 77);
-    doc.text(`Missing: ${stats.missing}`, 14, 84);
+    doc.text(`Total Placed: ${stats.placed}`, 14, 70);
+    doc.text(`Received (Ticked): ${stats.received}`, 14, 77);
+    doc.text(`Pending (Excluded): ${stats.pending}`, 14, 84);
     doc.text(`Unmatched (Rejected): ${stats.unmatched}`, 14, 91);
     
     doc.text(`Market Items: ${stats.marketReceivedCount}/${stats.marketCount} (${currencySymbol}${stats.marketValue.toFixed(2)})`, 100, 70);
@@ -195,21 +196,21 @@ export const EnhancedReceivingDialog = ({
       });
     }
     
-    // Missing Items Table
-    const missingItems = items.filter(i => !i.isReceived && i.matchedInPO);
-    if (missingItems.length > 0) {
+    // Excluded/Pending Items Table (unticked items)
+    const excludedItems = items.filter(i => !i.isReceived);
+    if (excludedItems.length > 0) {
       const finalY = (doc as any).lastAutoTable?.finalY || 110;
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('Missing Items', 14, finalY + 15);
+      doc.text('Excluded Items (Pending)', 14, finalY + 15);
       
       autoTable(doc, {
         startY: finalY + 20,
         head: [['Code', 'Item', 'Type', 'Qty', 'Value']],
-        body: missingItems.map(item => [
+        body: excludedItems.map(item => [
           item.item_code || '-',
           item.item_name,
-          item.documentType === 'market' ? 'Market (ML)' : 'Material (RQ)',
+          item.documentType === 'market' ? 'Procurement (ML)' : item.documentType === 'material' ? 'Material Group (RQ)' : 'Unknown',
           item.quantity.toString(),
           `${currencySymbol}${item.price_total.toFixed(2)}`
         ]),
@@ -269,25 +270,25 @@ export const EnhancedReceivingDialog = ({
         {/* Stats Summary - Compact for mobile */}
         <div className="px-3 sm:px-4 py-2 bg-muted/30 border-b shrink-0">
           <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            <Card className="p-1.5 sm:p-2 text-center bg-blue-500/10 border-blue-500/30">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 mx-auto" />
+              <p className="text-base sm:text-lg font-bold text-blue-500">{stats.placed}</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Placed</p>
+            </Card>
             <Card className="p-1.5 sm:p-2 text-center bg-green-500/10 border-green-500/30">
               <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mx-auto" />
               <p className="text-base sm:text-lg font-bold text-green-500">{stats.received}</p>
               <p className="text-[8px] sm:text-[10px] text-muted-foreground">Received</p>
             </Card>
-            <Card className="p-1.5 sm:p-2 text-center bg-red-500/10 border-red-500/30">
-              <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mx-auto" />
-              <p className="text-base sm:text-lg font-bold text-red-500">{stats.missing}</p>
-              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Missing</p>
-            </Card>
-            <Card className="p-1.5 sm:p-2 text-center bg-purple-500/10 border-purple-500/30">
-              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 mx-auto" />
-              <p className="text-base sm:text-lg font-bold text-purple-500">{stats.unmatched}</p>
-              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Rejected</p>
+            <Card className="p-1.5 sm:p-2 text-center bg-amber-500/10 border-amber-500/30">
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500 mx-auto" />
+              <p className="text-base sm:text-lg font-bold text-amber-500">{stats.pending}</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Pending</p>
             </Card>
             <Card className="p-1.5 sm:p-2 text-center bg-primary/10 border-primary/30">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-primary mx-auto" />
+              <Coins className="h-3 w-3 sm:h-4 sm:w-4 text-primary mx-auto" />
               <p className="text-base sm:text-lg font-bold text-primary">{currencySymbol}{stats.receivedValue.toFixed(0)}</p>
-              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Total Value</p>
+              <p className="text-[8px] sm:text-[10px] text-muted-foreground">Value</p>
             </Card>
           </div>
           
