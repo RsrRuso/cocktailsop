@@ -1884,6 +1884,13 @@ function MenuModule({ outletId }: { outletId: string }) {
 
   const deleteAllItems = async () => {
     if (!confirm("Are you sure you want to delete ALL menu items? This cannot be undone.")) return;
+    
+    // Get all item IDs first to delete their station mappings
+    const itemIds = menuItems.map(item => item.id);
+    if (itemIds.length > 0) {
+      await supabase.from("lab_ops_menu_item_stations").delete().in("menu_item_id", itemIds);
+    }
+    
     await supabase.from("lab_ops_menu_items").delete().eq("outlet_id", outletId);
     fetchMenuItems();
     toast({ title: "All menu items deleted" });
