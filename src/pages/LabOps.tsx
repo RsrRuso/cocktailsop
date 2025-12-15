@@ -224,6 +224,39 @@ export default function LabOps() {
       ];
       const { data: invData } = await supabase.from("lab_ops_inventory_items").insert(invItems).select();
       
+      // 4b. Create Demo Inventory Item Costs
+      if (invData && invData.length > 0) {
+        const invCosts = invData.map((inv) => {
+          const costMap: Record<string, number> = {
+            "Bourbon Whiskey": 0.05, // per ml
+            "Vodka Premium": 0.04,
+            "Tequila Blanco": 0.06,
+            "Gin London Dry": 0.045,
+            "Rum White": 0.035,
+            "Campari": 0.04,
+            "Sweet Vermouth": 0.025,
+            "Triple Sec": 0.02,
+            "Coffee Liqueur": 0.03,
+            "Fresh Lime Juice": 0.01,
+            "Simple Syrup": 0.005,
+            "Angostura Bitters": 0.15,
+            "Salmon Fillet": 0.025,
+            "Ribeye Steak": 0.035,
+            "Pasta Spaghetti": 0.003,
+            "Parmesan Cheese": 0.04,
+            "Heavy Cream": 0.008,
+            "Espresso Coffee": 0.06,
+            "Fresh Mint": 0.50,
+          };
+          return {
+            inventory_item_id: inv.id,
+            unit_cost: costMap[inv.name] || 0.01,
+            effective_from: new Date().toISOString().split('T')[0],
+          };
+        });
+        await supabase.from("lab_ops_inventory_item_costs").insert(invCosts);
+      }
+      
       // 5. Create Demo Suppliers
       const suppliers = [
         { outlet_id: outletId, name: "Premium Spirits Co", contact_name: "John Smith", email: "john@premiumspirits.com", phone: "+1-555-0101" },
