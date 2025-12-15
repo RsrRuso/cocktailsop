@@ -3659,6 +3659,7 @@ function ReportsModule({ outletId }: { outletId: string }) {
 }
 
 import TableManagement from "@/components/lab-ops/TableManagement";
+import StationOccupancySettings from "@/components/lab-ops/StationOccupancySettings";
 
 // ====================== SETTINGS MODULE ======================
 function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => void }) {
@@ -3798,9 +3799,10 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="tables">Tables</TabsTrigger>
           <TabsTrigger value="stations">Stations</TabsTrigger>
+          <TabsTrigger value="occupancy">Occupancy</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="voidreasons">Void Reasons</TabsTrigger>
         </TabsList>
@@ -3866,6 +3868,11 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Occupancy Settings Tab */}
+        <TabsContent value="occupancy" className="mt-4">
+          <StationOccupancySettings outletId={outlet.id} />
         </TabsContent>
 
         {/* Locations Tab */}

@@ -231,14 +231,47 @@ export default function BarKDS() {
     }
   };
 
-  const markItemComplete = async (itemId: string) => {
+  const notifyServer = async (orderId: string, itemId?: string) => {
+    try {
+      // Get order details to find server
+      const { data: order } = await supabase
+        .from("lab_ops_orders")
+        .select("id, server_id, outlet_id, table:lab_ops_tables(name)")
+        .eq("id", orderId)
+        .single();
+      
+      if (!order?.server_id) return;
+      
+      const tableName = (order.table as any)?.name || "Unknown";
+      
+      await supabase
+        .from("lab_ops_order_notifications")
+        .insert({
+          outlet_id: order.outlet_id,
+          order_id: orderId,
+          order_item_id: itemId || null,
+          server_id: order.server_id,
+          notification_type: itemId ? "item_ready" : "order_ready",
+          message: itemId 
+            ? `Item ready for ${tableName}` 
+            : `All items ready for ${tableName}`,
+        });
+    } catch (error) {
+      console.error("Error notifying server:", error);
+    }
+  };
+
+  const markItemComplete = async (itemId: string, orderId: string) => {
     try {
       await supabase
         .from("lab_ops_order_items")
-        .update({ status: "ready" })
+        .update({ status: "ready", server_notified: true, notified_at: new Date().toISOString() })
         .eq("id", itemId);
 
-      toast({ title: "Item marked as ready" });
+      // Notify server
+      await notifyServer(orderId, itemId);
+
+      toast({ title: "Item marked as ready - Server notified!" });
       if (selectedOutlet) fetchOrders(selectedOutlet);
     } catch (error) {
       console.error("Error updating item:", error);
@@ -252,12 +285,15 @@ export default function BarKDS() {
         for (const item of order.items) {
           await supabase
             .from("lab_ops_order_items")
-            .update({ status: "ready" })
+            .update({ status: "ready", server_notified: true, notified_at: new Date().toISOString() })
             .eq("id", item.id);
         }
       }
 
-      toast({ title: "All bar items marked as ready" });
+      // Notify server that whole order is ready
+      await notifyServer(orderId);
+
+      toast({ title: "All bar items ready - Server notified!" });
       if (selectedOutlet) fetchOrders(selectedOutlet);
     } catch (error) {
       console.error("Error updating order:", error);
@@ -435,7 +471,7 @@ export default function BarKDS() {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() => markItemComplete(item.id)}
+                                      onClick={() => markItemComplete(item.id, order.id)}
                                       className="text-green-400 hover:bg-green-900/50"
                                     >
                                       <Check className="h-4 w-4" />

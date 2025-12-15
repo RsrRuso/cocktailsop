@@ -104,6 +104,10 @@ export default function StaffPOS() {
   const [onlineTeam, setOnlineTeam] = useState<OnlineTeamMember[]>([]);
   const [currentStaffUsername, setCurrentStaffUsername] = useState<string | undefined>();
   const presenceChannelRef = useRef<any>(null);
+  
+  // Notifications state
+  const [orderNotifications, setOrderNotifications] = useState<any[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     fetchOutlets();
@@ -210,6 +214,84 @@ export default function StaffPOS() {
       presenceChannelRef.current = null;
     }
     setOnlineTeam([]);
+  };
+
+  // Fetch and listen for order notifications
+  const fetchNotifications = async (outletId: string, staffId: string) => {
+    const { data } = await supabase
+      .from("lab_ops_order_notifications")
+      .select("*")
+      .eq("outlet_id", outletId)
+      .eq("server_id", staffId)
+      .eq("is_read", false)
+      .order("created_at", { ascending: false });
+    
+    setOrderNotifications(data || []);
+    setUnreadNotifications((data || []).length);
+  };
+  
+  // Setup notification listener
+  useEffect(() => {
+    if (!staff || !outlet) return;
+    
+    fetchNotifications(outlet.id, staff.id);
+    
+    const channel = supabase
+      .channel('staff-order-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'lab_ops_order_notifications',
+          filter: `server_id=eq.${staff.id}`
+        },
+        (payload) => {
+          const notification = payload.new as any;
+          setOrderNotifications(prev => [notification, ...prev]);
+          setUnreadNotifications(prev => prev + 1);
+          
+          // Play notification sound and show toast
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.play().catch(() => {});
+          } catch {}
+          
+          toast({ 
+            title: "🔔 Order Ready!", 
+            description: notification.message,
+            className: "bg-green-600 border-green-700 text-white"
+          });
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [staff, outlet]);
+  
+  const markNotificationRead = async (notificationId: string) => {
+    await supabase
+      .from("lab_ops_order_notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId);
+    
+    setOrderNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setUnreadNotifications(prev => Math.max(0, prev - 1));
+  };
+  
+  const markAllNotificationsRead = async () => {
+    if (!staff || !outlet) return;
+    
+    await supabase
+      .from("lab_ops_order_notifications")
+      .update({ is_read: true })
+      .eq("outlet_id", outlet.id)
+      .eq("server_id", staff.id);
+    
+    setOrderNotifications([]);
+    setUnreadNotifications(0);
   };
 
   const fetchTables = async (outletId: string) => {
@@ -881,6 +963,22 @@ export default function StaffPOS() {
             currentStaffName={staff.full_name}
             currentStaffUsername={currentStaffUsername}
           />
+          {/* Notification Bell */}
+          <div className="relative">
+            <Button 
+              variant={unreadNotifications > 0 ? "default" : "outline"} 
+              size="sm"
+              className={unreadNotifications > 0 ? "bg-green-600 hover:bg-green-700 animate-pulse" : ""}
+              onClick={markAllNotificationsRead}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {unreadNotifications}
+                </span>
+              )}
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
             <Receipt className="w-4 h-4 mr-1" /> Orders
           </Button>
@@ -900,19 +998,27 @@ export default function StaffPOS() {
         <div className="flex-1 p-3">
           <h2 className="text-lg font-semibold mb-3">Select Table</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {tables.map(table => (
-              <Button
-                key={table.id}
-                variant={table.status === "occupied" ? "secondary" : "outline"}
-                className="h-16 flex flex-col"
-                onClick={() => setSelectedTable(table)}
-              >
-                <span className="font-semibold">{table.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  <Users className="w-3 h-3 inline mr-1" />{table.capacity}
-                </span>
-              </Button>
-            ))}
+            {tables.map(table => {
+              const isOccupied = table.status === "seated" || table.status === "occupied";
+              return (
+                <Button
+                  key={table.id}
+                  variant="outline"
+                  className={`h-16 flex flex-col transition-all ${
+                    isOccupied 
+                      ? "bg-amber-500/90 hover:bg-amber-500 text-amber-950 border-amber-600 shadow-lg shadow-amber-500/30" 
+                      : "hover:bg-muted"
+                  }`}
+                  onClick={() => setSelectedTable(table)}
+                >
+                  <span className="font-semibold">{table.name}</span>
+                  <span className={`text-xs ${isOccupied ? "text-amber-800" : "text-muted-foreground"}`}>
+                    <Users className="w-3 h-3 inline mr-1" />{table.capacity}
+                    {isOccupied && " • Active"}
+                  </span>
+                </Button>
+              );
+            })}
           </div>
         </div>
       ) : (
