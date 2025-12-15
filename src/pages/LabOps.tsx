@@ -3665,16 +3665,18 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
                 <Input value={editingStaff.phone || ""} onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })} />
               </div>
               <div>
-                <Label>Role</Label>
+                <Label>Role / Title</Label>
                 <Select value={editingStaff.role} onValueChange={(v) => setEditingStaff({ ...editingStaff, role: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
                     <SelectItem value="bartender">Bartender</SelectItem>
-                    <SelectItem value="server">Server</SelectItem>
-                    <SelectItem value="chef">Chef</SelectItem>
-                    <SelectItem value="host">Host</SelectItem>
+                    <SelectItem value="waiter">Waiter / Server</SelectItem>
+                    <SelectItem value="kitchen">Kitchen</SelectItem>
                     <SelectItem value="barback">Barback</SelectItem>
+                    <SelectItem value="host">Host</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
