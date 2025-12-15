@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Apple } from "lucide-react";
-import svLogo from "@/assets/sv-logo-warm.png";
+import svLogo from "@/assets/sv-logo.png";
 
 // Validation schemas
 const signUpSchema = z.object({
@@ -192,7 +192,8 @@ const Auth = () => {
             alt="SV" 
             className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl shadow-lg"
             style={{
-              boxShadow: '0 0 40px rgba(234, 179, 8, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3)'
+              filter: 'sepia(15%) saturate(1.2) hue-rotate(-5deg)',
+              boxShadow: '0 0 30px rgba(234, 179, 8, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4)'
             }}
           />
           <p className="text-muted-foreground">
