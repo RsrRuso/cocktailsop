@@ -279,6 +279,32 @@ const POReceivedItems = () => {
             return;
           }
           
+          // Check for duplicate document code in receiving records
+          let duplicateQuery = supabase
+            .from('po_received_records')
+            .select('id, document_number, received_date')
+            .eq('document_number', documentCode);
+          
+          if (selectedWorkspaceId) {
+            duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+          } else {
+            duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+          }
+          
+          const { data: existingReceiving } = await duplicateQuery;
+          
+          if (existingReceiving && existingReceiving.length > 0) {
+            const existingDate = existingReceiving[0].received_date 
+              ? format(new Date(existingReceiving[0].received_date), 'PPP')
+              : 'unknown date';
+            toast.error(
+              `Upload rejected: Document "${documentCode}" was already received on ${existingDate}. Duplicate uploads are not allowed.`,
+              { duration: 8000 }
+            );
+            setIsUploading(false);
+            return;
+          }
+          
           // Check if document code exists in any Purchase Order
           let poQuery = supabase
             .from('purchase_orders')
