@@ -225,13 +225,88 @@ const POReceivedItems = () => {
             return;
           }
           
-          // Get matching purchase order to compare
+          // Get ALL purchase order items for comparison by ML code
+          // This matches items regardless of who submitted the PO
           const orderNumber = parsed.doc_no;
           let orderedItems: any[] = [];
           let matchedOrder: any = null;
           
-          if (orderNumber) {
-            // For workspace orders, search by workspace_id; for personal, search by user_id
+          // Helper to normalize item code for matching
+          const normalizeItemCode = (code: string): string => {
+            return String(code || '').replace(/[.\s]/g, '').replace(/^0+/, '').trim().toLowerCase();
+          };
+          
+          // First, get ALL purchase order items from the workspace/personal scope
+          // This ensures we match by ML code regardless of who submitted the PO
+          let allItemsQuery = supabase
+            .from('purchase_order_items')
+            .select('*, purchase_orders!inner(id, order_number, supplier_name, order_date, user_id, workspace_id)');
+          
+          if (selectedWorkspaceId) {
+            allItemsQuery = allItemsQuery.eq('purchase_orders.workspace_id', selectedWorkspaceId);
+          } else {
+            allItemsQuery = allItemsQuery.eq('purchase_orders.user_id', user?.id).is('purchase_orders.workspace_id', null);
+          }
+          
+          const { data: allPOItems } = await allItemsQuery;
+          
+          // Build a map of normalized item_code -> ordered item for matching
+          const orderedItemsByCode = new Map<string, any>();
+          const orderedItemsByName = new Map<string, any>();
+          
+          (allPOItems || []).forEach((item: any) => {
+            if (item.item_code) {
+              const normalizedCode = normalizeItemCode(item.item_code);
+              // Keep the most recent order for each item code
+              if (!orderedItemsByCode.has(normalizedCode) || 
+                  new Date(item.purchase_orders.order_date) > new Date(orderedItemsByCode.get(normalizedCode).purchase_orders.order_date)) {
+                orderedItemsByCode.set(normalizedCode, item);
+              }
+            }
+            // Also track by name as fallback
+            const normalizedName = item.item_name?.trim().toLowerCase();
+            if (normalizedName && !orderedItemsByName.has(normalizedName)) {
+              orderedItemsByName.set(normalizedName, item);
+            }
+          });
+          
+          // Match each received item to ordered items by ML code first, then by name
+          const matchedOrderedItems: any[] = [];
+          const receivedCodes = new Set<string>();
+          
+          parsed.items.forEach((receivedItem: any) => {
+            const receivedCode = normalizeItemCode(receivedItem.item_code);
+            const receivedName = receivedItem.item_name?.trim().toLowerCase();
+            
+            // Try to match by code first
+            if (receivedCode && orderedItemsByCode.has(receivedCode)) {
+              const matchedItem = orderedItemsByCode.get(receivedCode);
+              if (!receivedCodes.has(receivedCode)) {
+                matchedOrderedItems.push(matchedItem);
+                receivedCodes.add(receivedCode);
+              }
+              if (!matchedOrder && matchedItem.purchase_orders) {
+                matchedOrder = matchedItem.purchase_orders;
+              }
+            }
+            // Fallback to name matching if no code match
+            else if (receivedName && orderedItemsByName.has(receivedName)) {
+              const matchedItem = orderedItemsByName.get(receivedName);
+              matchedOrderedItems.push(matchedItem);
+              if (!matchedOrder && matchedItem.purchase_orders) {
+                matchedOrder = matchedItem.purchase_orders;
+              }
+            }
+          });
+          
+          // If we found matches, use them; otherwise fall back to specific order search
+          if (matchedOrderedItems.length > 0) {
+            orderedItems = matchedOrderedItems;
+            if (matchedOrder) {
+              setSelectedOrderId(matchedOrder.id);
+            }
+          } else if (orderNumber) {
+            // Fallback: search by order number if no item matches found
             let orderQuery = supabase
               .from('purchase_orders')
               .select('id, order_number, supplier_name, order_date')
@@ -245,37 +320,6 @@ const POReceivedItems = () => {
             }
             
             const { data: orders } = await orderQuery;
-            
-            if (orders && orders.length > 0) {
-              matchedOrder = orders[0];
-              setSelectedOrderId(matchedOrder.id);
-              
-              const { data: items } = await supabase
-                .from('purchase_order_items')
-                .select('*')
-                .eq('purchase_order_id', matchedOrder.id);
-              
-              orderedItems = items || [];
-            }
-          }
-          
-          // If no order found by number, try to find by supplier
-          if (orderedItems.length === 0 && parsed.location) {
-            // For workspace orders, search by workspace_id; for personal, search by user_id
-            let supplierQuery = supabase
-              .from('purchase_orders')
-              .select('id, order_number, supplier_name, order_date')
-              .ilike('supplier_name', `%${parsed.location}%`)
-              .order('created_at', { ascending: false })
-              .limit(1);
-            
-            if (selectedWorkspaceId) {
-              supplierQuery = supplierQuery.eq('workspace_id', selectedWorkspaceId);
-            } else {
-              supplierQuery = supplierQuery.eq('user_id', user?.id).is('workspace_id', null);
-            }
-            
-            const { data: orders } = await supplierQuery;
             
             if (orders && orders.length > 0) {
               matchedOrder = orders[0];
