@@ -30,11 +30,11 @@ serve(async (req) => {
   }
 
   try {
-    const { content, pdfBase64 } = await req.json();
+    const { content, pdfBase64, imageBase64, imageMimeType } = await req.json();
     
-    // If PDF base64 is provided, use AI to parse it
-    if (pdfBase64) {
-      console.log('Parsing PDF with AI...');
+    // If PDF or image base64 is provided, use AI to parse it
+    if (pdfBase64 || imageBase64) {
+      console.log(pdfBase64 ? 'Parsing PDF with AI...' : 'Parsing image with AI...');
       
       const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       if (!LOVABLE_API_KEY) {
@@ -66,6 +66,15 @@ Extract ALL items from the table. Each row with an item code, name, quantity, an
 For the document number, look for patterns like "ML-XXXXX" or similar.
 For the date, look for dates in the header area.`;
 
+      // Determine the data URL based on content type
+      let dataUrl: string;
+      if (pdfBase64) {
+        dataUrl = `data:application/pdf;base64,${pdfBase64}`;
+      } else {
+        const mimeType = imageMimeType || 'image/png';
+        dataUrl = `data:${mimeType};base64,${imageBase64}`;
+      }
+
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -80,7 +89,7 @@ For the date, look for dates in the header area.`;
               role: 'user', 
               content: [
                 { type: 'text', text: 'Parse this purchase order/market list document and extract all items:' },
-                { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfBase64}` } }
+                { type: 'image_url', image_url: { url: dataUrl } }
               ]
             }
           ],
