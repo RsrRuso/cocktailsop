@@ -1813,30 +1813,20 @@ function MenuModule({ outletId }: { outletId: string }) {
   const createMenuItem = async () => {
     if (!newItemName.trim() || !newItemPrice) return;
 
-    const { data: newItem } = await supabase.from("lab_ops_menu_items").insert({
+    await supabase.from("lab_ops_menu_items").insert({
       outlet_id: outletId,
       name: newItemName.trim(),
       description: newItemDescription.trim() || null,
       base_price: parseFloat(newItemPrice),
       category_id: newItemCategory || null,
-    }).select().single();
-
-    // Create station mapping if station selected
-    if (newItem && newItemStation) {
-      await supabase.from("lab_ops_menu_item_stations").insert({
-        menu_item_id: newItem.id,
-        station_id: newItemStation,
-      });
-    }
+    });
 
     setNewItemName("");
     setNewItemPrice("");
     setNewItemCategory("");
     setNewItemDescription("");
-    setNewItemStation("");
     setShowAddItem(false);
     fetchMenuItems();
-    fetchStations();
     toast({ title: "Menu item created" });
   };
 
@@ -1853,19 +1843,8 @@ function MenuModule({ outletId }: { outletId: string }) {
       })
       .eq("id", editingItem.id);
 
-    // Update station mapping
-    await supabase.from("lab_ops_menu_item_stations").delete().eq("menu_item_id", editingItem.id);
-    if (editItemStation) {
-      await supabase.from("lab_ops_menu_item_stations").insert({
-        menu_item_id: editingItem.id,
-        station_id: editItemStation,
-      });
-    }
-
     setEditingItem(null);
-    setEditItemStation("");
     fetchMenuItems();
-    fetchStations();
     toast({ title: "Menu item updated" });
   };
 
@@ -2071,17 +2050,6 @@ function MenuModule({ outletId }: { outletId: string }) {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label>Station (Bar/Kitchen)</Label>
-                        <Select value={newItemStation} onValueChange={setNewItemStation}>
-                          <SelectTrigger><SelectValue placeholder="Select station" /></SelectTrigger>
-                          <SelectContent>
-                            {stations.map((st) => (
-                              <SelectItem key={st.id} value={st.id}>{st.name} ({st.type})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                       <Button onClick={createMenuItem} className="w-full">Create Item</Button>
                     </div>
                   </DialogContent>
@@ -2104,9 +2072,9 @@ function MenuModule({ outletId }: { outletId: string }) {
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {item.lab_ops_categories?.name || "Uncategorized"} • ${Number(item.base_price).toFixed(2)}
-                          {itemStations[item.id] && (
+                          {item.lab_ops_categories?.type && (
                             <span className="ml-2">
-                              • {stations.find(s => s.id === itemStations[item.id])?.name || "Station"}
+                              • {item.lab_ops_categories.type === 'drink' ? 'Bar' : 'Kitchen'}
                             </span>
                           )}
                         </p>
@@ -2265,17 +2233,6 @@ function MenuModule({ outletId }: { outletId: string }) {
                   <SelectContent>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Station (Bar/Kitchen)</Label>
-                <Select value={editItemStation || itemStations[editingItem.id] || ""} onValueChange={setEditItemStation}>
-                  <SelectTrigger><SelectValue placeholder="Select station" /></SelectTrigger>
-                  <SelectContent>
-                    {stations.map((st) => (
-                      <SelectItem key={st.id} value={st.id}>{st.name} ({st.type})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

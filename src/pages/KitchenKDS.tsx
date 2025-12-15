@@ -128,23 +128,6 @@ export default function KitchenKDS() {
 
       if (completedError) throw completedError;
 
-      // Get kitchen station IDs (HOT_KITCHEN, COLD_KITCHEN)
-      const { data: kitchenStations } = await supabase
-        .from("lab_ops_stations")
-        .select("id")
-        .eq("outlet_id", outletId)
-        .in("type", ["HOT_KITCHEN", "COLD_KITCHEN"]);
-      
-      const kitchenStationIds = (kitchenStations || []).map(s => s.id);
-
-      // Get menu items assigned to kitchen stations
-      const { data: kitchenItemMappings } = await supabase
-        .from("lab_ops_menu_item_stations")
-        .select("menu_item_id")
-        .in("station_id", kitchenStationIds.length > 0 ? kitchenStationIds : ['none']);
-      
-      const kitchenMenuItemIds = (kitchenItemMappings || []).map(m => m.menu_item_id);
-
       // Process all orders and separate based on item status
       const activeOrdersWithItems: Order[] = [];
       const readyOrders: Order[] = [];
@@ -156,14 +139,14 @@ export default function KitchenKDS() {
             id, order_id, menu_item_id, qty, unit_price, note, status,
             menu_item:lab_ops_menu_items(
               name,
-              category:lab_ops_categories(name)
+              category:lab_ops_categories(name, type)
             )
           `)
           .eq("order_id", order.id);
 
-        // Filter items by station mapping
+        // Filter items by category type = 'food' for kitchen
         const kitchenItems = (items || []).filter(item => 
-          kitchenMenuItemIds.includes(item.menu_item_id)
+          (item.menu_item as any)?.category?.type === 'food'
         );
 
         if (kitchenItems.length > 0) {
@@ -196,13 +179,14 @@ export default function KitchenKDS() {
             id, order_id, menu_item_id, qty, unit_price, note, status,
             menu_item:lab_ops_menu_items(
               name,
-              category:lab_ops_categories(name)
+              category:lab_ops_categories(name, type)
             )
           `)
           .eq("order_id", order.id);
 
+        // Filter items by category type = 'food' for kitchen
         const kitchenItems = (items || []).filter(item => 
-          kitchenMenuItemIds.includes(item.menu_item_id)
+          (item.menu_item as any)?.category?.type === 'food'
         );
 
         if (kitchenItems.length > 0) {
