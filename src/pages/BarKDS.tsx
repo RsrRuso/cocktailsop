@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { 
   Wine, Check, ArrowLeft, RefreshCw, 
@@ -15,6 +16,7 @@ import { RecipeDialog } from "@/components/bar-kds/RecipeDialog";
 import { StationManagement } from "@/components/bar-kds/StationManagement";
 import { BartenderPerformance } from "@/components/bar-kds/BartenderPerformance";
 import { StationConsumption } from "@/components/bar-kds/StationConsumption";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OrderItem {
   id: string;
@@ -39,10 +41,12 @@ interface OrderItem {
 interface Order {
   id: string;
   table_id: string;
+  table_number?: number | null;
   status: string;
   created_at: string;
   table?: {
     name: string;
+    table_number?: number | null;
   };
   items: OrderItem[];
 }
@@ -52,11 +56,13 @@ interface Station {
   name: string;
   assigned_bartender_id: string | null;
   category_filter: string[];
+  assigned_tables: number[];
   current_load: number;
   bartender?: { full_name: string };
 }
 
 export default function BarKDS() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,6 +84,7 @@ export default function BarKDS() {
   const [consumptionOpen, setConsumptionOpen] = useState(false);
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<string>("all");
+  const [myStationId, setMyStationId] = useState<string | null>(null);
 
   useEffect(() => {
     const outletId = localStorage.getItem('lab_ops_outlet_id');
@@ -90,17 +97,29 @@ export default function BarKDS() {
     }
   }, []);
 
+  // Auto-select station for logged-in bartender
+  useEffect(() => {
+    if (user && stations.length > 0) {
+      const myStation = stations.find(s => s.assigned_bartender_id === user.id);
+      if (myStation) {
+        setMyStationId(myStation.id);
+        setSelectedStation(myStation.id);
+      }
+    }
+  }, [user, stations]);
+
   const fetchStations = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_stations")
-      .select("id, name, assigned_bartender_id, category_filter, current_load, bartender:lab_ops_staff(full_name)")
+      .select("id, name, assigned_bartender_id, category_filter, assigned_tables, current_load, bartender:lab_ops_staff(full_name)")
       .eq("outlet_id", outletId)
       .eq("type", "BAR")
       .eq("is_active", true);
     
     setStations((data || []).map(s => ({
       ...s,
-      category_filter: Array.isArray(s.category_filter) ? s.category_filter as string[] : []
+      category_filter: Array.isArray(s.category_filter) ? s.category_filter as string[] : [],
+      assigned_tables: Array.isArray(s.assigned_tables) ? s.assigned_tables as number[] : []
     })));
   };
 
@@ -166,12 +185,12 @@ export default function BarKDS() {
 
   const fetchOrders = async (outletId: string) => {
     try {
-      // Fetch active orders
+      // Fetch active orders with table_number
       const { data: activeOrdersData, error: activeError } = await supabase
         .from("lab_ops_orders")
         .select(`
           id, table_id, status, created_at,
-          table:lab_ops_tables(name)
+          table:lab_ops_tables(name, table_number)
         `)
         .eq("outlet_id", outletId)
         .in("status", ["open", "in_progress", "sent"])
@@ -185,7 +204,7 @@ export default function BarKDS() {
         .from("lab_ops_orders")
         .select(`
           id, table_id, status, created_at,
-          table:lab_ops_tables(name)
+          table:lab_ops_tables(name, table_number)
         `)
         .eq("outlet_id", outletId)
         .in("status", ["ready", "closed"])
@@ -206,7 +225,7 @@ export default function BarKDS() {
             id, order_id, menu_item_id, qty, unit_price, note, status,
             menu_item:lab_ops_menu_items(
               name,
-              category:lab_ops_categories(name, type)
+              category:lab_ops_categories(name, type, id)
             )
           `)
           .eq("order_id", order.id);
@@ -217,12 +236,14 @@ export default function BarKDS() {
         );
 
         if (barItems.length > 0) {
+          const tableData = order.table as any;
           const orderData: Order = {
             id: order.id,
             table_id: order.table_id,
+            table_number: tableData?.table_number,
             status: order.status,
             created_at: order.created_at,
-            table: order.table as any,
+            table: tableData,
             items: barItems as unknown as OrderItem[]
           };
 
@@ -246,7 +267,7 @@ export default function BarKDS() {
             id, order_id, menu_item_id, qty, unit_price, note, status,
             menu_item:lab_ops_menu_items(
               name,
-              category:lab_ops_categories(name, type)
+              category:lab_ops_categories(name, type, id)
             )
           `)
           .eq("order_id", order.id);
@@ -257,12 +278,14 @@ export default function BarKDS() {
         );
 
         if (barItems.length > 0) {
+          const tableData = order.table as any;
           completedWithItems.push({
             id: order.id,
             table_id: order.table_id,
+            table_number: tableData?.table_number,
             status: order.status,
             created_at: order.created_at,
-            table: order.table as any,
+            table: tableData,
             items: barItems as unknown as OrderItem[]
           });
         }
@@ -277,6 +300,40 @@ export default function BarKDS() {
       setIsLoading(false);
     }
   };
+
+  // Filter orders based on selected station
+  const getFilteredOrders = (allOrders: Order[]) => {
+    if (selectedStation === "all") return allOrders;
+    
+    const station = stations.find(s => s.id === selectedStation);
+    if (!station) return allOrders;
+
+    return allOrders.filter(order => {
+      // Filter by assigned tables if configured
+      if (station.assigned_tables.length > 0) {
+        const tableNum = order.table_number || order.table?.table_number;
+        if (tableNum && !station.assigned_tables.includes(tableNum)) {
+          return false;
+        }
+        // If order has no table number and station has table filter, exclude it
+        if (!tableNum) return false;
+      }
+
+      // Filter by category if configured
+      if (station.category_filter.length > 0) {
+        const hasMatchingItem = order.items.some(item => {
+          const categoryId = (item.menu_item as any)?.category?.id;
+          return categoryId && station.category_filter.includes(categoryId);
+        });
+        if (!hasMatchingItem) return false;
+      }
+
+      return true;
+    });
+  };
+
+  const filteredOrders = getFilteredOrders(orders);
+  const filteredCompletedOrders = getFilteredOrders(completedOrders);
 
   const playNotificationSound = () => {
     const audio = new Audio('/notification.wav');
@@ -478,6 +535,44 @@ export default function BarKDS() {
           </div>
         </div>
         
+        {/* Station Selector */}
+        <div className="mt-3">
+          <Select value={selectedStation} onValueChange={setSelectedStation}>
+            <SelectTrigger className="bg-black/30 border-amber-600/50 text-white h-9">
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <User className="h-3.5 w-3.5" />
+                  {selectedStation === "all" 
+                    ? "All Stations" 
+                    : stations.find(s => s.id === selectedStation)?.name || "Select Station"
+                  }
+                  {myStationId === selectedStation && selectedStation !== "all" && (
+                    <Badge className="bg-green-600 text-xs px-1 py-0">You</Badge>
+                  )}
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-700">
+              <SelectItem value="all">All Stations</SelectItem>
+              {stations.map((station) => (
+                <SelectItem key={station.id} value={station.id}>
+                  <div className="flex items-center gap-2">
+                    {station.name}
+                    {station.assigned_bartender_id && (
+                      <span className="text-gray-400 text-xs">
+                        ({station.bartender?.full_name || "Assigned"})
+                      </span>
+                    )}
+                    {myStationId === station.id && (
+                      <Badge className="bg-green-600 text-xs px-1 py-0 ml-1">You</Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
         {/* Management Buttons Row */}
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
           <Button
@@ -517,7 +612,7 @@ export default function BarKDS() {
               : 'text-white hover:bg-white/20'
             }`}
           >
-            New Orders ({orders.length})
+            New Orders ({filteredOrders.length})
           </Button>
           <Button
             variant={activeTab === 'completed' ? 'default' : 'ghost'}
@@ -529,7 +624,7 @@ export default function BarKDS() {
             }`}
           >
             <Check className="h-3.5 w-3.5 mr-1" />
-            Completed ({completedOrders.length})
+            Completed ({filteredCompletedOrders.length})
           </Button>
         </div>
       </div>
@@ -537,14 +632,17 @@ export default function BarKDS() {
       {/* Orders Grid */}
       <div className="p-4">
         {activeTab === 'new' ? (
-          orders.length === 0 ? (
+          filteredOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
               <Wine className="h-16 w-16 mb-4 opacity-30" />
               <p className="text-xl">No pending bar orders</p>
+              {selectedStation !== "all" && orders.length > 0 && (
+                <p className="text-sm mt-2">({orders.length} orders at other stations)</p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {orders.map((order, index) => {
+              {filteredOrders.map((order, index) => {
                 const ageMinutes = getOrderAge(order.created_at);
                 return (
                   <Card 
@@ -651,14 +749,17 @@ export default function BarKDS() {
             </div>
           )
         ) : (
-          completedOrders.length === 0 ? (
+          filteredCompletedOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
               <Check className="h-16 w-16 mb-4 opacity-30" />
               <p className="text-xl">No recently completed orders</p>
+              {selectedStation !== "all" && completedOrders.length > 0 && (
+                <p className="text-sm mt-2">({completedOrders.length} completed at other stations)</p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {completedOrders.map((order, index) => (
+              {filteredCompletedOrders.map((order, index) => (
                 <Card 
                   key={order.id} 
                   className="bg-green-950/50 border-green-800 overflow-hidden"
