@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Apple } from "lucide-react";
+import svLogo from "@/assets/sv-logo.png";
 
 // Validation schemas
 const signUpSchema = z.object({
@@ -186,9 +187,11 @@ const Auth = () => {
       
       <div className="w-full max-w-md glass glow-primary rounded-2xl p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
-          <h1 className="text-5xl sm:text-6xl font-instagram text-gradient-primary tracking-tight leading-none">
-            SV
-          </h1>
+          <img 
+            src={svLogo} 
+            alt="SV" 
+            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl shadow-lg"
+          />
           <p className="text-muted-foreground">
             {isSignUp ? "Join the Professional Network for Beverage Industry" : "Sign in to your account"}
           </p>
