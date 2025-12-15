@@ -374,6 +374,31 @@ const PurchaseOrders = () => {
           const parsed = data.data as ParsedOrderData;
           
           if (parsed) {
+            // Check for duplicate document code
+            if (parsed.doc_no?.trim()) {
+              let duplicateQuery = supabase
+                .from('purchase_orders')
+                .select('id, order_number')
+                .eq('order_number', parsed.doc_no.trim());
+              
+              if (selectedWorkspaceId) {
+                duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+              } else {
+                duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+              }
+              
+              const { data: existingPO } = await duplicateQuery;
+              
+              if (existingPO && existingPO.length > 0) {
+                toast.error(
+                  `Upload rejected: Document code "${parsed.doc_no}" already exists. Duplicate uploads are not allowed.`,
+                  { duration: 8000 }
+                );
+                setIsUploading(false);
+                return;
+              }
+            }
+            
             setNewOrder({
               supplier_name: parsed.location || '',
               order_number: parsed.doc_no || '',
