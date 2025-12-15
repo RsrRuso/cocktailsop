@@ -6573,6 +6573,7 @@ export type Database = {
       lab_ops_stations: {
         Row: {
           assigned_bartender_id: string | null
+          assigned_tables: number[] | null
           category_filter: Json | null
           created_at: string | null
           current_load: number | null
@@ -6588,6 +6589,7 @@ export type Database = {
         }
         Insert: {
           assigned_bartender_id?: string | null
+          assigned_tables?: number[] | null
           category_filter?: Json | null
           created_at?: string | null
           current_load?: number | null
@@ -6603,6 +6605,7 @@ export type Database = {
         }
         Update: {
           assigned_bartender_id?: string | null
+          assigned_tables?: number[] | null
           category_filter?: Json | null
           created_at?: string | null
           current_load?: number | null
