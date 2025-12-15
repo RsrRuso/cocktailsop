@@ -3024,8 +3024,68 @@ function RecipesModule({ outletId }: { outletId: string }) {
     }
   };
 
+  const deleteRecipe = async (recipeId: string) => {
+    const { error } = await supabase.from("lab_ops_recipes").delete().eq("id", recipeId);
+    if (!error) {
+      toast({ title: "Recipe deleted" });
+      fetchRecipes();
+    }
+  };
+
+  const openEditRecipe = (recipe: any) => {
+    setSelectedRecipe(recipe);
+    setSelectedMenuItem(recipe.menu_item_id);
+    setRecipeYield(String(recipe.yield_qty || 1));
+    setRecipeInstructions(recipe.instructions || "");
+    setIngredients(
+      (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => ({
+        itemId: ing.inventory_item_id,
+        qty: ing.qty || 0,
+        unit: ing.unit || "ml",
+      }))
+    );
+    setShowAddRecipe(true);
+  };
+
+  const updateRecipe = async () => {
+    if (!selectedRecipe || !selectedMenuItem || ingredients.length === 0) return;
+
+    // Update recipe
+    await supabase.from("lab_ops_recipes").update({
+      menu_item_id: selectedMenuItem,
+      yield_qty: parseFloat(recipeYield) || 1,
+      instructions: recipeInstructions || null,
+    }).eq("id", selectedRecipe.id);
+
+    // Delete existing ingredients and insert new ones
+    await supabase.from("lab_ops_recipe_ingredients").delete().eq("recipe_id", selectedRecipe.id);
+    for (const ing of ingredients) {
+      if (ing.itemId) {
+        await supabase.from("lab_ops_recipe_ingredients").insert({
+          recipe_id: selectedRecipe.id,
+          inventory_item_id: ing.itemId,
+          qty: ing.qty,
+          unit: ing.unit,
+        });
+      }
+    }
+
+    toast({ title: "Recipe updated" });
+    closeDialog();
+    fetchRecipes();
+  };
+
+  const closeDialog = () => {
+    setShowAddRecipe(false);
+    setSelectedRecipe(null);
+    setSelectedMenuItem("");
+    setRecipeYield("1");
+    setRecipeInstructions("");
+    setIngredients([]);
+  };
+
   const addIngredient = () => {
-    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "g" }]);
+    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml" }]);
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
@@ -3065,7 +3125,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
             <CardTitle className="text-lg">Recipes & Costing</CardTitle>
             <CardDescription className="text-sm">Manage recipes and calculate food costs</CardDescription>
           </div>
-          <Dialog open={showAddRecipe} onOpenChange={setShowAddRecipe}>
+          <Dialog open={showAddRecipe} onOpenChange={(open) => { if (!open) closeDialog(); else setShowAddRecipe(true); }}>
             <DialogTrigger asChild>
               <Button size="sm" disabled={menuItems.length === 0}>
                 <Plus className="h-4 w-4 mr-1" />Add Recipe
@@ -3073,7 +3133,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
             </DialogTrigger>
             <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create Recipe</DialogTitle>
+                <DialogTitle>{selectedRecipe ? "Edit Recipe" : "Create Recipe"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div>
@@ -3127,6 +3187,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                             <SelectItem value="ml">ml</SelectItem>
                             <SelectItem value="L">L</SelectItem>
                             <SelectItem value="piece">pc</SelectItem>
+                            <SelectItem value="dash">dash</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
@@ -3146,8 +3207,12 @@ function RecipesModule({ outletId }: { outletId: string }) {
                   />
                 </div>
 
-                <Button onClick={createRecipe} className="w-full" disabled={!selectedMenuItem || ingredients.length === 0}>
-                  Create Recipe
+                <Button 
+                  onClick={selectedRecipe ? updateRecipe : createRecipe} 
+                  className="w-full" 
+                  disabled={!selectedMenuItem || ingredients.length === 0}
+                >
+                  {selectedRecipe ? "Update Recipe" : "Create Recipe"}
                 </Button>
               </div>
             </DialogContent>
@@ -3170,17 +3235,23 @@ function RecipesModule({ outletId }: { outletId: string }) {
                 return (
                   <Card key={recipe.id}>
                     <CardContent className="pt-4">
-                      <div className="flex items-start justify-between">
-                        <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
                           <h3 className="font-semibold">{recipe.lab_ops_menu_items?.name}</h3>
                           <p className="text-sm text-muted-foreground">
                             Version {recipe.version_number} • Yield: {recipe.yield_qty}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <Badge variant={parseFloat(foodCostPct) > 35 ? "destructive" : "default"}>
-                            {foodCostPct}% Food Cost
+                        <div className="flex items-center gap-1">
+                          <Badge variant={parseFloat(foodCostPct) > 35 ? "destructive" : "default"} className="shrink-0">
+                            {foodCostPct}%
                           </Badge>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditRecipe(recipe)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteRecipe(recipe.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       
@@ -3207,7 +3278,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
                               return (
                                 <Badge key={ing.id} variant="outline">
-                                  {invItem?.name}: {ing.quantity} {ing.unit}
+                                  {invItem?.name}: {ing.qty} {ing.unit}
                                 </Badge>
                               );
                             })}
