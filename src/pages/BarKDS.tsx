@@ -7,10 +7,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { 
   Wine, Check, ArrowLeft, RefreshCw, 
-  Volume2, VolumeX, Timer, AlertTriangle
+  Volume2, VolumeX, Timer, AlertTriangle,
+  Settings, TrendingUp, Beaker, User
 } from "lucide-react";
-import { differenceInMinutes } from "date-fns";
+import { differenceInMinutes, format } from "date-fns";
 import { RecipeDialog } from "@/components/bar-kds/RecipeDialog";
+import { StationManagement } from "@/components/bar-kds/StationManagement";
+import { BartenderPerformance } from "@/components/bar-kds/BartenderPerformance";
+import { StationConsumption } from "@/components/bar-kds/StationConsumption";
 
 interface OrderItem {
   id: string;
@@ -20,10 +24,14 @@ interface OrderItem {
   unit_price: number;
   note: string | null;
   status: string;
+  station_id?: string;
+  bartender_id?: string;
+  started_at?: string;
   menu_item?: {
     name: string;
     category?: {
       name: string;
+      id: string;
     };
   };
 }
@@ -37,6 +45,15 @@ interface Order {
     name: string;
   };
   items: OrderItem[];
+}
+
+interface Station {
+  id: string;
+  name: string;
+  assigned_bartender_id: string | null;
+  category_filter: string[];
+  current_load: number;
+  bartender?: { full_name: string };
 }
 
 export default function BarKDS() {
@@ -54,16 +71,38 @@ export default function BarKDS() {
     qty: number;
     orderId: string;
   } | null>(null);
+  
+  // New state for dialogs
+  const [stationManagementOpen, setStationManagementOpen] = useState(false);
+  const [performanceOpen, setPerformanceOpen] = useState(false);
+  const [consumptionOpen, setConsumptionOpen] = useState(false);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [selectedStation, setSelectedStation] = useState<string>("all");
 
   useEffect(() => {
     const outletId = localStorage.getItem('lab_ops_outlet_id');
     if (outletId) {
       setSelectedOutlet(outletId);
       fetchOrders(outletId);
+      fetchStations(outletId);
     } else {
       fetchFirstOutlet();
     }
   }, []);
+
+  const fetchStations = async (outletId: string) => {
+    const { data } = await supabase
+      .from("lab_ops_stations")
+      .select("id, name, assigned_bartender_id, category_filter, current_load, bartender:lab_ops_staff(full_name)")
+      .eq("outlet_id", outletId)
+      .eq("type", "BAR")
+      .eq("is_active", true);
+    
+    setStations((data || []).map(s => ({
+      ...s,
+      category_filter: Array.isArray(s.category_filter) ? s.category_filter as string[] : []
+    })));
+  };
 
   useEffect(() => {
     if (!selectedOutlet) return;
@@ -103,8 +142,26 @@ export default function BarKDS() {
       setSelectedOutlet(data.id);
       localStorage.setItem('lab_ops_outlet_id', data.id);
       fetchOrders(data.id);
+      fetchStations(data.id);
     }
     setIsLoading(false);
+  };
+
+  const recordPerformance = async (itemId: string, menuItemId: string, stationId: string | null, startedAt: string) => {
+    if (!selectedOutlet) return;
+    const station = stations.find(s => s.id === stationId);
+    
+    await supabase.from("lab_ops_bartender_item_performance").insert({
+      outlet_id: selectedOutlet,
+      station_id: stationId,
+      bartender_id: station?.assigned_bartender_id,
+      order_item_id: itemId,
+      menu_item_id: menuItemId,
+      started_at: startedAt,
+      completed_at: new Date().toISOString(),
+      time_seconds: Math.round((Date.now() - new Date(startedAt).getTime()) / 1000),
+      shift_date: format(new Date(), 'yyyy-MM-dd')
+    });
   };
 
   const fetchOrders = async (outletId: string) => {
@@ -403,6 +460,30 @@ export default function BarKDS() {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
+              size="sm"
+              onClick={() => setStationManagementOpen(true)}
+              className="text-white hover:bg-white/20"
+            >
+              <Settings className="h-4 w-4 mr-1" /> Stations
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPerformanceOpen(true)}
+              className="text-white hover:bg-white/20"
+            >
+              <TrendingUp className="h-4 w-4 mr-1" /> Performance
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConsumptionOpen(true)}
+              className="text-white hover:bg-white/20"
+            >
+              <Beaker className="h-4 w-4 mr-1" /> Consumption
+            </Button>
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => setSoundEnabled(!soundEnabled)}
               className="text-white hover:bg-white/20"
@@ -629,6 +710,34 @@ export default function BarKDS() {
           qty={selectedItem.qty}
           orderId={selectedItem.orderId}
           onComplete={() => markItemComplete(selectedItem.id, selectedItem.orderId)}
+        />
+      )}
+
+      {/* Station Management Dialog */}
+      {selectedOutlet && (
+        <StationManagement
+          open={stationManagementOpen}
+          onClose={() => setStationManagementOpen(false)}
+          outletId={selectedOutlet}
+          onStationsChange={() => fetchStations(selectedOutlet)}
+        />
+      )}
+
+      {/* Bartender Performance Dialog */}
+      {selectedOutlet && (
+        <BartenderPerformance
+          open={performanceOpen}
+          onClose={() => setPerformanceOpen(false)}
+          outletId={selectedOutlet}
+        />
+      )}
+
+      {/* Station Consumption Dialog */}
+      {selectedOutlet && (
+        <StationConsumption
+          open={consumptionOpen}
+          onClose={() => setConsumptionOpen(false)}
+          outletId={selectedOutlet}
         />
       )}
     </div>

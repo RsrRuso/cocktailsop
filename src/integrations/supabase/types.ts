@@ -4216,6 +4216,151 @@ export type Database = {
           },
         ]
       }
+      lab_ops_bartender_daily_stats: {
+        Row: {
+          avg_time_seconds: number | null
+          bartender_id: string
+          created_at: string | null
+          efficiency_score: number | null
+          id: string
+          max_time_seconds: number | null
+          min_time_seconds: number | null
+          outlet_id: string
+          shift_date: string | null
+          station_id: string | null
+          total_drinks_served: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_time_seconds?: number | null
+          bartender_id: string
+          created_at?: string | null
+          efficiency_score?: number | null
+          id?: string
+          max_time_seconds?: number | null
+          min_time_seconds?: number | null
+          outlet_id: string
+          shift_date?: string | null
+          station_id?: string | null
+          total_drinks_served?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_time_seconds?: number | null
+          bartender_id?: string
+          created_at?: string | null
+          efficiency_score?: number | null
+          id?: string
+          max_time_seconds?: number | null
+          min_time_seconds?: number | null
+          outlet_id?: string
+          shift_date?: string | null
+          station_id?: string | null
+          total_drinks_served?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_bartender_daily_stats_bartender_id_fkey"
+            columns: ["bartender_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bartender_daily_stats_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bartender_daily_stats_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_bartender_item_performance: {
+        Row: {
+          bartender_id: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          menu_item_id: string
+          order_item_id: string
+          outlet_id: string
+          shift_date: string | null
+          started_at: string
+          station_id: string | null
+          time_seconds: number | null
+        }
+        Insert: {
+          bartender_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          menu_item_id: string
+          order_item_id: string
+          outlet_id: string
+          shift_date?: string | null
+          started_at: string
+          station_id?: string | null
+          time_seconds?: number | null
+        }
+        Update: {
+          bartender_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string
+          order_item_id?: string
+          outlet_id?: string
+          shift_date?: string | null
+          started_at?: string
+          station_id?: string | null
+          time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_bartender_item_performance_bartender_id_fkey"
+            columns: ["bartender_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bartender_item_performance_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bartender_item_performance_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bartender_item_performance_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bartender_item_performance_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_bottles: {
         Row: {
           bottle_name: string
@@ -5269,6 +5414,7 @@ export type Database = {
       }
       lab_ops_order_items: {
         Row: {
+          bartender_id: string | null
           course: number | null
           created_at: string | null
           discount_amount: number | null
@@ -5282,6 +5428,7 @@ export type Database = {
           ready_at: string | null
           sent_at: string | null
           server_notified: boolean | null
+          started_at: string | null
           station_id: string | null
           status:
             | Database["public"]["Enums"]["lab_ops_order_item_status"]
@@ -5291,6 +5438,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bartender_id?: string | null
           course?: number | null
           created_at?: string | null
           discount_amount?: number | null
@@ -5304,6 +5452,7 @@ export type Database = {
           ready_at?: string | null
           sent_at?: string | null
           server_notified?: boolean | null
+          started_at?: string | null
           station_id?: string | null
           status?:
             | Database["public"]["Enums"]["lab_ops_order_item_status"]
@@ -5313,6 +5462,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bartender_id?: string | null
           course?: number | null
           created_at?: string | null
           discount_amount?: number | null
@@ -5326,6 +5476,7 @@ export type Database = {
           ready_at?: string | null
           sent_at?: string | null
           server_notified?: boolean | null
+          started_at?: string | null
           station_id?: string | null
           status?:
             | Database["public"]["Enums"]["lab_ops_order_item_status"]
@@ -5335,6 +5486,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lab_ops_order_items_bartender_id_fkey"
+            columns: ["bartender_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_ops_order_items_menu_item_id_fkey"
             columns: ["menu_item_id"]
@@ -6348,8 +6506,74 @@ export type Database = {
           },
         ]
       }
+      lab_ops_station_consumption: {
+        Row: {
+          created_at: string | null
+          id: string
+          ingredient_id: string
+          outlet_id: string
+          physical_consumption_ml: number | null
+          shift_date: string | null
+          sop_consumption_ml: number | null
+          station_id: string
+          updated_at: string | null
+          variance_ml: number | null
+          variance_percent: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ingredient_id: string
+          outlet_id: string
+          physical_consumption_ml?: number | null
+          shift_date?: string | null
+          sop_consumption_ml?: number | null
+          station_id: string
+          updated_at?: string | null
+          variance_ml?: number | null
+          variance_percent?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ingredient_id?: string
+          outlet_id?: string
+          physical_consumption_ml?: number | null
+          shift_date?: string | null
+          sop_consumption_ml?: number | null
+          station_id?: string
+          updated_at?: string | null
+          variance_ml?: number | null
+          variance_percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_station_consumption_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_station_consumption_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_station_consumption_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_stations: {
         Row: {
+          assigned_bartender_id: string | null
+          category_filter: Json | null
           created_at: string | null
           current_load: number | null
           id: string
@@ -6363,6 +6587,8 @@ export type Database = {
           type: string
         }
         Insert: {
+          assigned_bartender_id?: string | null
+          category_filter?: Json | null
           created_at?: string | null
           current_load?: number | null
           id?: string
@@ -6376,6 +6602,8 @@ export type Database = {
           type: string
         }
         Update: {
+          assigned_bartender_id?: string | null
+          category_filter?: Json | null
           created_at?: string | null
           current_load?: number | null
           id?: string
@@ -6389,6 +6617,13 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lab_ops_stations_assigned_bartender_id_fkey"
+            columns: ["assigned_bartender_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_ops_stations_outlet_id_fkey"
             columns: ["outlet_id"]
