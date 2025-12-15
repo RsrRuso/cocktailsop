@@ -76,7 +76,7 @@ export const EnhancedReceivingDialog = ({
   const toggleAll = (received: boolean) => {
     setItems(prev => prev.map(item => ({
       ...item,
-      isReceived: item.matchedInPO ? received : false // Only toggle matched items
+      isReceived: received // Toggle all items, not just matched
     })));
   };
 
@@ -356,13 +356,12 @@ export const EnhancedReceivingDialog = ({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    {/* Checkbox */}
+                    {/* Checkbox - always enabled for manual tick/untick */}
                     <div className="pt-1">
                       <Checkbox
                         checked={item.isReceived}
                         onCheckedChange={() => toggleItemReceived(originalIndex)}
-                        disabled={!item.matchedInPO}
-                        className={item.matchedInPO ? '' : 'opacity-50'}
+                        className="cursor-pointer"
                       />
                     </div>
                     
