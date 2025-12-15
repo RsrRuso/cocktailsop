@@ -186,7 +186,7 @@ const Auth = () => {
       
       <div className="w-full max-w-md glass glow-primary rounded-2xl p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gradient-primary tracking-tight">
+          <h1 className="text-5xl sm:text-6xl font-instagram text-gradient-primary tracking-tight leading-none">
             SV
           </h1>
           <p className="text-muted-foreground">
