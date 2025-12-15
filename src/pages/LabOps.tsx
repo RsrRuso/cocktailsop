@@ -3501,7 +3501,19 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
   };
 
   const deleteStaff = async (id: string) => {
-    await supabase.from("lab_ops_staff").delete().eq("id", id);
+    if (!confirm("Are you sure you want to remove this staff member?")) return;
+    
+    const { error } = await supabase
+      .from("lab_ops_staff")
+      .update({ is_active: false })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error removing staff member", error);
+      toast({ title: "Failed to remove staff member", variant: "destructive" });
+      return;
+    }
+    
     fetchStaff();
     toast({ title: "Staff member removed" });
   };
