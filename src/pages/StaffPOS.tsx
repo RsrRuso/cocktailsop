@@ -55,6 +55,7 @@ interface Table {
   capacity: number;
   status: string;
   allocation: string | null;
+  turnover_count: number;
 }
 
 interface Category {
@@ -303,10 +304,10 @@ export default function StaffPOS() {
   const fetchTables = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_tables")
-      .select("id, name, table_number, capacity, status, allocation")
+      .select("id, name, table_number, capacity, status, allocation, turnover_count")
       .eq("outlet_id", outletId)
       .order("table_number", { ascending: true, nullsFirst: false });
-    setTables(data || []);
+    setTables((data || []).map(t => ({ ...t, turnover_count: t.turnover_count || 0 })));
   };
 
   const fetchCategories = async (outletId: string) => {
@@ -415,11 +416,23 @@ export default function StaffPOS() {
         throw new Error(`Order close failed: ${orderError.message}`);
       }
 
-      // Free table
+      // Free table and increment turnover count
       if (order.table_id) {
+        // First get current turnover count
+        const { data: tableData } = await supabase
+          .from("lab_ops_tables")
+          .select("turnover_count")
+          .eq("id", order.table_id)
+          .single();
+        
+        const currentTurnover = tableData?.turnover_count || 0;
+        
         const { error: tableError } = await supabase
           .from("lab_ops_tables")
-          .update({ status: "free" })
+          .update({ 
+            status: "free",
+            turnover_count: currentTurnover + 1
+          })
           .eq("id", order.table_id);
           
         if (tableError) {
@@ -1062,27 +1075,38 @@ export default function StaffPOS() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
             {tables.map(table => {
               const isOccupied = table.status === "seated" || table.status === "occupied";
-              const isOutdoor = table.allocation === "outdoor";
+              const isClosed = table.status === "closed";
+              const isFree = table.status === "free" || (!isOccupied && !isClosed);
+              
+              // Color coding: Red=Occupied, Green=Free, Orange=Closed
+              const getTableStyle = () => {
+                if (isOccupied) {
+                  return "bg-red-500/90 hover:bg-red-500 text-white border-red-600 shadow-md shadow-red-500/30";
+                }
+                if (isClosed) {
+                  return "bg-orange-500/90 hover:bg-orange-500 text-orange-950 border-orange-600 shadow-md shadow-orange-500/30";
+                }
+                // Free - green
+                return "bg-emerald-500/80 hover:bg-emerald-500 text-emerald-950 border-emerald-600 shadow-md shadow-emerald-500/30";
+              };
+              
               return (
                 <Button
                   key={table.id}
                   variant="outline"
-                  className={`h-14 flex flex-col py-1 px-2 transition-all ${
-                    isOccupied 
-                      ? "bg-amber-500/90 hover:bg-amber-500 text-amber-950 border-amber-600 shadow-md shadow-amber-500/30" 
-                      : isOutdoor
-                        ? "bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/50"
-                        : "hover:bg-muted"
-                  }`}
+                  className={`h-16 flex flex-col py-1 px-2 transition-all ${getTableStyle()}`}
                   onClick={() => setSelectedTable(table)}
+                  disabled={isClosed}
                 >
                   <span className="font-bold text-sm truncate w-full text-center">
                     {table.table_number ? `T${table.table_number}` : table.name}
                   </span>
-                  <span className={`text-[10px] flex items-center gap-1 ${isOccupied ? "text-amber-800" : "text-muted-foreground"}`}>
+                  <span className={`text-[10px] flex items-center gap-1 ${isOccupied ? "text-red-100" : isClosed ? "text-orange-800" : "text-emerald-800"}`}>
                     <Users className="w-3 h-3" />{table.capacity}
-                    {isOutdoor && <span className="text-emerald-600">•Out</span>}
-                    {isOccupied && <span>•Busy</span>}
+                    {table.allocation === "outdoor" && <span>•Out</span>}
+                  </span>
+                  <span className={`text-[9px] font-medium ${isOccupied ? "text-red-200" : isClosed ? "text-orange-700" : "text-emerald-700"}`}>
+                    ↻ {table.turnover_count} turns
                   </span>
                 </Button>
               );
