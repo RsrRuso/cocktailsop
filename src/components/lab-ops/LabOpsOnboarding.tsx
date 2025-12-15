@@ -92,7 +92,7 @@ const onboardingSteps = [
             <Badge className="mt-0.5">1</Badge>
             <div>
               <p className="font-medium">Select a Table</p>
-              <p className="text-sm text-muted-foreground">Click on a table from the grid to start or continue an order</p>
+              <p className="text-sm text-muted-foreground">Tables display with number (T1, T2...), capacity, and area. Green = Outdoor, Amber = Occupied with active orders.</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
@@ -114,6 +114,27 @@ const onboardingSteps = [
             <div>
               <p className="font-medium">Process Payment</p>
               <p className="text-sm text-muted-foreground">Apply discounts, split bills, and accept cash/card payments</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 border rounded-lg bg-gradient-to-r from-emerald-500/10 to-amber-500/10">
+          <h4 className="font-semibold mb-2 text-sm">Table Status Legend</h4>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-500/50"></span>
+              <span>Outdoor Table</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-amber-500/80"></span>
+              <span>Occupied/Busy</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded border border-border"></span>
+              <span>Indoor Available</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              <span>Capacity (seats)</span>
             </div>
           </div>
         </div>
