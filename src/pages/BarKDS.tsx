@@ -437,91 +437,98 @@ export default function BarKDS() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-900 to-amber-800 p-4 sticky top-0 z-10">
+      <div className="bg-gradient-to-r from-amber-900 to-amber-800 p-3 sm:p-4 sticky top-0 z-10">
+        {/* Top Row - Title and Quick Actions */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
               size="icon"
               onClick={() => window.location.href = '/lab-ops'}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Wine className="h-8 w-8 text-amber-300" />
+            <Wine className="h-6 w-6 text-amber-300" />
             <div>
-              <h1 className="text-2xl font-bold">Bar KDS</h1>
-              <p className="text-amber-200 text-sm">
-                {orders.length} new • {completedOrders.length} completed
+              <h1 className="text-lg sm:text-2xl font-bold">Bar KDS</h1>
+              <p className="text-amber-200 text-xs">
+                {orders.length} new • {completedOrders.length} done
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setStationManagementOpen(true)}
-              className="text-white hover:bg-white/20"
-            >
-              <Settings className="h-4 w-4 mr-1" /> Stations
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPerformanceOpen(true)}
-              className="text-white hover:bg-white/20"
-            >
-              <TrendingUp className="h-4 w-4 mr-1" /> Performance
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setConsumptionOpen(true)}
-              className="text-white hover:bg-white/20"
-            >
-              <Beaker className="h-4 w-4 mr-1" /> Consumption
-            </Button>
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8"
             >
-              {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => selectedOutlet && fetchOrders(selectedOutlet)}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8"
             >
-              <RefreshCw className="h-5 w-5" />
+              <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
         </div>
         
+        {/* Management Buttons Row */}
+        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setStationManagementOpen(true)}
+            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+          >
+            <Settings className="h-3.5 w-3.5 mr-1" /> Stations
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPerformanceOpen(true)}
+            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+          >
+            <TrendingUp className="h-3.5 w-3.5 mr-1" /> Performance
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConsumptionOpen(true)}
+            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+          >
+            <Beaker className="h-3.5 w-3.5 mr-1" /> Consumption
+          </Button>
+        </div>
+        
         {/* Tab Buttons */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-3">
           <Button
             variant={activeTab === 'new' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('new')}
-            className={activeTab === 'new' 
+            size="sm"
+            className={`flex-1 text-xs sm:text-sm ${activeTab === 'new' 
               ? 'bg-amber-600 hover:bg-amber-700' 
               : 'text-white hover:bg-white/20'
-            }
+            }`}
           >
             New Orders ({orders.length})
           </Button>
           <Button
             variant={activeTab === 'completed' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('completed')}
-            className={activeTab === 'completed' 
+            size="sm"
+            className={`flex-1 text-xs sm:text-sm ${activeTab === 'completed' 
               ? 'bg-green-600 hover:bg-green-700' 
               : 'text-white hover:bg-white/20'
-            }
+            }`}
           >
-            <Check className="h-4 w-4 mr-2" />
+            <Check className="h-3.5 w-3.5 mr-1" />
             Completed ({completedOrders.length})
           </Button>
         </div>
