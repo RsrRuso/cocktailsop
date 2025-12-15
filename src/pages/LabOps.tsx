@@ -268,16 +268,32 @@ export default function LabOps() {
       ];
       await supabase.from("lab_ops_void_reasons").insert(voidReasons);
       
-      // 9. Create Demo Recipes
-      const recipes = [
-        { outlet_id: outletId, name: "Old Fashioned", menu_item_id: null, portion_cost: 3.50, selling_price: 14, instructions: "Muddle sugar and bitters, add bourbon, stir with ice, strain, garnish with orange peel" },
-        { outlet_id: outletId, name: "Margarita", menu_item_id: null, portion_cost: 2.80, selling_price: 12, instructions: "Shake tequila, triple sec, lime juice with ice, strain into salt-rimmed glass" },
-        { outlet_id: outletId, name: "Negroni", menu_item_id: null, portion_cost: 4.20, selling_price: 14, instructions: "Stir gin, campari, sweet vermouth with ice, strain into rocks glass, garnish with orange" },
-      ];
-      const { data: recipeData } = await supabase.from("lab_ops_recipes").insert(recipes).select();
+      // 9. Create Demo Recipes (linked to menu items)
+      const { data: menuData } = await supabase
+        .from("lab_ops_menu_items")
+        .select("id, name")
+        .eq("outlet_id", outletId);
+      
+      const getMenuId = (name: string) => menuData?.find(m => m.name === name)?.id;
+      
+      // Create recipes linked to cocktail menu items
+      const oldFashionedMenuId = getMenuId("Old Fashioned");
+      const margaritaMenuId = getMenuId("Margarita");
+      const negroniMenuId = getMenuId("Negroni");
+      
+      const recipesToInsert = [];
+      if (oldFashionedMenuId) recipesToInsert.push({ menu_item_id: oldFashionedMenuId, yield_qty: 1, instructions: "Muddle sugar and bitters, add bourbon, stir with ice, strain, garnish with orange peel" });
+      if (margaritaMenuId) recipesToInsert.push({ menu_item_id: margaritaMenuId, yield_qty: 1, instructions: "Shake tequila, triple sec, lime juice with ice, strain into salt-rimmed glass" });
+      if (negroniMenuId) recipesToInsert.push({ menu_item_id: negroniMenuId, yield_qty: 1, instructions: "Stir gin, campari, sweet vermouth with ice, strain into rocks glass, garnish with orange" });
+      
+      let recipeData: any[] = [];
+      if (recipesToInsert.length > 0) {
+        const { data } = await supabase.from("lab_ops_recipes").insert(recipesToInsert).select();
+        recipeData = data || [];
+      }
       
       // 10. Add Recipe Ingredients
-      if (recipeData && invData) {
+      if (recipeData.length > 0 && invData) {
         const getInvId = (name: string) => invData.find(i => i.name === name)?.id;
         const recipeIngredients = [
           { recipe_id: recipeData[0]?.id, inventory_item_id: getInvId("Bourbon Whiskey"), qty: 60, unit: "ml" },
@@ -290,7 +306,9 @@ export default function LabOps() {
           { recipe_id: recipeData[2]?.id, inventory_item_id: getInvId("Campari"), qty: 30, unit: "ml" },
           { recipe_id: recipeData[2]?.id, inventory_item_id: getInvId("Sweet Vermouth"), qty: 30, unit: "ml" },
         ].filter(ri => ri.recipe_id && ri.inventory_item_id);
-        await supabase.from("lab_ops_recipe_ingredients").insert(recipeIngredients);
+        if (recipeIngredients.length > 0) {
+          await supabase.from("lab_ops_recipe_ingredients").insert(recipeIngredients);
+        }
       }
       
       toast({ title: "Demo data loaded!", description: "Categories, menu items, inventory, suppliers, staff, and recipes created." });
