@@ -129,23 +129,6 @@ export default function BarKDS() {
 
       if (completedError) throw completedError;
 
-      // Get bar station IDs
-      const { data: barStations } = await supabase
-        .from("lab_ops_stations")
-        .select("id")
-        .eq("outlet_id", outletId)
-        .eq("type", "BAR");
-      
-      const barStationIds = (barStations || []).map(s => s.id);
-
-      // Get menu items assigned to bar stations
-      const { data: barItemMappings } = await supabase
-        .from("lab_ops_menu_item_stations")
-        .select("menu_item_id")
-        .in("station_id", barStationIds.length > 0 ? barStationIds : ['none']);
-      
-      const barMenuItemIds = (barItemMappings || []).map(m => m.menu_item_id);
-
       // Process all orders and separate based on item status
       const activeWithItems: Order[] = [];
       const readyOrders: Order[] = [];
@@ -157,14 +140,14 @@ export default function BarKDS() {
             id, order_id, menu_item_id, qty, unit_price, note, status,
             menu_item:lab_ops_menu_items(
               name,
-              category:lab_ops_categories(name)
+              category:lab_ops_categories(name, type)
             )
           `)
           .eq("order_id", order.id);
 
-        // Filter items by station mapping
+        // Filter items by category type = 'drink' for bar
         const barItems = (items || []).filter(item => 
-          barMenuItemIds.includes(item.menu_item_id)
+          (item.menu_item as any)?.category?.type === 'drink'
         );
 
         if (barItems.length > 0) {
@@ -197,13 +180,14 @@ export default function BarKDS() {
             id, order_id, menu_item_id, qty, unit_price, note, status,
             menu_item:lab_ops_menu_items(
               name,
-              category:lab_ops_categories(name)
+              category:lab_ops_categories(name, type)
             )
           `)
           .eq("order_id", order.id);
 
+        // Filter items by category type = 'drink' for bar
         const barItems = (items || []).filter(item => 
-          barMenuItemIds.includes(item.menu_item_id)
+          (item.menu_item as any)?.category?.type === 'drink'
         );
 
         if (barItems.length > 0) {
