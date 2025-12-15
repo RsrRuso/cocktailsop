@@ -5276,10 +5276,12 @@ export type Database = {
           menu_item_id: string
           modifiers: Json | null
           note: string | null
+          notified_at: string | null
           order_id: string
           qty: number | null
           ready_at: string | null
           sent_at: string | null
+          server_notified: boolean | null
           station_id: string | null
           status:
             | Database["public"]["Enums"]["lab_ops_order_item_status"]
@@ -5296,10 +5298,12 @@ export type Database = {
           menu_item_id: string
           modifiers?: Json | null
           note?: string | null
+          notified_at?: string | null
           order_id: string
           qty?: number | null
           ready_at?: string | null
           sent_at?: string | null
+          server_notified?: boolean | null
           station_id?: string | null
           status?:
             | Database["public"]["Enums"]["lab_ops_order_item_status"]
@@ -5316,10 +5320,12 @@ export type Database = {
           menu_item_id?: string
           modifiers?: Json | null
           note?: string | null
+          notified_at?: string | null
           order_id?: string
           qty?: number | null
           ready_at?: string | null
           sent_at?: string | null
+          server_notified?: boolean | null
           station_id?: string | null
           status?:
             | Database["public"]["Enums"]["lab_ops_order_item_status"]
@@ -5348,6 +5354,71 @@ export type Database = {
             columns: ["station_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_order_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string | null
+          notification_type: string
+          order_id: string
+          order_item_id: string | null
+          outlet_id: string
+          server_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          notification_type?: string
+          order_id: string
+          order_item_id?: string | null
+          outlet_id: string
+          server_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          notification_type?: string
+          order_id?: string
+          order_item_id?: string | null
+          outlet_id?: string
+          server_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_order_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_order_notifications_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_order_notifications_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_order_notifications_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
             referencedColumns: ["id"]
           },
         ]
@@ -6280,28 +6351,40 @@ export type Database = {
       lab_ops_stations: {
         Row: {
           created_at: string | null
+          current_load: number | null
           id: string
           is_active: boolean | null
+          max_orders_capacity: number | null
           name: string
+          occupancy_threshold: number | null
           outlet_id: string
+          overflow_station_id: string | null
           printer_config: Json | null
           type: string
         }
         Insert: {
           created_at?: string | null
+          current_load?: number | null
           id?: string
           is_active?: boolean | null
+          max_orders_capacity?: number | null
           name: string
+          occupancy_threshold?: number | null
           outlet_id: string
+          overflow_station_id?: string | null
           printer_config?: Json | null
           type: string
         }
         Update: {
           created_at?: string | null
+          current_load?: number | null
           id?: string
           is_active?: boolean | null
+          max_orders_capacity?: number | null
           name?: string
+          occupancy_threshold?: number | null
           outlet_id?: string
+          overflow_station_id?: string | null
           printer_config?: Json | null
           type?: string
         }
@@ -6311,6 +6394,13 @@ export type Database = {
             columns: ["outlet_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_stations_overflow_station_id_fkey"
+            columns: ["overflow_station_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stations"
             referencedColumns: ["id"]
           },
         ]
