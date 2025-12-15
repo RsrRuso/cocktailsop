@@ -3425,6 +3425,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [showInactiveStaff, setShowInactiveStaff] = useState(false);
   
   // Form states
   const [staffName, setStaffName] = useState("");
@@ -3435,16 +3436,30 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
 
   useEffect(() => {
     fetchStaff();
-  }, [outletId]);
+  }, [outletId, showInactiveStaff]);
 
   const fetchStaff = async () => {
-    const { data } = await supabase
+    let query = supabase
       .from("lab_ops_staff")
       .select("*")
       .eq("outlet_id", outletId)
-      .eq("is_active", true)
       .order("full_name");
+    
+    if (!showInactiveStaff) {
+      query = query.eq("is_active", true);
+    }
+    
+    const { data } = await query;
     setStaff(data || []);
+  };
+
+  const reactivateStaff = async (id: string) => {
+    await supabase
+      .from("lab_ops_staff")
+      .update({ is_active: true })
+      .eq("id", id);
+    fetchStaff();
+    toast({ title: "Staff member restored" });
   };
 
   const createStaff = async () => {
@@ -3604,24 +3619,30 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
         />
       </CardHeader>
       <CardContent>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Switch checked={showInactiveStaff} onCheckedChange={setShowInactiveStaff} />
+            <span className="text-sm text-muted-foreground">Show removed staff</span>
+          </div>
+        </div>
         {staff.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No staff members yet</p>
+            <p className="text-muted-foreground">{showInactiveStaff ? "No staff members found" : "No active staff members"}</p>
           </div>
         ) : (
           <div className="space-y-2">
             {staff.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-3">
+              <div key={member.id} className={`flex items-center justify-between p-3 rounded-lg gap-3 ${member.is_active ? "bg-muted/50" : "bg-destructive/10 border border-destructive/20"}`}>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${member.is_active ? "bg-primary/10" : "bg-muted"}`}>
                     <Users className={`h-5 w-5 ${member.is_active ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium truncate">{member.full_name || 'Unknown'}</p>
-                      <Badge variant={member.is_active ? "default" : "secondary"} className="shrink-0">
-                        {member.is_active ? "Active" : "Inactive"}
+                      <p className={`font-medium truncate ${!member.is_active && "text-muted-foreground"}`}>{member.full_name || 'Unknown'}</p>
+                      <Badge variant={member.is_active ? "default" : "destructive"} className="shrink-0">
+                        {member.is_active ? "Active" : "Removed"}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
@@ -3630,13 +3651,20 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Switch checked={member.is_active} onCheckedChange={() => toggleStaffStatus(member)} />
-                  <Button size="icon" variant="ghost" onClick={() => setEditingStaff(member)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => deleteStaff(member.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {member.is_active ? (
+                    <>
+                      <Button size="icon" variant="ghost" onClick={() => setEditingStaff(member)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => deleteStaff(member.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => reactivateStaff(member.id)}>
+                      Restore
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
