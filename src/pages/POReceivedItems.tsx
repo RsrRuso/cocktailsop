@@ -268,68 +268,59 @@ const POReceivedItems = () => {
             return;
           }
           
-          // Get ALL purchase order items for code validation
-          let allItemsQuery = supabase
-            .from('purchase_order_items')
-            .select('*, purchase_orders!inner(id, order_number, supplier_name, order_date, user_id, workspace_id)');
+          // Extract document code from parsed data (ML for market, RQ for materials)
+          const documentCode = parsed.doc_no?.trim();
+          const normalizedDocCode = documentCode ? normalizeItemCode(documentCode) : null;
           
-          if (selectedWorkspaceId) {
-            allItemsQuery = allItemsQuery.eq('purchase_orders.workspace_id', selectedWorkspaceId);
-          } else {
-            allItemsQuery = allItemsQuery.eq('purchase_orders.user_id', user?.id).is('purchase_orders.workspace_id', null);
+          // Validate document code exists
+          if (!documentCode) {
+            toast.error("Upload rejected: No document code (ML/RQ) found in the file. Please ensure the document has a valid code.", { duration: 6000 });
+            setIsUploading(false);
+            return;
           }
           
-          const { data: allPOItems } = await allItemsQuery;
+          // Check if document code exists in any Purchase Order
+          let poQuery = supabase
+            .from('purchase_orders')
+            .select('id, order_number, supplier_name, order_date, user_id, workspace_id');
           
-          // Build maps for code matching
-          const orderedItemsByCode = new Map<string, any>();
-          const orderedItemsByName = new Map<string, any>();
+          if (selectedWorkspaceId) {
+            poQuery = poQuery.eq('workspace_id', selectedWorkspaceId);
+          } else {
+            poQuery = poQuery.eq('user_id', user?.id).is('workspace_id', null);
+          }
           
-          (allPOItems || []).forEach((item: any) => {
-            if (item.item_code) {
-              const normalizedCode = normalizeItemCode(item.item_code);
-              if (!orderedItemsByCode.has(normalizedCode) || 
-                  new Date(item.purchase_orders.order_date) > new Date(orderedItemsByCode.get(normalizedCode).purchase_orders.order_date)) {
-                orderedItemsByCode.set(normalizedCode, item);
-              }
-            }
-            const normalizedName = item.item_name?.trim().toLowerCase();
-            if (normalizedName && !orderedItemsByName.has(normalizedName)) {
-              orderedItemsByName.set(normalizedName, item);
-            }
+          const { data: existingPOs } = await poQuery;
+          
+          // Find matching PO by document code
+          const matchedOrder = (existingPOs || []).find((po: any) => {
+            const poCode = normalizeItemCode(po.order_number || '');
+            return poCode === normalizedDocCode || 
+                   po.order_number?.toLowerCase().includes(documentCode.toLowerCase()) ||
+                   documentCode.toLowerCase().includes(po.order_number?.toLowerCase() || '');
           });
           
-          // Process items with enhanced validation
-          let matchedOrder: any = null;
+          // REJECT if document code not found in any PO
+          if (!matchedOrder) {
+            toast.error(
+              `Upload rejected: Document code "${documentCode}" not found in any Purchase Order. Please create a PO with this document number first.`,
+              { duration: 8000 }
+            );
+            setIsUploading(false);
+            return;
+          }
+          
+          // Document code matched - process items
+          const docType = detectDocumentType(documentCode);
           let marketCount = 0;
           let materialCount = 0;
           
           const enhancedItems: ParsedReceivingItem[] = parsed.items.map((item: any) => {
             const itemCode = item.item_code || '';
-            const docType = detectDocumentType(itemCode);
-            const normalizedCode = normalizeItemCode(itemCode);
-            const normalizedName = item.item_name?.trim().toLowerCase();
+            const itemDocType = detectDocumentType(itemCode);
             
-            // Check if code exists in PO
-            let matchedInPO = false;
-            let matchedPOItem = null;
-            
-            if (normalizedCode && orderedItemsByCode.has(normalizedCode)) {
-              matchedInPO = true;
-              matchedPOItem = orderedItemsByCode.get(normalizedCode);
-              if (!matchedOrder && matchedPOItem.purchase_orders) {
-                matchedOrder = matchedPOItem.purchase_orders;
-              }
-            } else if (normalizedName && orderedItemsByName.has(normalizedName)) {
-              matchedInPO = true;
-              matchedPOItem = orderedItemsByName.get(normalizedName);
-              if (!matchedOrder && matchedPOItem.purchase_orders) {
-                matchedOrder = matchedPOItem.purchase_orders;
-              }
-            }
-            
-            if (docType === 'market') marketCount++;
-            if (docType === 'material') materialCount++;
+            if (itemDocType === 'market') marketCount++;
+            if (itemDocType === 'material') materialCount++;
             
             return {
               item_code: itemCode,
@@ -339,51 +330,32 @@ const POReceivedItems = () => {
               price_per_unit: item.price_per_unit || 0,
               price_total: (item.quantity || 0) * (item.price_per_unit || 0),
               delivery_date: item.delivery_date,
-              isReceived: matchedInPO, // Auto-tick if matched
-              documentType: docType,
-              matchedInPO,
-              matchedPOItem
+              isReceived: true, // All items from matched PO are receivable
+              documentType: itemDocType,
+              matchedInPO: true,
+              matchedPOItem: null
             };
           });
           
           // Determine overall document type
-          const docType: 'market' | 'material' | 'mixed' = 
+          const overallDocType: 'market' | 'material' | 'mixed' = 
+            docType !== 'unknown' ? docType :
             marketCount > 0 && materialCount > 0 ? 'mixed' :
             marketCount > 0 ? 'market' :
             materialCount > 0 ? 'material' : 'mixed';
           
-          // Check for unmatched items - REJECT if any code not found in PO
-          const unmatchedItems = enhancedItems.filter(i => !i.matchedInPO);
-          const unmatchedCount = unmatchedItems.length;
-          
-          if (unmatchedCount > 0) {
-            // Get list of unmatched codes for the error message
-            const unmatchedCodes = unmatchedItems
-              .map(i => i.item_code || i.item_name)
-              .slice(0, 5) // Show first 5 only
-              .join(', ');
-            const moreText = unmatchedCount > 5 ? ` and ${unmatchedCount - 5} more` : '';
-            
-            toast.error(
-              `Upload rejected: ${unmatchedCount} item(s) not found in any Purchase Order. Missing codes: ${unmatchedCodes}${moreText}. Please ensure all items exist in a PO before receiving.`,
-              { duration: 8000 }
-            );
-            setIsUploading(false);
-            return;
-          }
-          
-          // All items matched - store matched order and show enhanced dialog for confirmation
+          // Document code verified - store matched order and show enhanced dialog for confirmation
           setPendingMatchedOrder(matchedOrder);
           setEnhancedReceivingData({
-            doc_no: parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`,
+            doc_no: documentCode,
             doc_date: parsed.doc_date,
             location: matchedOrder?.supplier_name || parsed.location,
             items: enhancedItems,
-            documentType: docType
+            documentType: overallDocType
           });
           setShowEnhancedReceiving(true);
           
-          toast.success(`Parsed ${enhancedItems.length} items - All codes verified in PO. Review and confirm to save`);
+          toast.success(`Document "${documentCode}" verified in PO. Review ${enhancedItems.length} items and confirm to save.`);
         } catch (err: any) {
           toast.error("Failed to process: " + err.message);
         } finally {
