@@ -9,12 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
 import { 
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
-  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar
+  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X
 } from "lucide-react";
 
 interface OnlineTeamMember {
@@ -257,10 +258,13 @@ export default function StaffPOS() {
             audio.play().catch(() => {});
           } catch {}
           
+          const isStarted = notification.notification_type === 'item_started';
           toast({ 
-            title: "🔔 Order Ready!", 
+            title: isStarted ? "🔥 Order Started!" : "✅ Order Ready!", 
             description: notification.message,
-            className: "bg-green-600 border-green-700 text-white"
+            className: isStarted 
+              ? "bg-amber-600 border-amber-700 text-white"
+              : "bg-green-600 border-green-700 text-white"
           });
         }
       )
@@ -963,22 +967,79 @@ export default function StaffPOS() {
             currentStaffName={staff.full_name}
             currentStaffUsername={currentStaffUsername}
           />
-          {/* Notification Bell */}
-          <div className="relative">
-            <Button 
-              variant={unreadNotifications > 0 ? "default" : "outline"} 
-              size="sm"
-              className={unreadNotifications > 0 ? "bg-green-600 hover:bg-green-700 animate-pulse" : ""}
-              onClick={markAllNotificationsRead}
-            >
-              <Bell className="w-4 h-4" />
-              {unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {unreadNotifications}
-                </span>
-              )}
-            </Button>
-          </div>
+          {/* Notification Bell with Dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant={unreadNotifications > 0 ? "default" : "outline"} 
+                size="sm"
+                className={`relative ${unreadNotifications > 0 ? "bg-green-600 hover:bg-green-700 animate-pulse" : ""}`}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {unreadNotifications}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <div className="p-3 border-b flex justify-between items-center">
+                <h4 className="font-semibold text-sm">Order Notifications</h4>
+                {orderNotifications.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="text-xs h-7">
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="max-h-64">
+                {orderNotifications.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground text-sm">
+                    No notifications
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {orderNotifications.map((notif) => {
+                      const isStarted = notif.notification_type === 'item_started';
+                      return (
+                        <div 
+                          key={notif.id} 
+                          className={`p-3 flex items-start gap-3 ${isStarted ? 'bg-amber-500/10' : 'bg-green-500/10'}`}
+                        >
+                          <div className={`p-2 rounded-full ${isStarted ? 'bg-amber-500' : 'bg-green-500'}`}>
+                            {isStarted ? (
+                              <Flame className="w-4 h-4 text-white" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">
+                              {isStarted ? 'Being Prepared' : 'Ready for Pickup'}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {notif.message}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(notif.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => markNotificationRead(notif.id)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
           <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
             <Receipt className="w-4 h-4 mr-1" /> Orders
           </Button>
