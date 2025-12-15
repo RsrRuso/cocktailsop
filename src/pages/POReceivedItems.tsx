@@ -1304,7 +1304,14 @@ const POReceivedItems = () => {
       </div>
 
       {/* Variance Analysis Dialog - Mobile Friendly */}
-      <Dialog open={showVarianceDialog} onOpenChange={setShowVarianceDialog}>
+      <Dialog open={showVarianceDialog} onOpenChange={(open) => {
+        setShowVarianceDialog(open);
+        if (!open) {
+          // Reset variance report when dialog closes to prevent stale state on next upload
+          setVarianceReport(null);
+          setSelectedOrderId(null);
+        }
+      }}>
         <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
