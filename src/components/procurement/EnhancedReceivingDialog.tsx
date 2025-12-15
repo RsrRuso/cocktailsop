@@ -258,8 +258,8 @@ export const EnhancedReceivingDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-4 pb-2 border-b">
+      <DialogContent className="w-[95vw] max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-2 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Review Receiving - {receivingData.doc_no || 'Parsed Items'}
@@ -339,75 +339,84 @@ export const EnhancedReceivingDialog = ({
           </Button>
         </div>
 
-        {/* Items List */}
-        <ScrollArea className="flex-1 px-4">
-          <div className="space-y-2 pb-4">
-            {filteredItems.map((item, index) => {
-              const originalIndex = items.findIndex(i => i === item);
-              return (
-                <Card 
-                  key={index}
-                  className={`p-3 transition-all ${
-                    !item.matchedInPO 
-                      ? 'bg-purple-500/5 border-purple-500/30 opacity-60' 
-                      : item.isReceived 
-                        ? 'bg-green-500/5 border-green-500/30' 
-                        : 'bg-red-500/5 border-red-500/30'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Checkbox - always enabled for manual tick/untick */}
-                    <div className="pt-1">
-                      <Checkbox
-                        checked={item.isReceived}
-                        onCheckedChange={() => toggleItemReceived(originalIndex)}
-                        className="cursor-pointer"
-                      />
-                    </div>
-                    
-                    {/* Item Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {getItemCodeBadge(item)}
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {item.item_code || 'No Code'}
-                        </span>
-                        {!item.matchedInPO && (
-                          <Badge variant="destructive" className="text-[10px]">
-                            NOT IN PO - REJECTED
-                          </Badge>
-                        )}
-                        {item.matchedInPO && !item.isReceived && (
-                          <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-500 border-red-500/30">
-                            MISSING
-                          </Badge>
-                        )}
-                        {item.isReceived && (
-                          <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">
-                            RECEIVED
-                          </Badge>
-                        )}
+        {/* Items List - Scrollable area with fixed height */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full px-4">
+            <div className="space-y-2 py-2">
+              {filteredItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Package className="h-12 w-12 mb-3 opacity-50" />
+                  <p>No items to display</p>
+                </div>
+              ) : (
+                filteredItems.map((item, index) => {
+                  const originalIndex = items.findIndex(i => i === item);
+                  return (
+                    <Card 
+                      key={index}
+                      className={`p-3 transition-all ${
+                        !item.matchedInPO 
+                          ? 'bg-purple-500/5 border-purple-500/30 opacity-60' 
+                          : item.isReceived 
+                            ? 'bg-green-500/5 border-green-500/30' 
+                            : 'bg-red-500/5 border-red-500/30'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox - always enabled for manual tick/untick */}
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={item.isReceived}
+                            onCheckedChange={() => toggleItemReceived(originalIndex)}
+                            className="cursor-pointer"
+                          />
+                        </div>
+                        
+                        {/* Item Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {getItemCodeBadge(item)}
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {item.item_code || 'No Code'}
+                            </span>
+                            {!item.matchedInPO && (
+                              <Badge variant="destructive" className="text-[10px]">
+                                NOT IN PO - REJECTED
+                              </Badge>
+                            )}
+                            {item.matchedInPO && !item.isReceived && (
+                              <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-500 border-red-500/30">
+                                MISSING
+                              </Badge>
+                            )}
+                            {item.isReceived && (
+                              <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">
+                                RECEIVED
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="font-medium text-sm mt-1 truncate">{item.item_name}</p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                            <span>Qty: <span className="font-semibold text-foreground">{item.quantity}</span></span>
+                            {item.unit && <span>Unit: {item.unit}</span>}
+                            <span>Price: {currencySymbol}{item.price_per_unit.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Total */}
+                        <div className="text-right">
+                          <p className={`font-bold ${item.isReceived ? 'text-green-500' : 'text-muted-foreground'}`}>
+                            {currencySymbol}{item.price_total.toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                      <p className="font-medium text-sm mt-1 truncate">{item.item_name}</p>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span>Qty: <span className="font-semibold text-foreground">{item.quantity}</span></span>
-                        {item.unit && <span>Unit: {item.unit}</span>}
-                        <span>Price: {currencySymbol}{item.price_per_unit.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Total */}
-                    <div className="text-right">
-                      <p className={`font-bold ${item.isReceived ? 'text-green-500' : 'text-muted-foreground'}`}>
-                        {currencySymbol}{item.price_total.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </ScrollArea>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
         {/* Footer Actions */}
         <DialogFooter className="p-4 border-t bg-muted/30 flex-row gap-2">
