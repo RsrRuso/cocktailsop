@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { NotificationItem } from "./NotificationItem";
+import { Briefcase, Users } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -20,16 +21,33 @@ interface NotificationGroupProps {
   notifications: Notification[];
   onNotificationClick: (notification: Notification) => void;
   startIndex: number;
+  category?: 'work' | 'social' | 'all';
 }
 
-export const NotificationGroup = memo(({ title, notifications, onNotificationClick, startIndex }: NotificationGroupProps) => {
+export const NotificationGroup = memo(({ title, notifications, onNotificationClick, startIndex, category }: NotificationGroupProps) => {
   if (notifications.length === 0) return null;
+
+  const getCategoryIcon = () => {
+    if (category === 'work') return <Briefcase className="w-3 h-3" />;
+    if (category === 'social') return <Users className="w-3 h-3" />;
+    return null;
+  };
+
+  const getCategoryColor = () => {
+    if (category === 'work') return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    if (category === 'social') return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
+    return 'bg-muted text-muted-foreground';
+  };
 
   return (
     <div className="space-y-2">
-      <div className="sticky top-0 z-10 py-2 px-1">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
+      <div className="sticky top-0 z-10 py-2 px-1 flex items-center gap-2">
+        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border ${getCategoryColor()}`}>
+          {getCategoryIcon()}
           {title}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {notifications.length} {notifications.length === 1 ? 'notification' : 'notifications'}
         </span>
       </div>
       <div className="space-y-2">

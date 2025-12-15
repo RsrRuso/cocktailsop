@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Volume2, RefreshCw } from "lucide-react";
+import { Bell, CheckCheck, Volume2, RefreshCw, Briefcase, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -13,8 +13,10 @@ import { NotificationSoundPicker } from "@/components/NotificationSoundPicker";
 import { NotificationGroup } from "@/components/notifications/NotificationGroup";
 import { NotificationSkeleton } from "@/components/notifications/NotificationSkeleton";
 import { EmptyNotifications } from "@/components/notifications/EmptyNotifications";
+import { isWorkNotification } from "@/components/notifications/NotificationItem";
 import { motion, AnimatePresence } from "framer-motion";
 import { isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Notification {
   id: string;
@@ -30,10 +32,13 @@ interface Notification {
   reference_user_id?: string;
 }
 
+type FilterType = 'all' | 'work' | 'social';
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [filter, setFilter] = useState<FilterType>('all');
   const navigate = useNavigate();
   const { showNotification } = useInAppNotificationContext();
   const { showNotification: showPushNotification } = usePushNotifications();
@@ -67,39 +72,67 @@ const Notifications = () => {
     return result;
   }, [notifications]);
 
-  // Group notifications by time
-  const groupedNotifications = useMemo(() => {
-    const today: Notification[] = [];
-    const yesterday: Notification[] = [];
-    const thisWeek: Notification[] = [];
-    const earlier: Notification[] = [];
+  // Filter notifications by type
+  const filteredNotifications = useMemo(() => {
+    if (filter === 'all') return dedupedNotifications;
+    if (filter === 'work') return dedupedNotifications.filter(n => isWorkNotification(n.type));
+    return dedupedNotifications.filter(n => !isWorkNotification(n.type));
+  }, [dedupedNotifications, filter]);
 
-    dedupedNotifications.forEach((notification) => {
+  // Group notifications by time and category
+  const groupedNotifications = useMemo(() => {
+    const groups: {
+      todayWork: Notification[];
+      todaySocial: Notification[];
+      yesterdayWork: Notification[];
+      yesterdaySocial: Notification[];
+      thisWeekWork: Notification[];
+      thisWeekSocial: Notification[];
+      earlierWork: Notification[];
+      earlierSocial: Notification[];
+    } = {
+      todayWork: [],
+      todaySocial: [],
+      yesterdayWork: [],
+      yesterdaySocial: [],
+      thisWeekWork: [],
+      thisWeekSocial: [],
+      earlierWork: [],
+      earlierSocial: [],
+    };
+
+    filteredNotifications.forEach((notification) => {
       const date = parseISO(notification.created_at);
+      const isWork = isWorkNotification(notification.type);
       
       if (isToday(date)) {
-        today.push(notification);
+        if (isWork) groups.todayWork.push(notification);
+        else groups.todaySocial.push(notification);
       } else if (isYesterday(date)) {
-        yesterday.push(notification);
+        if (isWork) groups.yesterdayWork.push(notification);
+        else groups.yesterdaySocial.push(notification);
       } else if (isThisWeek(date)) {
-        thisWeek.push(notification);
+        if (isWork) groups.thisWeekWork.push(notification);
+        else groups.thisWeekSocial.push(notification);
       } else {
-        earlier.push(notification);
+        if (isWork) groups.earlierWork.push(notification);
+        else groups.earlierSocial.push(notification);
       }
     });
 
-    return { today, yesterday, thisWeek, earlier };
-  }, [dedupedNotifications]);
+    return groups;
+  }, [filteredNotifications]);
+
+  // Count stats
+  const workCount = dedupedNotifications.filter(n => isWorkNotification(n.type)).length;
+  const socialCount = dedupedNotifications.filter(n => !isWorkNotification(n.type)).length;
+  const unreadCount = dedupedNotifications.filter(n => !n.read).length;
 
   const handleTestNotification = async () => {
     await showPushNotification(
       "Test Notification 🔔",
-      "This is a test notification with sound! Your PWA notifications are working.",
-      {
-        icon: "/icon-192.png",
-        requireInteraction: false,
-        silent: false
-      }
+      "This is a test notification with sound!",
+      { icon: "/icon-192.png", requireInteraction: false, silent: false }
     );
     toast.success("Test notification sent!");
   };
@@ -141,9 +174,7 @@ const Notifications = () => {
 
       try {
         await LocalNotifications.requestPermissions();
-      } catch (error) {
-        // Notification permissions not available on web
-      }
+      } catch (error) {}
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -154,18 +185,11 @@ const Notifications = () => {
         .channel(`notifications-${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
           async (payload) => {
             const newNotification = payload.new as Notification;
             
-            if (processedNotificationsRef.current.has(newNotification.id)) {
-              return;
-            }
+            if (processedNotificationsRef.current.has(newNotification.id)) return;
             processedNotificationsRef.current.add(newNotification.id);
             
             if (processedNotificationsRef.current.size > 100) {
@@ -174,51 +198,34 @@ const Notifications = () => {
             }
             
             fetchNotifications(false);
+            showNotification('New Notification', newNotification.content, newNotification.type as any);
             
-            showNotification(
-              'New Notification',
-              newNotification.content,
-              newNotification.type as any
-            );
-            
-            await showPushNotification(
-              'New Notification',
-              newNotification.content,
-              {
-                tag: newNotification.id,
-                data: {
-                  type: newNotification.type,
-                  url: window.location.origin + '/notifications'
-                },
-                silent: false
-              }
-            );
+            await showPushNotification('New Notification', newNotification.content, {
+              tag: newNotification.id,
+              data: { type: newNotification.type, url: window.location.origin + '/notifications' },
+              silent: false
+            });
             
             try {
               await LocalNotifications.schedule({
-                notifications: [
-                  {
-                    title: 'New Notification',
-                    body: newNotification.content,
-                    id: Math.floor(Math.random() * 1000000),
-                    schedule: { at: new Date(Date.now() + 100) },
-                    sound: 'default',
-                    attachments: undefined,
-                    actionTypeId: '',
-                    extra: { type: newNotification.type }
-                  }
-                ]
+                notifications: [{
+                  title: 'New Notification',
+                  body: newNotification.content,
+                  id: Math.floor(Math.random() * 1000000),
+                  schedule: { at: new Date(Date.now() + 100) },
+                  sound: 'default',
+                  attachments: undefined,
+                  actionTypeId: '',
+                  extra: { type: newNotification.type }
+                }]
               });
-            } catch (error) {
-              // Local notifications not available on web
-            }
+            } catch (error) {}
           }
         )
         .subscribe();
     };
     
     setupSubscription();
-
     return () => {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
@@ -247,83 +254,90 @@ const Notifications = () => {
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
-      await supabase
-        .from("notifications")
-        .update({ read: true })
-        .eq("id", notification.id);
+      await supabase.from("notifications").update({ read: true }).eq("id", notification.id);
       fetchNotifications(false);
     }
 
-    // Navigation logic
+    // Navigation logic (same as before)
     if (notification.type === 'like' || notification.type === 'comment') {
-      if (notification.reel_id) {
-        navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
-      } else if (notification.post_id) {
-        navigate(`/post/${notification.post_id}`);
-      } else if (notification.story_id && notification.reference_user_id) {
-        navigate(`/story/${notification.reference_user_id}`);
-      } else if (notification.music_share_id) {
-        navigate('/thunder');
-      } else if (notification.event_id) {
-        navigate(`/event/${notification.event_id}`);
-      }
-    } else if (notification.type === 'access_request') {
-      navigate('/access-approval');
-    } else if (notification.type === 'stock_alert') {
-      navigate('/all-inventory');
-    } else if (notification.type === 'fifo_alert') {
-      navigate('/inventory-manager');
-    } else if (notification.type === 'inventory_transfer' || notification.type === 'inventory_receiving' || notification.type === 'spot_check') {
-      navigate('/inventory-transactions');
-    } else if (notification.type === 'internal_email') {
-      navigate('/email');
-    } else if (notification.type === 'batch_submission' || notification.type === 'batch_edit' || notification.type === 'batch_delete' || notification.type === 'recipe_created') {
-      navigate('/batch-calculator');
-    } else if (notification.type === 'member_added') {
-      navigate('/batch-calculator');
-    } else if (notification.type === 'certificate_earned') {
-      if (notification.reference_user_id) {
-        navigate(`/user/${notification.reference_user_id}`);
-      } else {
-        navigate('/exam-center');
-      }
-    } else if (notification.type === 'follow' || notification.type === 'unfollow') {
-      if (notification.reference_user_id) {
-        navigate(`/user/${notification.reference_user_id}`);
-      }
-    } else if (notification.type === 'profile_view') {
-      if (notification.reference_user_id) {
-        navigate(`/user/${notification.reference_user_id}`);
-      }
-    } else if (notification.type === 'new_user') {
-      navigate('/explore');
-    } else if (notification.type === 'new_post' && notification.post_id) {
-      navigate(`/post/${notification.post_id}`);
-    } else if (notification.type === 'new_reel' && notification.reel_id) {
-      navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
-    } else if (notification.reel_id) {
-      navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
-    } else if (notification.type === 'new_story' && notification.reference_user_id) {
-      navigate(`/story/${notification.reference_user_id}`);
-    } else if (notification.type === 'new_event' && notification.event_id) {
-      navigate(`/event/${notification.event_id}`);
-    } else if (notification.type === 'event_attendance' && notification.event_id) {
-      navigate(`/event/${notification.event_id}`);
-    } else if (notification.post_id) {
-      navigate(`/post/${notification.post_id}`);
-    } else if (notification.story_id && notification.reference_user_id) {
-      navigate(`/story/${notification.reference_user_id}`);
-    } else if (notification.music_share_id) {
-      navigate('/thunder');
-    } else if (notification.event_id) {
-      navigate(`/event/${notification.event_id}`);
-    } else if (notification.reference_user_id) {
-      navigate(`/user/${notification.reference_user_id}`);
-    }
+      if (notification.reel_id) navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
+      else if (notification.post_id) navigate(`/post/${notification.post_id}`);
+      else if (notification.story_id && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);
+      else if (notification.music_share_id) navigate('/thunder');
+      else if (notification.event_id) navigate(`/event/${notification.event_id}`);
+    } else if (notification.type === 'access_request') navigate('/access-approval');
+    else if (notification.type === 'stock_alert') navigate('/all-inventory');
+    else if (notification.type === 'fifo_alert') navigate('/inventory-manager');
+    else if (['inventory_transfer', 'inventory_receiving', 'spot_check'].includes(notification.type)) navigate('/inventory-transactions');
+    else if (notification.type === 'internal_email') navigate('/email');
+    else if (['batch_submission', 'batch_edit', 'batch_delete', 'recipe_created', 'member_added'].includes(notification.type)) navigate('/batch-calculator');
+    else if (notification.type === 'certificate_earned') navigate(notification.reference_user_id ? `/user/${notification.reference_user_id}` : '/exam-center');
+    else if (['follow', 'unfollow', 'profile_view'].includes(notification.type) && notification.reference_user_id) navigate(`/user/${notification.reference_user_id}`);
+    else if (notification.type === 'new_user') navigate('/explore');
+    else if (notification.type === 'new_post' && notification.post_id) navigate(`/post/${notification.post_id}`);
+    else if ((notification.type === 'new_reel' || notification.reel_id) && notification.reel_id) navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
+    else if (notification.type === 'new_story' && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);
+    else if (['new_event', 'event_attendance'].includes(notification.type) && notification.event_id) navigate(`/event/${notification.event_id}`);
+    else if (notification.post_id) navigate(`/post/${notification.post_id}`);
+    else if (notification.story_id && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);
+    else if (notification.music_share_id) navigate('/thunder');
+    else if (notification.event_id) navigate(`/event/${notification.event_id}`);
+    else if (notification.reference_user_id) navigate(`/user/${notification.reference_user_id}`);
   };
 
-  const unreadCount = dedupedNotifications.filter(n => !n.read).length;
   let runningIndex = 0;
+
+  const renderTimeSection = (
+    title: string,
+    workNotifs: Notification[],
+    socialNotifs: Notification[]
+  ) => {
+    const hasWork = workNotifs.length > 0 && (filter === 'all' || filter === 'work');
+    const hasSocial = socialNotifs.length > 0 && (filter === 'all' || filter === 'social');
+    
+    if (!hasWork && !hasSocial) return null;
+
+    return (
+      <div className="space-y-4">
+        {/* Time Header */}
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-border/50" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">
+            {title}
+          </span>
+          <div className="h-px flex-1 bg-border/50" />
+        </div>
+
+        {/* Work Notifications */}
+        {hasWork && (
+          <>
+            <NotificationGroup
+              title="Work"
+              notifications={workNotifs}
+              onNotificationClick={handleNotificationClick}
+              startIndex={runningIndex}
+              category="work"
+            />
+            {(runningIndex += workNotifs.length, null)}
+          </>
+        )}
+
+        {/* Social Notifications */}
+        {hasSocial && (
+          <>
+            <NotificationGroup
+              title="Social"
+              notifications={socialNotifs}
+              onNotificationClick={handleNotificationClick}
+              startIndex={runningIndex}
+              category="social"
+            />
+            {(runningIndex += socialNotifs.length, null)}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
@@ -352,40 +366,13 @@ const Notifications = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="h-9 w-9 rounded-full"
-            >
+            <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isRefreshing} className="h-9 w-9 rounded-full">
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
-            
-            <NotificationSoundPicker 
-              trigger={
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                  <Volume2 className="w-4 h-4" />
-                </Button>
-              }
-            />
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleTestNotification}
-              className="h-9 w-9 rounded-full"
-            >
-              <Bell className="w-4 h-4" />
-            </Button>
-            
+            <NotificationSoundPicker trigger={<Button variant="ghost" size="icon" className="h-9 w-9 rounded-full"><Volume2 className="w-4 h-4" /></Button>} />
+            <Button variant="ghost" size="icon" onClick={handleTestNotification} className="h-9 w-9 rounded-full"><Bell className="w-4 h-4" /></Button>
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleMarkAllAsRead}
-                className="h-9 px-3 rounded-full text-xs font-medium"
-              >
+              <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="h-9 px-3 rounded-full text-xs font-medium">
                 <CheckCheck className="w-4 h-4 mr-1.5" />
                 Read all
               </Button>
@@ -393,72 +380,39 @@ const Notifications = () => {
           </div>
         </motion.div>
 
+        {/* Filter Tabs */}
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)} className="w-full">
+          <TabsList className="w-full grid grid-cols-3 h-10 bg-card/50 backdrop-blur-sm rounded-xl p-1">
+            <TabsTrigger value="all" className="rounded-lg text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              All ({dedupedNotifications.length})
+            </TabsTrigger>
+            <TabsTrigger value="work" className="rounded-lg text-xs font-medium data-[state=active]:bg-blue-500 data-[state=active]:text-white flex items-center gap-1.5">
+              <Briefcase className="w-3 h-3" />
+              Work ({workCount})
+            </TabsTrigger>
+            <TabsTrigger value="social" className="rounded-lg text-xs font-medium data-[state=active]:bg-pink-500 data-[state=active]:text-white flex items-center gap-1.5">
+              <Users className="w-3 h-3" />
+              Social ({socialCount})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Content */}
         <AnimatePresence mode="wait">
           {isLoading ? (
-            <motion.div
-              key="skeleton"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <NotificationSkeleton />
             </motion.div>
-          ) : dedupedNotifications.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+          ) : filteredNotifications.length === 0 ? (
+            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <EmptyNotifications />
             </motion.div>
           ) : (
-            <motion.div
-              key="notifications"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-6"
-            >
-              {groupedNotifications.today.length > 0 && (
-                <NotificationGroup
-                  title="Today"
-                  notifications={groupedNotifications.today}
-                  onNotificationClick={handleNotificationClick}
-                  startIndex={runningIndex}
-                />
-              )}
-              {(runningIndex += groupedNotifications.today.length, null)}
-
-              {groupedNotifications.yesterday.length > 0 && (
-                <NotificationGroup
-                  title="Yesterday"
-                  notifications={groupedNotifications.yesterday}
-                  onNotificationClick={handleNotificationClick}
-                  startIndex={runningIndex}
-                />
-              )}
-              {(runningIndex += groupedNotifications.yesterday.length, null)}
-
-              {groupedNotifications.thisWeek.length > 0 && (
-                <NotificationGroup
-                  title="This Week"
-                  notifications={groupedNotifications.thisWeek}
-                  onNotificationClick={handleNotificationClick}
-                  startIndex={runningIndex}
-                />
-              )}
-              {(runningIndex += groupedNotifications.thisWeek.length, null)}
-
-              {groupedNotifications.earlier.length > 0 && (
-                <NotificationGroup
-                  title="Earlier"
-                  notifications={groupedNotifications.earlier}
-                  onNotificationClick={handleNotificationClick}
-                  startIndex={runningIndex}
-                />
-              )}
+            <motion.div key="notifications" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+              {renderTimeSection("Today", groupedNotifications.todayWork, groupedNotifications.todaySocial)}
+              {renderTimeSection("Yesterday", groupedNotifications.yesterdayWork, groupedNotifications.yesterdaySocial)}
+              {renderTimeSection("This Week", groupedNotifications.thisWeekWork, groupedNotifications.thisWeekSocial)}
+              {renderTimeSection("Earlier", groupedNotifications.earlierWork, groupedNotifications.earlierSocial)}
             </motion.div>
           )}
         </AnimatePresence>
