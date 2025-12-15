@@ -279,6 +279,11 @@ const PurchaseOrders = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Reset file input immediately to allow re-uploading the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
     setIsUploading(true);
     toast.info("Processing document...");
     
