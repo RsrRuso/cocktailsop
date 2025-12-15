@@ -129,7 +129,22 @@ export default function BarKDS() {
 
       if (completedError) throw completedError;
 
-      const barCategories = ["Cocktails", "Wines", "Beers", "Spirits", "Soft Drinks"];
+      // Get bar station IDs
+      const { data: barStations } = await supabase
+        .from("lab_ops_stations")
+        .select("id")
+        .eq("outlet_id", outletId)
+        .eq("type", "BAR");
+      
+      const barStationIds = (barStations || []).map(s => s.id);
+
+      // Get menu items assigned to bar stations
+      const { data: barItemMappings } = await supabase
+        .from("lab_ops_menu_item_stations")
+        .select("menu_item_id")
+        .in("station_id", barStationIds.length > 0 ? barStationIds : ['none']);
+      
+      const barMenuItemIds = (barItemMappings || []).map(m => m.menu_item_id);
 
       // Process all orders and separate based on item status
       const activeWithItems: Order[] = [];
@@ -147,8 +162,9 @@ export default function BarKDS() {
           `)
           .eq("order_id", order.id);
 
+        // Filter items by station mapping
         const barItems = (items || []).filter(item => 
-          barCategories.includes((item.menu_item as any)?.category?.name || "")
+          barMenuItemIds.includes(item.menu_item_id)
         );
 
         if (barItems.length > 0) {
@@ -187,7 +203,7 @@ export default function BarKDS() {
           .eq("order_id", order.id);
 
         const barItems = (items || []).filter(item => 
-          barCategories.includes((item.menu_item as any)?.category?.name || "")
+          barMenuItemIds.includes(item.menu_item_id)
         );
 
         if (barItems.length > 0) {
