@@ -352,13 +352,27 @@ const POReceivedItems = () => {
             marketCount > 0 ? 'market' :
             materialCount > 0 ? 'material' : 'mixed';
           
-          // Check for unmatched items
-          const unmatchedCount = enhancedItems.filter(i => !i.matchedInPO).length;
+          // Check for unmatched items - REJECT if any code not found in PO
+          const unmatchedItems = enhancedItems.filter(i => !i.matchedInPO);
+          const unmatchedCount = unmatchedItems.length;
+          
           if (unmatchedCount > 0) {
-            toast.warning(`${unmatchedCount} items not found in Purchase Orders - marked for rejection`);
+            // Get list of unmatched codes for the error message
+            const unmatchedCodes = unmatchedItems
+              .map(i => i.item_code || i.item_name)
+              .slice(0, 5) // Show first 5 only
+              .join(', ');
+            const moreText = unmatchedCount > 5 ? ` and ${unmatchedCount - 5} more` : '';
+            
+            toast.error(
+              `Upload rejected: ${unmatchedCount} item(s) not found in any Purchase Order. Missing codes: ${unmatchedCodes}${moreText}. Please ensure all items exist in a PO before receiving.`,
+              { duration: 8000 }
+            );
+            setIsUploading(false);
+            return;
           }
           
-          // Store matched order and show enhanced dialog for confirmation
+          // All items matched - store matched order and show enhanced dialog for confirmation
           setPendingMatchedOrder(matchedOrder);
           setEnhancedReceivingData({
             doc_no: parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`,
@@ -369,7 +383,7 @@ const POReceivedItems = () => {
           });
           setShowEnhancedReceiving(true);
           
-          toast.success(`Parsed ${enhancedItems.length} items - Review and confirm to save`);
+          toast.success(`Parsed ${enhancedItems.length} items - All codes verified in PO. Review and confirm to save`);
         } catch (err: any) {
           toast.error("Failed to process: " + err.message);
         } finally {
