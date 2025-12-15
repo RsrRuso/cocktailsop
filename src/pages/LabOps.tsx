@@ -1882,6 +1882,13 @@ function MenuModule({ outletId }: { outletId: string }) {
     toast({ title: "Item deleted" });
   };
 
+  const deleteAllItems = async () => {
+    if (!confirm("Are you sure you want to delete ALL menu items? This cannot be undone.")) return;
+    await supabase.from("lab_ops_menu_items").delete().eq("outlet_id", outletId);
+    fetchMenuItems();
+    toast({ title: "All menu items deleted" });
+  };
+
   const createModifier = async () => {
     if (!newModifierName.trim()) return;
 
@@ -1991,53 +1998,60 @@ function MenuModule({ outletId }: { outletId: string }) {
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
               <CardTitle className="text-lg">Menu Items</CardTitle>
-              <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
-                <DialogTrigger asChild>
-                  <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add Menu Item</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <Label>Name</Label>
-                      <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+              <div className="flex items-center gap-2">
+                {menuItems.length > 0 && (
+                  <Button size="sm" variant="destructive" onClick={deleteAllItems}>
+                    <Trash2 className="h-4 w-4 mr-1" />Delete All
+                  </Button>
+                )}
+                <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
+                  <DialogTrigger asChild>
+                    <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add Menu Item</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div>
+                        <Label>Name</Label>
+                        <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Textarea value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Price</Label>
+                        <Input type="number" step="0.01" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Category</Label>
+                        <Select value={newItemCategory} onValueChange={setNewItemCategory}>
+                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                          <SelectContent>
+                            {categories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Station (Bar/Kitchen)</Label>
+                        <Select value={newItemStation} onValueChange={setNewItemStation}>
+                          <SelectTrigger><SelectValue placeholder="Select station" /></SelectTrigger>
+                          <SelectContent>
+                            {stations.map((st) => (
+                              <SelectItem key={st.id} value={st.id}>{st.name} ({st.type})</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button onClick={createMenuItem} className="w-full">Create Item</Button>
                     </div>
-                    <div>
-                      <Label>Description</Label>
-                      <Textarea value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Price</Label>
-                      <Input type="number" step="0.01" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Category</Label>
-                      <Select value={newItemCategory} onValueChange={setNewItemCategory}>
-                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Station (Bar/Kitchen)</Label>
-                      <Select value={newItemStation} onValueChange={setNewItemStation}>
-                        <SelectTrigger><SelectValue placeholder="Select station" /></SelectTrigger>
-                        <SelectContent>
-                          {stations.map((st) => (
-                            <SelectItem key={st.id} value={st.id}>{st.name} ({st.type})</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button onClick={createMenuItem} className="w-full">Create Item</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               {menuItems.length === 0 ? (
