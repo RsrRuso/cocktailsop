@@ -1186,26 +1186,31 @@ All colors MUST be HSL.
 .glass {
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.02) 100%
+      rgba(45, 38, 20, 0.7) 0%,
+      rgba(30, 25, 12, 0.8) 100%
     );
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    color: hsl(0 0% 95%);
+    border: 1px solid hsl(var(--primary) / 0.25);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    color: hsl(45 10% 90%);
   }
   
   .glass::placeholder {
-    color: hsl(0 0% 60%);
+    color: hsl(45 15% 50%);
   }
   
   .glass input,
   .glass input::placeholder {
-    color: hsl(0 0% 95%);
+    color: hsl(45 10% 88%);
   }
   
   .glass input::placeholder {
-    color: hsl(0 0% 60%);
+    color: hsl(45 15% 45%);
+  }
+  
+  .glass input {
+    background: rgba(35, 30, 15, 0.6);
+    border-color: hsl(var(--primary) / 0.2);
   }
   
   .glass-hover {
