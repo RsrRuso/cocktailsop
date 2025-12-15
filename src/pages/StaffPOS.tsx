@@ -951,16 +951,15 @@ export default function StaffPOS() {
   // POS View for waiters and managers
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-card border-b p-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <UtensilsCrossed className="w-5 h-5 text-primary" />
-          <div>
-            <p className="font-semibold">{staff.full_name}</p>
-            <p className="text-xs text-muted-foreground capitalize">{staff.role} • {outlet.name}</p>
+      {/* Compact Header */}
+      <div className="sticky top-0 z-50 bg-card border-b px-2 py-2 flex items-center justify-between gap-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="min-w-0">
+            <p className="font-semibold text-sm truncate">{staff.full_name}</p>
+            <p className="text-xs text-muted-foreground truncate">{outlet.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <TeamPresenceIndicator 
             onlineTeam={onlineTeam} 
             outletName={outlet.name}
@@ -971,13 +970,13 @@ export default function StaffPOS() {
           <Popover>
             <PopoverTrigger asChild>
               <Button 
-                variant={unreadNotifications > 0 ? "default" : "outline"} 
-                size="sm"
-                className={`relative ${unreadNotifications > 0 ? "bg-green-600 hover:bg-green-700 animate-pulse" : ""}`}
+                variant={unreadNotifications > 0 ? "default" : "ghost"} 
+                size="icon"
+                className={`relative h-8 w-8 ${unreadNotifications > 0 ? "bg-green-600 hover:bg-green-700 animate-pulse" : ""}`}
               >
                 <Bell className="w-4 h-4" />
                 {unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px]">
                     {unreadNotifications}
                   </span>
                 )}
@@ -1040,42 +1039,42 @@ export default function StaffPOS() {
               </ScrollArea>
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
-            <Receipt className="w-4 h-4 mr-1" /> Orders
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
+            <Receipt className="w-4 h-4" />
           </Button>
           {(staff.role === "bartender" || staff.role === "kitchen" || staff.role === "manager") && (
-            <Button variant="outline" size="sm" onClick={() => { setActiveTab("kds"); fetchKDSItems(outlet.id, staff.role); }}>
-              <ChefHat className="w-4 h-4 mr-1" /> KDS
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setActiveTab("kds"); fetchKDSItems(outlet.id, staff.role); }}>
+              <ChefHat className="w-4 h-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout}>
+            <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
       {/* Table Selection */}
       {!selectedTable ? (
-        <div className="flex-1 p-3">
-          <h2 className="text-lg font-semibold mb-3">Select Table</h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        <div className="flex-1 p-2">
+          <h2 className="text-sm font-semibold mb-2 px-1">Select Table</h2>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
             {tables.map(table => {
               const isOccupied = table.status === "seated" || table.status === "occupied";
               return (
                 <Button
                   key={table.id}
                   variant="outline"
-                  className={`h-16 flex flex-col transition-all ${
+                  className={`h-12 flex flex-col py-1 px-2 transition-all ${
                     isOccupied 
-                      ? "bg-amber-500/90 hover:bg-amber-500 text-amber-950 border-amber-600 shadow-lg shadow-amber-500/30" 
+                      ? "bg-amber-500/90 hover:bg-amber-500 text-amber-950 border-amber-600 shadow-md shadow-amber-500/30" 
                       : "hover:bg-muted"
                   }`}
                   onClick={() => setSelectedTable(table)}
                 >
-                  <span className="font-semibold">{table.name}</span>
-                  <span className={`text-xs ${isOccupied ? "text-amber-800" : "text-muted-foreground"}`}>
-                    <Users className="w-3 h-3 inline mr-1" />{table.capacity}
-                    {isOccupied && " • Active"}
+                  <span className="font-medium text-xs truncate w-full text-center">{table.name}</span>
+                  <span className={`text-[10px] flex items-center ${isOccupied ? "text-amber-800" : "text-muted-foreground"}`}>
+                    <Users className="w-3 h-3 mr-0.5" />{table.capacity}
+                    {isOccupied && " •"}
                   </span>
                 </Button>
               );
