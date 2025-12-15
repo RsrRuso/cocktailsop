@@ -9,14 +9,27 @@ import { toast } from "@/hooks/use-toast";
 import { 
   Wine, Check, ArrowLeft, RefreshCw, 
   Volume2, VolumeX, Timer, AlertTriangle,
-  Settings, TrendingUp, Beaker, User
+  Settings, TrendingUp, Beaker, User, LogOut
 } from "lucide-react";
 import { differenceInMinutes, format } from "date-fns";
 import { RecipeDialog } from "@/components/bar-kds/RecipeDialog";
 import { StationManagement } from "@/components/bar-kds/StationManagement";
 import { BartenderPerformance } from "@/components/bar-kds/BartenderPerformance";
 import { StationConsumption } from "@/components/bar-kds/StationConsumption";
-import { useAuth } from "@/contexts/AuthContext";
+import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
+
+interface StaffMember {
+  id: string;
+  full_name: string;
+  role: string;
+  outlet_id: string;
+  permissions: Record<string, boolean>;
+}
+
+interface Outlet {
+  id: string;
+  name: string;
+}
 
 interface OrderItem {
   id: string;
@@ -62,7 +75,9 @@ interface Station {
 }
 
 export default function BarKDS() {
-  const { user } = useAuth();
+  const [staff, setStaff] = useState<StaffMember | null>(null);
+  const [outlet, setOutlet] = useState<Outlet | null>(null);
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,27 +101,55 @@ export default function BarKDS() {
   const [selectedStation, setSelectedStation] = useState<string>("all");
   const [myStationId, setMyStationId] = useState<string | null>(null);
 
+  // Fetch outlets for login screen
   useEffect(() => {
-    const outletId = localStorage.getItem('lab_ops_outlet_id');
-    if (outletId) {
-      setSelectedOutlet(outletId);
-      fetchOrders(outletId);
-      fetchStations(outletId);
-    } else {
-      fetchFirstOutlet();
-    }
+    const fetchOutlets = async () => {
+      const { data } = await supabase
+        .from("lab_ops_outlets")
+        .select("id, name")
+        .eq("is_active", true);
+      setOutlets(data || []);
+      setIsLoading(false);
+    };
+    fetchOutlets();
   }, []);
+
+  // Handle staff login
+  const handleStaffLogin = (staffMember: StaffMember, selectedOutletData: Outlet) => {
+    setStaff(staffMember);
+    setOutlet(selectedOutletData);
+    setSelectedOutlet(selectedOutletData.id);
+    localStorage.setItem('lab_ops_outlet_id', selectedOutletData.id);
+    localStorage.setItem('bar_kds_staff_id', staffMember.id);
+    fetchOrders(selectedOutletData.id);
+    fetchStations(selectedOutletData.id);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setStaff(null);
+    setOutlet(null);
+    setSelectedOutlet(null);
+    setMyStationId(null);
+    setSelectedStation("all");
+    localStorage.removeItem('bar_kds_staff_id');
+    toast({ title: "Logged out successfully" });
+  };
 
   // Auto-select station for logged-in bartender
   useEffect(() => {
-    if (user && stations.length > 0) {
-      const myStation = stations.find(s => s.assigned_bartender_id === user.id);
+    if (staff && stations.length > 0) {
+      const myStation = stations.find(s => s.assigned_bartender_id === staff.id);
       if (myStation) {
         setMyStationId(myStation.id);
         setSelectedStation(myStation.id);
+        toast({ 
+          title: `Assigned to ${myStation.name}`,
+          description: `You'll only see orders for your station`
+        });
       }
     }
-  }, [user, stations]);
+  }, [staff, stations]);
 
   const fetchStations = async (outletId: string) => {
     const { data } = await supabase
@@ -491,6 +534,11 @@ export default function BarKDS() {
     );
   }
 
+  // Show login screen if not logged in
+  if (!staff || !outlet) {
+    return <StaffPinLogin outlets={outlets} onLogin={handleStaffLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -510,7 +558,7 @@ export default function BarKDS() {
             <div>
               <h1 className="text-lg sm:text-2xl font-bold">Bar KDS</h1>
               <p className="text-amber-200 text-xs">
-                {orders.length} new • {completedOrders.length} done
+                {staff.full_name} • {myStationId ? stations.find(s => s.id === myStationId)?.name : 'All Stations'}
               </p>
             </div>
           </div>
@@ -531,6 +579,15 @@ export default function BarKDS() {
               className="text-white hover:bg-white/20 h-8 w-8"
             >
               <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-white hover:bg-white/20 h-8 w-8"
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
