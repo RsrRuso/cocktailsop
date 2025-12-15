@@ -1877,7 +1877,17 @@ function MenuModule({ outletId }: { outletId: string }) {
   };
 
   const deleteItem = async (id: string) => {
-    await supabase.from("lab_ops_menu_items").delete().eq("id", id);
+    const { error } = await supabase
+      .from("lab_ops_menu_items")
+      .update({ is_active: false })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting menu item", error);
+      toast({ title: "Failed to delete item" });
+      return;
+    }
+
     fetchMenuItems();
     toast({ title: "Item deleted" });
   };
@@ -1888,14 +1898,32 @@ function MenuModule({ outletId }: { outletId: string }) {
     // Get all item IDs first to delete their station mappings
     const itemIds = menuItems.map(item => item.id);
     if (itemIds.length > 0) {
-      await supabase.from("lab_ops_menu_item_stations").delete().in("menu_item_id", itemIds);
+      const { error: stationError } = await supabase
+        .from("lab_ops_menu_item_stations")
+        .delete()
+        .in("menu_item_id", itemIds);
+
+      if (stationError) {
+        console.error("Error deleting menu item stations", stationError);
+        toast({ title: "Failed to delete menu item stations" });
+        return;
+      }
     }
     
-    await supabase.from("lab_ops_menu_items").delete().eq("outlet_id", outletId);
+    const { error } = await supabase
+      .from("lab_ops_menu_items")
+      .update({ is_active: false })
+      .eq("outlet_id", outletId);
+
+    if (error) {
+      console.error("Error deleting all menu items", error);
+      toast({ title: "Failed to delete menu items" });
+      return;
+    }
+
     fetchMenuItems();
     toast({ title: "All menu items deleted" });
   };
-
   const createModifier = async () => {
     if (!newModifierName.trim()) return;
 
