@@ -22,6 +22,7 @@ import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuid
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
+import { ProcurementStaffManagement } from "@/components/procurement/ProcurementStaffManagement";
 
 interface PurchaseOrderItem {
   id?: string;
@@ -83,6 +84,7 @@ const PurchaseOrders = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
   });
+  const [showStaffManagement, setShowStaffManagement] = useState(false);
   
   // Shared currency state - syncs with POReceivedItems
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>(() => {
@@ -637,6 +639,16 @@ const PurchaseOrders = () => {
             >
               <Smartphone className="w-5 h-5 text-muted-foreground" />
             </Button>
+            {selectedWorkspaceId && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowStaffManagement(true)}
+                title="Manage Staff PINs"
+              >
+                <Users className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
               <HelpCircle className="w-5 h-5 text-muted-foreground" />
             </Button>
@@ -1356,6 +1368,16 @@ Example format:
 
       {/* Guide Dialog */}
       <PurchaseOrdersGuide open={showGuide} onOpenChange={setShowGuide} />
+
+      {/* Staff Management Dialog */}
+      {selectedWorkspaceId && (
+        <ProcurementStaffManagement
+          workspaceId={selectedWorkspaceId}
+          workspaceName="Procurement Workspace"
+          open={showStaffManagement}
+          onOpenChange={setShowStaffManagement}
+        />
+      )}
 
     </div>
   );
