@@ -1095,6 +1095,12 @@ export default function StaffPOS() {
               const isClosed = table.status === "closed";
               const isFree = table.status === "free" || (!isOccupied && !isClosed);
               
+              // Calculate bill total for this table from open orders
+              const tableOrder = openOrders.find(o => o.table_id === table.id);
+              const billTotal = tableOrder?.lab_ops_order_items?.reduce(
+                (sum: number, item: any) => sum + (item.unit_price * item.qty), 0
+              ) || 0;
+              
               // Color coding: Red=Occupied, Green=Free, Orange=Closed
               const getTableStyle = () => {
                 if (isOccupied) {
@@ -1111,7 +1117,7 @@ export default function StaffPOS() {
                 <Button
                   key={table.id}
                   variant="outline"
-                  className={`h-20 flex flex-col py-2 px-2 transition-all rounded-xl ${getTableStyle()}`}
+                  className={`h-24 flex flex-col py-2 px-2 transition-all rounded-xl ${getTableStyle()}`}
                   onClick={() => setSelectedTable(table)}
                   disabled={isClosed}
                 >
@@ -1119,14 +1125,21 @@ export default function StaffPOS() {
                   <span className="font-black text-2xl leading-none">
                     {table.table_number || table.name?.replace(/[^0-9]/g, '') || '?'}
                   </span>
-                  {/* Capacity with icon */}
-                  <div className="flex items-center gap-1 mt-1 opacity-80">
-                    <Users className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">{table.capacity}</span>
-                    {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
-                  </div>
+                  {/* Bill amount for occupied tables OR capacity for free tables */}
+                  {isOccupied && billTotal > 0 ? (
+                    <div className="flex items-center gap-1 mt-1.5 bg-white/20 px-2 py-0.5 rounded-full">
+                      <DollarSign className="w-3 h-3" />
+                      <span className="text-sm font-bold">{billTotal.toFixed(0)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 mt-1 opacity-80">
+                      <Users className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">{table.capacity}</span>
+                      {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
+                    </div>
+                  )}
                   {/* Turnover count */}
-                  <span className="text-[10px] font-medium opacity-70 mt-0.5">
+                  <span className="text-[10px] font-medium opacity-70 mt-1">
                     ↻ {table.turnover_count} turns
                   </span>
                 </Button>
