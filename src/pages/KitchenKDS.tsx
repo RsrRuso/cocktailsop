@@ -7,9 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { 
   ChefHat, Check, ArrowLeft, RefreshCw, 
-  Volume2, VolumeX, Timer, AlertTriangle, Flame
+  Volume2, VolumeX, Timer, AlertTriangle, Flame, User
 } from "lucide-react";
-import { differenceInMinutes } from "date-fns";
+import { differenceInMinutes, format } from "date-fns";
 
 interface OrderItem {
   id: string;
@@ -32,9 +32,14 @@ interface Order {
   table_id: string;
   status: string;
   created_at: string;
+  covers?: number | null;
   table?: {
     name: string;
+    table_number?: number | null;
   };
+  server?: {
+    full_name: string;
+  } | null;
   items: OrderItem[];
 }
 
@@ -104,8 +109,9 @@ export default function KitchenKDS() {
       const { data: activeOrdersData, error: activeError } = await supabase
         .from("lab_ops_orders")
         .select(`
-          id, table_id, status, created_at,
-          table:lab_ops_tables(name)
+          id, table_id, status, created_at, covers,
+          table:lab_ops_tables(name, table_number),
+          server:lab_ops_staff!lab_ops_orders_server_id_fkey(full_name)
         `)
         .eq("outlet_id", outletId)
         .in("status", ["open", "in_progress", "sent"])
@@ -118,8 +124,9 @@ export default function KitchenKDS() {
       const { data: completedOrdersData, error: completedError } = await supabase
         .from("lab_ops_orders")
         .select(`
-          id, table_id, status, created_at,
-          table:lab_ops_tables(name)
+          id, table_id, status, created_at, covers,
+          table:lab_ops_tables(name, table_number),
+          server:lab_ops_staff!lab_ops_orders_server_id_fkey(full_name)
         `)
         .eq("outlet_id", outletId)
         .eq("status", "closed")
@@ -150,12 +157,16 @@ export default function KitchenKDS() {
         );
 
         if (kitchenItems.length > 0) {
+          const tableData = order.table as any;
+          const serverData = order.server as any;
           const orderData: Order = {
             id: order.id,
             table_id: order.table_id,
             status: order.status,
             created_at: order.created_at,
-            table: order.table as any,
+            covers: order.covers,
+            table: tableData,
+            server: serverData,
             items: kitchenItems as unknown as OrderItem[]
           };
 
@@ -190,12 +201,16 @@ export default function KitchenKDS() {
         );
 
         if (kitchenItems.length > 0) {
+          const tableData = order.table as any;
+          const serverData = order.server as any;
           completedOrdersWithItems.push({
             id: order.id,
             table_id: order.table_id,
             status: order.status,
             created_at: order.created_at,
-            table: order.table as any,
+            covers: order.covers,
+            table: tableData,
+            server: serverData,
             items: kitchenItems as unknown as OrderItem[]
           });
         }
@@ -377,29 +392,46 @@ export default function KitchenKDS() {
                   }`}
                 >
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg text-white flex items-center gap-2">
-                        #{index + 1}
-                        <Badge variant="outline" className={isCompleted ? "text-green-400 border-green-400" : "text-orange-400 border-orange-400"}>
-                          {order.table?.name || "Table"}
+                    {/* KOT Header - Ticket Info */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-black text-orange-400">#{index + 1}</span>
+                        <Badge variant="outline" className={isCompleted ? "text-green-400 border-green-400 font-bold" : "text-orange-400 border-orange-400 font-bold"}>
+                          T{order.table?.table_number || order.table?.name?.replace(/[^0-9]/g, '') || '?'}
                         </Badge>
+                        {order.covers && (
+                          <Badge variant="secondary" className="text-xs">
+                            {order.covers} pax
+                          </Badge>
+                        )}
                         {isPreparing && (
                           <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
                         )}
                         {isCompleted && (
                           <Check className="h-4 w-4 text-green-500" />
                         )}
-                      </CardTitle>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
+                      </div>
                       <div className={`w-2 h-2 rounded-full ${isCompleted ? 'bg-green-500' : getAgeColor(ageMinutes)}`} />
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
-                        <Timer className="h-3 w-3" />
-                        {ageMinutes}m ago
-                      </span>
-                      {!isCompleted && ageMinutes >= 20 && (
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                      )}
+                    </div>
+                    
+                    {/* Server & Time Info */}
+                    <div className="flex items-center justify-between text-xs text-gray-400 border-b border-gray-700 pb-2">
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span className="font-medium text-gray-300">
+                          {order.server?.full_name || 'Server'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1">
+                          <Timer className="h-3 w-3" />
+                          {format(new Date(order.created_at), 'HH:mm')}
+                        </span>
+                        <span className="text-gray-500">({ageMinutes}m)</span>
+                        {!isCompleted && ageMinutes >= 20 && (
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-2">
