@@ -106,6 +106,8 @@ const POReceivedItems = () => {
   const [enhancedReceivingData, setEnhancedReceivingData] = useState<EnhancedReceivingData | null>(null);
   const [pendingMatchedOrder, setPendingMatchedOrder] = useState<any>(null);
   const [showPendingPOsDialog, setShowPendingPOsDialog] = useState(false);
+  const [showCompletedPOsDialog, setShowCompletedPOsDialog] = useState(false);
+  const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
 
   // Workspace state - declare before hook usage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
@@ -184,24 +186,26 @@ const POReceivedItems = () => {
 
   // Calculate PO completion stats by matching doc codes
   const poCompletionStats = (() => {
-    if (!allPurchaseOrders || !recentReceived) return { total: 0, completed: 0, pending: 0, completedCodes: [] as string[], pendingPOs: [] as any[] };
+    if (!allPurchaseOrders || !recentReceived) return { total: 0, completed: 0, pending: 0, completedCodes: [] as string[], pendingPOs: [] as any[], completedPOs: [] as any[] };
     
-    const receivedDocCodes = new Set(
-      recentReceived
-        .filter(r => r.document_number)
-        .map(r => normalizeItemCode(r.document_number || ''))
-    );
+    const receivedDocCodes = new Map<string, RecentReceived>();
+    recentReceived
+      .filter(r => r.document_number)
+      .forEach(r => receivedDocCodes.set(normalizeItemCode(r.document_number || ''), r));
     
     let completed = 0;
     let pending = 0;
     const completedCodes: string[] = [];
     const pendingPOs: any[] = [];
+    const completedPOs: any[] = [];
     
     allPurchaseOrders.forEach((po: any) => {
       const poCode = normalizeItemCode(po.order_number || '');
-      if (receivedDocCodes.has(poCode)) {
+      const receivedRecord = receivedDocCodes.get(poCode);
+      if (receivedRecord) {
         completed++;
         completedCodes.push(po.order_number);
+        completedPOs.push({ ...po, receivedRecord });
       } else {
         pending++;
         pendingPOs.push(po);
@@ -213,7 +217,8 @@ const POReceivedItems = () => {
       completed,
       pending,
       completedCodes,
-      pendingPOs
+      pendingPOs,
+      completedPOs
     };
   })();
 
@@ -1079,7 +1084,10 @@ const POReceivedItems = () => {
               </div>
             </div>
           </Card>
-          <Card className="p-3">
+          <Card 
+            className="p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => poCompletionStats.completed > 0 && setShowCompletedPOsDialog(true)}
+          >
             <div className="flex items-center gap-2">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -1696,7 +1704,14 @@ const POReceivedItems = () => {
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {poCompletionStats.pendingPOs.length > 0 ? (
               poCompletionStats.pendingPOs.map((po: any) => (
-                <Card key={po.id} className="p-3 border-amber-500/30 bg-amber-500/5">
+                <Card 
+                  key={po.id} 
+                  className="p-3 border-amber-500/30 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10 transition-colors"
+                  onClick={() => {
+                    setSelectedPOContent(po);
+                    setShowPendingPOsDialog(false);
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -1708,9 +1723,12 @@ const POReceivedItems = () => {
                         {po.order_date && format(new Date(po.order_date), 'MMM dd, yyyy')}
                       </div>
                     </div>
-                    <Badge variant="outline" className="border-amber-500/50 text-amber-500">
-                      Awaiting
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-500">
+                        Awaiting
+                      </Badge>
+                    </div>
                   </div>
                 </Card>
               ))
@@ -1730,6 +1748,127 @@ const POReceivedItems = () => {
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Completed POs Dialog */}
+      <Dialog open={showCompletedPOsDialog} onOpenChange={setShowCompletedPOsDialog}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              Completed Purchase Orders ({poCompletionStats.completed})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {poCompletionStats.completedPOs.length > 0 ? (
+              poCompletionStats.completedPOs.map((po: any) => (
+                <Card 
+                  key={po.id} 
+                  className="p-3 border-green-500/30 bg-green-500/5 cursor-pointer hover:bg-green-500/10 transition-colors"
+                  onClick={() => {
+                    setShowRecordContent(po.receivedRecord);
+                    setShowCompletedPOsDialog(false);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-green-500" />
+                        <span className="font-medium text-foreground">{po.order_number}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {po.supplier_name && <span>{po.supplier_name} • </span>}
+                        {po.order_date && format(new Date(po.order_date), 'MMM dd, yyyy')}
+                      </div>
+                      {po.receivedRecord && (
+                        <div className="text-xs text-green-600 mt-1">
+                          Received: {format(new Date(po.receivedRecord.received_date), 'MMM dd, yyyy')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline" className="border-green-500/50 text-green-500">
+                        Received
+                      </Badge>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-amber-500 opacity-70" />
+                <p>No completed purchase orders yet</p>
+              </div>
+            )}
+          </div>
+          <div className="pt-2 border-t">
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setShowCompletedPOsDialog(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PO Content Dialog (for pending POs) */}
+      <Dialog open={!!selectedPOContent} onOpenChange={() => setSelectedPOContent(null)}>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[80vh] overflow-y-auto p-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-amber-500" />
+              Purchase Order Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedPOContent && (
+            <div className="space-y-3">
+              <Card className="p-3 bg-amber-500/10 border-amber-500/30">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Order Number</p>
+                    <p className="font-medium">{selectedPOContent.order_number || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Order Date</p>
+                    <p className="font-medium">
+                      {selectedPOContent.order_date 
+                        ? format(new Date(selectedPOContent.order_date), 'MMM d, yyyy')
+                        : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Supplier</p>
+                    <p className="font-medium">{selectedPOContent.supplier_name || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge variant="outline" className="border-amber-500/50 text-amber-500">
+                      Pending Receipt
+                    </Badge>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="p-4 bg-muted/30 rounded-lg text-center">
+                <Package className="h-8 w-8 mx-auto mb-2 text-amber-500 opacity-60" />
+                <p className="text-sm text-muted-foreground">
+                  This purchase order is awaiting receiving.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Upload a receiving document to complete it.
+                </p>
+              </div>
+
+              <Button className="w-full" onClick={() => setSelectedPOContent(null)}>
+                Close
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
