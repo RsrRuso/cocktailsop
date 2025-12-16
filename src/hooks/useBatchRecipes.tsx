@@ -20,8 +20,18 @@ export interface BatchRecipe {
   updated_at: string;
 }
 
+// Module-level cache for instant loading
+let recipesCache: Map<string, { data: BatchRecipe[]; timestamp: number }> = new Map();
+const CACHE_TIME = 2 * 60 * 1000; // 2 minutes
+
+const getCacheKey = (groupId?: string | null, staffMode?: boolean) => 
+  `${groupId || 'personal'}-${staffMode ? 'staff' : 'user'}`;
+
 export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) => {
   const queryClient = useQueryClient();
+  const cacheKey = getCacheKey(groupId, staffMode);
+  const cached = recipesCache.get(cacheKey);
+  const hasValidCache = cached && Date.now() - cached.timestamp < CACHE_TIME;
 
   const { data: recipes, isLoading } = useQuery({
     queryKey: ['batch-recipes', groupId, staffMode],
@@ -40,10 +50,12 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
         if (error) throw error;
 
         const rows = (data as any)?.recipes || [];
-        return rows.map((recipe: any) => ({
+        const result = rows.map((recipe: any) => ({
           ...recipe,
           ingredients: recipe.ingredients as unknown as BatchIngredient[],
         })) as BatchRecipe[];
+        recipesCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -67,11 +79,16 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
         }
       });
       
-      return filtered.map((recipe: any) => ({
+      const result = filtered.map((recipe: any) => ({
         ...recipe,
         ingredients: recipe.ingredients as unknown as BatchIngredient[]
       })) as BatchRecipe[];
+      
+      recipesCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
     },
+    initialData: hasValidCache ? cached.data : undefined,
+    staleTime: CACHE_TIME,
   });
 
   const createRecipe = useMutation({
@@ -96,6 +113,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
       return data;
     },
     onSuccess: async (data) => {
+      recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
       toast.success("Recipe template saved!");
 
@@ -160,6 +178,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
       return data;
     },
     onSuccess: () => {
+      recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
       toast.success("Recipe updated!");
     },
@@ -178,6 +197,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
       if (error) throw error;
     },
     onSuccess: () => {
+      recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
       toast.success("Recipe deleted!");
     },
