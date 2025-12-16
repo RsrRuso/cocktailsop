@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit, Users, KeyRound } from "lucide-react";
 
@@ -21,6 +22,16 @@ interface ProcurementStaff {
     can_receive?: boolean;
   };
   is_active: boolean;
+}
+
+interface WorkspaceMember {
+  user_id: string;
+  profile: {
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+  } | null;
 }
 
 interface Props {
@@ -40,6 +51,35 @@ export function ProcurementStaffManagement({ workspaceId, workspaceName, open, o
     pin_code: "",
     can_create_po: true,
     can_receive: true
+  });
+
+  // Fetch workspace members
+  const { data: workspaceMembers = [] } = useQuery({
+    queryKey: ["workspace-members", workspaceId],
+    queryFn: async () => {
+      const { data: members, error } = await supabase
+        .from("workspace_members")
+        .select("user_id")
+        .eq("workspace_id", workspaceId);
+
+      if (error) throw error;
+      if (!members?.length) return [];
+
+      // Fetch profiles for these members
+      const userIds = members.map(m => m.user_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, email")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      return (profiles || []).map(p => ({
+        user_id: p.id,
+        profile: p
+      })) as WorkspaceMember[];
+    },
+    enabled: !!workspaceId && open
   });
 
   const { data: staff = [], isLoading } = useQuery({
@@ -238,12 +278,25 @@ export function ProcurementStaffManagement({ workspaceId, workspaceName, open, o
           
           <div className="space-y-4">
             <div>
-              <Label>Full Name</Label>
-              <Input
+              <Label>Select Member</Label>
+              <Select
                 value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                placeholder="Enter name"
-              />
+                onValueChange={(value) => setFormData({ ...formData, full_name: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select workspace member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workspaceMembers.map((member) => {
+                    const name = member.profile?.full_name || member.profile?.username || member.profile?.email || "Unknown";
+                    return (
+                      <SelectItem key={member.user_id} value={name}>
+                        {name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
