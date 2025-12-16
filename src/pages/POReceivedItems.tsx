@@ -1771,29 +1771,64 @@ const POReceivedItems = () => {
                     setShowCompletedPOsDialog(false);
                   }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-foreground">{po.order_number}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {po.supplier_name && <span>{po.supplier_name} • </span>}
-                        {po.order_date && format(new Date(po.order_date), 'MMM dd, yyyy')}
-                      </div>
-                      {po.receivedRecord && (
-                        <div className="text-xs text-green-600 mt-1">
-                          Received: {format(new Date(po.receivedRecord.received_date), 'MMM dd, yyyy')}
+                  {(() => {
+                    const orderCode = po.order_number?.toUpperCase() || '';
+                    const isMaterial = orderCode.startsWith('RQ');
+                    const isMarketList = orderCode.startsWith('ML');
+                    const categoryType = isMaterial ? 'Material' : isMarketList ? 'Market' : null;
+                    
+                    // Check for discrepancy from variance_data
+                    const varianceData = po.receivedRecord?.variance_data;
+                    const hasDiscrepancy = varianceData?.summary && (
+                      varianceData.summary.short > 0 || 
+                      varianceData.summary.over > 0 || 
+                      varianceData.summary.missing > 0 || 
+                      varianceData.summary.extra > 0
+                    );
+                    
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-green-500" />
+                            <span className="font-medium text-foreground">{po.order_number}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                            <Badge variant="outline" className={hasDiscrepancy ? "border-amber-500/50 text-amber-500" : "border-green-500/50 text-green-500"}>
+                              {hasDiscrepancy ? 'Discrepancy' : 'Complete'}
+                            </Badge>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="outline" className="border-green-500/50 text-green-500">
-                        Received
-                      </Badge>
-                    </div>
-                  </div>
+                        
+                        <div className="text-xs text-muted-foreground">
+                          {po.supplier_name && <span>{po.supplier_name} • </span>}
+                          {po.order_date && format(new Date(po.order_date), 'MMM dd, yyyy')}
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {categoryType && (
+                              <Badge variant="secondary" className={isMaterial ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400"}>
+                                {categoryType}
+                              </Badge>
+                            )}
+                            {po.receivedRecord?.total_value > 0 && (
+                              <span className="text-sm font-medium text-foreground">
+                                {formatCurrency(po.receivedRecord.total_value)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {po.receivedRecord && (
+                          <div className="text-xs text-green-600">
+                            Received: {format(new Date(po.receivedRecord.received_date), 'MMM dd, yyyy')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Card>
               ))
             ) : (
