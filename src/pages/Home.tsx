@@ -111,28 +111,14 @@ interface Reel {
 
 type FeedItem = (Post & { type: 'post' }) | (Reel & { type: 'reel'; content: string; media_urls: string[] });
 
-// Preload story media for instant viewing
-const preloadStoryMedia = (stories: Story[]) => {
-  stories.forEach(story => {
-    story.media_urls?.forEach((url, idx) => {
-      const type = story.media_types?.[idx] || 'image';
-      if (type.startsWith('video')) {
-        const video = document.createElement('video');
-        video.preload = 'auto';
-        video.src = url;
-        video.load();
-      } else {
-        const img = new Image();
-        img.src = url;
-      }
-    });
-  });
-};
 
 const Home = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth(); // Use cached auth
-  const [stories, setStories] = useState<Story[]>([]);
+  
+  // Use shared stories hook with caching
+  const { stories, isLoading: storiesLoading, userHasStory, refreshStories } = useStoriesData(user?.id);
+  
   const [viewedStories, setViewedStories] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<any>(profile); // Initialize with cached profile
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -150,7 +136,6 @@ const Home = () => {
   const [isReelLikes, setIsReelLikes] = useState(false);
   const [showTopNav, setShowTopNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [hasActiveStory, setHasActiveStory] = useState(false);
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -246,15 +231,25 @@ const Home = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  // Fetch viewed stories for the current user
   useEffect(() => {
-    fetchStories();
-    if (user?.id) {
-      fetchLikedPosts();
-      fetchLikedReels();
-    }
+    if (!user?.id) return;
+    
+    const fetchViewedStories = async () => {
+      const { data } = await supabase
+        .from('story_views')
+        .select('story_id')
+        .eq('user_id', user.id);
+      if (data) setViewedStories(new Set(data.map(v => v.story_id)));
+    };
+    
+    fetchViewedStories();
+    fetchLikedPosts();
+    fetchLikedReels();
+  }, [user?.id, fetchLikedPosts, fetchLikedReels]);
 
-    // Subscribe to count changes - only refresh on INSERT/DELETE (new posts/reels)
-    // UPDATE events (like_count changes) don't need full refresh since we use optimistic updates
+  // Realtime subscriptions
+  useEffect(() => {
     const postsChannel = supabase
       .channel('posts-feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => refreshFeed(true))
@@ -267,17 +262,13 @@ const Home = () => {
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reels' }, () => refreshFeed(true))
       .subscribe();
 
-    // Subscribe to stories for instant updates when new stories are published
     const storiesChannel = supabase
       .channel('stories-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => fetchStories())
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'stories' }, () => fetchStories())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => refreshStories())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'stories' }, () => refreshStories())
       .subscribe();
 
-    // Listen for region changes from TopNav
-    const handleRegionChange = (e: CustomEvent) => {
-      setSelectedRegion(e.detail);
-    };
+    const handleRegionChange = (e: CustomEvent) => setSelectedRegion(e.detail);
     window.addEventListener('regionChange' as any, handleRegionChange);
 
     return () => {
@@ -286,66 +277,8 @@ const Home = () => {
       supabase.removeChannel(storiesChannel);
       window.removeEventListener('regionChange' as any, handleRegionChange);
     };
-  }, [user?.id, fetchLikedPosts, fetchLikedReels, refreshFeed]);
+  }, [refreshFeed, refreshStories]);
 
-  // Merge posts and reels into unified feed
-  const fetchStories = useCallback(async () => {
-    try {
-      // Check if current user has an active story
-      if (user?.id) {
-        const { data: userStory } = await supabase
-          .from("stories")
-          .select("id")
-          .eq("user_id", user.id)
-          .gt("expires_at", new Date().toISOString())
-          .limit(1);
-        
-        setHasActiveStory(!!userStory && userStory.length > 0);
-      }
-
-      // Fetch stories WITHOUT profile join
-      const { data } = await supabase
-        .from("stories")
-        .select("id, user_id, media_urls, media_types")
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (!data) return;
-
-      // Fetch profiles separately with birthday info
-      const userIds = [...new Set(data.map(s => s.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url, date_of_birth')
-        .in('id', userIds);
-
-      // Map profiles to stories
-      const storiesWithProfiles = data.map(story => ({
-        ...story,
-        profiles: profiles?.find(p => p.id === story.user_id) || { username: 'Unknown', avatar_url: null, date_of_birth: null }
-      }));
-
-      setStories(storiesWithProfiles);
-      
-      // Preload all story media for instant viewing
-      preloadStoryMedia(storiesWithProfiles);
-
-      // Fetch viewed stories for current user
-      if (user?.id) {
-        const { data: viewedData } = await supabase
-          .from('story_views')
-          .select('story_id')
-          .eq('user_id', user.id);
-        
-        if (viewedData) {
-          setViewedStories(new Set(viewedData.map(v => v.story_id)));
-        }
-      }
-    } catch (error) {
-      // Error fetching stories
-    }
-  }, [user?.id]);
 
   const handleLikePost = useCallback((postId: string) => {
     togglePostLike(postId); // Database trigger + real-time subscription handle counts
@@ -437,7 +370,7 @@ const Home = () => {
 
   // Show skeletons only on very first load when no cached data exists
   // Otherwise show stale data immediately while refreshing in background
-  const showSkeleton = isLoading && stories.length === 0 && feed.length === 0;
+  const showSkeleton = (isLoading || storiesLoading) && stories.length === 0 && feed.length === 0;
   
   if (showSkeleton) {
     return (
@@ -462,18 +395,18 @@ const Home = () => {
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <div className="relative overflow-visible">
                 {/* White glow when has active story - constant until expires */}
-                {hasActiveStory && (
+                {userHasStory && (
                   <div className="absolute inset-0 rounded-full bg-white/50 blur-md scale-110" />
                 )}
                 <button
-                  onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
-                  className={`relative group ${hasActiveStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
+                  onClick={() => navigate(userHasStory ? `/story/${user?.id}` : "/story-options")}
+                  className={`relative group ${userHasStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
                 >
                   <Avatar className="w-[88px] h-[88px] rounded-full">
                     <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
                     <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                   </Avatar>
-                  {!hasActiveStory && (
+                  {!userHasStory && (
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
                       <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
                     </div>
@@ -483,7 +416,7 @@ const Home = () => {
                   )}
                 </button>
                 {/* Add more button when story exists */}
-                {hasActiveStory && (
+                {userHasStory && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
