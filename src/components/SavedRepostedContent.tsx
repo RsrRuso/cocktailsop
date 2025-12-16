@@ -360,7 +360,6 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
                 onShare={() => {}}
                 onToggleMute={handleToggleMute}
                 onFullscreen={() => {}}
-                onViewLikes={() => {}}
                 getBadgeColor={getBadgeColor}
               />
             </div>

@@ -571,10 +571,7 @@ const Profile = () => {
                       onShare={() => {}}
                       onToggleMute={handleToggleMute}
                       onFullscreen={() => navigate('/reels', { state: { scrollToReelId: item.id } })}
-                      onViewLikes={() => {}}
                       getBadgeColor={getBadgeColor}
-                      onSaveChange={(delta) => item.type === 'post' ? handlePostSaveChange(item.id, delta) : handleReelSaveChange(item.id, delta)}
-                      onRepostChange={(delta) => item.type === 'post' ? handlePostRepostChange(item.id, delta) : handleReelRepostChange(item.id, delta)}
                     />
                   ))}
               </div>
