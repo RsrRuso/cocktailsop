@@ -22,8 +22,8 @@ export const RoutePreloader = () => {
       Promise.all([
         prefetchHomeFeed(region),
         prefetchStoriesData(),
-        user?.id ? prefetchMessagesData(user.id) : Promise.resolve(),
-        user?.id ? prefetchNotificationsData(user.id) : Promise.resolve(),
+        prefetchMessagesData(),
+        prefetchNotificationsData(),
       ]);
     }
   }, [user?.id]);
@@ -38,10 +38,10 @@ export const RoutePreloader = () => {
       await Promise.all([prefetchHomeFeed(region), prefetchStoriesData()]);
     } else if (path === '/profile' && user?.id) {
       await prefetchProfile(user.id);
-    } else if (path === '/messages' && user?.id) {
-      await prefetchMessagesData(user.id);
-    } else if (path === '/notifications' && user?.id) {
-      await prefetchNotificationsData(user.id);
+    } else if (path === '/messages') {
+      await prefetchMessagesData();
+    } else if (path === '/notifications') {
+      await prefetchNotificationsData();
     }
   }, [user?.id]);
 

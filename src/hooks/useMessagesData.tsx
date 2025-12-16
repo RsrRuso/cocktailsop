@@ -205,11 +205,15 @@ export const useMessagesData = (userId: string | null) => {
 };
 
 // Prefetch messages for instant loading
-export const prefetchMessagesData = async (userId: string) => {
-  if (conversationsCache && conversationsCache.userId === userId && 
-      Date.now() - conversationsCache.timestamp < CACHE_TIME) return;
-
+export const prefetchMessagesData = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const userId = user.id;
+    if (conversationsCache && conversationsCache.userId === userId && 
+        Date.now() - conversationsCache.timestamp < CACHE_TIME) return;
+
     const { data: convData } = await supabase
       .from('conversations')
       .select('id, participant_ids, last_message_at, is_group, group_name, group_avatar_url')
