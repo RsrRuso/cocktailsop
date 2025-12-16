@@ -76,7 +76,7 @@ serve(async (req) => {
 
     let query = supabase
       .from("batch_productions")
-      .select("*")
+      .select("*, batch_production_ingredients(*)")
       .eq("group_id", groupId)
       .order("production_date", { ascending: false });
 
