@@ -4,8 +4,8 @@ import { usePurchaseOrderMaster } from "@/hooks/usePurchaseOrderMaster";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Package, Search, List, RefreshCw, Upload, TrendingUp } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
@@ -87,20 +87,22 @@ const POMasterItems = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header - Mobile Optimized */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border shrink-0">
+        <div className="flex items-start justify-between p-3 gap-2">
+          <div className="flex items-start gap-2">
+            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 mt-0.5" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-xl font-bold">Master Items</h1>
-              <p className="text-sm text-muted-foreground">Unique ingredients from purchase orders</p>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold leading-tight">Master Items</h1>
+              <p className="text-xs text-muted-foreground">Unique ingredients from purchase orders</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          
+          {/* Action Buttons - Compact */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <input
               ref={fileInputRef}
               type="file"
@@ -111,115 +113,110 @@ const POMasterItems = () => {
             <Button 
               variant="outline" 
               size="sm" 
+              className="h-8 px-2 text-xs"
               onClick={() => setShowParLevel(true)}
             >
-              <TrendingUp className="h-4 w-4 mr-2" />
+              <TrendingUp className="h-3.5 w-3.5 mr-1" />
               Par Level
             </Button>
             <Button 
               variant="outline" 
-              size="sm" 
+              size="sm"
+              className="h-8 px-2 text-xs"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
-              <Upload className={`h-4 w-4 mr-2 ${isUploading ? 'animate-pulse' : ''}`} />
-              {isUploading ? 'Parsing...' : 'Upload'}
+              <Upload className={`h-3.5 w-3.5 mr-1 ${isUploading ? 'animate-pulse' : ''}`} />
+              {isUploading ? '...' : 'Upload'}
             </Button>
             <Button 
               variant="outline" 
-              size="sm" 
+              size="icon"
+              className="h-8 w-8"
               onClick={handleSync}
               disabled={isSyncing}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              Sync
+              <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Stats Card */}
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
+      {/* Content Area */}
+      <div className="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
+        {/* Stats Card - Compact */}
+        <Card className="p-3 shrink-0">
+          <div className="flex items-center gap-2.5">
             <div className="p-2 bg-primary/10 rounded-lg">
-              <List className="h-5 w-5 text-primary" />
+              <List className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Unique Items</p>
-              <p className="text-2xl font-bold">{masterItems?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">Total Unique Items</p>
+              <p className="text-xl font-bold">{masterItems?.length || 0}</p>
             </div>
           </div>
         </Card>
 
-        {/* Search */}
-        <div className="relative">
+        {/* Search - Compact */}
+        <div className="relative shrink-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-9"
           />
         </div>
 
-        {/* Items Table */}
-        <Card>
+        {/* Items List - Mobile Card Layout */}
+        <ScrollArea className="flex-1">
           {isLoadingMaster ? (
-            <div className="p-8 text-center text-muted-foreground">Loading...</div>
+            <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
+          ) : (!filteredItems || filteredItems.length === 0) ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No master items yet</p>
+              <p className="text-xs mt-1">Upload purchase orders to populate</p>
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item Name</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Last Price</TableHead>
-                  <TableHead>Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems?.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        {item.item_name}
+            <div className="space-y-2 pb-20">
+              {filteredItems.map((item) => (
+                <Card key={item.id} className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                      <Package className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{item.item_name}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {item.unit && (
+                            <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                              {item.unit}
+                            </Badge>
+                          )}
+                          {item.category && (
+                            <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                              {item.category}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {item.unit ? (
-                        <Badge variant="outline">{item.unit}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {item.category ? (
-                        <Badge variant="secondary">{item.category}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {item.last_price ? formatCurrency(item.last_price) : '-'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(item.updated_at), 'MMM dd, yyyy')}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!filteredItems || filteredItems.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      No master items yet. Upload purchase orders to populate.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    </div>
+                    
+                    {/* Price */}
+                    <div className="text-right shrink-0">
+                      <p className="font-semibold text-sm">
+                        {item.last_price ? formatCurrency(item.last_price) : '-'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {format(new Date(item.updated_at), 'MMM dd')}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
-        </Card>
+        </ScrollArea>
       </div>
 
       {/* Par Level Prediction Dialog */}
