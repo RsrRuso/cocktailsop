@@ -20,23 +20,79 @@ const PasswordReset = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [checkingToken, setCheckingToken] = useState(true);
 
   useEffect(() => {
-    // Check if we have a valid recovery token
     const checkRecoveryToken = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const type = hashParams.get('type');
-      
-      if (type !== 'recovery') {
-        toast.error("Invalid password reset link");
-        navigate('/auth');
-        return;
-      }
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const type = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        
+        // Validate recovery type exists
+        if (type !== 'recovery') {
+          toast.error("Invalid password reset link");
+          navigate('/auth');
+          return;
+        }
 
-      setIsValidToken(true);
+        // If we have tokens in the hash, Supabase will automatically establish session
+        // Wait for the auth state to be ready
+        if (accessToken) {
+          // Let Supabase process the hash and establish the session
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error("Session error:", error);
+            toast.error("Password reset link has expired or is invalid");
+            navigate('/auth');
+            return;
+          }
+
+          if (session) {
+            setIsValidToken(true);
+          } else {
+            // Session might need a moment to establish - wait and retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const { data: { session: retrySession } } = await supabase.auth.getSession();
+            
+            if (retrySession) {
+              setIsValidToken(true);
+            } else {
+              toast.error("Password reset link has expired. Please request a new one.");
+              navigate('/auth');
+            }
+          }
+        } else {
+          // No access token in URL - check if user already has valid session from recovery
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setIsValidToken(true);
+          } else {
+            toast.error("Invalid or expired password reset link");
+            navigate('/auth');
+          }
+        }
+      } catch (error) {
+        console.error("Token check error:", error);
+        toast.error("Failed to verify password reset link");
+        navigate('/auth');
+      } finally {
+        setCheckingToken(false);
+      }
     };
 
+    // Listen for auth state changes (recovery token processing)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidToken(true);
+        setCheckingToken(false);
+      }
+    });
+
     checkRecoveryToken();
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -54,6 +110,14 @@ const PasswordReset = () => {
       // Validate password strength
       const validated = passwordSchema.parse(password);
 
+      // Verify we have an active session before updating
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Session expired. Please request a new password reset link.");
+        navigate('/auth');
+        return;
+      }
+
       // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: validated
@@ -63,6 +127,9 @@ const PasswordReset = () => {
 
       toast.success("Password updated successfully! You can now sign in with your new password.");
       
+      // Sign out to clear the recovery session
+      await supabase.auth.signOut();
+      
       // Navigate to auth page after successful reset
       setTimeout(() => {
         navigate('/auth');
@@ -71,6 +138,8 @@ const PasswordReset = () => {
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
+      } else if (error.message?.includes('same_password')) {
+        toast.error("New password must be different from your current password");
       } else {
         toast.error(error.message || 'Failed to update password');
       }
@@ -79,10 +148,11 @@ const PasswordReset = () => {
     }
   };
 
-  if (!isValidToken) {
+  if (checkingToken || !isValidToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center p-4 flex-col gap-4">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Verifying reset link...</p>
       </div>
     );
   }
