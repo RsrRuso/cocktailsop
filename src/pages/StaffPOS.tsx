@@ -15,7 +15,7 @@ import {
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
-  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X
+  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X, BarChart3
 } from "lucide-react";
 
 interface OnlineTeamMember {
@@ -103,6 +103,8 @@ export default function StaffPOS() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [ordersTab, setOrdersTab] = useState<"open" | "archive">("open");
   const [archiveDate, setArchiveDate] = useState(new Date().toISOString().split('T')[0]);
+  const [archiveFilter, setArchiveFilter] = useState<"all" | "cash" | "card" | "other">("all");
+  const [showArchiveAnalytics, setShowArchiveAnalytics] = useState(false);
   
   // Team presence state
   const [onlineTeam, setOnlineTeam] = useState<OnlineTeamMember[]>([]);
@@ -377,7 +379,8 @@ export default function StaffPOS() {
       .from("lab_ops_orders")
       .select(`
         *,
-        lab_ops_tables(name),
+        lab_ops_tables(name, table_number, turnover_count),
+        server:lab_ops_staff(full_name),
         lab_ops_order_items(id, qty, unit_price, lab_ops_menu_items(name)),
         lab_ops_payments(payment_method, amount)
       `)
@@ -941,6 +944,126 @@ export default function StaffPOS() {
             {/* Archive Tab */}
             {ordersTab === "archive" && (
               <>
+                {/* Filter & Analytics Controls */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <div className="flex gap-1 flex-1">
+                    {(["all", "cash", "card", "other"] as const).map(filter => (
+                      <Button
+                        key={filter}
+                        variant={archiveFilter === filter ? "default" : "outline"}
+                        size="sm"
+                        className="text-xs capitalize flex-1"
+                        onClick={() => setArchiveFilter(filter)}
+                      >
+                        {filter}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant={showArchiveAnalytics ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowArchiveAnalytics(!showArchiveAnalytics)}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Analytics Panel */}
+                {showArchiveAnalytics && closedOrders.length > 0 && (() => {
+                  const filteredOrders = archiveFilter === "all" 
+                    ? closedOrders 
+                    : closedOrders.filter(o => o.lab_ops_payments?.[0]?.payment_method === archiveFilter);
+                  
+                  const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+                  const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
+                  const totalCovers = filteredOrders.reduce((sum, o) => sum + (o.covers || 0), 0);
+                  const avgPerCover = totalCovers > 0 ? totalRevenue / totalCovers : 0;
+                  
+                  // Payment breakdown
+                  const cashOrders = closedOrders.filter(o => o.lab_ops_payments?.[0]?.payment_method === 'cash');
+                  const cardOrders = closedOrders.filter(o => o.lab_ops_payments?.[0]?.payment_method === 'card');
+                  const cashTotal = cashOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+                  const cardTotal = cardOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+                  
+                  // Peak hours
+                  const hourCounts: Record<number, number> = {};
+                  closedOrders.forEach(o => {
+                    const hour = new Date(o.closed_at).getHours();
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                  });
+                  const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+                  
+                  // Table performance
+                  const tableRevenue: Record<string, number> = {};
+                  closedOrders.forEach(o => {
+                    const tableName = o.lab_ops_tables?.name || 'Unknown';
+                    tableRevenue[tableName] = (tableRevenue[tableName] || 0) + (o.total_amount || 0);
+                  });
+                  const topTable = Object.entries(tableRevenue).sort((a, b) => b[1] - a[1])[0];
+                  
+                  return (
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-3 mb-3 space-y-3">
+                      {/* Key Metrics */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-card rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Avg Order</p>
+                          <p className="text-lg font-bold text-primary">${avgOrderValue.toFixed(2)}</p>
+                        </div>
+                        <div className="bg-card rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Per Cover</p>
+                          <p className="text-lg font-bold text-green-500">${avgPerCover.toFixed(2)}</p>
+                        </div>
+                        <div className="bg-card rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Total Covers</p>
+                          <p className="text-lg font-bold">{totalCovers}</p>
+                        </div>
+                        <div className="bg-card rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Peak Hour</p>
+                          <p className="text-lg font-bold">{peakHour ? `${peakHour[0]}:00` : '-'}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Payment Breakdown */}
+                      <div className="bg-card rounded-lg p-2">
+                        <p className="text-xs text-muted-foreground mb-2">Payment Split</p>
+                        <div className="flex gap-2">
+                          <div className="flex-1 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <DollarSign className="w-3 h-3 text-green-500" />
+                              <span className="text-sm font-semibold">${cashTotal.toFixed(0)}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">{cashOrders.length} cash</p>
+                          </div>
+                          <div className="w-px bg-border" />
+                          <div className="flex-1 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <CreditCard className="w-3 h-3 text-blue-500" />
+                              <span className="text-sm font-semibold">${cardTotal.toFixed(0)}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">{cardOrders.length} card</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Top Table */}
+                      {topTable && (
+                        <div className="bg-card rounded-lg p-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded bg-amber-500/20 flex items-center justify-center">
+                              <span className="text-amber-500 font-bold text-sm">🏆</span>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Top Table</p>
+                              <p className="text-sm font-semibold">{topTable[0]}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-bold text-primary">${topTable[1].toFixed(2)}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {closedOrders.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Archive className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -948,35 +1071,61 @@ export default function StaffPOS() {
                   </div>
                 ) : (
                   <>
+                    {/* Summary Bar */}
                     <div className="bg-muted/50 rounded-lg p-3 mb-3">
                       <p className="text-sm font-medium">
-                        {closedOrders.length} orders • Total: ${closedOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0).toFixed(2)}
+                        {(archiveFilter === "all" ? closedOrders : closedOrders.filter(o => o.lab_ops_payments?.[0]?.payment_method === archiveFilter)).length} orders • Total: $
+                        {(archiveFilter === "all" ? closedOrders : closedOrders.filter(o => o.lab_ops_payments?.[0]?.payment_method === archiveFilter))
+                          .reduce((sum, o) => sum + (o.total_amount || 0), 0).toFixed(2)}
                       </p>
                     </div>
-                    {closedOrders.map(order => (
-                      <Card 
-                        key={order.id} 
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-semibold">{order.lab_ops_tables?.name || "Table"}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {order.lab_ops_order_items?.length || 0} items • {order.lab_ops_payments?.[0]?.payment_method || "paid"}
-                              </p>
+                    
+                    {/* Order Cards */}
+                    {(archiveFilter === "all" ? closedOrders : closedOrders.filter(o => o.lab_ops_payments?.[0]?.payment_method === archiveFilter)).map(order => {
+                      const tableName = order.lab_ops_tables?.name || "Table";
+                      const tableNumber = order.lab_ops_tables?.table_number || tableName.replace(/[^0-9]/g, '') || "?";
+                      const serverName = order.server?.full_name || "—";
+                      const turnoverCount = order.lab_ops_tables?.turnover_count || 0;
+                      const paymentMethod = order.lab_ops_payments?.[0]?.payment_method || "paid";
+                      
+                      return (
+                        <Card 
+                          key={order.id} 
+                          className="cursor-pointer hover:bg-muted/50 transition-colors mb-2"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-3">
+                                {/* Table Number Badge */}
+                                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                  <span className="font-black text-green-500 text-lg">{tableNumber}</span>
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-sm">{tableName}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {order.lab_ops_order_items?.length || 0} items • {order.covers || 0} pax
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-xs text-green-500">{serverName}</span>
+                                    <span className="text-[10px] text-muted-foreground">↻{turnoverCount}</span>
+                                    <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 capitalize">
+                                      {paymentMethod}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-lg">${(order.total_amount || 0).toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(order.closed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-semibold">${(order.total_amount || 0).toFixed(2)}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(order.closed_at).toLocaleTimeString()}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </>
                 )}
               </>
