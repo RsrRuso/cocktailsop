@@ -372,12 +372,20 @@ export default function ProcurementPinAccess() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm relative">
+        {isPinLoading && (
+          <div className="absolute inset-0 z-20 rounded-lg bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Checking PIN…</p>
+          </div>
+        )}
+
         <CardHeader className="text-center pb-2">
           <Button 
             variant="ghost" 
             size="sm" 
             className="absolute left-4 top-4"
             onClick={() => { setSelectedWorkspace(null); setPin(""); }}
+            disabled={isPinLoading}
           >
             ← Back
           </Button>
@@ -406,25 +414,19 @@ export default function ProcurementPinAccess() {
 
           {/* Number Pad */}
           <div className="grid grid-cols-3 gap-3">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].map(key => (
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(key => (
               <Button
                 key={key}
-                variant={key === "C" || key === "⌫" ? "outline" : "secondary"}
+                variant={key === 'C' || key === '⌫' ? 'outline' : 'secondary'}
                 className="h-14 text-xl font-semibold"
                 disabled={isPinLoading}
                 onClick={() => {
-                  if (key === "C") handleClear();
-                  else if (key === "⌫") handleDelete();
+                  if (key === 'C') handleClear();
+                  else if (key === '⌫') handleDelete();
                   else handlePinInput(key);
                 }}
               >
-                {isPinLoading && key === "0" ? (
-                  <Loader2 className="animate-spin" />
-                ) : key === "⌫" ? (
-                  <Delete className="w-5 h-5" />
-                ) : (
-                  key
-                )}
+                {key === '⌫' ? <Delete className="w-5 h-5" /> : key}
               </Button>
             ))}
           </div>
