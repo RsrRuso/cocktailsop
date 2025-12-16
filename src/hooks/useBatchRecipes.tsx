@@ -20,13 +20,31 @@ export interface BatchRecipe {
   updated_at: string;
 }
 
-export const useBatchRecipes = (groupId?: string | null) => {
+export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) => {
   const queryClient = useQueryClient();
 
   const { data: recipes, isLoading } = useQuery({
-    queryKey: ['batch-recipes', groupId],
+    queryKey: ['batch-recipes', groupId, staffMode],
     queryFn: async (): Promise<BatchRecipe[]> => {
       const { data: { user } } = await supabase.auth.getUser();
+      
+      // In staff mode with a group, we can fetch group recipes without requiring auth
+      if (staffMode && groupId) {
+        const { data, error } = await supabase
+          .from('batch_recipes')
+          .select('*')
+          .eq('group_id', groupId)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        return (data || []).map((recipe: any) => ({
+          ...recipe,
+          ingredients: recipe.ingredients as unknown as BatchIngredient[]
+        })) as BatchRecipe[];
+      }
+      
+      // For non-staff mode, require authentication
       if (!user) return [];
 
       // Fetch all user's recipes and filter client-side to avoid TypeScript deep instantiation issue
