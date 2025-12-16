@@ -1,8 +1,10 @@
 {
+  "id": "/procurement",
   "name": "SV Procurement",
   "short_name": "Procurement",
   "description": "Purchase Orders & Receiving",
-  "start_url": "/procurement-pin-access",
+  "start_url": "/procurement-pin-access?app=procurement",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -20,4 +22,5 @@
     }
   ]
 }
+
 
