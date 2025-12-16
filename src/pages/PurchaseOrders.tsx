@@ -696,7 +696,7 @@ const PurchaseOrders = () => {
           ) : (
             <div className="space-y-2">
               {filteredOrders?.map((order) => {
-                const isCompleted = (order as any).has_received || order.status === 'confirmed' || order.status === 'completed';
+                const hasReceived = (order as any).has_received;
                 const orderCode = order.order_number?.toUpperCase() || '';
                 const isMaterial = orderCode.startsWith('RQ');
                 const isMarketList = orderCode.startsWith('ML');
@@ -706,7 +706,7 @@ const PurchaseOrders = () => {
                   <Card 
                     key={order.id} 
                     className={`p-4 border-l-4 ${
-                      isCompleted 
+                      hasReceived 
                         ? 'border-l-green-500 bg-green-500/5' 
                         : 'border-l-amber-500 bg-amber-500/5'
                     }`}
@@ -719,10 +719,10 @@ const PurchaseOrders = () => {
                             {order.supplier_name || order.order_number || 'Unnamed Order'}
                           </span>
                           <Badge 
-                            variant={isCompleted ? 'default' : 'secondary'}
-                            className={isCompleted ? 'bg-green-600' : 'bg-amber-600 text-white'}
+                            variant={hasReceived ? 'default' : 'secondary'}
+                            className={hasReceived ? 'bg-green-600' : 'bg-amber-600 text-white'}
                           >
-                            {isCompleted ? 'Completed' : 'Pending'}
+                            {hasReceived ? 'Received' : 'Pending'}
                           </Badge>
                           {categoryLabel && (
                             <Badge 
