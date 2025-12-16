@@ -28,8 +28,18 @@ export interface BatchProductionIngredient {
   unit: string;
 }
 
+// Module-level cache for instant loading
+let productionsCache: Map<string, { data: BatchProduction[]; timestamp: number }> = new Map();
+const CACHE_TIME = 2 * 60 * 1000; // 2 minutes
+
+const getCacheKey = (recipeId?: string, groupId?: string | null, staffMode?: boolean) => 
+  `${recipeId || 'all'}-${groupId || 'personal'}-${staffMode ? 'staff' : 'user'}`;
+
 export const useBatchProductions = (recipeId?: string, groupId?: string | null, staffMode?: boolean) => {
   const queryClient = useQueryClient();
+  const cacheKey = getCacheKey(recipeId, groupId, staffMode);
+  const cached = productionsCache.get(cacheKey);
+  const hasValidCache = cached && Date.now() - cached.timestamp < CACHE_TIME;
 
   const { data: productions, isLoading } = useQuery({
     queryKey: ['batch-productions', recipeId, groupId, staffMode],
@@ -44,7 +54,9 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           body: { groupId, pin, recipeId },
         });
         if (error) throw error;
-        return ((data as any)?.productions || []) as BatchProduction[];
+        const result = ((data as any)?.productions || []) as BatchProduction[];
+        productionsCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
       }
 
       let query = supabase
@@ -67,8 +79,12 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       const { data, error } = await query;
       if (error) throw error;
 
-      return data as BatchProduction[];
+      const result = data as BatchProduction[];
+      productionsCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
     },
+    initialData: hasValidCache ? cached.data : undefined,
+    staleTime: CACHE_TIME,
   });
 
   const createProduction = useMutation({
@@ -120,6 +136,8 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       return productionData;
     },
     onSuccess: async (data) => {
+      // Clear module cache to ensure fresh data
+      productionsCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success("Batch production recorded!");
 
@@ -201,6 +219,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       return data as BatchProduction | null;
     },
     onSuccess: async (data) => {
+      productionsCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success('Batch production updated!');
 
@@ -294,6 +313,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       return production;
     },
     onSuccess: async (production) => {
+      productionsCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success('Batch production deleted');
 
