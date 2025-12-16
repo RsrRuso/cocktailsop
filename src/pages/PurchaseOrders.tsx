@@ -141,25 +141,48 @@ const PurchaseOrders = () => {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Fetch receiving records to check which POs have been received
+      // Fetch receiving records to check which POs have been received + discrepancy status
       let receivedQuery = supabase
         .from('po_received_records')
-        .select('document_number');
-      
+        .select('document_number, variance_data');
+
       if (selectedWorkspaceId) {
         receivedQuery = receivedQuery.eq('workspace_id', selectedWorkspaceId);
       } else {
         receivedQuery = receivedQuery.eq('user_id', user?.id).is('workspace_id', null);
       }
-      
-      const { data: receivedRecords } = await receivedQuery;
-      const receivedDocNumbers = new Set(receivedRecords?.map(r => r.document_number?.toUpperCase()) || []);
-      
+
+      const { data: receivedRecords, error: receivedError } = await receivedQuery;
+      if (receivedError) throw receivedError;
+
+      const receivedByDoc = new Map<string, { hasDiscrepancy: boolean }>();
+      (receivedRecords || []).forEach((r: any) => {
+        const doc = String(r.document_number || '').trim().toUpperCase();
+        if (!doc) return;
+
+        const summary = r.variance_data?.summary;
+        const hasDiscrepancy = !!summary && (
+          (summary.short || 0) > 0 ||
+          (summary.over || 0) > 0 ||
+          (summary.missing || 0) > 0 ||
+          (summary.extra || 0) > 0
+        );
+
+        const prev = receivedByDoc.get(doc);
+        receivedByDoc.set(doc, { hasDiscrepancy: (prev?.hasDiscrepancy || false) || hasDiscrepancy });
+      });
+
       // Mark POs as received if they have matching receiving records
-      return (data || []).map(order => ({
-        ...order,
-        has_received: order.order_number ? receivedDocNumbers.has(order.order_number.toUpperCase()) : false
-      })) as (PurchaseOrder & { has_received: boolean })[];
+      return (data || []).map((order) => {
+        const doc = String(order.order_number || '').trim().toUpperCase();
+        const rec = doc ? receivedByDoc.get(doc) : undefined;
+
+        return {
+          ...order,
+          has_received: !!rec,
+          has_discrepancy: !!rec?.hasDiscrepancy,
+        };
+      }) as (PurchaseOrder & { has_received: boolean; has_discrepancy: boolean })[];
     },
     enabled: !!user?.id
   });
@@ -697,18 +720,30 @@ const PurchaseOrders = () => {
             <div className="space-y-2">
               {filteredOrders?.map((order) => {
                 const hasReceived = (order as any).has_received;
+                const hasDiscrepancy = (order as any).has_discrepancy;
+
+                const statusLabel = hasReceived
+                  ? (hasDiscrepancy ? 'Discrepancy' : 'Received')
+                  : 'Pending';
+
+                const statusVariant = hasReceived
+                  ? (hasDiscrepancy ? 'destructive' : 'success')
+                  : 'warning';
+
                 const orderCode = order.order_number?.toUpperCase() || '';
                 const isMaterial = orderCode.startsWith('RQ');
                 const isMarketList = orderCode.startsWith('ML');
                 const categoryLabel = isMaterial ? 'Material' : isMarketList ? 'Market List' : null;
-                
+
                 return (
                   <Card 
                     key={order.id} 
                     className={`p-4 border-l-4 ${
-                      hasReceived 
-                        ? 'border-l-green-500 bg-green-500/5' 
-                        : 'border-l-amber-500 bg-amber-500/5'
+                      !hasReceived
+                        ? 'border-l-amber-500 bg-amber-500/5'
+                        : hasDiscrepancy
+                          ? 'border-l-destructive bg-destructive/5'
+                          : 'border-l-emerald-500 bg-emerald-500/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -718,11 +753,8 @@ const PurchaseOrders = () => {
                           <span className="font-medium text-foreground">
                             {order.supplier_name || order.order_number || 'Unnamed Order'}
                           </span>
-                          <Badge 
-                            variant={hasReceived ? 'default' : 'secondary'}
-                            className={hasReceived ? 'bg-green-600' : 'bg-amber-600 text-white'}
-                          >
-                            {hasReceived ? 'Received' : 'Pending'}
+                          <Badge variant={statusVariant as any}>
+                            {statusLabel}
                           </Badge>
                           {categoryLabel && (
                             <Badge 
