@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useManagerRole } from "@/hooks/useManagerRole";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import { Button } from "@/components/ui/button";
@@ -76,7 +75,6 @@ interface MenuItem {
 
 export default function StaffPOS() {
   const { user } = useAuth();
-  const { isManager } = useManagerRole();
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -1511,7 +1509,7 @@ export default function StaffPOS() {
                     )}
                   </Button>
                   {/* Assign button - only for managers */}
-                  {isManager && (
+                  {staff?.role === "manager" && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
