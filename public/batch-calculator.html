@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SV Batch" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>SV Batch Calculator</title>
+  
+  <!-- PWA Manifest for Batch Calculator -->
+  <link rel="manifest" href="/batch-calculator-manifest.json" />
+  
+  <!-- iOS Icons -->
+  <link rel="apple-touch-icon" href="/batch-calculator-icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/batch-calculator-icon-192.png" />
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(234, 179, 8, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg {
+      width: 40px;
+      height: 40px;
+      color: #eab308;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #a1a1aa;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .instructions {
+      background: #18181b;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+    .instructions h2 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: #eab308;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .step:last-child {
+      margin-bottom: 0;
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      background: #eab308;
+      color: #0a0a0a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .step-text {
+      color: #d4d4d8;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: #eab308;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn:hover {
+      background: #ca9a06;
+    }
+    .note {
+      margin-top: 16px;
+      color: #71717a;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+      </svg>
+    </div>
+    <h1>SV Batch Calculator</h1>
+    <p class="subtitle">Recipe Scaling & Production</p>
+    
+    <div class="instructions" id="ios-instructions">
+      <h2>Add to Home Screen (iOS)</h2>
+      <div class="step">
+        <span class="step-num">1</span>
+        <span class="step-text">Tap the <strong>Share</strong> button at the bottom of Safari</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-text">Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-text">Tap <strong>"Add"</strong> in the top right corner</span>
+      </div>
+    </div>
+
+    <div class="instructions" id="android-instructions" style="display: none;">
+      <h2>Add to Home Screen (Android)</h2>
+      <div class="step">
+        <span class="step-num">1</span>
+        <span class="step-text">Tap the <strong>menu (⋮)</strong> in your browser</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-text">Tap <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-text">Confirm by tapping <strong>"Install"</strong></span>
+      </div>
+    </div>
+
+    <a href="/batch-calculator-pin-access" class="btn">Open Batch Calculator</a>
+    
+    <p class="note">Once installed, you can access it directly from your home screen.</p>
+  </div>
+
+  <script>
+    // Detect platform and show appropriate instructions
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    document.getElementById('ios-instructions').style.display = isIOS ? 'block' : 'none';
+    document.getElementById('android-instructions').style.display = isIOS ? 'none' : 'block';
+    
+    // Check if already in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      window.location.href = '/batch-calculator-pin-access';
+    }
+  </script>
+</body>
+</html>
