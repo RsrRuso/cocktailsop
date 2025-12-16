@@ -73,30 +73,34 @@ const PurchaseOrders = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Extract staff mode info - check location.state first, then sessionStorage as fallback
-  const getStaffInfo = () => {
+  const getStaffInfo = (): { staffMode: boolean; staffName: string | null; staffWorkspaceId: string | null } => {
     const stateStaffMode = (location.state as any)?.staffMode || false;
     const stateStaffName = (location.state as any)?.staffName || null;
+    const stateWorkspaceId = (location.state as any)?.workspaceId || null;
     
     if (stateStaffMode && stateStaffName) {
-      return { staffMode: true, staffName: stateStaffName };
+      return { staffMode: true, staffName: stateStaffName, staffWorkspaceId: stateWorkspaceId };
     }
     
     const savedSession = sessionStorage.getItem("procurement_staff_session");
     if (savedSession) {
       try {
-        const { staff } = JSON.parse(savedSession);
+        const { staff, workspace } = JSON.parse(savedSession);
         if (staff?.full_name) {
-          return { staffMode: true, staffName: staff.full_name };
+          return { staffMode: true, staffName: staff.full_name, staffWorkspaceId: workspace?.id || null };
         }
       } catch (e) {
         console.error("Failed to parse procurement session:", e);
       }
     }
     
-    return { staffMode: false, staffName: null };
+    return { staffMode: false, staffName: null, staffWorkspaceId: null };
   };
   
-  const { staffMode, staffName } = getStaffInfo();
+  const { staffMode, staffName, staffWorkspaceId } = getStaffInfo();
+  
+  // Determine if we have valid access (either authenticated user OR valid staff session)
+  const hasAccess = !!user || staffMode;
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -107,7 +111,10 @@ const PurchaseOrders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'active' | 'archive' | 'discrepancies'>('active');
   const [pasteContent, setPasteContent] = useState("");
+  
+  // Use staff workspace if in staffMode, otherwise from localStorage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
+    if (staffWorkspaceId) return staffWorkspaceId;
     return localStorage.getItem('po-workspace-id') || null;
   });
   
@@ -133,6 +140,8 @@ const PurchaseOrders = () => {
   const { addItemsFromPurchaseOrder } = usePurchaseOrderMaster(selectedWorkspaceId);
   
   const handleWorkspaceChange = (workspaceId: string | null) => {
+    // In staff mode, workspace is locked to their assigned workspace
+    if (staffMode) return;
     setSelectedWorkspaceId(workspaceId);
     if (workspaceId) {
       localStorage.setItem('po-workspace-id', workspaceId);
@@ -152,19 +161,26 @@ const PurchaseOrders = () => {
     { item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }
   ]);
 
-  // Fetch purchase orders (personal + workspace)
+  // Effective workspace: staff workspace takes precedence
+  const effectiveWorkspaceId = staffMode ? staffWorkspaceId : selectedWorkspaceId;
+
+  // Fetch purchase orders (workspace-based for staff, personal+workspace for logged-in users)
   const { data: orders, isLoading } = useQuery({
-    queryKey: ['purchase-orders', user?.id, selectedWorkspaceId],
+    queryKey: ['purchase-orders', user?.id || 'staff', effectiveWorkspaceId],
     queryFn: async () => {
+      // In staff mode, always query by workspace. For logged-in users, check workspace or personal.
       let query = supabase
         .from('purchase_orders')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (selectedWorkspaceId) {
-        query = query.eq('workspace_id', selectedWorkspaceId);
+      if (effectiveWorkspaceId) {
+        query = query.eq('workspace_id', effectiveWorkspaceId);
+      } else if (user?.id) {
+        query = query.eq('user_id', user.id).is('workspace_id', null);
       } else {
-        query = query.eq('user_id', user?.id).is('workspace_id', null);
+        // No workspace and no user - return empty
+        return [];
       }
       
       const { data, error } = await query;
@@ -175,10 +191,10 @@ const PurchaseOrders = () => {
         .from('po_received_records')
         .select('document_number, variance_data');
 
-      if (selectedWorkspaceId) {
-        receivedQuery = receivedQuery.eq('workspace_id', selectedWorkspaceId);
-      } else {
-        receivedQuery = receivedQuery.eq('user_id', user?.id).is('workspace_id', null);
+      if (effectiveWorkspaceId) {
+        receivedQuery = receivedQuery.eq('workspace_id', effectiveWorkspaceId);
+      } else if (user?.id) {
+        receivedQuery = receivedQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: receivedRecords, error: receivedError } = await receivedQuery;
@@ -217,7 +233,7 @@ const PurchaseOrders = () => {
         };
       }) as (PurchaseOrder & { has_received: boolean; has_discrepancy: boolean; variance_summary?: { short?: number; over?: number; missing?: number; extra?: number } })[];
     },
-    enabled: !!user?.id
+    enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
 
   // Fetch items for selected order
@@ -641,29 +657,52 @@ const PurchaseOrders = () => {
     order.order_number?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // No access - redirect or show message
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm text-center p-6">
+          <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-lg font-semibold mb-2">Access Required</h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            Please sign in or use staff PIN access to view purchase orders.
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/auth')} className="flex-1">Sign In</Button>
+            <Button variant="outline" onClick={() => navigate('/procurement-pin-access')} className="flex-1">Staff PIN</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/ops-tools')}>
+            <Button variant="ghost" size="icon" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate('/ops-tools')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
               <h1 className="text-lg font-bold text-foreground">Purchase Orders</h1>
-              <p className="text-xs text-muted-foreground">Track and manage your purchases</p>
+              <p className="text-xs text-muted-foreground">
+                {staffMode ? `Staff: ${staffName}` : 'Track and manage your purchases'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/procurement-pin-access')}
-              title="Staff PIN Access"
-            >
-              <Smartphone className="w-5 h-5 text-muted-foreground" />
-            </Button>
+            {!staffMode && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/procurement-pin-access')}
+                title="Staff PIN Access"
+              >
+                <Smartphone className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
               <HelpCircle className="w-5 h-5 text-muted-foreground" />
             </Button>
@@ -672,11 +711,13 @@ const PurchaseOrders = () => {
       </div>
 
       <div className="p-4 space-y-4 pb-24">
-        {/* Workspace Selector */}
-        <ProcurementWorkspaceSelector 
-          selectedWorkspaceId={selectedWorkspaceId}
-          onSelectWorkspace={handleWorkspaceChange}
-        />
+        {/* Workspace Selector - hidden in staff mode (locked to their workspace) */}
+        {!staffMode && (
+          <ProcurementWorkspaceSelector 
+            selectedWorkspaceId={selectedWorkspaceId}
+            onSelectWorkspace={handleWorkspaceChange}
+          />
+        )}
 
         {/* Currency Selector + Stats Cards */}
         <div className="flex items-center justify-end mb-2">
