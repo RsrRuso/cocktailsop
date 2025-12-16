@@ -266,6 +266,13 @@ const Home = () => {
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reels' }, () => refreshFeed(true))
       .subscribe();
 
+    // Subscribe to stories for instant updates when new stories are published
+    const storiesChannel = supabase
+      .channel('stories-feed')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => fetchStories())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'stories' }, () => fetchStories())
+      .subscribe();
+
     // Listen for region changes from TopNav
     const handleRegionChange = (e: CustomEvent) => {
       setSelectedRegion(e.detail);
@@ -275,6 +282,7 @@ const Home = () => {
     return () => {
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
+      supabase.removeChannel(storiesChannel);
       window.removeEventListener('regionChange' as any, handleRegionChange);
     };
   }, [user?.id, fetchLikedPosts, fetchLikedReels, refreshFeed]);

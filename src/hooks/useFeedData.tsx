@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 interface Post {
   id: string;
@@ -168,6 +168,46 @@ export const useFeedData = (selectedRegion: string | null) => {
     refreshFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegion]);
+
+  // Realtime subscriptions for instant updates when content is published
+  const debounceRef = useRef<NodeJS.Timeout>();
+  
+  useEffect(() => {
+    const debouncedRefresh = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        // Invalidate cache and force refresh
+        feedCache = null;
+        refreshFeed(true);
+      }, 500); // Small debounce to batch rapid updates
+    };
+
+    // Subscribe to new posts
+    const postsChannel = supabase
+      .channel('feed-posts-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        debouncedRefresh
+      )
+      .subscribe();
+
+    // Subscribe to new reels
+    const reelsChannel = supabase
+      .channel('feed-reels-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reels' },
+        debouncedRefresh
+      )
+      .subscribe();
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(reelsChannel);
+    };
+  }, [refreshFeed]);
 
   return { posts, reels, isLoading, refreshFeed, setPosts, setReels };
 };
