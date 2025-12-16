@@ -435,8 +435,11 @@ const Home = () => {
     });
   }, []);
 
-  // Show skeletons immediately while data loads
-  if (isLoading && stories.length === 0) {
+  // Show skeletons only on very first load when no cached data exists
+  // Otherwise show stale data immediately while refreshing in background
+  const showSkeleton = isLoading && stories.length === 0 && feed.length === 0;
+  
+  if (showSkeleton) {
     return (
       <div className="min-h-screen pb-20 pt-16">
         <TopNav isVisible={showTopNav} />

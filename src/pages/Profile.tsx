@@ -323,8 +323,9 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  // Show loading only during initial auth check
-  if (authLoading) {
+  // Show loading only during initial auth check when NO cached profile exists
+  // If we have cached profile data, show it immediately while auth refreshes
+  if (authLoading && !profile && !authProfile) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />

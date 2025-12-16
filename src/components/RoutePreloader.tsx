@@ -18,12 +18,13 @@ export const RoutePreloader = () => {
       hasPrefetchedCore.current = true;
       const region = localStorage.getItem('selectedRegion');
       
-      // Prefetch everything in parallel for instant loading
+      // Prefetch everything in parallel for instant loading - including profile
       Promise.all([
         prefetchHomeFeed(region),
         prefetchStoriesData(),
         prefetchMessagesData(),
         prefetchNotificationsData(),
+        user?.id ? prefetchProfile(user.id) : Promise.resolve(),
       ]);
     }
   }, [user?.id]);
