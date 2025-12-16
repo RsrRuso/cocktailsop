@@ -22,12 +22,12 @@ interface FeedItemProps {
   currentUserId?: string;
   // Engagement state from parent hook
   isLiked: boolean;
-  isSaved: boolean;
-  isReposted: boolean;
+  isSaved?: boolean;
+  isReposted?: boolean;
   // Engagement actions from parent hook
   onLike: () => void;
-  onSave: () => void;
-  onRepost: () => void;
+  onSave?: () => void;
+  onRepost?: () => void;
   // Other actions
   onDelete: () => void;
   onEdit: () => void;
@@ -381,7 +381,7 @@ export const FeedItem = memo(({
               <Send className="w-7 h-7 text-foreground -rotate-12" strokeWidth={1.5} />
             </button>
 
-            <button onClick={onRepost} className="active:scale-75 transition-transform duration-100">
+            <button onClick={() => onRepost?.()} className="active:scale-75 transition-transform duration-100">
               <Repeat2 className={`w-7 h-7 ${isReposted ? 'text-green-500' : 'text-foreground'}`} strokeWidth={1.5} />
             </button>
           </div>
@@ -391,7 +391,7 @@ export const FeedItem = memo(({
               <Sparkles className="w-6 h-6 text-pink-400" />
             </button>
 
-            <button onClick={onSave} className="active:scale-75 transition-transform duration-100">
+            <button onClick={() => onSave?.()} className="active:scale-75 transition-transform duration-100">
               <Bookmark className={`w-7 h-7 ${isSaved ? 'fill-foreground text-foreground' : 'text-foreground'}`} strokeWidth={1.5} />
             </button>
           </div>

@@ -163,7 +163,6 @@ const PostDetail = () => {
           onShare={() => setShowShare(true)}
           onToggleMute={() => {}}
           onFullscreen={() => {}}
-          onViewLikes={() => setShowLikes(true)}
           getBadgeColor={getBadgeColor}
         />
       </div>

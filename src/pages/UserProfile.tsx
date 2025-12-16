@@ -146,7 +146,6 @@ const UserProfileFeed = ({
           onShare={() => {}}
           onToggleMute={handleToggleMute}
           onFullscreen={() => navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } })}
-          onViewLikes={() => {}}
           getBadgeColor={getBadgeColor}
         />
       ))}
