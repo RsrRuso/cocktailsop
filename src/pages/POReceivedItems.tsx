@@ -454,7 +454,7 @@ const POReceivedItems = () => {
               price_per_unit: item.price_per_unit || 0,
               price_total: (item.quantity || 0) * (item.price_per_unit || 0),
               delivery_date: item.delivery_date,
-              isReceived: matchedInPO,
+              isReceived: true, // Auto-tick all items by default - user unticks what wasn't received
               documentType: itemDocType,
               matchedInPO,
               matchedPOItem: matchedPOItem || undefined
