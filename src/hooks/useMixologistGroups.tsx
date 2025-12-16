@@ -110,11 +110,12 @@ export const useMixologistGroups = () => {
         .eq('id', data.group_id)
         .single();
 
+      // Notify ALL group members including inviter (like procurement pattern)
+      // Only exclude the new member from notification about themselves
       const { data: members } = await supabase
         .from('mixologist_group_members')
         .select('user_id')
         .eq('group_id', data.group_id)
-        .neq('user_id', user?.id || '')
         .neq('user_id', data.user_id);
 
       if (members && inviterProfile && newMemberProfile && groupInfo) {

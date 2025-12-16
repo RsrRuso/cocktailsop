@@ -150,11 +150,11 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           .eq('id', user?.id)
           .single();
 
+        // Notify ALL group members including submitter (like procurement pattern)
         const { data: members } = await supabase
           .from('mixologist_group_members')
           .select('user_id')
-          .eq('group_id', data.group_id)
-          .neq('user_id', user?.id || '');
+          .eq('group_id', data.group_id);
 
         if (members && profile) {
           for (const member of members) {
@@ -232,11 +232,11 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           .eq('id', user?.id)
           .single();
 
+        // Notify ALL group members including submitter (like procurement pattern)
         const { data: members } = await supabase
           .from('mixologist_group_members')
           .select('user_id')
-          .eq('group_id', data.group_id)
-          .neq('user_id', user?.id || '');
+          .eq('group_id', data.group_id);
 
         if (members && profile) {
           for (const member of members) {
@@ -326,11 +326,11 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           .eq('id', user?.id)
           .single();
 
+        // Notify ALL group members including submitter (like procurement pattern)
         const { data: members } = await supabase
           .from('mixologist_group_members')
           .select('user_id')
-          .eq('group_id', production.group_id)
-          .neq('user_id', user?.id || '');
+          .eq('group_id', production.group_id);
 
         if (members && profile) {
           for (const member of members) {

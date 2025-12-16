@@ -132,11 +132,11 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
 
       if (userGroups && profile) {
         for (const userGroup of userGroups) {
+          // Notify ALL group members including submitter (like procurement pattern)
           const { data: members } = await supabase
             .from('mixologist_group_members')
             .select('user_id')
-            .eq('group_id', userGroup.group_id)
-            .neq('user_id', user?.id || '');
+            .eq('group_id', userGroup.group_id);
 
           if (members) {
             for (const member of members) {
