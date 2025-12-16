@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useLike } from "@/hooks/useLike";
+import { useStoriesData } from "@/hooks/useStoriesData";
 import { EventsTicker } from "@/components/EventsTicker";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
