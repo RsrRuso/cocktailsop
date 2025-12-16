@@ -884,32 +884,42 @@ export default function StaffPOS() {
                     </Button>
                   </div>
                 ) : (
-                  openOrders.map(order => (
-                    <Card 
-                      key={order.id} 
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-semibold">{order.lab_ops_tables?.name || "Table"}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {order.lab_ops_order_items?.length || 0} items • {order.covers} covers
-                            </p>
+                openOrders.map(order => {
+                    const tableName = order.lab_ops_tables?.name || "Table";
+                    const tableNumber = tableName.replace(/[^0-9]/g, '') || tableName.substring(0, 2);
+                    return (
+                      <Card 
+                        key={order.id} 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-amber-500"
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              {/* Table Number Badge */}
+                              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                <span className="font-black text-amber-500 text-lg">{tableNumber}</span>
+                              </div>
+                              <div>
+                                <p className="font-semibold">{tableName}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {order.lab_ops_order_items?.length || 0} items • {order.covers} covers
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-lg">
+                                ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(order.created_at).toLocaleTimeString()}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold">
-                              ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(order.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 )}
               </>
             )}
