@@ -2813,7 +2813,7 @@ const BatchCalculator = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 glass p-2 gap-2 h-auto">
+          <TabsList className={`grid w-full ${staffMode ? 'grid-cols-2' : 'grid-cols-4'} mb-6 glass p-2 gap-2 h-auto`}>
             <TabsTrigger 
               value="calculator" 
               className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
@@ -2831,23 +2831,27 @@ const BatchCalculator = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger 
-              value="analytics" 
-              className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
-            >
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger 
-              value="groups" 
-              className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold relative"
-            >
-              Groups
-              {groups && groups.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {groups.length}
-                </span>
-              )}
-            </TabsTrigger>
+            {!staffMode && (
+              <>
+                <TabsTrigger 
+                  value="analytics" 
+                  className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
+                >
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="groups" 
+                  className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold relative"
+                >
+                  Groups
+                  {groups && groups.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      {groups.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="calculator" className="space-y-4 sm:space-y-6 pb-4">
