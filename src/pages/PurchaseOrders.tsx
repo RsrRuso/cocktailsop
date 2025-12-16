@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
@@ -628,9 +628,19 @@ const PurchaseOrders = () => {
               <p className="text-xs text-muted-foreground">Track and manage your purchases</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
-            <HelpCircle className="w-5 h-5 text-muted-foreground" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/procurement-pin-access')}
+              title="Staff PIN Access"
+            >
+              <Smartphone className="w-5 h-5 text-muted-foreground" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
+              <HelpCircle className="w-5 h-5 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
       </div>
 
