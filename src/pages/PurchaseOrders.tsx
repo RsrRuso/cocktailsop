@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
@@ -157,7 +157,7 @@ const PurchaseOrders = () => {
       const { data: receivedRecords, error: receivedError } = await receivedQuery;
       if (receivedError) throw receivedError;
 
-      const receivedByDoc = new Map<string, { hasDiscrepancy: boolean }>();
+      const receivedByDoc = new Map<string, { hasDiscrepancy: boolean; summary?: { short?: number; over?: number; missing?: number; extra?: number; matched?: number } }>();
       (receivedRecords || []).forEach((r: any) => {
         const doc = String(r.document_number || '').trim().toUpperCase();
         if (!doc) return;
@@ -171,7 +171,10 @@ const PurchaseOrders = () => {
         );
 
         const prev = receivedByDoc.get(doc);
-        receivedByDoc.set(doc, { hasDiscrepancy: (prev?.hasDiscrepancy || false) || hasDiscrepancy });
+        receivedByDoc.set(doc, { 
+          hasDiscrepancy: (prev?.hasDiscrepancy || false) || hasDiscrepancy,
+          summary: summary || prev?.summary
+        });
       });
 
       // Mark POs as received if they have matching receiving records
@@ -183,8 +186,9 @@ const PurchaseOrders = () => {
           ...order,
           has_received: !!rec,
           has_discrepancy: !!rec?.hasDiscrepancy,
+          variance_summary: rec?.summary,
         };
-      }) as (PurchaseOrder & { has_received: boolean; has_discrepancy: boolean })[];
+      }) as (PurchaseOrder & { has_received: boolean; has_discrepancy: boolean; variance_summary?: { short?: number; over?: number; missing?: number; extra?: number } })[];
     },
     enabled: !!user?.id
   });
@@ -203,6 +207,31 @@ const PurchaseOrders = () => {
       return data as PurchaseOrderItem[];
     },
     enabled: !!selectedOrder?.id
+  });
+
+  // Fetch variance data for selected order
+  const { data: varianceData } = useQuery({
+    queryKey: ['po-variance-data', selectedOrder?.order_number],
+    queryFn: async () => {
+      if (!selectedOrder?.order_number) return null;
+      const docNum = selectedOrder.order_number.trim().toUpperCase();
+      
+      let query = supabase
+        .from('po_received_records')
+        .select('variance_data')
+        .ilike('document_number', docNum);
+      
+      if (selectedWorkspaceId) {
+        query = query.eq('workspace_id', selectedWorkspaceId);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      return data?.variance_data as { items?: Array<{ item_name: string; item_code?: string; ordered_qty: number; received_qty: number; status: string }>, summary?: any } | null;
+    },
+    enabled: !!selectedOrder?.order_number && (selectedOrder as any).has_discrepancy
   });
 
   // Create order mutation
@@ -836,6 +865,27 @@ const PurchaseOrders = () => {
                             </span>
                           )}
                         </div>
+                        {/* Show variance summary for discrepancy orders */}
+                        {hasDiscrepancy && (order as any).variance_summary && (
+                          <div className="flex items-center gap-3 mt-2 text-xs">
+                            <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+                            {(order as any).variance_summary.missing > 0 && (
+                              <span className="px-1.5 py-0.5 bg-destructive/20 text-destructive rounded font-medium">
+                                {(order as any).variance_summary.missing} Missing (0 qty)
+                              </span>
+                            )}
+                            {(order as any).variance_summary.short > 0 && (
+                              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded font-medium">
+                                {(order as any).variance_summary.short} Short
+                              </span>
+                            )}
+                            {(order as any).variance_summary.over > 0 && (
+                              <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded font-medium">
+                                {(order as any).variance_summary.over} Over
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => handleViewOrder(order)}>
@@ -1052,27 +1102,76 @@ const PurchaseOrders = () => {
                 </div>
               </div>
 
+              {/* Show discrepancy alert if applicable */}
+              {(selectedOrder as any).has_discrepancy && varianceData?.summary && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-destructive font-medium mb-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Receiving Discrepancy Detected
+                  </div>
+                  <div className="flex gap-4 text-xs">
+                    {varianceData.summary.short > 0 && (
+                      <span className="text-amber-600">Short: {varianceData.summary.short}</span>
+                    )}
+                    {varianceData.summary.missing > 0 && (
+                      <span className="text-destructive font-medium">Missing: {varianceData.summary.missing}</span>
+                    )}
+                    {varianceData.summary.over > 0 && (
+                      <span className="text-blue-500">Over: {varianceData.summary.over}</span>
+                    )}
+                    {varianceData.summary.extra > 0 && (
+                      <span className="text-purple-500">Extra: {varianceData.summary.extra}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Code</TableHead>
                       <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
+                      <TableHead>Ordered</TableHead>
+                      {(selectedOrder as any).has_discrepancy && <TableHead>Received</TableHead>}
                       <TableHead>Price/pc</TableHead>
                       <TableHead>Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orderItems?.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="text-xs">{item.item_code || '-'}</TableCell>
-                        <TableCell className="text-xs">{item.item_name}</TableCell>
-                        <TableCell className="text-xs">{item.quantity}</TableCell>
-                        <TableCell className="text-xs">{formatCurrency(Number(item.price_per_unit))}</TableCell>
-                        <TableCell className="text-xs font-medium">{formatCurrency(Number(item.price_total))}</TableCell>
-                      </TableRow>
-                    ))}
+                    {orderItems?.map((item) => {
+                      // Find variance info for this item
+                      const varItem = varianceData?.items?.find(
+                        (v) => v.item_code === item.item_code || v.item_name?.toLowerCase() === item.item_name?.toLowerCase()
+                      );
+                      const isMissing = varItem?.status === 'missing' || varItem?.received_qty === 0;
+                      const isShort = varItem?.status === 'short';
+                      const isOver = varItem?.status === 'over';
+                      
+                      return (
+                        <TableRow 
+                          key={item.id}
+                          className={isMissing ? 'bg-destructive/10' : isShort ? 'bg-amber-500/10' : isOver ? 'bg-blue-500/10' : ''}
+                        >
+                          <TableCell className="text-xs">{item.item_code || '-'}</TableCell>
+                          <TableCell className={`text-xs ${isMissing ? 'text-destructive font-medium' : ''}`}>
+                            {item.item_name}
+                            {isMissing && <span className="ml-1 text-destructive">(NOT PROVIDED)</span>}
+                          </TableCell>
+                          <TableCell className="text-xs">{item.quantity}</TableCell>
+                          {(selectedOrder as any).has_discrepancy && (
+                            <TableCell className={`text-xs font-medium ${isMissing ? 'text-destructive' : isShort ? 'text-amber-600' : isOver ? 'text-blue-500' : 'text-emerald-600'}`}>
+                              {varItem?.received_qty ?? item.quantity}
+                              {isMissing && <span className="ml-1">0</span>}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-xs">{formatCurrency(Number(item.price_per_unit))}</TableCell>
+                          <TableCell className={`text-xs font-medium ${isMissing ? 'text-destructive line-through' : ''}`}>
+                            {isMissing ? formatCurrency(0) : formatCurrency(Number(item.price_total))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
