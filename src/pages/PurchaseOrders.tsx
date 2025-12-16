@@ -15,8 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
@@ -77,6 +78,7 @@ const PurchaseOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<'active' | 'archive'>('active');
   const [pasteContent, setPasteContent] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
@@ -555,7 +557,24 @@ const PurchaseOrders = () => {
   const totalItems = orders?.length || 0;
   const grandTotal = newItems.reduce((sum, item) => sum + item.price_total, 0);
 
-  const filteredOrders = orders?.filter(order => 
+  // Separate active (pending/discrepancy) vs archived (fully received) orders
+  const activeOrders = orders?.filter(order => {
+    const hasReceived = (order as any).has_received;
+    const hasDiscrepancy = (order as any).has_discrepancy;
+    // Active = not received OR has discrepancy
+    return !hasReceived || hasDiscrepancy;
+  }) || [];
+
+  const archivedOrders = orders?.filter(order => {
+    const hasReceived = (order as any).has_received;
+    const hasDiscrepancy = (order as any).has_discrepancy;
+    // Archived = received without issues
+    return hasReceived && !hasDiscrepancy;
+  }) || [];
+
+  const displayOrders = viewMode === 'active' ? activeOrders : archivedOrders;
+
+  const filteredOrders = displayOrders.filter(order => 
     order.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     order.order_number?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -706,15 +725,29 @@ const PurchaseOrders = () => {
           </div>
         </Card>
 
+        {/* Active/Archive Tabs */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="active" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Active ({activeOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="flex items-center gap-2">
+              <Archive className="w-4 h-4" />
+              Archive ({archivedOrders.length})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Orders List */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Recent Orders</h2>
-          
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : filteredOrders?.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No orders yet. Create your first purchase order!
+              {viewMode === 'active' 
+                ? 'No active orders. Create your first purchase order!'
+                : 'No archived orders. Fully received orders will appear here.'}
             </div>
           ) : (
             <div className="space-y-2">
