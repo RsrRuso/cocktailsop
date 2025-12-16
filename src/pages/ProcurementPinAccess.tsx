@@ -46,8 +46,7 @@ export default function ProcurementPinAccess() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("procurement_workspaces")
-        .select("id, name")
-        .eq("is_active", true);
+        .select("id, name");
 
       if (error) throw error;
       setWorkspaces((data as Workspace[]) || []);
