@@ -6,11 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Delete, Package, Truck, LogOut, ClipboardList, Download, Share } from "lucide-react";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
 interface ProcurementStaff {
   id: string;
   full_name: string;
@@ -33,32 +28,23 @@ export default function ProcurementPinAccess() {
   const [isPinLoading, setIsPinLoading] = useState(false);
   const [loggedInStaff, setLoggedInStaff] = useState<ProcurementStaff | null>(null);
   const [loggedInWorkspace, setLoggedInWorkspace] = useState<Workspace | null>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   useEffect(() => {
     fetchWorkspaces();
-    
+
     // Check for existing session
-    const savedSession = sessionStorage.getItem('procurement_staff_session');
+    const savedSession = sessionStorage.getItem("procurement_staff_session");
     if (savedSession) {
       const { staff, workspace } = JSON.parse(savedSession);
       setLoggedInStaff(staff);
       setLoggedInWorkspace(workspace);
     }
 
-    // PWA Install Detection
+    // iOS detection for install steps
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(isIOSDevice);
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
   }, []);
 
   const fetchWorkspaces = async () => {
@@ -147,15 +133,10 @@ export default function ProcurementPinAccess() {
     sessionStorage.removeItem('procurement_staff_session');
   };
 
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        toast({ title: "App installed successfully!" });
-        setDeferredPrompt(null);
-      }
-    }
+  const handleOpenProcurementInstallPage = () => {
+    // IMPORTANT: Installing from inside the main SV app will install the main app manifest (landing).
+    // To get a dedicated "SV Procurement" icon, we open the dedicated install page.
+    window.location.href = "/procurement.html";
   };
 
   const handleActionSelect = (action: 'po' | 'receiving') => {
@@ -314,35 +295,41 @@ export default function ProcurementPinAccess() {
             )}
 
             {/* Install to Home Screen Section */}
-            <div className="pt-4 border-t mt-4">
-              {deferredPrompt ? (
-                <Button 
-                  onClick={handleInstall} 
-                  className="w-full gap-2"
-                  variant="secondary"
-                >
-                  <Download className="w-4 h-4" />
-                  Add to Home Screen
-                </Button>
-              ) : showInstallGuide ? (
+            <div className="pt-4 border-t mt-4 space-y-3">
+              <Button
+                onClick={handleOpenProcurementInstallPage}
+                className="w-full gap-2"
+                variant="secondary"
+              >
+                <Download className="w-4 h-4" />
+                Add SV Procurement to Home Screen
+              </Button>
+
+              {showInstallGuide ? (
                 <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-medium text-center">How to install:</p>
+                  <p className="text-sm font-medium text-center">
+                    Important: install the Procurement icon (not the main SV app)
+                  </p>
+
                   {isIOS ? (
                     <div className="text-sm text-muted-foreground space-y-2">
-                      <p>1. Tap the <Share className="w-4 h-4 inline" /> Share button</p>
-                      <p>2. Scroll down and tap "Add to Home Screen"</p>
-                      <p>3. Tap "Add" in the top right</p>
+                      <p>1. This will open the Procurement install page in your browser</p>
+                      <p>
+                        2. Tap the <Share className="w-4 h-4 inline" /> Share button
+                      </p>
+                      <p>3. Tap “Add to Home Screen” → “Add”</p>
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground space-y-2">
-                      <p>1. Tap the menu (⋮) in your browser</p>
-                      <p>2. Tap "Add to Home Screen" or "Install App"</p>
-                      <p>3. Confirm the installation</p>
+                      <p>1. This will open the Procurement install page in your browser</p>
+                      <p>2. Tap the menu (⋮) → “Install app” / “Add to Home Screen”</p>
+                      <p>3. Confirm</p>
                     </div>
                   )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="w-full"
                     onClick={() => setShowInstallGuide(false)}
                   >
@@ -350,14 +337,13 @@ export default function ProcurementPinAccess() {
                   </Button>
                 </div>
               ) : (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="w-full text-muted-foreground"
                   onClick={() => setShowInstallGuide(true)}
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Add to Home Screen
+                  How this works
                 </Button>
               )}
             </div>
