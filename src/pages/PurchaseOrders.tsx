@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,9 +67,36 @@ interface ParsedOrderData {
 
 const PurchaseOrders = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Extract staff mode info - check location.state first, then sessionStorage as fallback
+  const getStaffInfo = () => {
+    const stateStaffMode = (location.state as any)?.staffMode || false;
+    const stateStaffName = (location.state as any)?.staffName || null;
+    
+    if (stateStaffMode && stateStaffName) {
+      return { staffMode: true, staffName: stateStaffName };
+    }
+    
+    const savedSession = sessionStorage.getItem("procurement_staff_session");
+    if (savedSession) {
+      try {
+        const { staff } = JSON.parse(savedSession);
+        if (staff?.full_name) {
+          return { staffMode: true, staffName: staff.full_name };
+        }
+      } catch (e) {
+        console.error("Failed to parse procurement session:", e);
+      }
+    }
+    
+    return { staffMode: false, staffName: null };
+  };
+  
+  const { staffMode, staffName } = getStaffInfo();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -271,8 +298,8 @@ const PurchaseOrders = () => {
           notes: newOrder.notes || null,
           total_amount: totalAmount,
           status: 'confirmed',
-          submitted_by_name: profile?.full_name || profile?.username || null,
-          submitted_by_email: profile?.email || user?.email || null
+          submitted_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
+          submitted_by_email: staffMode ? null : (profile?.email || user?.email || null)
         })
         .select()
         .single();

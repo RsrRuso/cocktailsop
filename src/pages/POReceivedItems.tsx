@@ -89,9 +89,33 @@ const POReceivedItems = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Extract staff mode info from location.state (passed from ProcurementPinAccess)
-  const staffMode = (location.state as any)?.staffMode || false;
-  const staffName = (location.state as any)?.staffName || null;
+  // Extract staff mode info - check location.state first, then sessionStorage as fallback
+  const getStaffInfo = () => {
+    // First try location.state (passed from ProcurementPinAccess navigation)
+    const stateStaffMode = (location.state as any)?.staffMode || false;
+    const stateStaffName = (location.state as any)?.staffName || null;
+    
+    if (stateStaffMode && stateStaffName) {
+      return { staffMode: true, staffName: stateStaffName };
+    }
+    
+    // Fallback to sessionStorage (persists across page refreshes in PWA)
+    const savedSession = sessionStorage.getItem("procurement_staff_session");
+    if (savedSession) {
+      try {
+        const { staff } = JSON.parse(savedSession);
+        if (staff?.full_name) {
+          return { staffMode: true, staffName: staff.full_name };
+        }
+      } catch (e) {
+        console.error("Failed to parse procurement session:", e);
+      }
+    }
+    
+    return { staffMode: false, staffName: null };
+  };
+  
+  const { staffMode, staffName } = getStaffInfo();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'all' | 'summary'>('summary');
