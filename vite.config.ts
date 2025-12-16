@@ -45,6 +45,11 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Critical: ensure iOS Home Screen launches on deep links (prevents black screen)
+        navigateFallback: '/index.html',
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/cbfqwaqwliehgxsdueem\.supabase\.co\/.*/i,
