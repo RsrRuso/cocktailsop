@@ -676,61 +676,87 @@ const PurchaseOrders = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredOrders?.map((order) => (
-                <Card key={order.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-foreground">
-                          {order.supplier_name || order.order_number || 'Unnamed Order'}
-                        </span>
-                        <Badge variant={order.status === 'confirmed' ? 'default' : 'secondary'}>
-                          {order.status}
-                        </Badge>
+              {filteredOrders?.map((order) => {
+                const isCompleted = order.status === 'confirmed' || order.status === 'completed';
+                const orderCode = order.order_number?.toUpperCase() || '';
+                const isMaterial = orderCode.startsWith('RQ');
+                const isMarketList = orderCode.startsWith('ML');
+                const categoryLabel = isMaterial ? 'Material' : isMarketList ? 'Market List' : null;
+                
+                return (
+                  <Card 
+                    key={order.id} 
+                    className={`p-4 border-l-4 ${
+                      isCompleted 
+                        ? 'border-l-green-500 bg-green-500/5' 
+                        : 'border-l-amber-500 bg-amber-500/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <FileText className="w-4 h-4 text-primary" />
+                          <span className="font-medium text-foreground">
+                            {order.supplier_name || order.order_number || 'Unnamed Order'}
+                          </span>
+                          <Badge 
+                            variant={isCompleted ? 'default' : 'secondary'}
+                            className={isCompleted ? 'bg-green-600' : 'bg-amber-600 text-white'}
+                          >
+                            {isCompleted ? 'Completed' : 'Pending'}
+                          </Badge>
+                          {categoryLabel && (
+                            <Badge 
+                              variant="outline" 
+                              className={isMaterial ? 'border-purple-500 text-purple-500' : 'border-blue-500 text-blue-500'}
+                            >
+                              {categoryLabel}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                          {order.order_number && (
+                            <span className="flex items-center gap-1 font-mono text-primary/80">
+                              <FileText className="w-3 h-3" />
+                              {order.order_number}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(order.order_date), 'MMM d, yyyy')}
+                          </span>
+                          <span className="flex items-center gap-1 font-medium">
+                            {formatCurrency(Number(order.total_amount))}
+                          </span>
+                          {order.created_at && (
+                            <span className="flex items-center gap-1 text-muted-foreground/70">
+                              @ {format(new Date(order.created_at), 'h:mm a')}
+                            </span>
+                          )}
+                          {(order.submitted_by_name || order.submitted_by_email) && (
+                            <span className="flex items-center gap-1 text-blue-500">
+                              <Users className="w-3 h-3" />
+                              Submitted by: {order.submitted_by_name || order.submitted_by_email}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
-                        {order.order_number && (
-                          <span className="flex items-center gap-1 font-mono text-primary/80">
-                            <FileText className="w-3 h-3" />
-                            {order.order_number}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(order.order_date), 'MMM d, yyyy')}
-                        </span>
-                        <span className="flex items-center gap-1 font-medium">
-                          {formatCurrency(Number(order.total_amount))}
-                        </span>
-                        {order.created_at && (
-                          <span className="flex items-center gap-1 text-muted-foreground/70">
-                            @ {format(new Date(order.created_at), 'h:mm a')}
-                          </span>
-                        )}
-                        {(order.submitted_by_name || order.submitted_by_email) && (
-                          <span className="flex items-center gap-1 text-blue-500">
-                            <Users className="w-3 h-3" />
-                            Submitted by: {order.submitted_by_name || order.submitted_by_email}
-                          </span>
-                        )}
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleViewOrder(order)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => deleteOrderMutation.mutate(order.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleViewOrder(order)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => deleteOrderMutation.mutate(order.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
