@@ -13138,6 +13138,16 @@ export type Database = {
       }
       update_business_analytics: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }
+      verify_mixologist_group_pin: {
+        Args: { p_group_id: string; p_pin_code: string }
+        Returns: {
+          group_id: string
+          id: string
+          member_name: string
+          role: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:

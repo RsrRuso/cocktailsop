@@ -50,15 +50,20 @@ export default function BatchCalculatorPinAccess() {
 
   const fetchGroups = async () => {
     try {
+      console.log("[BatchCalculatorPinAccess] Fetching groups...");
       const { data, error } = await supabase
         .from("mixologist_groups")
         .select("id, name")
         .order("name");
 
-      if (error) throw error;
+      if (error) {
+        console.error("[BatchCalculatorPinAccess] Error fetching groups:", error);
+        throw error;
+      }
+      console.log("[BatchCalculatorPinAccess] Groups fetched:", data?.length || 0);
       setGroups(data || []);
     } catch (error) {
-      console.error("Error fetching groups:", error);
+      console.error("[BatchCalculatorPinAccess] Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -83,16 +88,14 @@ export default function BatchCalculatorPinAccess() {
 
     setIsPinLoading(true);
     try {
-      // First get the member by PIN
-      const { data: memberData, error: memberError } = await supabase
-        .from("mixologist_group_members")
-        .select("id, user_id, role, group_id")
-        .eq("group_id", selectedGroup.id)
-        .eq("pin_code", pin)
-        .eq("is_active", true)
-        .single();
+      // Use secure RPC function for PIN verification (works for anon users too)
+      const { data, error } = await supabase
+        .rpc('verify_mixologist_group_pin', {
+          p_group_id: selectedGroup.id,
+          p_pin_code: pin
+        });
 
-      if (memberError || !memberData) {
+      if (error || !data || data.length === 0) {
         toast({ 
           title: "Invalid PIN", 
           description: "Please check your PIN and try again", 
@@ -102,28 +105,27 @@ export default function BatchCalculatorPinAccess() {
         return;
       }
 
-      // Fetch profile separately
-      let name = "Team Member";
-      if (memberData.user_id) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("full_name, username")
-          .eq("id", memberData.user_id)
-          .single();
-        
-        if (profileData) {
-          name = profileData.full_name || profileData.username || "Team Member";
-        }
-      }
+      const memberData = data[0];
+      const name = memberData.member_name || "Team Member";
 
       toast({ title: `Welcome, ${name}!` });
-      setLoggedInMember(memberData as GroupMember);
+      setLoggedInMember({
+        id: memberData.id,
+        user_id: memberData.user_id,
+        role: memberData.role,
+        group_id: memberData.group_id
+      });
       setLoggedInGroup(selectedGroup);
       setMemberName(name);
       
       // Save session
       sessionStorage.setItem('batch_calculator_staff_session', JSON.stringify({ 
-        member: memberData, 
+        member: {
+          id: memberData.id,
+          user_id: memberData.user_id,
+          role: memberData.role,
+          group_id: memberData.group_id
+        }, 
         group: selectedGroup,
         name
       }));
