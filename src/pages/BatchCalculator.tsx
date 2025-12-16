@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
@@ -49,7 +49,36 @@ interface Ingredient {
 
 const BatchCalculator = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  
+  // Staff mode from PIN access
+  const getStaffInfo = () => {
+    // First check location.state (immediate navigation)
+    if (location.state?.staffMode) {
+      return {
+        staffMode: true,
+        staffName: location.state.memberName || '',
+        staffGroupId: location.state.groupId || null,
+        initialTab: location.state.initialTab || 'calculator'
+      };
+    }
+    // Fallback to sessionStorage (after refresh)
+    const savedSession = sessionStorage.getItem('batch_calculator_staff_session');
+    if (savedSession) {
+      const { member, group, name } = JSON.parse(savedSession);
+      return {
+        staffMode: true,
+        staffName: name || '',
+        staffGroupId: group?.id || null,
+        initialTab: 'calculator'
+      };
+    }
+    return { staffMode: false, staffName: '', staffGroupId: null, initialTab: 'calculator' };
+  };
+  
+  const { staffMode, staffName, staffGroupId, initialTab } = getStaffInfo();
+  
   const [recipeName, setRecipeName] = useState("");
   const [batchDescription, setBatchDescription] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([
@@ -59,18 +88,18 @@ const BatchCalculator = () => {
   const [targetLiters, setTargetLiters] = useState("");
   const [targetServings, setTargetServings] = useState("");
   const [currentServes, setCurrentServes] = useState("1");
-  const [producedByName, setProducedByName] = useState("");
+  const [producedByName, setProducedByName] = useState(staffMode ? staffName : "");
   const [producedByUserId, setProducedByUserId] = useState<string>(user?.id || "");
   const [notes, setNotes] = useState("");
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("calculator");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isAILoading, setIsAILoading] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [producerProfiles, setProducerProfiles] = useState<Map<string, any>>(new Map());
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(staffGroupId);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [managingGroup, setManagingGroup] = useState<any>(null);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
@@ -2753,19 +2782,34 @@ const BatchCalculator = () => {
       <TopNav />
 
       <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto mb-8 sm:mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/ops-tools")}
-            className="glass-hover shrink-0"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold truncate">Batch Calculator Pro</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">AI-powered batch management & forecasting</p>
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(staffMode ? "/batch-calculator-pin-access" : "/ops-tools")}
+              className="glass-hover shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">Batch Calculator Pro</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {staffMode ? `Staff: ${staffName}` : "AI-powered batch management & forecasting"}
+              </p>
+            </div>
           </div>
+          {!staffMode && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/batch-calculator-pin-access")}
+              className="glass-hover shrink-0"
+              title="Team PIN Access"
+            >
+              <Smartphone className="w-5 h-5" />
+            </Button>
+          )}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

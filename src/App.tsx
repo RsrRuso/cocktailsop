@@ -165,6 +165,7 @@ const PurchaseOrders = lazy(() => import("@/pages/PurchaseOrders"));
 const POMasterItems = lazy(() => import("@/pages/POMasterItems"));
 const POReceivedItems = lazy(() => import("@/pages/POReceivedItems"));
 const ProcurementPinAccess = lazy(() => import("@/pages/ProcurementPinAccess"));
+const BatchCalculatorPinAccess = lazy(() => import("@/pages/BatchCalculatorPinAccess"));
 
 // Studio & Content Creation
 const Studio = lazy(() => import("./pages/Studio"));
@@ -261,6 +262,7 @@ const AppContent = () => {
                 <Route path="/fifo-access-approval-page" element={<FifoAccessApprovalPage />} />
                 <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
+          <Route path="/batch-calculator-pin-access" element={<BatchCalculatorPinAccess />} />
           <Route path="/batch-recipes" element={<BatchRecipes />} />
           <Route path="/batch-qr/:qrId" element={<BatchQRSubmit />} />
           <Route path="/batch-view/:productionId" element={<BatchView />} />

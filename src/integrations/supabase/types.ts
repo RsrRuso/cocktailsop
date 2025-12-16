@@ -8337,21 +8337,27 @@ export type Database = {
         Row: {
           group_id: string
           id: string
+          is_active: boolean | null
           joined_at: string
+          pin_code: string | null
           role: string
           user_id: string
         }
         Insert: {
           group_id: string
           id?: string
+          is_active?: boolean | null
           joined_at?: string
+          pin_code?: string | null
           role?: string
           user_id: string
         }
         Update: {
           group_id?: string
           id?: string
+          is_active?: boolean | null
           joined_at?: string
+          pin_code?: string | null
           role?: string
           user_id?: string
         }
