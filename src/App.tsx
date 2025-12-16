@@ -164,6 +164,9 @@ const Terms = lazy(() => import("@/pages/Terms"));
 const PurchaseOrders = lazy(() => import("@/pages/PurchaseOrders"));
 const POMasterItems = lazy(() => import("@/pages/POMasterItems"));
 const POReceivedItems = lazy(() => import("@/pages/POReceivedItems"));
+const POPinAccess = lazy(() => import("@/pages/POPinAccess"));
+const ReceivingPinAccess = lazy(() => import("@/pages/ReceivingPinAccess"));
+const ProcurementQRAccess = lazy(() => import("@/pages/ProcurementQRAccess"));
 // Studio & Content Creation
 const Studio = lazy(() => import("./pages/Studio"));
 const Drafts = lazy(() => import("./pages/Drafts"));
@@ -351,6 +354,9 @@ const AppContent = () => {
           <Route path="/purchase-orders" element={<PurchaseOrders />} />
           <Route path="/po-master-items" element={<POMasterItems />} />
           <Route path="/po-received-items" element={<POReceivedItems />} />
+          <Route path="/po-pin-access" element={<POPinAccess />} />
+          <Route path="/receiving-pin-access" element={<ReceivingPinAccess />} />
+          <Route path="/procurement-qr-access" element={<ProcurementQRAccess />} />
           
           {/* Studio & Content Creation */}
           <Route path="/studio" element={<Studio />} />

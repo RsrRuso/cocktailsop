@@ -9602,6 +9602,53 @@ export type Database = {
           },
         ]
       }
+      procurement_staff: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          is_active: boolean
+          permissions: Json | null
+          pin_code: string
+          role: string
+          updated_at: string
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          pin_code: string
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          pin_code?: string
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_staff_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       procurement_workspace_members: {
         Row: {
           id: string
