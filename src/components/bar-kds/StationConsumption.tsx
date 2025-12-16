@@ -95,7 +95,8 @@ export function StationConsumption({ open, onClose, outletId }: StationConsumpti
   const fetchConsumption = async () => {
     const today = format(new Date(), 'yyyy-MM-dd');
     
-    const { data } = await supabase
+    // First try direct station_consumption table
+    const { data: directData } = await supabase
       .from("lab_ops_station_consumption")
       .select(`
         *,
@@ -106,7 +107,73 @@ export function StationConsumption({ open, onClose, outletId }: StationConsumpti
       .eq("shift_date", today)
       .order("variance_percent", { ascending: false });
 
-    setConsumptionData(data || []);
+    if (directData && directData.length > 0) {
+      setConsumptionData(directData);
+      return;
+    }
+
+    // If no direct data, calculate from pourer readings
+    const { data: pourData } = await supabase
+      .from("lab_ops_pourer_readings")
+      .select(`
+        id,
+        bottle_id,
+        ml_dispensed,
+        reading_timestamp,
+        bottle:lab_ops_bottles(
+          id,
+          item_id,
+          bottle_name,
+          spirit_type,
+          item:lab_ops_inventory_items(name)
+        )
+      `)
+      .eq("outlet_id", outletId)
+      .gte("reading_timestamp", `${today}T00:00:00`)
+      .lte("reading_timestamp", `${today}T23:59:59`);
+
+    if (pourData && pourData.length > 0) {
+      // Aggregate by ingredient (item)
+      const aggregated = pourData.reduce((acc: any, reading: any) => {
+        const bottle = reading.bottle as any;
+        const itemId = bottle?.item_id || 'unknown';
+        const key = `all-${itemId}`;
+        
+        if (!acc[key]) {
+          acc[key] = {
+            id: key,
+            station_id: 'all',
+            ingredient_id: itemId,
+            shift_date: today,
+            sop_consumption_ml: 0, // Would need recipe data to calculate
+            physical_consumption_ml: 0,
+            variance_ml: 0,
+            variance_percent: 0,
+            station: { name: 'All Stations' },
+            ingredient: bottle?.item || { name: bottle?.bottle_name || bottle?.spirit_type || 'Unknown Spirit' }
+          };
+        }
+        acc[key].physical_consumption_ml += Number(reading.ml_dispensed) || 0;
+        return acc;
+      }, {});
+
+      // Calculate variance (if SOP data available, otherwise show physical only)
+      const consumptionList = Object.values(aggregated).map((item: any) => {
+        const variance = item.physical_consumption_ml - item.sop_consumption_ml;
+        const variancePercent = item.sop_consumption_ml > 0 
+          ? (variance / item.sop_consumption_ml) * 100 
+          : 0;
+        return {
+          ...item,
+          variance_ml: variance,
+          variance_percent: variancePercent
+        };
+      });
+
+      setConsumptionData(consumptionList as ConsumptionData[]);
+    } else {
+      setConsumptionData([]);
+    }
   };
 
   const getVarianceColor = (percent: number) => {
