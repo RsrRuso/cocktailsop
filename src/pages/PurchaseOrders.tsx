@@ -1176,14 +1176,56 @@ const PurchaseOrders = () => {
                 </Table>
               </div>
 
-              <div className="flex justify-end border-t pt-3">
-                <div>
-                  <span className="text-muted-foreground">Total: </span>
-                  <span className="text-xl font-bold text-primary">
-                    {formatCurrency(Number(selectedOrder.total_amount))}
-                  </span>
-                </div>
-              </div>
+              {/* Calculate adjusted total for discrepancy orders */}
+              {(() => {
+                const orderedTotal = Number(selectedOrder.total_amount);
+                let receivedTotal = orderedTotal;
+                
+                if ((selectedOrder as any).has_discrepancy && varianceData?.items && orderItems) {
+                  receivedTotal = orderItems.reduce((sum, item) => {
+                    const varItem = varianceData.items?.find(
+                      (v) => v.item_code === item.item_code || v.item_name?.toLowerCase() === item.item_name?.toLowerCase()
+                    );
+                    if (varItem) {
+                      const receivedQty = varItem.received_qty ?? item.quantity;
+                      return sum + (receivedQty * Number(item.price_per_unit));
+                    }
+                    return sum + Number(item.price_total);
+                  }, 0);
+                }
+                
+                const difference = orderedTotal - receivedTotal;
+                const hasDiscrepancy = (selectedOrder as any).has_discrepancy;
+                
+                return (
+                  <div className="border-t pt-3 space-y-2">
+                    {hasDiscrepancy && difference > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Ordered Total:</span>
+                        <span className="line-through text-muted-foreground">
+                          {formatCurrency(orderedTotal)}
+                        </span>
+                      </div>
+                    )}
+                    {hasDiscrepancy && difference > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-destructive">Deduction (Not Received):</span>
+                        <span className="text-destructive font-medium">
+                          -{formatCurrency(difference)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {hasDiscrepancy && difference > 0 ? 'Actual Received:' : 'Total:'}
+                      </span>
+                      <span className={`text-xl font-bold ${hasDiscrepancy && difference > 0 ? 'text-emerald-600' : 'text-primary'}`}>
+                        {formatCurrency(receivedTotal)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {selectedOrder.notes && (
                 <div>
