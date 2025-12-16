@@ -1,59 +1,111 @@
 // Service Worker for offline caching, faster loads, and push notifications
-const CACHE_NAME = 'app-cache-v2';
-const RUNTIME_CACHE = 'runtime-cache-v2';
 
-// Assets to cache immediately
+// NOTE:
+// This SW is used for both the main app and the Procurement install flow.
+// It MUST support SPA navigation (return /index.html for navigation requests) to avoid "black screen".
+
+const CACHE_VERSION = 'v3';
+const PRECACHE = `precache-${CACHE_VERSION}`;
+const RUNTIME = `runtime-${CACHE_VERSION}`;
+
+// Assets to cache immediately (app shell)
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/notification.wav'
+  '/procurement.html',
+  '/procurement-manifest.json',
+  '/sv-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/notification.wav',
 ];
 
-// Install event - cache critical assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches
+      .open(PRECACHE)
       .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(self.skipWaiting())
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name !== PRECACHE && name !== RUNTIME)
+            .map((name) => caches.delete(name))
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch event - network first, then cache
+async function matchFromAnyCache(request) {
+  const cachedRuntime = await caches.open(RUNTIME).then((c) => c.match(request));
+  if (cachedRuntime) return cachedRuntime;
+
+  const cachedPre = await caches.open(PRECACHE).then((c) => c.match(request));
+  if (cachedPre) return cachedPre;
+
+  return undefined;
+}
+
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) {
-    return;
-  }
+  const req = event.request;
+
+  // Only handle same-origin GETs
+  if (req.method !== 'GET') return;
+  if (!req.url.startsWith(self.location.origin)) return;
+
+  const url = new URL(req.url);
+
+  // SPA navigation handling (critical for iOS home screen web app)
+  const isNavigation =
+    req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html');
 
   event.respondWith(
-    caches.open(RUNTIME_CACHE).then((cache) => {
-      return fetch(event.request)
-        .then((response) => {
-          // Cache successful responses
-          if (response.status === 200) {
-            cache.put(event.request, response.clone());
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fall back to cache if network fails
-          return cache.match(event.request);
-        });
-    })
+    (async () => {
+      // For navigation requests, always try network first, then fall back to cached app shell.
+      if (isNavigation) {
+        try {
+          const res = await fetch(req);
+          // Cache the navigation response for faster next loads
+          const cache = await caches.open(RUNTIME);
+          cache.put(req, res.clone());
+          return res;
+        } catch {
+          // IMPORTANT: querystring start_url (e.g. /procurement-pin-access?app=procurement)
+          // won't match exact cache keys, so always fall back to the cached app shell.
+          return (
+            (await matchFromAnyCache(req)) ||
+            (await matchFromAnyCache('/index.html')) ||
+            (await matchFromAnyCache('/'))
+          );
+        }
+      }
+
+      // For assets/API: network-first, then cache fallback
+      try {
+        const res = await fetch(req);
+        if (res && res.status === 200) {
+          const cache = await caches.open(RUNTIME);
+          cache.put(req, res.clone());
+        }
+        return res;
+      } catch {
+        // try exact match, then try without querystring
+        return (
+          (await matchFromAnyCache(req)) ||
+          (url.search ? await matchFromAnyCache(url.pathname) : undefined)
+        );
+      }
+    })()
   );
 });
 
@@ -69,33 +121,28 @@ self.addEventListener('push', (event) => {
     tag: data.tag || 'notification',
     requireInteraction: false,
     silent: false,
-    data: data.data || {}
+    data: data.data || {},
   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   const urlToOpen = event.notification.data?.url || '/';
-  
+
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Check if there's already a window open
         for (const client of clientList) {
           if (client.url === urlToOpen && 'focus' in client) {
             return client.focus();
           }
         }
-        // If not, open a new window
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
+        if (clients.openWindow) return clients.openWindow(urlToOpen);
       })
   );
 });
@@ -103,9 +150,6 @@ self.addEventListener('notificationclick', (event) => {
 // Background sync for notifications
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-notifications') {
-    event.waitUntil(
-      // Sync logic here if needed
-      Promise.resolve()
-    );
+    event.waitUntil(Promise.resolve());
   }
 });
