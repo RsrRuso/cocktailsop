@@ -6,9 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Search, List, RefreshCw, Upload } from "lucide-react";
+import { ArrowLeft, Package, Search, List, RefreshCw, Upload, TrendingUp } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+import ParLevelPrediction from "@/components/procurement/ParLevelPrediction";
 
 const currencySymbols: Record<string, string> = {
   'USD': '$',
@@ -26,6 +27,7 @@ const POMasterItems = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currency, setCurrency] = useState(() => localStorage.getItem('po-currency') || 'USD');
+  const [showParLevel, setShowParLevel] = useState(false);
 
   // Listen for currency changes from other tabs/pages
   useEffect(() => {
@@ -106,6 +108,14 @@ const POMasterItems = () => {
               onChange={handleFileUpload}
               className="hidden"
             />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowParLevel(true)}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Par Level
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -211,6 +221,13 @@ const POMasterItems = () => {
           )}
         </Card>
       </div>
+
+      {/* Par Level Prediction Dialog */}
+      <ParLevelPrediction 
+        workspaceId={selectedWorkspaceId}
+        open={showParLevel}
+        onOpenChange={setShowParLevel}
+      />
     </div>
   );
 };
