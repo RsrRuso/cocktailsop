@@ -26,25 +26,27 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
   const { data: recipes, isLoading } = useQuery({
     queryKey: ['batch-recipes', groupId, staffMode],
     queryFn: async (): Promise<BatchRecipe[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // In staff mode with a group, we can fetch group recipes without requiring auth
+      // Staff mode (PIN access): fetch via backend function to bypass RLS safely
       if (staffMode && groupId) {
-        const { data, error } = await supabase
-          .from('batch_recipes')
-          .select('*')
-          .eq('group_id', groupId)
-          .order('created_at', { ascending: false });
-        
+        const raw = sessionStorage.getItem("batch_calculator_staff_session");
+        const pin = raw ? (JSON.parse(raw)?.pin as string | undefined) : undefined;
+
+        if (!pin) return [];
+
+        const { data, error } = await supabase.functions.invoke("batch-staff-recipes", {
+          body: { groupId, pin },
+        });
+
         if (error) throw error;
-        
-        return (data || []).map((recipe: any) => ({
+
+        const rows = (data as any)?.recipes || [];
+        return rows.map((recipe: any) => ({
           ...recipe,
-          ingredients: recipe.ingredients as unknown as BatchIngredient[]
+          ingredients: recipe.ingredients as unknown as BatchIngredient[],
         })) as BatchRecipe[];
       }
-      
-      // For non-staff mode, require authentication
+
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
       // Fetch all user's recipes and filter client-side to avoid TypeScript deep instantiation issue

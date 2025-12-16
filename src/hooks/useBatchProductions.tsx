@@ -34,11 +34,24 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
   const { data: productions, isLoading } = useQuery({
     queryKey: ['batch-productions', recipeId, groupId, staffMode],
     queryFn: async () => {
+      // Staff mode (PIN access): fetch via backend function to bypass RLS safely
+      if (staffMode && groupId) {
+        const raw = sessionStorage.getItem("batch_calculator_staff_session");
+        const pin = raw ? (JSON.parse(raw)?.pin as string | undefined) : undefined;
+        if (!pin) return [] as BatchProduction[];
+
+        const { data, error } = await supabase.functions.invoke("batch-staff-productions", {
+          body: { groupId, pin, recipeId },
+        });
+        if (error) throw error;
+        return ((data as any)?.productions || []) as BatchProduction[];
+      }
+
       let query = supabase
         .from('batch_productions')
         .select('*')
         .order('production_date', { ascending: false });
-      
+
       if (recipeId) {
         query = query.eq('recipe_id', recipeId);
       }
