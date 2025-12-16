@@ -17,7 +17,7 @@ import {
   ArrowDownRight,
   Minus
 } from "lucide-react";
-import { differenceInDays, subDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 
 interface ParLevelPredictionProps {
   workspaceId: string | null;
@@ -46,7 +46,6 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<'3days' | 'week' | '2weeks' | 'month'>('week');
 
-  // Fetch purchase order items with order dates
   const { data: orderHistory, isLoading } = useQuery({
     queryKey: ['par-level-prediction', workspaceId],
     queryFn: async () => {
@@ -71,11 +70,9 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
     enabled: open && !!workspaceId,
   });
 
-  // Calculate par levels for each item
   const parLevelData = useMemo(() => {
     if (!orderHistory || orderHistory.length === 0) return [];
 
-    // Group by item name
     const itemMap = new Map<string, {
       item_code: string | null;
       orders: { date: string; quantity: number }[];
@@ -113,21 +110,15 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
       const totalQuantity = orders.reduce((sum, o) => sum + o.quantity, 0);
       const totalOrders = orders.length;
 
-      // Calculate the date range - use 7 days minimum for daily average calculation
       const daysCovered = Math.max(
         differenceInDays(today, new Date(firstOrderDate)),
-        7 // Minimum 7 days for weekly calculation
+        7
       );
 
-      // Daily average = total quantity purchased / period days
-      // E.g., 70 pcs ordered once in a week = 70 / 7 = 10 per day
       const dailyAverage = totalQuantity / daysCovered;
-
-      // Orders per week
       const weeksCovered = Math.max(daysCovered / 7, 1);
       const ordersPerWeek = totalOrders / weeksCovered;
 
-      // Calculate trend (compare recent orders vs older orders)
       let trend: 'up' | 'down' | 'stable' = 'stable';
       if (orders.length >= 4) {
         const midpoint = Math.floor(orders.length / 2);
@@ -159,7 +150,6 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
     return results.sort((a, b) => b.daily_average - a.daily_average);
   }, [orderHistory]);
 
-  // Filter items
   const filteredItems = useMemo(() => {
     if (!searchQuery) return parLevelData;
     const query = searchQuery.toLowerCase();
@@ -169,7 +159,6 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
     );
   }, [parLevelData, searchQuery]);
 
-  // Get par value based on selected period
   const getParValue = (item: ItemOrderHistory) => {
     switch (selectedPeriod) {
       case '3days': return item.par_3_days;
@@ -190,7 +179,6 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
     }
   };
 
-  // Summary stats
   const summaryStats = useMemo(() => {
     if (parLevelData.length === 0) return null;
 
@@ -204,56 +192,48 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl h-[90vh] max-h-[90vh] p-0 flex flex-col">
-        <DialogHeader className="p-4 pb-2 border-b border-border shrink-0">
+      <DialogContent className="w-[95vw] max-w-lg h-[85vh] max-h-[85vh] p-0 flex flex-col">
+        <DialogHeader className="p-3 pb-2 border-b border-border shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base">
             <TrendingUp className="h-5 w-5 text-primary" />
             Par Level Prediction
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col p-4 pt-3 gap-3">
-          {/* Summary Cards - Mobile Optimized */}
+        <div className="flex-1 overflow-hidden flex flex-col p-3 pt-2 gap-2">
+          {/* Summary Cards */}
           {summaryStats && (
-            <div className="grid grid-cols-2 gap-2 shrink-0">
-              <Card className="p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Items</span>
-                </div>
+            <div className="grid grid-cols-4 gap-1.5 shrink-0">
+              <Card className="p-2 text-center">
+                <Package className="h-3.5 w-3.5 text-muted-foreground mx-auto" />
                 <p className="text-lg font-bold">{summaryStats.totalItems}</p>
+                <p className="text-[9px] text-muted-foreground">Items</p>
               </Card>
-              <Card className="p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">Daily Avg</span>
-                </div>
-                <p className="text-lg font-bold">{summaryStats.avgDailyItems.toFixed(1)}</p>
+              <Card className="p-2 text-center">
+                <BarChart3 className="h-3.5 w-3.5 text-muted-foreground mx-auto" />
+                <p className="text-lg font-bold">{summaryStats.avgDailyItems.toFixed(0)}</p>
+                <p className="text-[9px] text-muted-foreground">Daily Avg</p>
               </Card>
-              <Card className="p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-[10px] text-muted-foreground">Rising</span>
-                </div>
+              <Card className="p-2 text-center">
+                <ArrowUpRight className="h-3.5 w-3.5 text-green-500 mx-auto" />
                 <p className="text-lg font-bold text-green-500">{summaryStats.highDemandItems}</p>
+                <p className="text-[9px] text-muted-foreground">Rising</p>
               </Card>
-              <Card className="p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <ArrowDownRight className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-[10px] text-muted-foreground">Declining</span>
-                </div>
+              <Card className="p-2 text-center">
+                <ArrowDownRight className="h-3.5 w-3.5 text-amber-500 mx-auto" />
                 <p className="text-lg font-bold text-amber-500">{summaryStats.lowDemandItems}</p>
+                <p className="text-[9px] text-muted-foreground">Declining</p>
               </Card>
             </div>
           )}
 
-          {/* Period Selection - Mobile Tabs */}
+          {/* Period Selection */}
           <Tabs value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as any)} className="shrink-0">
-            <TabsList className="grid grid-cols-4 h-9">
-              <TabsTrigger value="3days" className="text-[11px] px-1">3 Days</TabsTrigger>
-              <TabsTrigger value="week" className="text-[11px] px-1">Week</TabsTrigger>
-              <TabsTrigger value="2weeks" className="text-[11px] px-1">2 Weeks</TabsTrigger>
-              <TabsTrigger value="month" className="text-[11px] px-1">Month</TabsTrigger>
+            <TabsList className="grid grid-cols-4 h-8">
+              <TabsTrigger value="3days" className="text-[10px] px-1">3 Days</TabsTrigger>
+              <TabsTrigger value="week" className="text-[10px] px-1">Week</TabsTrigger>
+              <TabsTrigger value="2weeks" className="text-[10px] px-1">2 Weeks</TabsTrigger>
+              <TabsTrigger value="month" className="text-[10px] px-1">Month</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -264,14 +244,14 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-9"
+              className="pl-10 h-8 text-sm"
             />
           </div>
 
-          {/* Items List - Mobile Card Layout */}
-          <ScrollArea className="flex-1">
+          {/* Items List */}
+          <ScrollArea className="flex-1 -mx-3 px-3">
             {isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
+              <div className="py-8 text-center text-muted-foreground text-sm">
                 Analyzing order history...
               </div>
             ) : filteredItems.length === 0 ? (
@@ -284,57 +264,57 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
               <div className="space-y-2 pb-2">
                 {filteredItems.map((item, idx) => (
                   <Card key={idx} className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <p className="font-medium text-sm truncate">{item.item_name}</p>
-                        </div>
-                        {item.item_code && (
-                          <p className="text-[10px] text-muted-foreground ml-6">{item.item_code}</p>
-                        )}
-                      </div>
-                      
-                      {/* Trend Badge */}
-                      <div className="shrink-0">
-                        {item.trend === 'up' && (
-                          <ArrowUpRight className="h-4 w-4 text-green-500" />
-                        )}
-                        {item.trend === 'down' && (
-                          <ArrowDownRight className="h-4 w-4 text-amber-500" />
-                        )}
-                        {item.trend === 'stable' && (
-                          <Minus className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Stats Row */}
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-                      <div className="flex items-center gap-3 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Total Qty: </span>
-                          <span className="font-medium">{item.total_quantity}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Orders: </span>
-                          <span className="font-medium">{item.total_orders}</span>
+                    {/* Item Header */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-start gap-2 min-w-0 flex-1">
+                        <Package className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm leading-tight">{item.item_name}</p>
+                          {item.item_code && (
+                            <p className="text-[10px] text-muted-foreground">{item.item_code}</p>
+                          )}
                         </div>
                       </div>
                       
-                      <Badge variant="outline" className="text-[10px]">
-                        {item.daily_average.toFixed(1)}/day
-                      </Badge>
+                      {/* Trend */}
+                      {item.trend === 'up' && (
+                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] h-5">
+                          <ArrowUpRight className="h-3 w-3 mr-0.5" />
+                          Rising
+                        </Badge>
+                      )}
+                      {item.trend === 'down' && (
+                        <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] h-5">
+                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          Down
+                        </Badge>
+                      )}
+                      {item.trend === 'stable' && (
+                        <Badge variant="outline" className="text-[10px] h-5">
+                          <Minus className="h-3 w-3 mr-0.5" />
+                          Stable
+                        </Badge>
+                      )}
                     </div>
                     
-                    {/* Par Level Display */}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        Par Level ({getPeriodLabel()})
-                      </span>
-                      <Badge variant="secondary" className="text-sm font-bold px-3">
-                        {getParValue(item)} units
-                      </Badge>
+                    {/* Stats Grid - All Visible */}
+                    <div className="grid grid-cols-4 gap-1.5 text-xs">
+                      <div className="bg-muted/50 rounded p-1.5 text-center">
+                        <p className="text-[9px] text-muted-foreground">Total Qty</p>
+                        <p className="font-bold">{item.total_quantity}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded p-1.5 text-center">
+                        <p className="text-[9px] text-muted-foreground">Orders</p>
+                        <p className="font-bold">{item.total_orders}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded p-1.5 text-center">
+                        <p className="text-[9px] text-muted-foreground">Daily Avg</p>
+                        <p className="font-bold">{item.daily_average.toFixed(1)}</p>
+                      </div>
+                      <div className="bg-primary/10 rounded p-1.5 text-center">
+                        <p className="text-[9px] text-muted-foreground">Par ({getPeriodLabel()})</p>
+                        <p className="font-bold text-primary">{getParValue(item)}</p>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -343,9 +323,9 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
           </ScrollArea>
 
           {/* Methodology Note */}
-          <Card className="p-2.5 bg-muted/50 shrink-0">
+          <Card className="p-2 bg-muted/50 shrink-0">
             <div className="flex items-start gap-2">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
                 <span className="font-medium">How it works:</span> Daily avg = Total qty purchased ÷ Days tracked. 
                 Par levels are projections based on this daily consumption rate.

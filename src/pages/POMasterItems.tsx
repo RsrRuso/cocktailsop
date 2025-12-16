@@ -29,7 +29,6 @@ const POMasterItems = () => {
   const [currency, setCurrency] = useState(() => localStorage.getItem('po-currency') || 'USD');
   const [showParLevel, setShowParLevel] = useState(false);
 
-  // Listen for currency changes from other tabs/pages
   useEffect(() => {
     const handleStorageChange = () => {
       const newCurrency = localStorage.getItem('po-currency') || 'USD';
@@ -45,7 +44,6 @@ const POMasterItems = () => {
 
   const formatCurrency = (amount: number) => `${currencySymbols[currency]}${amount.toFixed(2)}`;
   
-  // Workspace state
   const [selectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
   });
@@ -88,7 +86,7 @@ const POMasterItems = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - Mobile Optimized */}
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border shrink-0">
         <div className="flex items-start justify-between p-3 gap-2">
           <div className="flex items-start gap-2">
@@ -101,7 +99,6 @@ const POMasterItems = () => {
             </div>
           </div>
           
-          {/* Action Buttons - Compact */}
           <div className="flex items-center gap-1.5 shrink-0">
             <input
               ref={fileInputRef}
@@ -144,7 +141,7 @@ const POMasterItems = () => {
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
-        {/* Stats Card - Compact */}
+        {/* Stats Card */}
         <Card className="p-3 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -157,7 +154,7 @@ const POMasterItems = () => {
           </div>
         </Card>
 
-        {/* Search - Compact */}
+        {/* Search */}
         <div className="relative shrink-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -168,7 +165,7 @@ const POMasterItems = () => {
           />
         </div>
 
-        {/* Items List - Mobile Card Layout */}
+        {/* Items List */}
         <ScrollArea className="flex-1">
           {isLoadingMaster ? (
             <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
@@ -182,36 +179,39 @@ const POMasterItems = () => {
             <div className="space-y-2 pb-20">
               {filteredItems.map((item) => (
                 <Card key={item.id} className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2 min-w-0 flex-1">
-                      <Package className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{item.item_name}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {item.unit && (
-                            <Badge variant="outline" className="text-[10px] h-5 px-1.5">
-                              {item.unit}
-                            </Badge>
-                          )}
-                          {item.category && (
-                            <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-                              {item.category}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+                  {/* Item Name Row */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package className="h-4 w-4 text-primary shrink-0" />
+                    <p className="font-medium text-sm flex-1">{item.item_name}</p>
+                  </div>
+                  
+                  {/* Details Grid - Always Visible */}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {/* Unit */}
+                    <div className="bg-muted/50 rounded p-2">
+                      <p className="text-muted-foreground text-[10px] mb-0.5">Unit</p>
+                      <p className="font-medium">{item.unit || '-'}</p>
                     </div>
                     
-                    {/* Price */}
-                    <div className="text-right shrink-0">
-                      <p className="font-semibold text-sm">
+                    {/* Category */}
+                    <div className="bg-muted/50 rounded p-2">
+                      <p className="text-muted-foreground text-[10px] mb-0.5">Category</p>
+                      <p className="font-medium truncate">{item.category || '-'}</p>
+                    </div>
+                    
+                    {/* Last Price */}
+                    <div className="bg-muted/50 rounded p-2">
+                      <p className="text-muted-foreground text-[10px] mb-0.5">Last Price</p>
+                      <p className="font-semibold text-primary">
                         {item.last_price ? formatCurrency(item.last_price) : '-'}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {format(new Date(item.updated_at), 'MMM dd')}
                       </p>
                     </div>
                   </div>
+                  
+                  {/* Updated Date */}
+                  <p className="text-[10px] text-muted-foreground mt-2 text-right">
+                    Updated: {format(new Date(item.updated_at), 'MMM dd, yyyy')}
+                  </p>
                 </Card>
               ))}
             </div>
@@ -219,7 +219,6 @@ const POMasterItems = () => {
         </ScrollArea>
       </div>
 
-      {/* Par Level Prediction Dialog */}
       <ParLevelPrediction 
         workspaceId={selectedWorkspaceId}
         open={showParLevel}
