@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SV PO">
+  <link rel="manifest" href="/po-manifest.json">
+  <link rel="icon" type="image/png" href="/sv-icon.png">
+  <link rel="apple-touch-icon" href="/sv-icon.png">
+  <title>SV Purchase Orders</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: white;
+    }
+    .container {
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-radius: 20px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    p {
+      color: #9ca3af;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .install-btn {
+      display: none;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .install-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+    }
+    .open-btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .open-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .instructions {
+      margin-top: 32px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      text-align: left;
+    }
+    .instructions h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #f59e0b;
+    }
+    .instructions ol {
+      font-size: 13px;
+      color: #9ca3af;
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin-bottom: 8px;
+    }
+    .ios-only, .android-only { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">📦</div>
+    <h1>SV Purchase Orders</h1>
+    <p>Create and manage purchase orders with PIN access</p>
+    
+    <button class="install-btn" id="installBtn">Install App</button>
+    <a href="/po-pin-access" class="open-btn">Open Purchase Orders</a>
+    
+    <div class="instructions ios-only" id="iosInstructions">
+      <h3>📱 Install on iPhone</h3>
+      <ol>
+        <li>Tap the Share button at the bottom of the screen</li>
+        <li>Scroll down and tap "Add to Home Screen"</li>
+        <li>Tap "Add" to install the app</li>
+        <li>Open from your home screen and login with PIN</li>
+      </ol>
+    </div>
+    
+    <div class="instructions android-only" id="androidInstructions">
+      <h3>📱 Install on Android</h3>
+      <ol>
+        <li>Tap the menu (three dots) in your browser</li>
+        <li>Tap "Install app" or "Add to Home Screen"</li>
+        <li>Confirm the installation</li>
+        <li>Open from your home screen and login with PIN</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+    const iosInstructions = document.getElementById('iosInstructions');
+    const androidInstructions = document.getElementById('androidInstructions');
+    
+    // Detect platform
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    
+    // Show platform-specific instructions
+    if (isIOS && !isStandalone) {
+      iosInstructions.style.display = 'block';
+    } else if (isAndroid && !isStandalone) {
+      androidInstructions.style.display = 'block';
+    }
+    
+    // Handle install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+      androidInstructions.style.display = 'none';
+    });
+    
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          window.location.href = '/po-pin-access';
+        }
+        deferredPrompt = null;
+      }
+    });
+    
+    // Redirect if already installed
+    if (isStandalone) {
+      window.location.href = '/po-pin-access';
+    }
+  </script>
+</body>
+</html>
