@@ -1472,45 +1472,53 @@ export default function StaffPOS() {
               };
               
               return (
-                <Button
-                  key={table.id}
-                  variant="outline"
-                  className={`h-24 flex flex-col py-2 px-2 transition-all rounded-xl ${getTableStyle()}`}
-                  onClick={() => setSelectedTable(table)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    openAssignDialog(table);
-                  }}
-                  disabled={isClosed}
-                >
-                  {/* Large readable table number */}
-                  <span className="font-black text-2xl leading-none">
-                    {table.table_number || table.name?.replace(/[^0-9]/g, '') || '?'}
-                  </span>
-                  {/* Bill amount for occupied tables OR capacity for free tables */}
-                  {isOccupied && billTotal > 0 ? (
-                    <div className="flex items-center gap-1 mt-1.5 bg-white/20 px-2 py-0.5 rounded-full">
-                      <DollarSign className="w-3 h-3" />
-                      <span className="text-sm font-bold">{billTotal.toFixed(0)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 mt-1 opacity-80">
-                      <Users className="w-3.5 h-3.5" />
-                      <span className="text-xs font-medium">{table.capacity}</span>
-                      {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
-                    </div>
-                  )}
-                  {/* Assigned staff name */}
-                  {table.assigned_staff_name ? (
-                    <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded mt-0.5 truncate max-w-full">
-                      {table.assigned_staff_name.split(' ')[0]}
+                <div key={table.id} className="relative">
+                  <Button
+                    variant="outline"
+                    className={`h-24 w-full flex flex-col py-2 px-2 transition-all rounded-xl ${getTableStyle()}`}
+                    onClick={() => setSelectedTable(table)}
+                    disabled={isClosed}
+                  >
+                    {/* Large readable table number */}
+                    <span className="font-black text-2xl leading-none">
+                      {table.table_number || table.name?.replace(/[^0-9]/g, '') || '?'}
                     </span>
-                  ) : (
-                    <span className="text-[10px] font-medium opacity-70 mt-1">
-                      ↻ {table.turnover_count} turns
-                    </span>
-                  )}
-                </Button>
+                    {/* Bill amount for occupied tables OR capacity for free tables */}
+                    {isOccupied && billTotal > 0 ? (
+                      <div className="flex items-center gap-1 mt-1.5 bg-white/20 px-2 py-0.5 rounded-full">
+                        <DollarSign className="w-3 h-3" />
+                        <span className="text-sm font-bold">{billTotal.toFixed(0)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 mt-1 opacity-80">
+                        <Users className="w-3.5 h-3.5" />
+                        <span className="text-xs font-medium">{table.capacity}</span>
+                        {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
+                      </div>
+                    )}
+                    {/* Assigned staff name */}
+                    {table.assigned_staff_name ? (
+                      <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded mt-0.5 truncate max-w-full">
+                        {table.assigned_staff_name.split(' ')[0]}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium opacity-70 mt-1">
+                        ↻ {table.turnover_count} turns
+                      </span>
+                    )}
+                  </Button>
+                  {/* Assign button - top right corner */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openAssignDialog(table);
+                    }}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
+                    title="Assign staff"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               );
             })}
           </div>
