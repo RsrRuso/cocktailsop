@@ -734,23 +734,45 @@ const BatchCalculator = () => {
       if (error) throw error;
 
       // Fetch productions for THIS recipe only to calculate recipe-specific totals
-      // Don't filter by user_id - RLS will handle access control for group members
-      let productionsQuery = supabase
-        .from('batch_productions')
-        .select('*, batch_production_ingredients(*)')
-        .eq('recipe_id', production.recipe_id);
+      // For staff mode, use edge function to bypass RLS
+      let allProductions: any[] = [];
       
-      // If this production belongs to a group, filter by group to get all group member submissions
-      if (production.group_id) {
-        productionsQuery = productionsQuery.eq('group_id', production.group_id);
+      if (staffMode && production.group_id) {
+        // Staff mode: use edge function with PIN authentication
+        const raw = sessionStorage.getItem("batch_calculator_staff_session");
+        const pin = raw ? (JSON.parse(raw)?.pin as string | undefined) : undefined;
+        
+        if (pin) {
+          const { data: staffData, error: staffError } = await supabase.functions.invoke("batch-staff-productions", {
+            body: { groupId: production.group_id, pin, recipeId: production.recipe_id },
+          });
+          
+          if (staffError) {
+            console.error("Error fetching staff productions:", staffError);
+          } else {
+            allProductions = (staffData as any)?.productions || [];
+          }
+        }
       } else {
-        // For non-group batches, filter by current user
-        productionsQuery = productionsQuery.eq('user_id', user?.id);
+        // Normal mode: direct Supabase query with RLS
+        let productionsQuery = supabase
+          .from('batch_productions')
+          .select('*, batch_production_ingredients(*)')
+          .eq('recipe_id', production.recipe_id);
+        
+        // If this production belongs to a group, filter by group to get all group member submissions
+        if (production.group_id) {
+          productionsQuery = productionsQuery.eq('group_id', production.group_id);
+        } else {
+          // For non-group batches, filter by current user
+          productionsQuery = productionsQuery.eq('user_id', user?.id);
+        }
+        
+        const { data, error: allError } = await productionsQuery;
+        
+        if (allError) console.error("Error fetching recipe productions:", allError);
+        allProductions = data || [];
       }
-      
-      const { data: allProductions, error: allError } = await productionsQuery;
-      
-      if (allError) console.error("Error fetching recipe productions:", allError);
 
       // Fetch master spirits for bottle size calculations
       const { data: masterSpirits } = await supabase
