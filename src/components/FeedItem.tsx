@@ -16,42 +16,48 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface FeedItemProps {
   item: any;
   currentUserId?: string;
+  // Engagement state from parent hook
   isLiked: boolean;
-  mutedVideos: Set<string>;
+  isSaved: boolean;
+  isReposted: boolean;
+  // Engagement actions from parent hook
   onLike: () => void;
+  onSave: () => void;
+  onRepost: () => void;
+  // Other actions
   onDelete: () => void;
   onEdit: () => void;
   onComment: () => void;
   onShare: () => void;
-  onToggleMute: (videoId: string) => void;
   onFullscreen: () => void;
-  onViewLikes: () => void;
+  // Video mute state
+  mutedVideos: Set<string>;
+  onToggleMute: (videoId: string) => void;
+  // Utility
   getBadgeColor: (level: string) => string;
-  onSaveChange?: (delta: number) => void;
-  onRepostChange?: (delta: number) => void;
 }
 
 export const FeedItem = memo(({
   item,
   currentUserId,
   isLiked,
-  mutedVideos,
+  isSaved,
+  isReposted,
   onLike,
+  onSave,
+  onRepost,
   onDelete,
   onEdit,
   onComment,
   onShare,
-  onToggleMute,
   onFullscreen,
-  onViewLikes,
+  mutedVideos,
+  onToggleMute,
   getBadgeColor,
-  onSaveChange,
-  onRepostChange
 }: FeedItemProps) => {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -61,29 +67,26 @@ export const FeedItem = memo(({
   const [showComments, setShowComments] = useState(false);
   const [showReposts, setShowReposts] = useState(false);
   const [showSaves, setShowSaves] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isReposted, setIsReposted] = useState(false);
   const [doubleTapLike, setDoubleTapLike] = useState(false);
   const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
   const [isVisible, setIsVisible] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
-  // Check if post/reel has attached music - support both posts and reels
+  // Check if post/reel has attached music
   const hasAttachedMusic = Boolean(item.music_track_id || item.music_url);
   const musicUrl = item.music_tracks?.preview_url || item.music_url;
   const shouldMuteVideo = hasAttachedMusic && item.mute_original_audio === true;
   const videoKey = item.id + (item.video_url || item.media_urls?.[0] || '');
   const isUserMuted = mutedVideos.has(videoKey);
   
-  // Handle visibility change from LazyVideo - controls audio muting
+  // Handle visibility change from LazyVideo
   const handleVisibilityChange = useCallback((visible: boolean) => {
     setIsVisible(visible);
   }, []);
 
-  // Track visibility for image/text posts using IntersectionObserver
+  // Track visibility for image/text posts
   useEffect(() => {
-    // Only use observer for non-video content
     const hasVideo = item.media_urls?.some((url: string) => 
       url.includes('.mp4') || url.includes('video')
     );
@@ -105,7 +108,7 @@ export const FeedItem = memo(({
     return () => observer.disconnect();
   }, [item.media_urls]);
 
-  // Play/pause attached music based on visibility and user mute toggle
+  // Play/pause attached music based on visibility
   useEffect(() => {
     if (audioRef.current && hasAttachedMusic && musicUrl) {
       if (isVisible && !isUserMuted) {
@@ -120,15 +123,10 @@ export const FeedItem = memo(({
     }
   }, [isVisible, isUserMuted, hasAttachedMusic, musicUrl]);
 
-  // Handle like - parent manages count via useLike hook
-  const handleLikeClick = useCallback(() => {
-    onLike();
-  }, [onLike]);
-
-  // Track views based on content type
+  // Track views
   useViewTracking(item.type === 'reel' ? 'reel' : 'post', item.id, currentUserId, true);
 
-  // Real-time subscription for comment count updates
+  // Real-time comment count updates
   useEffect(() => {
     const tableName = item.type === 'post' ? 'post_comments' : 'reel_comments';
     const idColumn = item.type === 'post' ? 'post_id' : 'reel_id';
@@ -143,7 +141,7 @@ export const FeedItem = memo(({
           table: tableName,
           filter: `${idColumn}=eq.${item.id}`
         },
-        () => setCommentCount(prev => prev + 1)
+        () => setCommentCount((prev: number) => prev + 1)
       )
       .on(
         'postgres_changes',
@@ -153,7 +151,7 @@ export const FeedItem = memo(({
           table: tableName,
           filter: `${idColumn}=eq.${item.id}`
         },
-        () => setCommentCount(prev => Math.max(0, prev - 1))
+        () => setCommentCount((prev: number) => Math.max(0, prev - 1))
       )
       .subscribe();
 
@@ -162,143 +160,26 @@ export const FeedItem = memo(({
     };
   }, [item.id, item.type]);
 
-  // Fetch initial repost/save state
-  useEffect(() => {
-    if (!currentUserId) return;
-    
-    const checkStatus = async () => {
-      if (item.type === 'post') {
-        const [repostRes, saveRes] = await Promise.all([
-          supabase.from('post_reposts').select('id').eq('post_id', item.id).eq('user_id', currentUserId).maybeSingle(),
-          supabase.from('post_saves').select('id').eq('post_id', item.id).eq('user_id', currentUserId).maybeSingle()
-        ]);
-        setIsReposted(!!repostRes.data);
-        setIsSaved(!!saveRes.data);
-      } else {
-        const [repostRes, saveRes] = await Promise.all([
-          supabase.from('reel_reposts').select('id').eq('reel_id', item.id).eq('user_id', currentUserId).maybeSingle(),
-          supabase.from('reel_saves').select('id').eq('reel_id', item.id).eq('user_id', currentUserId).maybeSingle()
-        ]);
-        setIsReposted(!!repostRes.data);
-        setIsSaved(!!saveRes.data);
-      }
-    };
-    
-    checkStatus();
-  }, [currentUserId, item.id, item.type]);
-
-  // Handle double tap to like (Instagram style)
+  // Handle double tap to like
   const handleDoubleTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTap < 300) {
       if (!isLiked) {
-        handleLikeClick();
+        onLike();
         setDoubleTapLike(true);
         setTimeout(() => setDoubleTapLike(false), 1000);
       }
     }
     setLastTap(now);
-  }, [lastTap, isLiked, handleLikeClick]);
-
-  // Handle repost
-  const handleRepost = useCallback(async () => {
-    if (!currentUserId) {
-      toast.error("Please login to repost");
-      return;
-    }
-    
-    const wasReposted = isReposted;
-    
-    // Optimistic UI update
-    setIsReposted(!wasReposted);
-    onRepostChange?.(wasReposted ? -1 : 1);
-    
-    try {
-      if (item.type === 'post') {
-        if (wasReposted) {
-          const { error } = await supabase.from('post_reposts').delete().eq('post_id', item.id).eq('user_id', currentUserId);
-          if (error) throw error;
-          toast.success("Repost removed");
-        } else {
-          const { error } = await supabase.from('post_reposts').insert({ post_id: item.id, user_id: currentUserId });
-          if (error && error.code !== '23505') throw error;
-          toast.success("Reposted to your profile");
-        }
-      } else {
-        if (wasReposted) {
-          const { error } = await supabase.from('reel_reposts').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
-          if (error) throw error;
-          toast.success("Repost removed");
-        } else {
-          const { error } = await supabase.from('reel_reposts').insert({ reel_id: item.id, user_id: currentUserId });
-          if (error && error.code !== '23505') throw error;
-          toast.success("Reposted to your profile");
-        }
-      }
-    } catch (error: any) {
-      // Revert on error
-      setIsReposted(wasReposted);
-      onRepostChange?.(wasReposted ? 1 : -1);
-      console.error("Repost error:", error);
-      toast.error("Failed to repost");
-    }
-  }, [currentUserId, item.id, item.type, isReposted, onRepostChange]);
-
-  // Handle save/bookmark
-  const handleSave = useCallback(async () => {
-    if (!currentUserId) {
-      toast.error("Please login to save");
-      return;
-    }
-    
-    const wasSaved = isSaved;
-    
-    // Optimistic UI update
-    setIsSaved(!wasSaved);
-    onSaveChange?.(wasSaved ? -1 : 1);
-    
-    try {
-      if (item.type === 'post') {
-        if (wasSaved) {
-          const { error } = await supabase.from('post_saves').delete().eq('post_id', item.id).eq('user_id', currentUserId);
-          if (error) throw error;
-          toast.success("Removed from saved");
-        } else {
-          const { error } = await supabase.from('post_saves').insert({ post_id: item.id, user_id: currentUserId });
-          if (error && error.code !== '23505') throw error;
-          toast.success("Saved to collection");
-        }
-      } else {
-        if (wasSaved) {
-          const { error } = await supabase.from('reel_saves').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
-          if (error) throw error;
-          toast.success("Removed from saved");
-        } else {
-          const { error } = await supabase.from('reel_saves').insert({ reel_id: item.id, user_id: currentUserId });
-          if (error && error.code !== '23505') throw error;
-          toast.success("Saved to collection");
-        }
-      }
-    } catch (error: any) {
-      // Revert on error
-      setIsSaved(wasSaved);
-      onSaveChange?.(wasSaved ? 1 : -1);
-      console.error("Save error:", error);
-      toast.error("Failed to save");
-    }
-  }, [currentUserId, item.id, item.type, isSaved, onSaveChange]);
+  }, [lastTap, isLiked, onLike]);
 
   return (
     <div ref={containerRef} className="relative w-full bg-background">
-      {/* Global audio element for music on image/text posts */}
+      {/* Audio element for music */}
       {hasAttachedMusic && musicUrl && (
-        <audio
-          ref={audioRef}
-          src={musicUrl}
-          loop
-          preload="auto"
-        />
+        <audio ref={audioRef} src={musicUrl} loop preload="auto" />
       )}
+
       {/* Header - User Info */}
       <div className="flex items-center justify-between px-3 py-2">
         <div 
@@ -351,82 +232,55 @@ export const FeedItem = memo(({
         )}
       </div>
 
-      {/* Text-only posts - Twitter/X style */}
+      {/* Text-only posts */}
       {(!item.media_urls || item.media_urls.length === 0) && item.content && (
-        <div 
-          className="px-3 py-4 relative"
-          onClick={handleDoubleTap}
-        >
+        <div className="px-3 py-4 relative" onClick={handleDoubleTap}>
           <p className="text-base leading-relaxed whitespace-pre-wrap">
             {item.content}
           </p>
           
-          {/* Music indicator for text-only posts */}
           {hasAttachedMusic && (
-            <>
-              {/* Audio element for text posts with music */}
-              {musicUrl && isVisible && (
-                <audio
-                  ref={audioRef}
-                  src={musicUrl}
-                  loop
-                  autoPlay
-                  muted={mutedVideos.has(videoKey)}
-                  preload="auto"
-                />
-              )}
-              <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-muted/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Music className={`w-5 h-5 text-primary ${isMusicPlaying ? 'animate-pulse' : ''}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {item.music_tracks?.title || 'Added Music'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {item.music_tracks?.artist || 'Unknown Artist'}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleMute(videoKey);
-                  }}
-                  className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
-                >
-                  {mutedVideos.has(videoKey) ? (
-                    <Volume2 className="w-4 h-4 text-primary" />
-                  ) : (
-                    <VolumeX className="w-4 h-4 text-primary" />
-                  )}
-                </button>
+            <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-muted/50">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Music className={`w-5 h-5 text-primary ${isMusicPlaying ? 'animate-pulse' : ''}`} />
               </div>
-            </>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {item.music_tracks?.title || 'Added Music'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {item.music_tracks?.artist || 'Unknown Artist'}
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMute(videoKey);
+                }}
+                className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
+              >
+                {mutedVideos.has(videoKey) ? (
+                  <Volume2 className="w-4 h-4 text-primary" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-primary" />
+                )}
+              </button>
+            </div>
           )}
           
-          {/* Double tap heart animation */}
           {doubleTapLike && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-              <Heart 
-                className="w-24 h-24 text-primary fill-primary animate-ping"
-                style={{ animationDuration: '0.5s' }}
-              />
+              <Heart className="w-24 h-24 text-primary fill-primary animate-ping" style={{ animationDuration: '0.5s' }} />
             </div>
           )}
         </div>
       )}
 
-      {/* Media - Instagram 4:5 Frameless */}
+      {/* Media content */}
       {item.media_urls && item.media_urls.length > 0 && (
-        <div 
-          className="relative w-full bg-black"
-          onClick={handleDoubleTap}
-        >
+        <div className="relative w-full bg-black" onClick={handleDoubleTap}>
           {item.media_urls.map((url: string, idx: number) => (
-            <div 
-              key={idx} 
-              className="relative w-full aspect-[4/5]"
-            >
+            <div key={idx} className="relative w-full aspect-[4/5]">
               {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-6">
                   <audio src={url} controls className="w-full" />
@@ -443,19 +297,10 @@ export const FeedItem = memo(({
                     onVisibilityChange={handleVisibilityChange}
                   />
                   
-                  {/* Audio element for attached music */}
                   {hasAttachedMusic && musicUrl && (
-                    <audio
-                      ref={audioRef}
-                      src={musicUrl}
-                      loop
-                      autoPlay
-                      muted={isUserMuted}
-                      preload="auto"
-                    />
+                    <audio ref={audioRef} src={musicUrl} loop autoPlay muted={isUserMuted} preload="auto" />
                   )}
                   
-                  {/* Music indicator */}
                   {hasAttachedMusic && (
                     <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
                       <Music className="w-3 h-3 text-white" />
@@ -481,13 +326,8 @@ export const FeedItem = memo(({
                 </div>
               ) : (
                 <div className="relative w-full h-full">
-                  <LazyImage
-                    src={url}
-                    alt="Post media"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  <LazyImage src={url} alt="Post media" className="absolute inset-0 w-full h-full object-cover" />
                   
-                  {/* Music indicator for image posts */}
                   {hasAttachedMusic && (
                     <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
                       <Music className={`w-3 h-3 text-white ${isMusicPlaying ? 'animate-pulse' : ''}`} />
@@ -497,7 +337,6 @@ export const FeedItem = memo(({
                     </div>
                   )}
                   
-                  {/* Mute toggle for image posts with music */}
                   {hasAttachedMusic && (
                     <button
                       onClick={(e) => {
@@ -516,13 +355,9 @@ export const FeedItem = memo(({
                 </div>
               )}
 
-              {/* Double tap heart animation */}
               {doubleTapLike && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <Heart 
-                    className="w-24 h-24 text-white fill-white animate-ping"
-                    style={{ animationDuration: '0.5s' }}
-                  />
+                  <Heart className="w-24 h-24 text-white fill-white animate-ping" style={{ animationDuration: '0.5s' }} />
                 </div>
               )}
             </div>
@@ -530,67 +365,34 @@ export const FeedItem = memo(({
         </div>
       )}
 
-      {/* Action Buttons - Instagram Style */}
+      {/* Action Buttons */}
       <div className="px-3 pt-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* Like */}
-            <button
-              onClick={handleLikeClick}
-              className="active:scale-75 transition-transform duration-100"
-            >
-              <Heart 
-                className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} 
-                strokeWidth={1.5} 
-              />
+            <button onClick={onLike} className="active:scale-75 transition-transform duration-100">
+              <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} strokeWidth={1.5} />
             </button>
 
-            {/* Comment */}
-            <button
-              onClick={() => setShowComments(true)}
-              className="active:scale-75 transition-transform duration-100"
-            >
+            <button onClick={() => setShowComments(true)} className="active:scale-75 transition-transform duration-100">
               <MessageCircle className="w-7 h-7 text-foreground" strokeWidth={1.5} />
             </button>
 
-            {/* Share */}
-            <button
-              onClick={onShare}
-              className="active:scale-75 transition-transform duration-100"
-            >
+            <button onClick={onShare} className="active:scale-75 transition-transform duration-100">
               <Send className="w-7 h-7 text-foreground -rotate-12" strokeWidth={1.5} />
             </button>
 
-            {/* Repost */}
-            <button
-              onClick={handleRepost}
-              className="active:scale-75 transition-transform duration-100"
-            >
-              <Repeat2 
-                className={`w-7 h-7 ${isReposted ? 'text-green-500' : 'text-foreground'}`} 
-                strokeWidth={1.5} 
-              />
+            <button onClick={onRepost} className="active:scale-75 transition-transform duration-100">
+              <Repeat2 className={`w-7 h-7 ${isReposted ? 'text-green-500' : 'text-foreground'}`} strokeWidth={1.5} />
             </button>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* AI Insights */}
-            <button
-              onClick={() => setShowInsights(true)}
-              className="active:scale-75 transition-transform duration-100"
-            >
+            <button onClick={() => setShowInsights(true)} className="active:scale-75 transition-transform duration-100">
               <Sparkles className="w-6 h-6 text-pink-400" />
             </button>
 
-            {/* Save/Bookmark */}
-            <button
-              onClick={handleSave}
-              className="active:scale-75 transition-transform duration-100"
-            >
-              <Bookmark 
-                className={`w-7 h-7 ${isSaved ? 'fill-foreground text-foreground' : 'text-foreground'}`} 
-                strokeWidth={1.5} 
-              />
+            <button onClick={onSave} className="active:scale-75 transition-transform duration-100">
+              <Bookmark className={`w-7 h-7 ${isSaved ? 'fill-foreground text-foreground' : 'text-foreground'}`} strokeWidth={1.5} />
             </button>
           </div>
         </div>
@@ -619,7 +421,7 @@ export const FeedItem = memo(({
           </button>
         </div>
 
-        {/* Caption - only show for posts with media (text-only posts show content above) */}
+        {/* Caption */}
         {'content' in item && item.content && item.media_urls && item.media_urls.length > 0 && (
           <p className="text-sm mt-1">
             <span 
