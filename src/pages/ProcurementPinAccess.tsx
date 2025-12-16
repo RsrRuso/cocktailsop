@@ -193,10 +193,21 @@ export default function ProcurementPinAccess() {
     });
   };
 
+  // Show skeleton UI instead of spinner for faster perceived load
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md animate-pulse">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full mb-4" />
+            <div className="h-8 bg-muted rounded w-48 mx-auto mb-2" />
+            <div className="h-4 bg-muted rounded w-64 mx-auto" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="h-14 bg-muted rounded" />
+            <div className="h-14 bg-muted rounded" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
