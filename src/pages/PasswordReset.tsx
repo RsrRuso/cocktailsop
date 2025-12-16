@@ -22,21 +22,43 @@ const PasswordReset = () => {
   const [isValidToken, setIsValidToken] = useState(false);
 
   useEffect(() => {
-    // Check if we have a valid recovery token
-    const checkRecoveryToken = async () => {
+    // Listen for PASSWORD_RECOVERY event from Supabase
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          // User clicked recovery link and session is established
+          setIsValidToken(true);
+        } else if (event === 'SIGNED_IN' && session) {
+          // Check if this is a recovery session by looking at URL
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const type = hashParams.get('type');
+          if (type === 'recovery') {
+            setIsValidToken(true);
+          }
+        }
+      }
+    );
+
+    // Also check current session in case event already fired
+    const checkExistingSession = async () => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
       
-      if (type !== 'recovery') {
+      if (type === 'recovery') {
+        // Give Supabase time to process the token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidToken(true);
+        }
+      } else {
         toast.error("Invalid password reset link");
         navigate('/auth');
-        return;
       }
-
-      setIsValidToken(true);
     };
 
-    checkRecoveryToken();
+    checkExistingSession();
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
