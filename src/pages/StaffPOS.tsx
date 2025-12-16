@@ -148,11 +148,12 @@ export default function StaffPOS() {
     setStaff(loggedInStaff);
     setOutlet(selectedOutlet);
     
-    // Load outlet data
+    // Load outlet data including open orders for bill totals
     await Promise.all([
       fetchTables(selectedOutlet.id),
       fetchCategories(selectedOutlet.id),
       fetchMenuItems(selectedOutlet.id),
+      fetchOpenOrders(selectedOutlet.id),
     ]);
 
     // If bartender or kitchen, also load KDS items (but bartenders can still access POS)
