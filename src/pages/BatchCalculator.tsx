@@ -2778,8 +2778,8 @@ const BatchCalculator = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background pb-32 sm:pb-24 pt-16">
-      <TopNav />
+    <div className={`min-h-screen bg-background ${staffMode ? 'pb-8' : 'pb-32 sm:pb-24 pt-16'}`}>
+      {!staffMode && <TopNav />}
 
       <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto mb-8 sm:mb-4">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
@@ -3819,7 +3819,7 @@ const BatchCalculator = () => {
         </DialogContent>
       </Dialog>
 
-      <BottomNav />
+      {!staffMode && <BottomNav />}
     </div>
   );
 };
