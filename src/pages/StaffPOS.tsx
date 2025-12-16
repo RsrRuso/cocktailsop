@@ -1021,8 +1021,8 @@ export default function StaffPOS() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
-              <div className="p-3 border-b flex justify-between items-center">
+            <PopoverContent className="w-80 p-0 max-h-[60vh] flex flex-col" align="end">
+              <div className="p-3 border-b flex justify-between items-center shrink-0">
                 <h4 className="font-semibold text-sm">Order Notifications</h4>
                 {orderNotifications.length > 0 && (
                   <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="text-xs h-7">
@@ -1030,7 +1030,7 @@ export default function StaffPOS() {
                   </Button>
                 )}
               </div>
-              <ScrollArea className="max-h-64">
+              <ScrollArea className="flex-1 overflow-auto">
                 {orderNotifications.length === 0 ? (
                   <div className="p-4 text-center text-muted-foreground text-sm">
                     No notifications
