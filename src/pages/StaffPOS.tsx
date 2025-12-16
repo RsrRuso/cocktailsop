@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useManagerRole } from "@/hooks/useManagerRole";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ interface MenuItem {
 
 export default function StaffPOS() {
   const { user } = useAuth();
+  const { isManager } = useManagerRole();
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -1507,17 +1509,19 @@ export default function StaffPOS() {
                       </span>
                     )}
                   </Button>
-                  {/* Assign button - top right corner */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openAssignDialog(table);
-                    }}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
-                    title="Assign staff"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Assign button - only for managers */}
+                  {isManager && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAssignDialog(table);
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
+                      title="Assign staff"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               );
             })}
