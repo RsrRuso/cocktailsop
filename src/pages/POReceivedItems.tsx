@@ -1786,6 +1786,18 @@ const POReceivedItems = () => {
                       varianceData.summary.extra > 0
                     );
                     
+                    // Get discrepancy items
+                    const discrepancyItems: string[] = [];
+                    if (hasDiscrepancy && varianceData?.items) {
+                      varianceData.items.forEach((item: any) => {
+                        if (item.status === 'short' || item.status === 'over' || item.status === 'missing' || item.status === 'extra') {
+                          discrepancyItems.push(`${item.item_name} (${item.status})`);
+                        }
+                      });
+                    }
+                    
+                    const receivedByName = po.receivedRecord?.received_by_name || po.receivedRecord?.received_by_email;
+                    
                     return (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -1793,12 +1805,9 @@ const POReceivedItems = () => {
                             <FileText className="w-4 h-4 text-green-500" />
                             <span className="font-medium text-foreground">{po.order_number}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                            <Badge variant="outline" className={hasDiscrepancy ? "border-amber-500/50 text-amber-500" : "border-green-500/50 text-green-500"}>
-                              {hasDiscrepancy ? 'Discrepancy' : 'Complete'}
-                            </Badge>
-                          </div>
+                          <Badge variant="outline" className={hasDiscrepancy ? "border-amber-500/50 text-amber-500" : "border-green-500/50 text-green-500"}>
+                            {hasDiscrepancy ? 'Discrepancy' : 'Complete'}
+                          </Badge>
                         </div>
                         
                         <div className="text-xs text-muted-foreground">
@@ -1821,9 +1830,29 @@ const POReceivedItems = () => {
                           </div>
                         </div>
                         
+                        {receivedByName && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="text-foreground/70">Received by:</span> {receivedByName}
+                          </div>
+                        )}
+                        
                         {po.receivedRecord && (
                           <div className="text-xs text-green-600">
-                            Received: {format(new Date(po.receivedRecord.received_date), 'MMM dd, yyyy')}
+                            {format(new Date(po.receivedRecord.received_date), 'MMM dd, yyyy')}
+                          </div>
+                        )}
+                        
+                        {hasDiscrepancy && discrepancyItems.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-border/50">
+                            <div className="text-xs text-amber-500 font-medium mb-1">Discrepancy Items:</div>
+                            <div className="text-xs text-muted-foreground space-y-0.5">
+                              {discrepancyItems.slice(0, 3).map((item, idx) => (
+                                <div key={idx}>• {item}</div>
+                              ))}
+                              {discrepancyItems.length > 3 && (
+                                <div className="text-amber-500/70">+{discrepancyItems.length - 3} more</div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
