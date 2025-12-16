@@ -986,9 +986,11 @@ const POReceivedItems = () => {
         .delete()
         .eq('id', id);
       
+      // Invalidate all related queries so PO status updates correctly
       queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
       queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
-      toast.success("Record and items deleted");
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }); // Update PO status
+      toast.success("Record deleted - PO status updated");
     } catch (error: any) {
       toast.error("Failed to delete: " + error.message);
     }
