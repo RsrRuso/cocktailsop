@@ -527,13 +527,15 @@ const Home = () => {
               item={item}
               currentUserId={currentUser?.id}
               isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+              isSaved={false}
+              isReposted={false}
               mutedVideos={mutedVideos}
               onLike={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
+              onSave={() => {}}
+              onRepost={() => {}}
               onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
               onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
-              onComment={() => {
-                // FeedItem handles comments internally via EnhancedCommentsDialog
-              }}
+              onComment={() => {}}
               onShare={() => {
                 setSelectedPostId(item.id);
                 setSelectedPostType(item.type);
@@ -543,22 +545,10 @@ const Home = () => {
               onToggleMute={handleToggleMute}
               onFullscreen={() => {
                 if (item.type === 'reel') {
-                  navigate('/reels', {
-                    state: {
-                      scrollToReelId: item.id,
-                      reelData: item
-                    }
-                  });
+                  navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } });
                 }
               }}
-              onViewLikes={() => {
-                setSelectedLikesPostId(item.id);
-                setIsReelLikes(item.type === 'reel');
-                setShowLikes(true);
-              }}
               getBadgeColor={getBadgeColor}
-              onSaveChange={(delta) => item.type === 'post' ? handlePostSaveChange(item.id, delta) : handleReelSaveChange(item.id, delta)}
-              onRepostChange={(delta) => item.type === 'post' ? handlePostRepostChange(item.id, delta) : handleReelRepostChange(item.id, delta)}
             />
           ))
         ) : (
