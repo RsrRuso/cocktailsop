@@ -133,10 +133,25 @@ export default function ProcurementPinAccess() {
     sessionStorage.removeItem('procurement_staff_session');
   };
 
+  const procurementInstallUrl = `${window.location.origin}/procurement.html`;
+
   const handleOpenProcurementInstallPage = () => {
     // IMPORTANT: Installing from inside the main SV app will install the main app manifest (landing).
-    // To get a dedicated "SV Procurement" icon, we open the dedicated install page.
-    window.location.href = "/procurement.html";
+    // To get a dedicated "SV Procurement" icon, open the dedicated install page in a new tab.
+    window.open("/procurement.html", "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyProcurementInstallLink = async () => {
+    try {
+      await navigator.clipboard.writeText(procurementInstallUrl);
+      toast({ title: "Link copied", description: "Open it in Safari, then Add to Home Screen." });
+    } catch {
+      toast({
+        title: "Couldn't copy link",
+        description: procurementInstallUrl,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleActionSelect = (action: 'po' | 'receiving') => {
