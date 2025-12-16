@@ -57,6 +57,8 @@ interface Table {
   status: string;
   allocation: string | null;
   turnover_count: number;
+  assigned_staff_id: string | null;
+  assigned_staff_name: string | null;
 }
 
 interface Category {
@@ -319,12 +321,39 @@ export default function StaffPOS() {
   };
 
   const fetchTables = async (outletId: string) => {
-    const { data } = await supabase
+    // Use raw query to get tables with assigned staff
+    const { data: rawTables } = await supabase
       .from("lab_ops_tables")
-      .select("id, name, table_number, capacity, status, allocation, turnover_count")
+      .select("*")
       .eq("outlet_id", outletId)
       .order("table_number", { ascending: true, nullsFirst: false });
-    setTables((data || []).map(t => ({ ...t, turnover_count: t.turnover_count || 0 })));
+    
+    const tableData = rawTables || [];
+    const staffIds = tableData
+      .map((t: any) => t.assigned_staff_id)
+      .filter(Boolean);
+    
+    // Fetch staff names in one query
+    let staffMap: Record<string, string> = {};
+    if (staffIds.length > 0) {
+      const { data: staffData } = await supabase
+        .from("lab_ops_staff")
+        .select("id, full_name")
+        .in("id", staffIds);
+      staffMap = (staffData || []).reduce((acc, s) => ({ ...acc, [s.id]: s.full_name }), {});
+    }
+    
+    setTables(tableData.map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      table_number: t.table_number,
+      capacity: t.capacity,
+      status: t.status,
+      allocation: t.allocation,
+      turnover_count: t.turnover_count || 0,
+      assigned_staff_id: t.assigned_staff_id || null,
+      assigned_staff_name: t.assigned_staff_id ? staffMap[t.assigned_staff_id] || null : null
+    })));
   };
 
   // Real-time subscription for instant table color updates
@@ -341,17 +370,38 @@ export default function StaffPOS() {
           table: 'lab_ops_tables',
           filter: `outlet_id=eq.${outlet.id}`
         },
-        (payload) => {
+        async (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as any;
+            // Fetch staff name if assigned
+            let staffName = null;
+            if (updated.assigned_staff_id) {
+              const { data: staffData } = await supabase
+                .from("lab_ops_staff")
+                .select("full_name")
+                .eq("id", updated.assigned_staff_id)
+                .single();
+              staffName = staffData?.full_name || null;
+            }
             setTables(prev => prev.map(t => 
               t.id === updated.id 
-                ? { ...t, status: updated.status, turnover_count: updated.turnover_count || 0 }
+                ? { 
+                    ...t, 
+                    status: updated.status, 
+                    turnover_count: updated.turnover_count || 0,
+                    assigned_staff_id: updated.assigned_staff_id || null,
+                    assigned_staff_name: staffName
+                  }
                 : t
             ));
           } else if (payload.eventType === 'INSERT') {
             const inserted = payload.new as any;
-            setTables(prev => [...prev, { ...inserted, turnover_count: inserted.turnover_count || 0 }]);
+            setTables(prev => [...prev, { 
+              ...inserted, 
+              turnover_count: inserted.turnover_count || 0,
+              assigned_staff_id: inserted.assigned_staff_id || null,
+              assigned_staff_name: null
+            }]);
           } else if (payload.eventType === 'DELETE') {
             const deleted = payload.old as any;
             setTables(prev => prev.filter(t => t.id !== deleted.id));
@@ -1450,10 +1500,16 @@ export default function StaffPOS() {
                       {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
                     </div>
                   )}
-                  {/* Turnover count */}
-                  <span className="text-[10px] font-medium opacity-70 mt-1">
-                    ↻ {table.turnover_count} turns
-                  </span>
+                  {/* Assigned staff name */}
+                  {table.assigned_staff_name ? (
+                    <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded mt-0.5 truncate max-w-full">
+                      {table.assigned_staff_name.split(' ')[0]}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium opacity-70 mt-1">
+                      ↻ {table.turnover_count} turns
+                    </span>
+                  )}
                 </Button>
               );
             })}
