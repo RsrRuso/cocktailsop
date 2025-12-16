@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone } from "lucide-react";
+import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { useState, useRef } from "react";
@@ -19,6 +19,7 @@ import autoTable from "jspdf-autotable";
 import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
+import { ProcurementStaffManagement } from "@/components/procurement/ProcurementStaffManagement";
 import { 
   EnhancedReceivingDialog, 
   EnhancedReceivingData, 
@@ -109,6 +110,7 @@ const POReceivedItems = () => {
   const [showPendingPOsDialog, setShowPendingPOsDialog] = useState(false);
   const [showCompletedPOsDialog, setShowCompletedPOsDialog] = useState(false);
   const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
+  const [showStaffManagement, setShowStaffManagement] = useState(false);
 
   // Workspace state - declare before hook usage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
@@ -1040,6 +1042,16 @@ const POReceivedItems = () => {
             >
               <Smartphone className="w-5 h-5 text-muted-foreground" />
             </Button>
+            {selectedWorkspaceId && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowStaffManagement(true)}
+                title="Manage Staff PINs"
+              >
+                <Users className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
               <HelpCircle className="w-5 h-5 text-muted-foreground" />
             </Button>
@@ -1981,6 +1993,16 @@ const POReceivedItems = () => {
 
       {/* Guide Dialog */}
       <PurchaseOrdersGuide open={showGuide} onOpenChange={setShowGuide} />
+
+      {/* Staff Management Dialog */}
+      {selectedWorkspaceId && (
+        <ProcurementStaffManagement
+          workspaceId={selectedWorkspaceId}
+          workspaceName="Procurement Workspace"
+          open={showStaffManagement}
+          onOpenChange={setShowStaffManagement}
+        />
+      )}
 
     </div>
   );
