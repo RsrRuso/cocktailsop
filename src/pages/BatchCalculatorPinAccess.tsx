@@ -118,7 +118,7 @@ export default function BatchCalculatorPinAccess() {
       setLoggedInGroup(selectedGroup);
       setMemberName(name);
       
-      // Save session
+      // Save session (includes PIN so staff mode can securely fetch group data)
       sessionStorage.setItem('batch_calculator_staff_session', JSON.stringify({ 
         member: {
           id: memberData.id,
@@ -127,7 +127,8 @@ export default function BatchCalculatorPinAccess() {
           group_id: memberData.group_id
         }, 
         group: selectedGroup,
-        name
+        name,
+        pin
       }));
     } catch (error) {
       console.error("Login error:", error);
