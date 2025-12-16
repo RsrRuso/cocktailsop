@@ -779,7 +779,20 @@ const BatchCalculator = () => {
         .from('master_spirits')
         .select('*');
       
-      const spiritsMap = new Map(masterSpirits?.map(s => [s.name, s]) || []);
+      // Helper function for fuzzy matching spirit names
+      const findMatchingSpirit = (ingredientName: string, spirits: any[]) => {
+        const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalizedIngredient = normalizeName(ingredientName);
+        
+        return spirits.find(spirit => {
+          const normalizedSpirit = normalizeName(spirit.name);
+          return normalizedSpirit === normalizedIngredient || 
+                 normalizedSpirit.includes(normalizedIngredient) || 
+                 normalizedIngredient.includes(normalizedSpirit);
+        });
+      };
+      
+      const spiritsList = masterSpirits || [];
 
       const doc = new jsPDF();
       
@@ -812,9 +825,9 @@ const BatchCalculator = () => {
         });
       }
       
-      // Calculate bottles and leftover per ingredient
+      // Calculate bottles and leftover per ingredient using fuzzy matching
       overallIngredientsMap.forEach((data, name) => {
-        const spirit = spiritsMap.get(name);
+        const spirit = findMatchingSpirit(name, spiritsList);
         if (spirit && spirit.bottle_size_ml) {
           const fullBottles = Math.floor(data.amountMl / spirit.bottle_size_ml);
           const leftoverMl = data.amountMl % spirit.bottle_size_ml;
@@ -1023,7 +1036,7 @@ const BatchCalculator = () => {
           const amountInMl = ing.unit === 'ml'
             ? parseFloat(ing.scaled_amount)
             : parseFloat(ing.scaled_amount) * 1000;
-          const spirit = spiritsMap.get(ing.ingredient_name);
+          const spirit = findMatchingSpirit(ing.ingredient_name, spiritsList);
           
           if (spirit && spirit.bottle_size_ml) {
             const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
@@ -1166,7 +1179,7 @@ const BatchCalculator = () => {
         // Calculate and show leftover in bottles for individual batch
         const leftoverInBottlesItems: { name: string; mlLeftover: number }[] = [];
         requiredMlItems.forEach((item) => {
-          const spirit = spiritsMap.get(item.name);
+          const spirit = findMatchingSpirit(item.name, spiritsList);
           if (spirit && spirit.bottle_size_ml) {
             const leftoverMl = spirit.bottle_size_ml - item.mlNeeded;
             if (leftoverMl > 0) {
@@ -1419,7 +1432,7 @@ const BatchCalculator = () => {
         // Calculate and show overall leftover in bottles
         const overallLeftoverInBottlesItems: { name: string; mlLeftover: number }[] = [];
         overallRequiredMlItems.forEach((item) => {
-          const spirit = spiritsMap.get(item.name);
+          const spirit = findMatchingSpirit(item.name, spiritsList);
           if (spirit && spirit.bottle_size_ml) {
             const leftoverMl = spirit.bottle_size_ml - item.mlNeeded;
             if (leftoverMl > 0) {
