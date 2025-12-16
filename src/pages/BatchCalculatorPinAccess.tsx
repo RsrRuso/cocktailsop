@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Delete, Calculator, History, LogOut, Beaker, Download, Share } from "lucide-react";
-
 interface GroupMember {
   id: string;
   user_id: string;
@@ -282,22 +282,31 @@ export default function BatchCalculatorPinAccess() {
             <p className="text-muted-foreground mt-2">Recipe Scaling & Production</p>
             <p className="text-sm text-muted-foreground mt-1">Select your team to continue</p>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {groups.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
                 No teams available. Contact your admin.
               </p>
             ) : (
-              groups.map(group => (
-                <Button
-                  key={group.id}
-                  variant="outline"
-                  className="w-full h-14 text-lg justify-start"
-                  onClick={() => setSelectedGroup(group)}
+              <div className="space-y-4">
+                <Select
+                  onValueChange={(value) => {
+                    const group = groups.find(g => g.id === value);
+                    if (group) setSelectedGroup(group);
+                  }}
                 >
-                  {group.name}
-                </Button>
-              ))
+                  <SelectTrigger className="w-full h-14 text-lg">
+                    <SelectValue placeholder="Select your team" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border">
+                    {groups.map(group => (
+                      <SelectItem key={group.id} value={group.id} className="text-base py-3">
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
 
             {/* Install to Home Screen Section */}
