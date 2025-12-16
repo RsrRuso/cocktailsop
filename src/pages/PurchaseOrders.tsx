@@ -78,7 +78,7 @@ const PurchaseOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'active' | 'archive'>('active');
+  const [viewMode, setViewMode] = useState<'active' | 'archive' | 'discrepancies'>('active');
   const [pasteContent, setPasteContent] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     return localStorage.getItem('po-workspace-id') || null;
@@ -557,12 +557,18 @@ const PurchaseOrders = () => {
   const totalItems = orders?.length || 0;
   const grandTotal = newItems.reduce((sum, item) => sum + item.price_total, 0);
 
-  // Separate active (pending/discrepancy) vs archived (fully received) orders
+  // Separate active (pending) vs discrepancies vs archived (fully received) orders
   const activeOrders = orders?.filter(order => {
     const hasReceived = (order as any).has_received;
+    // Active = not yet received
+    return !hasReceived;
+  }) || [];
+
+  const discrepancyOrders = orders?.filter(order => {
+    const hasReceived = (order as any).has_received;
     const hasDiscrepancy = (order as any).has_discrepancy;
-    // Active = not received OR has discrepancy
-    return !hasReceived || hasDiscrepancy;
+    // Discrepancies = received but has issues
+    return hasReceived && hasDiscrepancy;
   }) || [];
 
   const archivedOrders = orders?.filter(order => {
@@ -572,7 +578,7 @@ const PurchaseOrders = () => {
     return hasReceived && !hasDiscrepancy;
   }) || [];
 
-  const displayOrders = viewMode === 'active' ? activeOrders : archivedOrders;
+  const displayOrders = viewMode === 'active' ? activeOrders : viewMode === 'discrepancies' ? discrepancyOrders : archivedOrders;
 
   const filteredOrders = displayOrders.filter(order => 
     order.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -725,15 +731,19 @@ const PurchaseOrders = () => {
           </div>
         </Card>
 
-        {/* Active/Archive Tabs */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="active" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
+        {/* Active/Discrepancies/Archive Tabs */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive' | 'discrepancies')} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="active" className="flex items-center gap-2 text-xs">
+              <FileText className="w-3.5 h-3.5" />
               Active ({activeOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="archive" className="flex items-center gap-2">
-              <Archive className="w-4 h-4" />
+            <TabsTrigger value="discrepancies" className="flex items-center gap-2 text-xs text-destructive">
+              <Package className="w-3.5 h-3.5" />
+              Issues ({discrepancyOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="flex items-center gap-2 text-xs">
+              <Archive className="w-3.5 h-3.5" />
               Archive ({archivedOrders.length})
             </TabsTrigger>
           </TabsList>
@@ -747,6 +757,8 @@ const PurchaseOrders = () => {
             <div className="text-center py-8 text-muted-foreground">
               {viewMode === 'active' 
                 ? 'No active orders. Create your first purchase order!'
+                : viewMode === 'discrepancies'
+                ? 'No discrepancy orders. Orders with issues will appear here.'
                 : 'No archived orders. Fully received orders will appear here.'}
             </div>
           ) : (
