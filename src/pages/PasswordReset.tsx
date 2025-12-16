@@ -20,45 +20,80 @@ const PasswordReset = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [tokenChecked, setTokenChecked] = useState(false);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    let retryCount = 0;
+    const maxRetries = 5;
+
     // Listen for PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log('Auth event:', event);
         if (event === 'PASSWORD_RECOVERY') {
-          // User clicked recovery link and session is established
           setIsValidToken(true);
+          setTokenChecked(true);
         } else if (event === 'SIGNED_IN' && session) {
-          // Check if this is a recovery session by looking at URL
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const type = hashParams.get('type');
           if (type === 'recovery') {
             setIsValidToken(true);
+            setTokenChecked(true);
           }
         }
       }
     );
 
-    // Also check current session in case event already fired
-    const checkExistingSession = async () => {
+    // Check for recovery token with retry mechanism
+    const checkRecoveryToken = async () => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
       
-      if (type === 'recovery') {
-        // Give Supabase time to process the token
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setIsValidToken(true);
-        }
-      } else {
+      // No recovery params in URL - invalid link
+      if (!type && !accessToken) {
         toast.error("Invalid password reset link");
         navigate('/auth');
+        return;
+      }
+      
+      // Has recovery type - check for session
+      if (type === 'recovery' || accessToken) {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          toast.error("Password reset link has expired. Please request a new one.");
+          navigate('/auth');
+          return;
+        }
+        
+        if (session) {
+          setIsValidToken(true);
+          setTokenChecked(true);
+          return;
+        }
+        
+        // No session yet - retry with delay (Supabase needs time to process token)
+        if (retryCount < maxRetries) {
+          retryCount++;
+          timeoutId = setTimeout(checkRecoveryToken, 500);
+        } else {
+          // Max retries reached - token likely expired or invalid
+          setTokenChecked(true);
+          toast.error("Password reset link has expired or is invalid. Please request a new one.");
+          navigate('/auth');
+        }
       }
     };
 
-    checkExistingSession();
+    checkRecoveryToken();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [navigate]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -83,12 +118,16 @@ const PasswordReset = () => {
       
       if (error) throw error;
 
-      toast.success("Password updated successfully! You can now sign in with your new password.");
+      toast.success("Password updated successfully! Please sign in with your new password.");
       
-      // Navigate to auth page after successful reset
+      // Sign out and navigate to auth page
+      await supabase.auth.signOut();
+      
+      // Clear URL hash and navigate
+      window.history.replaceState(null, '', window.location.pathname);
       setTimeout(() => {
         navigate('/auth');
-      }, 1500);
+      }, 1000);
       
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -103,8 +142,9 @@ const PasswordReset = () => {
 
   if (!isValidToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-3">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Validating reset link...</p>
       </div>
     );
   }
