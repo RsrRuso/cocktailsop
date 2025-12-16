@@ -51,45 +51,44 @@ export function BartenderPerformance({ open, onClose, outletId }: BartenderPerfo
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
       const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd');
-      const weekEnd = format(endOfWeek(new Date()), 'yyyy-MM-dd');
 
-      // Fetch daily stats
-      const { data: dailyData } = await supabase
-        .from("lab_ops_bartender_daily_stats")
-        .select(`
-          *,
-          bartender:lab_ops_staff(full_name),
-          station:lab_ops_stations(name)
-        `)
-        .eq("outlet_id", outletId)
-        .eq("shift_date", today)
-        .order("total_drinks_served", { ascending: false });
+      // Determine date range based on active tab
+      const dateFilter = activeTab === "week" || activeTab === "leaderboard" ? weekStart : today;
 
-      setDailyStats(dailyData || []);
-
-      // Calculate leaderboard from item performance
+      // Fetch item performance data directly and calculate stats
       const { data: itemPerf } = await supabase
         .from("lab_ops_bartender_item_performance")
         .select(`
           bartender_id,
+          station_id,
           time_seconds,
-          bartender:lab_ops_staff(full_name)
+          shift_date,
+          bartender:lab_ops_staff(full_name),
+          station:lab_ops_stations(name)
         `)
         .eq("outlet_id", outletId)
-        .gte("shift_date", activeTab === "week" ? weekStart : today)
+        .gte("shift_date", dateFilter)
         .not("completed_at", "is", null);
 
-      if (itemPerf) {
+      if (itemPerf && itemPerf.length > 0) {
+        // Group by bartender and calculate stats
         const grouped = itemPerf.reduce((acc: any, item) => {
           const id = item.bartender_id;
+          if (!id) return acc;
+          
           if (!acc[id]) {
             acc[id] = {
+              id: id,
               bartender_id: id,
+              station_id: item.station_id,
               name: (item.bartender as any)?.full_name || "Unknown",
+              station: item.station,
+              bartender: item.bartender,
               total_drinks: 0,
               total_time: 0,
               min_time: Infinity,
-              max_time: 0
+              max_time: 0,
+              shift_date: item.shift_date
             };
           }
           acc[id].total_drinks++;
@@ -103,15 +102,25 @@ export function BartenderPerformance({ open, onClose, outletId }: BartenderPerfo
           return acc;
         }, {});
 
-        const leaders = Object.values(grouped)
+        const processedData = Object.values(grouped)
           .map((b: any) => ({
             ...b,
             avg_time: b.total_drinks > 0 ? Math.round(b.total_time / b.total_drinks) : 0,
+            total_drinks_served: b.total_drinks,
+            avg_time_seconds: b.total_drinks > 0 ? Math.round(b.total_time / b.total_drinks) : 0,
+            min_time_seconds: b.min_time === Infinity ? null : b.min_time,
+            max_time_seconds: b.max_time === 0 ? null : b.max_time,
+            efficiency_score: calculateEfficiency(b.total_drinks, b.total_time / b.total_drinks),
             efficiency: calculateEfficiency(b.total_drinks, b.total_time / b.total_drinks)
           }))
           .sort((a: any, b: any) => b.total_drinks - a.total_drinks);
 
-        setLeaderboard(leaders);
+        // Set both daily stats and leaderboard from the same processed data
+        setDailyStats(processedData as any);
+        setLeaderboard(processedData);
+      } else {
+        setDailyStats([]);
+        setLeaderboard([]);
       }
     } catch (error) {
       console.error("Error fetching performance:", error);
