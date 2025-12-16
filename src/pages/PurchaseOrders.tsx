@@ -140,7 +140,26 @@ const PurchaseOrders = () => {
       
       const { data, error } = await query;
       if (error) throw error;
-      return data as PurchaseOrder[];
+      
+      // Fetch receiving records to check which POs have been received
+      let receivedQuery = supabase
+        .from('po_received_records')
+        .select('document_number');
+      
+      if (selectedWorkspaceId) {
+        receivedQuery = receivedQuery.eq('workspace_id', selectedWorkspaceId);
+      } else {
+        receivedQuery = receivedQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data: receivedRecords } = await receivedQuery;
+      const receivedDocNumbers = new Set(receivedRecords?.map(r => r.document_number?.toUpperCase()) || []);
+      
+      // Mark POs as received if they have matching receiving records
+      return (data || []).map(order => ({
+        ...order,
+        has_received: order.order_number ? receivedDocNumbers.has(order.order_number.toUpperCase()) : false
+      })) as (PurchaseOrder & { has_received: boolean })[];
     },
     enabled: !!user?.id
   });
@@ -677,7 +696,7 @@ const PurchaseOrders = () => {
           ) : (
             <div className="space-y-2">
               {filteredOrders?.map((order) => {
-                const isCompleted = order.status === 'confirmed' || order.status === 'completed';
+                const isCompleted = (order as any).has_received || order.status === 'confirmed' || order.status === 'completed';
                 const orderCode = order.order_number?.toUpperCase() || '';
                 const isMaterial = orderCode.startsWith('RQ');
                 const isMarketList = orderCode.startsWith('ML');
