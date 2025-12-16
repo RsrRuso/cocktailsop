@@ -57,10 +57,14 @@ interface Order {
   table_number?: number | null;
   status: string;
   created_at: string;
+  covers?: number | null;
   table?: {
     name: string;
     table_number?: number | null;
   };
+  server?: {
+    full_name: string;
+  } | null;
   items: OrderItem[];
 }
 
@@ -232,8 +236,9 @@ export default function BarKDS() {
       const { data: activeOrdersData, error: activeError } = await supabase
         .from("lab_ops_orders")
         .select(`
-          id, table_id, status, created_at,
-          table:lab_ops_tables(name, table_number)
+          id, table_id, status, created_at, covers,
+          table:lab_ops_tables(name, table_number),
+          server:lab_ops_staff!lab_ops_orders_server_id_fkey(full_name)
         `)
         .eq("outlet_id", outletId)
         .in("status", ["open", "in_progress", "sent"])
@@ -246,8 +251,9 @@ export default function BarKDS() {
       const { data: completedOrdersData, error: completedError } = await supabase
         .from("lab_ops_orders")
         .select(`
-          id, table_id, status, created_at,
-          table:lab_ops_tables(name, table_number)
+          id, table_id, status, created_at, covers,
+          table:lab_ops_tables(name, table_number),
+          server:lab_ops_staff!lab_ops_orders_server_id_fkey(full_name)
         `)
         .eq("outlet_id", outletId)
         .in("status", ["ready", "closed"])
@@ -280,13 +286,16 @@ export default function BarKDS() {
 
         if (barItems.length > 0) {
           const tableData = order.table as any;
+          const serverData = order.server as any;
           const orderData: Order = {
             id: order.id,
             table_id: order.table_id,
             table_number: tableData?.table_number,
             status: order.status,
             created_at: order.created_at,
+            covers: order.covers,
             table: tableData,
+            server: serverData,
             items: barItems as unknown as OrderItem[]
           };
 
@@ -322,13 +331,16 @@ export default function BarKDS() {
 
         if (barItems.length > 0) {
           const tableData = order.table as any;
+          const serverData = order.server as any;
           completedWithItems.push({
             id: order.id,
             table_id: order.table_id,
             table_number: tableData?.table_number,
             status: order.status,
             created_at: order.created_at,
+            covers: order.covers,
             table: tableData,
+            server: serverData,
             items: barItems as unknown as OrderItem[]
           });
         }
@@ -706,20 +718,37 @@ export default function BarKDS() {
                     key={order.id} 
                     className="bg-gray-900 border-gray-700 overflow-hidden"
                   >
-                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg text-white flex items-center gap-2">
-                          #{index + 1}
-                          <Badge variant="outline" className="text-amber-400 border-amber-400">
-                            {order.table?.name || "Table"}
+                    <CardHeader className="pb-2">
+                      {/* KOT Header - Ticket Info */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-black text-amber-400">#{index + 1}</span>
+                          <Badge variant="outline" className="text-amber-400 border-amber-400 font-bold">
+                            T{order.table_number || order.table?.table_number || '?'}
                           </Badge>
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className={`w-2 h-2 rounded-full ${getAgeColor(ageMinutes)}`} />
-                          <span className="text-xs text-gray-400 flex items-center gap-1">
-                            <Timer className="h-3 w-3" />
-                            {ageMinutes}m ago
+                          {order.covers && (
+                            <Badge variant="secondary" className="text-xs">
+                              {order.covers} pax
+                            </Badge>
+                          )}
+                        </div>
+                        <div className={`w-2 h-2 rounded-full ${getAgeColor(ageMinutes)}`} />
+                      </div>
+                      
+                      {/* Server & Time Info */}
+                      <div className="flex items-center justify-between text-xs text-gray-400 border-b border-gray-700 pb-2">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          <span className="font-medium text-gray-300">
+                            {order.server?.full_name || 'Server'}
                           </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1">
+                            <Timer className="h-3 w-3" />
+                            {format(new Date(order.created_at), 'HH:mm')}
+                          </span>
+                          <span className="text-gray-500">({ageMinutes}m)</span>
                           {ageMinutes >= 10 && (
                             <AlertTriangle className="h-4 w-4 text-red-500" />
                           )}
