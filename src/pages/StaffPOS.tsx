@@ -358,7 +358,8 @@ export default function StaffPOS() {
       .from("lab_ops_orders")
       .select(`
         *,
-        lab_ops_tables(name),
+        lab_ops_tables(name, table_number),
+        server:lab_ops_staff(full_name),
         lab_ops_order_items(id, qty, unit_price, lab_ops_menu_items(name))
       `)
       .eq("outlet_id", outletId)
@@ -894,7 +895,9 @@ export default function StaffPOS() {
                 ) : (
                 openOrders.map(order => {
                     const tableName = order.lab_ops_tables?.name || "Table";
-                    const tableNumber = tableName.replace(/[^0-9]/g, '') || tableName.substring(0, 2);
+                    const tableNumber = order.lab_ops_tables?.table_number || tableName.replace(/[^0-9]/g, '') || tableName.substring(0, 2);
+                    const serverName = order.server?.full_name || "—";
+                    const sentTime = new Date(order.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
                     return (
                       <Card 
                         key={order.id} 
@@ -905,13 +908,16 @@ export default function StaffPOS() {
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-3">
                               {/* Table Number Badge */}
-                              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                                <span className="font-black text-amber-500 text-lg">{tableNumber}</span>
+                              <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                <span className="font-black text-amber-500 text-xl">{tableNumber}</span>
                               </div>
                               <div>
                                 <p className="font-semibold">{tableName}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {order.lab_ops_order_items?.length || 0} items • {order.covers} covers
+                                </p>
+                                <p className="text-xs text-amber-500 font-medium mt-0.5">
+                                  {serverName}
                                 </p>
                               </div>
                             </div>
@@ -920,7 +926,7 @@ export default function StaffPOS() {
                                 ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(order.created_at).toLocaleTimeString()}
+                                {sentTime}
                               </p>
                             </div>
                           </div>
