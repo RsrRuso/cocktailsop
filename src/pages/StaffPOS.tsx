@@ -1071,8 +1071,25 @@ export default function StaffPOS() {
       {/* Table Selection */}
       {!selectedTable ? (
         <div className="flex-1 p-2">
-          <h2 className="text-sm font-semibold mb-2 px-1">Select Table</h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h2 className="text-sm font-semibold">Select Table</h2>
+            {/* Color Legend */}
+            <div className="flex items-center gap-3 text-[10px]">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-emerald-500" />
+                <span className="text-muted-foreground">Available</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-red-500" />
+                <span className="text-muted-foreground">Occupied</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-orange-500" />
+                <span className="text-muted-foreground">Closed</span>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
             {tables.map(table => {
               const isOccupied = table.status === "seated" || table.status === "occupied";
               const isClosed = table.status === "closed";
@@ -1081,31 +1098,35 @@ export default function StaffPOS() {
               // Color coding: Red=Occupied, Green=Free, Orange=Closed
               const getTableStyle = () => {
                 if (isOccupied) {
-                  return "bg-red-500/90 hover:bg-red-500 text-white border-red-600 shadow-md shadow-red-500/30";
+                  return "bg-red-500/90 hover:bg-red-500 text-white border-red-600 shadow-lg shadow-red-500/30";
                 }
                 if (isClosed) {
-                  return "bg-orange-500/90 hover:bg-orange-500 text-orange-950 border-orange-600 shadow-md shadow-orange-500/30";
+                  return "bg-orange-500/90 hover:bg-orange-500 text-orange-950 border-orange-600 shadow-lg shadow-orange-500/30";
                 }
                 // Free - green
-                return "bg-emerald-500/80 hover:bg-emerald-500 text-emerald-950 border-emerald-600 shadow-md shadow-emerald-500/30";
+                return "bg-emerald-500/90 hover:bg-emerald-500 text-white border-emerald-600 shadow-lg shadow-emerald-500/30";
               };
               
               return (
                 <Button
                   key={table.id}
                   variant="outline"
-                  className={`h-16 flex flex-col py-1 px-2 transition-all ${getTableStyle()}`}
+                  className={`h-20 flex flex-col py-2 px-2 transition-all rounded-xl ${getTableStyle()}`}
                   onClick={() => setSelectedTable(table)}
                   disabled={isClosed}
                 >
-                  <span className="font-bold text-sm truncate w-full text-center">
-                    {table.table_number ? `T${table.table_number}` : table.name}
+                  {/* Large readable table number */}
+                  <span className="font-black text-2xl leading-none">
+                    {table.table_number || table.name?.replace(/[^0-9]/g, '') || '?'}
                   </span>
-                  <span className={`text-[10px] flex items-center gap-1 ${isOccupied ? "text-red-100" : isClosed ? "text-orange-800" : "text-emerald-800"}`}>
-                    <Users className="w-3 h-3" />{table.capacity}
-                    {table.allocation === "outdoor" && <span>•Out</span>}
-                  </span>
-                  <span className={`text-[9px] font-medium ${isOccupied ? "text-red-200" : isClosed ? "text-orange-700" : "text-emerald-700"}`}>
+                  {/* Capacity with icon */}
+                  <div className="flex items-center gap-1 mt-1 opacity-80">
+                    <Users className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">{table.capacity}</span>
+                    {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
+                  </div>
+                  {/* Turnover count */}
+                  <span className="text-[10px] font-medium opacity-70 mt-0.5">
                     ↻ {table.turnover_count} turns
                   </span>
                 </Button>
