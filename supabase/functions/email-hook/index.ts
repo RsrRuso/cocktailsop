@@ -109,9 +109,9 @@ serve(async (req: Request) => {
       });
     }
 
-    // Brand icon should be served from the same origin as the app, so it works in preview + prod.
+    // Brand icon is a static asset; use a real JPEG file to avoid content-type mismatches in email clients.
     const brandOrigin = safeOriginFromRedirect(payload.email_data.redirect_to);
-    const brandIconUrl = `${brandOrigin}/sv-icon.png`;
+    const brandIconUrl = `${brandOrigin}/specverse-icon.jpeg`;
 
     // Build the verify link ourselves (this is what the built-in template does).
     const verifyLink = buildVerifyLink(
