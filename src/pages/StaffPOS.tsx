@@ -224,7 +224,15 @@ export default function StaffPOS() {
   const fetchNotifications = async (outletId: string, staffId: string) => {
     const { data } = await supabase
       .from("lab_ops_order_notifications")
-      .select("*")
+      .select(`
+        *,
+        order:lab_ops_orders(
+          id,
+          table:lab_ops_tables(name, table_number),
+          lab_ops_order_items(id, qty, status, lab_ops_menu_items(name))
+        ),
+        item:lab_ops_order_items(id, qty, status, lab_ops_menu_items(name))
+      `)
       .eq("outlet_id", outletId)
       .eq("server_id", staffId)
       .eq("is_read", false)
@@ -1025,37 +1033,76 @@ export default function StaffPOS() {
                   <div className="divide-y">
                     {orderNotifications.map((notif) => {
                       const isStarted = notif.notification_type === 'item_started';
+                      
+                      // Extract table info
+                      const tableInfo = notif.order?.table;
+                      const tableName = tableInfo?.name || "Table";
+                      const tableNumber = tableInfo?.table_number || tableName.replace(/[^0-9]/g, '') || "?";
+                      
+                      // Get completed item name
+                      const completedItem = notif.item?.lab_ops_menu_items?.name || "Item";
+                      const completedQty = notif.item?.qty || 1;
+                      
+                      // Calculate pending items from order
+                      const orderItems = notif.order?.lab_ops_order_items || [];
+                      const pendingItems = orderItems.filter((i: any) => i.status !== 'ready' && i.id !== notif.order_item_id);
+                      const pendingCount = pendingItems.length;
+                      
                       return (
                         <div 
                           key={notif.id} 
-                          className={`p-3 flex items-start gap-3 ${isStarted ? 'bg-amber-500/10' : 'bg-green-500/10'}`}
+                          className={`p-3 ${isStarted ? 'bg-amber-500/10' : 'bg-green-500/10'}`}
                         >
-                          <div className={`p-2 rounded-full ${isStarted ? 'bg-amber-500' : 'bg-green-500'}`}>
-                            {isStarted ? (
-                              <Flame className="w-4 h-4 text-white" />
-                            ) : (
-                              <CheckCircle className="w-4 h-4 text-white" />
-                            )}
+                          <div className="flex items-start gap-3">
+                            {/* Table Number Badge */}
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg text-white ${isStarted ? 'bg-amber-500' : 'bg-green-500'}`}>
+                              {tableNumber}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold">
+                                  {isStarted ? 'Being Prepared' : 'Ready for Pickup'}
+                                </p>
+                                {isStarted ? (
+                                  <Flame className="w-4 h-4 text-amber-500" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                )}
+                              </div>
+                              
+                              {/* Completed Item */}
+                              <p className="text-sm mt-1">
+                                <span className="font-medium">{completedQty}x {completedItem}</span>
+                                <span className="text-muted-foreground"> for {tableName}</span>
+                              </p>
+                              
+                              {/* Pending Items */}
+                              {pendingCount > 0 && (
+                                <p className="text-xs text-amber-500 mt-1">
+                                  ⏳ {pendingCount} item{pendingCount > 1 ? 's' : ''} still pending
+                                </p>
+                              )}
+                              {pendingCount === 0 && !isStarted && (
+                                <p className="text-xs text-green-500 mt-1">
+                                  ✓ All items ready!
+                                </p>
+                              )}
+                              
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(notif.created_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 shrink-0"
+                              onClick={() => markNotificationRead(notif.id)}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
-                              {isStarted ? 'Being Prepared' : 'Ready for Pickup'}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {notif.message}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(notif.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6"
-                            onClick={() => markNotificationRead(notif.id)}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
                         </div>
                       );
                     })}
