@@ -4,7 +4,7 @@
 // This SW is used for both the main app and the Procurement install flow.
 // It MUST support SPA navigation (return /index.html for navigation requests) to avoid "black screen".
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const PRECACHE = `precache-${CACHE_VERSION}`;
 const RUNTIME = `runtime-${CACHE_VERSION}`;
 
@@ -15,6 +15,10 @@ const PRECACHE_URLS = [
   '/manifest.json',
   '/procurement.html',
   '/procurement-manifest.json',
+  '/batch-calculator.html',
+  '/batch-calculator-manifest.json',
+  '/batch-calculator-icon-192.png',
+  '/batch-calculator-icon-512.png',
   '/sv-icon.png',
   '/icon-192.png',
   '/icon-512.png',
