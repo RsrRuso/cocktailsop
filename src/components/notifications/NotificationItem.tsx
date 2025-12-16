@@ -28,39 +28,63 @@ interface NotificationItemProps {
   index: number;
 }
 
+// Complete list of all work-related notification types
+const WORK_NOTIFICATION_TYPES = new Set([
+  // FIFO/Workspace
+  'access_request',
+  'access_granted', 
+  'access_denied',
+  // Inventory
+  'stock_alert',
+  'fifo_alert',
+  'inventory_transfer',
+  'inventory_receiving',
+  'spot_check',
+  // Batch Calculator
+  'batch_submission',
+  'batch_edit',
+  'batch_delete',
+  'recipe_created',
+  'member_added',
+  // Procurement (actual DB types)
+  'purchase_order',
+  'receiving',
+  'po_created',
+  'po_received',
+  // Other work
+  'internal_email',
+]);
+
 // Work-related notification types and their tool mapping
 const WORK_NOTIFICATION_TOOLS: Record<string, { tool: string; color: string }> = {
   // FIFO/Workspace
   access_request: { tool: "FIFO Workspace", color: "bg-orange-500/20 text-orange-400" },
   access_granted: { tool: "Workspace", color: "bg-emerald-500/20 text-emerald-400" },
   access_denied: { tool: "Workspace", color: "bg-red-500/20 text-red-400" },
-  
   // Inventory
   stock_alert: { tool: "Inventory", color: "bg-red-500/20 text-red-400" },
   fifo_alert: { tool: "FIFO Manager", color: "bg-amber-500/20 text-amber-400" },
   inventory_transfer: { tool: "Inventory", color: "bg-blue-500/20 text-blue-400" },
   inventory_receiving: { tool: "Inventory", color: "bg-green-500/20 text-green-400" },
   spot_check: { tool: "Inventory", color: "bg-purple-500/20 text-purple-400" },
-  
   // Batch Calculator
   batch_submission: { tool: "Batch Calculator", color: "bg-blue-500/20 text-blue-400" },
   batch_edit: { tool: "Batch Calculator", color: "bg-yellow-500/20 text-yellow-400" },
   batch_delete: { tool: "Batch Calculator", color: "bg-red-500/20 text-red-400" },
   recipe_created: { tool: "Batch Calculator", color: "bg-green-500/20 text-green-400" },
   member_added: { tool: "Groups", color: "bg-cyan-500/20 text-cyan-400" },
-  
   // Procurement - actual database types
   purchase_order: { tool: "Purchase Orders", color: "bg-blue-500/20 text-blue-400" },
   receiving: { tool: "Receiving", color: "bg-green-500/20 text-green-400" },
   po_created: { tool: "Purchase Orders", color: "bg-blue-500/20 text-blue-400" },
   po_received: { tool: "Receiving", color: "bg-green-500/20 text-green-400" },
-  
   // Other work
   internal_email: { tool: "Email", color: "bg-indigo-500/20 text-indigo-400" },
 };
 
 export const isWorkNotification = (type: string): boolean => {
-  return type in WORK_NOTIFICATION_TOOLS;
+  // Use Set for O(1) lookup - explicitly check for work notification types
+  return WORK_NOTIFICATION_TYPES.has(type);
 };
 
 const getNotificationConfig = (type: string) => {
