@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePurchaseOrderMaster } from "@/hooks/usePurchaseOrderMaster";
 import { Button } from "@/components/ui/button";
@@ -84,9 +84,14 @@ interface PriceChange {
 
 const POReceivedItems = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Extract staff mode info from location.state (passed from ProcurementPinAccess)
+  const staffMode = (location.state as any)?.staffMode || false;
+  const staffName = (location.state as any)?.staffName || null;
   
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'all' | 'summary'>('summary');
@@ -545,8 +550,8 @@ const POReceivedItems = () => {
         total_value: totalValue,
         status: 'received',
         variance_data: report,
-        received_by_name: profile?.full_name || profile?.username || null,
-        received_by_email: profile?.email || user?.email || null
+        received_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
+        received_by_email: staffMode ? null : (profile?.email || user?.email || null)
       })
       .select('id')
       .single();
