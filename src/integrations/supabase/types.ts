@@ -6973,6 +6973,7 @@ export type Database = {
       lab_ops_tables: {
         Row: {
           allocation: string | null
+          assigned_staff_id: string | null
           capacity: number | null
           created_at: string | null
           floor_plan_id: string | null
@@ -6995,6 +6996,7 @@ export type Database = {
         }
         Insert: {
           allocation?: string | null
+          assigned_staff_id?: string | null
           capacity?: number | null
           created_at?: string | null
           floor_plan_id?: string | null
@@ -7017,6 +7019,7 @@ export type Database = {
         }
         Update: {
           allocation?: string | null
+          assigned_staff_id?: string | null
           capacity?: number | null
           created_at?: string | null
           floor_plan_id?: string | null
@@ -7038,6 +7041,13 @@ export type Database = {
           width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lab_ops_tables_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_ops_tables_floor_plan_id_fkey"
             columns: ["floor_plan_id"]
