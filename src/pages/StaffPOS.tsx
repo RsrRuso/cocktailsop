@@ -15,8 +15,9 @@ import {
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
-  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X, BarChart3
+  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X, BarChart3, UserPlus
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface OnlineTeamMember {
   id: string;
@@ -114,6 +115,12 @@ export default function StaffPOS() {
   // Notifications state
   const [orderNotifications, setOrderNotifications] = useState<any[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  
+  // Staff assignment dialog state
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [tableToAssign, setTableToAssign] = useState<Table | null>(null);
+  const [outletStaffList, setOutletStaffList] = useState<StaffMember[]>([]);
+  const [assigningStaff, setAssigningStaff] = useState(false);
 
   useEffect(() => {
     fetchOutlets();
@@ -374,6 +381,54 @@ export default function StaffPOS() {
       .eq("outlet_id", outletId)
       .eq("is_active", true);
     setMenuItems(data || []);
+  };
+
+  const fetchOutletStaff = async (outletId: string) => {
+    const { data } = await supabase
+      .from("lab_ops_staff")
+      .select("id, full_name, role, outlet_id, permissions")
+      .eq("outlet_id", outletId)
+      .eq("is_active", true)
+      .order("full_name");
+    setOutletStaffList((data || []).map(s => ({
+      ...s,
+      permissions: (s.permissions || {}) as Record<string, boolean>
+    })));
+  };
+
+  const openAssignDialog = (table: Table) => {
+    setTableToAssign(table);
+    if (outlet) fetchOutletStaff(outlet.id);
+    setAssignDialogOpen(true);
+  };
+
+  const assignStaffToTable = async (staffId: string | null) => {
+    if (!tableToAssign || !outlet) return;
+    
+    setAssigningStaff(true);
+    try {
+      const { error } = await supabase
+        .from("lab_ops_tables")
+        .update({ assigned_staff_id: staffId } as any)
+        .eq("id", tableToAssign.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: staffId ? "Staff Assigned" : "Assignment Cleared",
+        description: staffId 
+          ? `Table ${tableToAssign.table_number || tableToAssign.name} assigned successfully`
+          : `Assignment cleared from table ${tableToAssign.table_number || tableToAssign.name}`,
+      });
+      
+      setAssignDialogOpen(false);
+      setTableToAssign(null);
+    } catch (error) {
+      console.error("Error assigning staff:", error);
+      toast({ title: "Error", description: "Failed to assign staff", variant: "destructive" });
+    } finally {
+      setAssigningStaff(false);
+    }
   };
 
   const fetchKDSItems = async (outletId: string, role: string) => {
@@ -1322,7 +1377,10 @@ export default function StaffPOS() {
       {!selectedTable ? (
         <div className="flex-1 p-2">
           <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-sm font-semibold">Select Table</h2>
+            <div>
+              <h2 className="text-sm font-semibold">Select Table</h2>
+              <p className="text-[10px] text-muted-foreground">Long-press to assign staff</p>
+            </div>
             {/* Color Legend */}
             <div className="flex items-center gap-3 text-[10px]">
               <div className="flex items-center gap-1">
@@ -1369,6 +1427,10 @@ export default function StaffPOS() {
                   variant="outline"
                   className={`h-24 flex flex-col py-2 px-2 transition-all rounded-xl ${getTableStyle()}`}
                   onClick={() => setSelectedTable(table)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    openAssignDialog(table);
+                  }}
                   disabled={isClosed}
                 >
                   {/* Large readable table number */}
@@ -1612,6 +1674,56 @@ export default function StaffPOS() {
           </div>
         </div>
       )}
+      {/* Staff Assignment Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Assign Staff to Table {tableToAssign?.table_number || tableToAssign?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {/* Clear assignment option */}
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => assignStaffToTable(null)}
+              disabled={assigningStaff}
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Clear Assignment</span>
+            </Button>
+            
+            {outletStaffList.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No staff found</p>
+            ) : (
+              outletStaffList.map(staffMember => (
+                <Button
+                  key={staffMember.id}
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => assignStaffToTable(staffMember.id)}
+                  disabled={assigningStaff}
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-primary">
+                      {staffMember.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-sm">{staffMember.full_name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{staffMember.role}</p>
+                  </div>
+                </Button>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Long-press or right-click on tables to assign staff
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
