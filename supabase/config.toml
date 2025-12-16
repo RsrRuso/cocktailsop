@@ -122,3 +122,12 @@ verify_jwt = false
 
 [functions.matrix-voice-assistant]
 verify_jwt = true
+
+[functions.batch-staff-recipes]
+verify_jwt = false
+
+[functions.batch-staff-productions]
+verify_jwt = false
+
+[functions.batch-staff-production-ingredients]
+verify_jwt = false

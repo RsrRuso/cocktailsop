@@ -333,7 +333,20 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
     },
   });
 
-  const getProductionIngredients = async (productionId: string) => {
+  const getProductionIngredients = async (productionId: string, useStaffMode?: boolean, groupIdForStaff?: string | null) => {
+    // Staff mode: use edge function
+    if (useStaffMode && groupIdForStaff) {
+      const raw = sessionStorage.getItem("batch_calculator_staff_session");
+      const pin = raw ? (JSON.parse(raw)?.pin as string | undefined) : undefined;
+      if (!pin) return [] as BatchProductionIngredient[];
+
+      const { data, error } = await supabase.functions.invoke("batch-staff-production-ingredients", {
+        body: { groupId: groupIdForStaff, pin, productionId },
+      });
+      if (error) throw error;
+      return ((data as any)?.ingredients || []) as BatchProductionIngredient[];
+    }
+
     const { data, error } = await supabase
       .from('batch_production_ingredients')
       .select('*')
