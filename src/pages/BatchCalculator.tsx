@@ -139,10 +139,11 @@ const BatchCalculator = () => {
       ? aiAnalysisText.split("**QUARTERLY ANALYSIS:**")[1]?.trim() || ""
       : "";
 
-  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
+  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId, staffMode);
   const { productions, createProduction, updateProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
-    selectedGroupId
+    selectedGroupId,
+    staffMode
   );
   const { groups, createGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();

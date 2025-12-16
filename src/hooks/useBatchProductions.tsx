@@ -28,11 +28,11 @@ export interface BatchProductionIngredient {
   unit: string;
 }
 
-export const useBatchProductions = (recipeId?: string, groupId?: string | null) => {
+export const useBatchProductions = (recipeId?: string, groupId?: string | null, staffMode?: boolean) => {
   const queryClient = useQueryClient();
 
   const { data: productions, isLoading } = useQuery({
-    queryKey: ['batch-productions', recipeId, groupId],
+    queryKey: ['batch-productions', recipeId, groupId, staffMode],
     queryFn: async () => {
       let query = supabase
         .from('batch_productions')
@@ -43,11 +43,11 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
         query = query.eq('recipe_id', recipeId);
       }
 
-      // Filter by group_id when a group is selected
+      // Filter by group_id when a group is selected (staff mode always has a group)
       if (groupId) {
         query = query.eq('group_id', groupId);
-      } else {
-        // When no group selected (personal), show only personal productions
+      } else if (!staffMode) {
+        // When no group selected (personal) and not staff mode, show only personal productions
         query = query.is('group_id', null);
       }
 
