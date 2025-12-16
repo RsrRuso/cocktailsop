@@ -65,7 +65,8 @@ export const useStoriesData = (userId?: string) => {
           profiles (username, avatar_url, date_of_birth)
         `)
         .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
 
       if (error) throw error;
 
@@ -130,7 +131,8 @@ export const prefetchStoriesData = async () => {
       .from('stories')
       .select(`id, user_id, media_urls, media_types, profiles (username, avatar_url, date_of_birth)`)
       .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(20);
 
     if (data) {
       const userStoriesMap = new Map<string, Story>();
