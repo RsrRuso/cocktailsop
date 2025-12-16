@@ -53,16 +53,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true;
 
+    const syncSession = async () => {
+      try {
+        // Refresh tokens if needed (important after the app was backgrounded/closed)
+        await supabase.auth.refreshSession();
+      } catch {
+        // Ignore refresh errors; we'll fall back to the current stored session
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!isMounted) return;
+
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
+      } else {
+        setProfile(null);
+      }
+    };
+
+    // Set up auth state listener FIRST (prevents missing events during init)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        // Fetch profile in background (don't block) - deferred to prevent deadlock
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
+      } else {
+        setProfile(null);
+      }
+    });
+
     // Initial session check
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (!isMounted) return;
-        
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           await fetchProfile(session.user.id);
         }
@@ -77,41 +117,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initAuth();
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Fetch profile in background (don't block) - deferred to prevent deadlock
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    // Handle visibility change - refresh session when tab becomes visible
+    // Web: refresh session when tab becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (isMounted) {
-            setSession(session);
-            setUser(session?.user ?? null);
-          }
-        });
+        syncSession();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Native (Capacitor): refresh session when app resumes
+    let removeAppListener: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const handler = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            syncSession();
+          }
+        });
+        removeAppListener = () => handler.remove();
+      } catch {
+        // Not running in a native container (or plugin unavailable)
+      }
+    })();
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      removeAppListener?.();
     };
   }, []);
 
