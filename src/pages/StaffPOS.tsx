@@ -320,6 +320,44 @@ export default function StaffPOS() {
     setTables((data || []).map(t => ({ ...t, turnover_count: t.turnover_count || 0 })));
   };
 
+  // Real-time subscription for instant table color updates
+  useEffect(() => {
+    if (!outlet) return;
+    
+    const channel = supabase
+      .channel('lab-ops-tables-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lab_ops_tables',
+          filter: `outlet_id=eq.${outlet.id}`
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as any;
+            setTables(prev => prev.map(t => 
+              t.id === updated.id 
+                ? { ...t, status: updated.status, turnover_count: updated.turnover_count || 0 }
+                : t
+            ));
+          } else if (payload.eventType === 'INSERT') {
+            const inserted = payload.new as any;
+            setTables(prev => [...prev, { ...inserted, turnover_count: inserted.turnover_count || 0 }]);
+          } else if (payload.eventType === 'DELETE') {
+            const deleted = payload.old as any;
+            setTables(prev => prev.filter(t => t.id !== deleted.id));
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [outlet]);
+
   const fetchCategories = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_categories")
