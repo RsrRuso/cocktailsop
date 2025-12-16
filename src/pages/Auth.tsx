@@ -68,6 +68,13 @@ const Auth = () => {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Prefer the public domain for email links (prevents mixed-domain / invalid-link issues)
+  const canonicalOrigin = useMemo(() => {
+    const host = window.location.hostname;
+    const isPreview = host.endsWith('lovableproject.com') || host.endsWith('lovable.app') || host === 'localhost';
+    return isPreview ? 'https://specverse.app' : window.location.origin;
+  }, []);
+
   // Get redirect URL from query params
   const redirectTo = searchParams.get('redirect') || '/home';
 
@@ -118,10 +125,10 @@ const Auth = () => {
       if (isForgotPassword) {
         const validated = resetPasswordSchema.parse({ email });
         const { error } = await supabase.auth.resetPasswordForEmail(validated.email, {
-          redirectTo: `${window.location.origin}/password-reset`,
+          redirectTo: `${canonicalOrigin}/password-reset`,
         });
         if (error) throw error;
-        toast.success("Password reset link sent! Check your email");
+        toast.success("Password reset link sent! Use the latest email link (it works once).\nOpen it in Safari/Chrome (not inside Gmail).");
         setIsForgotPassword(false);
       } else if (isSignUp) {
         if (password !== confirmPassword) {
@@ -142,7 +149,7 @@ const Auth = () => {
           email: validated.email,
           password: validated.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${canonicalOrigin}/`,
             data: {
               full_name: validated.fullName,
               username: validated.username,

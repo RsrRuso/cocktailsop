@@ -23,14 +23,13 @@ const PasswordReset = () => {
   const [tokenChecked, setTokenChecked] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let retryCount = 0;
     const maxRetries = 5;
 
     // Listen for PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth event:', event);
         if (event === 'PASSWORD_RECOVERY') {
           setIsValidToken(true);
           setTokenChecked(true);
@@ -60,15 +59,8 @@ const PasswordReset = () => {
       
       // Has recovery type - check for session
       if (type === 'recovery' || accessToken) {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error:', error);
-          toast.error("Password reset link has expired. Please request a new one.");
-          navigate('/auth');
-          return;
-        }
-        
+        const { data: { session } } = await supabase.auth.getSession();
+
         if (session) {
           setIsValidToken(true);
           setTokenChecked(true);
