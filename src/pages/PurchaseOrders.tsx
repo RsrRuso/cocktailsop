@@ -1076,45 +1076,46 @@ const PurchaseOrders = () => {
 
       {/* View Order Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
+            <DialogTitle className="text-lg">Order Details</DialogTitle>
           </DialogHeader>
           
           {selectedOrder && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-3">
+              {/* Header info - responsive grid */}
+              <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                 <div>
-                  <span className="text-muted-foreground">Supplier:</span>
-                  <p className="font-medium">{selectedOrder.supplier_name || '-'}</p>
+                  <span className="text-muted-foreground text-[10px] sm:text-xs">Supplier:</span>
+                  <p className="font-medium truncate">{selectedOrder.supplier_name || '-'}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Order #:</span>
-                  <p className="font-medium">{selectedOrder.order_number || '-'}</p>
+                  <span className="text-muted-foreground text-[10px] sm:text-xs">Order #:</span>
+                  <p className="font-medium truncate">{selectedOrder.order_number || '-'}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Date:</span>
+                  <span className="text-muted-foreground text-[10px] sm:text-xs">Date:</span>
                   <p className="font-medium">{format(new Date(selectedOrder.order_date), 'MMM d, yyyy')}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge variant="default">{selectedOrder.status}</Badge>
+                  <span className="text-muted-foreground text-[10px] sm:text-xs">Status:</span>
+                  <Badge variant="default" className="text-[10px] sm:text-xs">{selectedOrder.status}</Badge>
                 </div>
               </div>
 
               {/* Show discrepancy alert if applicable */}
               {(selectedOrder as any).has_discrepancy && varianceData?.summary && (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-destructive font-medium mb-2">
-                    <AlertTriangle className="w-4 h-4" />
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2 sm:p-3">
+                  <div className="flex items-center gap-2 text-destructive font-medium text-xs sm:text-sm mb-1">
+                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     Receiving Discrepancy Detected
                   </div>
-                  <div className="flex gap-4 text-xs">
-                    {varianceData.summary.short > 0 && (
-                      <span className="text-amber-600">Short: {varianceData.summary.short}</span>
-                    )}
+                  <div className="flex flex-wrap gap-2 sm:gap-4 text-[10px] sm:text-xs">
                     {varianceData.summary.missing > 0 && (
                       <span className="text-destructive font-medium">Missing: {varianceData.summary.missing}</span>
+                    )}
+                    {varianceData.summary.short > 0 && (
+                      <span className="text-amber-600">Short: {varianceData.summary.short}</span>
                     )}
                     {varianceData.summary.over > 0 && (
                       <span className="text-blue-500">Over: {varianceData.summary.over}</span>
@@ -1126,54 +1127,100 @@ const PurchaseOrders = () => {
                 </div>
               )}
 
+              {/* Mobile-friendly items display */}
               <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Ordered</TableHead>
-                      {(selectedOrder as any).has_discrepancy && <TableHead>Received</TableHead>}
-                      <TableHead>Price/pc</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orderItems?.map((item) => {
-                      // Find variance info for this item
-                      const varItem = varianceData?.items?.find(
-                        (v) => v.item_code === item.item_code || v.item_name?.toLowerCase() === item.item_name?.toLowerCase()
-                      );
-                      const isMissing = varItem?.status === 'missing' || varItem?.received_qty === 0;
-                      const isShort = varItem?.status === 'short';
-                      const isOver = varItem?.status === 'over';
-                      
-                      return (
-                        <TableRow 
-                          key={item.id}
-                          className={isMissing ? 'bg-destructive/10' : isShort ? 'bg-amber-500/10' : isOver ? 'bg-blue-500/10' : ''}
-                        >
-                          <TableCell className="text-xs">{item.item_code || '-'}</TableCell>
-                          <TableCell className={`text-xs ${isMissing ? 'text-destructive font-medium' : ''}`}>
-                            {item.item_name}
-                            {isMissing && <span className="ml-1 text-destructive">(NOT PROVIDED)</span>}
-                          </TableCell>
-                          <TableCell className="text-xs">{item.quantity}</TableCell>
-                          {(selectedOrder as any).has_discrepancy && (
-                            <TableCell className={`text-xs font-medium ${isMissing ? 'text-destructive' : isShort ? 'text-amber-600' : isOver ? 'text-blue-500' : 'text-emerald-600'}`}>
-                              {varItem?.received_qty ?? item.quantity}
-                              {isMissing && <span className="ml-1">0</span>}
+                {/* Desktop table - hidden on mobile */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Code</TableHead>
+                        <TableHead className="text-xs">Item</TableHead>
+                        <TableHead className="text-xs text-center">Ordered</TableHead>
+                        {(selectedOrder as any).has_discrepancy && <TableHead className="text-xs text-center">Received</TableHead>}
+                        <TableHead className="text-xs text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orderItems?.map((item) => {
+                        const varItem = varianceData?.items?.find(
+                          (v) => v.item_code === item.item_code || v.item_name?.toLowerCase() === item.item_name?.toLowerCase()
+                        );
+                        const isMissing = varItem?.status === 'missing' || varItem?.received_qty === 0;
+                        const isShort = varItem?.status === 'short';
+                        const isOver = varItem?.status === 'over';
+                        
+                        return (
+                          <TableRow 
+                            key={item.id}
+                            className={isMissing ? 'bg-destructive/10' : isShort ? 'bg-amber-500/10' : isOver ? 'bg-blue-500/10' : ''}
+                          >
+                            <TableCell className="text-xs">{item.item_code || '-'}</TableCell>
+                            <TableCell className={`text-xs ${isMissing ? 'text-destructive font-medium' : ''}`}>
+                              {item.item_name}
+                              {isMissing && <span className="block text-destructive text-[10px]">(NOT PROVIDED)</span>}
                             </TableCell>
+                            <TableCell className="text-xs text-center">{item.quantity}</TableCell>
+                            {(selectedOrder as any).has_discrepancy && (
+                              <TableCell className={`text-xs text-center font-medium ${isMissing ? 'text-destructive' : isShort ? 'text-amber-600' : isOver ? 'text-blue-500' : 'text-emerald-600'}`}>
+                                {isMissing ? 0 : (varItem?.received_qty ?? item.quantity)}
+                              </TableCell>
+                            )}
+                            <TableCell className={`text-xs text-right font-medium ${isMissing ? 'text-destructive line-through' : ''}`}>
+                              {isMissing ? formatCurrency(0) : formatCurrency(Number(item.price_total))}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile card layout - shown only on mobile */}
+                <div className="sm:hidden divide-y divide-border">
+                  {orderItems?.map((item) => {
+                    const varItem = varianceData?.items?.find(
+                      (v) => v.item_code === item.item_code || v.item_name?.toLowerCase() === item.item_name?.toLowerCase()
+                    );
+                    const isMissing = varItem?.status === 'missing' || varItem?.received_qty === 0;
+                    const isShort = varItem?.status === 'short';
+                    const isOver = varItem?.status === 'over';
+                    
+                    return (
+                      <div 
+                        key={item.id}
+                        className={`p-2.5 ${isMissing ? 'bg-destructive/10' : isShort ? 'bg-amber-500/10' : isOver ? 'bg-blue-500/10' : ''}`}
+                      >
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-medium truncate ${isMissing ? 'text-destructive' : ''}`}>
+                              {item.item_name}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">{item.item_code || '-'}</p>
+                            {isMissing && (
+                              <span className="inline-block text-[10px] text-destructive font-medium mt-0.5">(NOT PROVIDED)</span>
+                            )}
+                          </div>
+                          <div className={`text-right ${isMissing ? 'text-destructive line-through' : 'text-primary'}`}>
+                            <p className="text-xs font-bold">{isMissing ? formatCurrency(0) : formatCurrency(Number(item.price_total))}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-4 text-[10px]">
+                          <span className="text-muted-foreground">
+                            Ordered: <span className="text-foreground font-medium">{item.quantity}</span>
+                          </span>
+                          {(selectedOrder as any).has_discrepancy && (
+                            <span className="text-muted-foreground">
+                              Received: <span className={`font-medium ${isMissing ? 'text-destructive' : isShort ? 'text-amber-600' : isOver ? 'text-blue-500' : 'text-emerald-600'}`}>
+                                {isMissing ? 0 : (varItem?.received_qty ?? item.quantity)}
+                              </span>
+                            </span>
                           )}
-                          <TableCell className="text-xs">{formatCurrency(Number(item.price_per_unit))}</TableCell>
-                          <TableCell className={`text-xs font-medium ${isMissing ? 'text-destructive line-through' : ''}`}>
-                            {isMissing ? formatCurrency(0) : formatCurrency(Number(item.price_total))}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Calculate adjusted total for discrepancy orders */}
@@ -1187,20 +1234,25 @@ const PurchaseOrders = () => {
                       (v) => v.item_code === item.item_code || v.item_name?.toLowerCase() === item.item_name?.toLowerCase()
                     );
                     if (varItem) {
-                      const receivedQty = varItem.received_qty ?? item.quantity;
+                      const receivedQty = isMissingItem(varItem) ? 0 : (varItem.received_qty ?? item.quantity);
                       return sum + (receivedQty * Number(item.price_per_unit));
                     }
                     return sum + Number(item.price_total);
                   }, 0);
                 }
                 
+                // Helper to check if item is missing
+                function isMissingItem(varItem: any) {
+                  return varItem?.status === 'missing' || varItem?.received_qty === 0;
+                }
+                
                 const difference = orderedTotal - receivedTotal;
                 const hasDiscrepancy = (selectedOrder as any).has_discrepancy;
                 
                 return (
-                  <div className="border-t pt-3 space-y-2">
+                  <div className="border-t pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
                     {hasDiscrepancy && difference > 0 && (
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs sm:text-sm">
                         <span className="text-muted-foreground">Ordered Total:</span>
                         <span className="line-through text-muted-foreground">
                           {formatCurrency(orderedTotal)}
@@ -1208,18 +1260,18 @@ const PurchaseOrders = () => {
                       </div>
                     )}
                     {hasDiscrepancy && difference > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-destructive">Deduction (Not Received):</span>
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-destructive">Deduction:</span>
                         <span className="text-destructive font-medium">
                           -{formatCurrency(difference)}
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs sm:text-sm">
                         {hasDiscrepancy && difference > 0 ? 'Actual Received:' : 'Total:'}
                       </span>
-                      <span className={`text-xl font-bold ${hasDiscrepancy && difference > 0 ? 'text-emerald-600' : 'text-primary'}`}>
+                      <span className={`text-base sm:text-xl font-bold ${hasDiscrepancy && difference > 0 ? 'text-emerald-600' : 'text-primary'}`}>
                         {formatCurrency(receivedTotal)}
                       </span>
                     </div>
@@ -1229,8 +1281,8 @@ const PurchaseOrders = () => {
 
               {selectedOrder.notes && (
                 <div>
-                  <span className="text-sm text-muted-foreground">Notes:</span>
-                  <p className="text-sm">{selectedOrder.notes}</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Notes:</span>
+                  <p className="text-xs sm:text-sm">{selectedOrder.notes}</p>
                 </div>
               )}
             </div>
