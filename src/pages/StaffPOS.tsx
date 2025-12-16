@@ -1449,7 +1449,15 @@ export default function StaffPOS() {
             </div>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-            {tables.map(table => {
+            {/* Filter tables: managers see all, others see only their assigned tables */}
+            {tables
+              .filter(table => {
+                // Managers see all tables
+                if (staff?.role === "manager") return true;
+                // Non-managers only see tables assigned to them
+                return table.assigned_staff_id === staff?.id;
+              })
+              .map(table => {
               const isOccupied = table.status === "seated" || table.status === "occupied";
               const isClosed = table.status === "closed";
               const isFree = table.status === "free" || (!isOccupied && !isClosed);
@@ -1524,6 +1532,14 @@ export default function StaffPOS() {
                 </div>
               );
             })}
+            {/* Empty state for non-managers with no assigned tables */}
+            {staff?.role !== "manager" && tables.filter(t => t.assigned_staff_id === staff?.id).length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                <Users className="w-12 h-12 text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground font-medium">No tables assigned to you</p>
+                <p className="text-sm text-muted-foreground/70 mt-1">Ask your manager to assign tables</p>
+              </div>
+            )}
           </div>
         </div>
       ) : (
