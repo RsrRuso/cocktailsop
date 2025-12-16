@@ -12989,6 +12989,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_old_po_received_records: { Args: never; Returns: undefined }
       expire_team_invitations: { Args: never; Returns: undefined }
       fire_automation_trigger: {
         Args: { p_payload: Json; p_trigger_type: string; p_user_id: string }
