@@ -105,6 +105,7 @@ const POReceivedItems = () => {
   const [showEnhancedReceiving, setShowEnhancedReceiving] = useState(false);
   const [enhancedReceivingData, setEnhancedReceivingData] = useState<EnhancedReceivingData | null>(null);
   const [pendingMatchedOrder, setPendingMatchedOrder] = useState<any>(null);
+  const [pendingOrderItems, setPendingOrderItems] = useState<any[]>([]);
   const [showPendingPOsDialog, setShowPendingPOsDialog] = useState(false);
   const [showCompletedPOsDialog, setShowCompletedPOsDialog] = useState(false);
   const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
@@ -402,16 +403,49 @@ const POReceivedItems = () => {
           
           // Document code matched - process items
           const docType = detectDocumentType(documentCode);
+
+          // Fetch ordered items for variance check (this is what makes Discrepancy accurate)
+          const { data: poItems, error: poItemsError } = await supabase
+            .from('purchase_order_items')
+            .select('*')
+            .eq('purchase_order_id', matchedOrder.id);
+
+          if (poItemsError) throw poItemsError;
+          setPendingOrderItems(poItems || []);
+
+          const poItemsByCode = new Map<string, any>();
+          const poItemsByName = new Map<string, any>();
+          (poItems || []).forEach((poi: any) => {
+            if (poi.item_code) {
+              poItemsByCode.set(normalizeItemCode(poi.item_code), poi);
+            }
+            if (poi.item_name) {
+              poItemsByName.set(String(poi.item_name).trim().toLowerCase(), poi);
+            }
+          });
+
           let marketCount = 0;
           let materialCount = 0;
-          
+
           const enhancedItems: ParsedReceivingItem[] = parsed.items.map((item: any) => {
             const itemCode = item.item_code || '';
-            const itemDocType = detectDocumentType(itemCode);
-            
+            const normalizedItemCode = itemCode ? normalizeItemCode(itemCode) : '';
+            const normalizedItemName = String(item.item_name || item.name || '').trim().toLowerCase();
+
+            const matchedPOItem = itemCode
+              ? poItemsByCode.get(normalizedItemCode)
+              : poItemsByName.get(normalizedItemName);
+
+            const matchedInPO = !!matchedPOItem;
+
+            let itemDocType = detectDocumentType(itemCode);
+            if (itemDocType === 'unknown' && (docType === 'market' || docType === 'material')) {
+              itemDocType = docType;
+            }
+
             if (itemDocType === 'market') marketCount++;
             if (itemDocType === 'material') materialCount++;
-            
+
             return {
               item_code: itemCode,
               item_name: item.item_name || item.name || '',
@@ -420,10 +454,10 @@ const POReceivedItems = () => {
               price_per_unit: item.price_per_unit || 0,
               price_total: (item.quantity || 0) * (item.price_per_unit || 0),
               delivery_date: item.delivery_date,
-              isReceived: true, // All items from matched PO are receivable
+              isReceived: matchedInPO,
               documentType: itemDocType,
-              matchedInPO: true,
-              matchedPOItem: null
+              matchedInPO,
+              matchedPOItem: matchedPOItem || undefined
             };
           });
           
@@ -485,10 +519,8 @@ const POReceivedItems = () => {
     const totalQty = receivedItemsList.reduce((sum, i) => sum + i.quantity, 0);
     const totalValue = receivedItemsList.reduce((sum, i) => sum + i.price_total, 0);
     
-    // Generate variance report for confirmed items
-    const orderedItems = receivedItemsList
-      .filter(i => i.matchedPOItem)
-      .map(i => i.matchedPOItem);
+    // Generate variance report vs the original PO items
+    const orderedItems = pendingOrderItems || [];
     
     const report = generateVarianceReport(
       orderedItems,
@@ -547,6 +579,7 @@ const POReceivedItems = () => {
     
     // Clear pending state
     setPendingMatchedOrder(null);
+    setPendingOrderItems([]);
     setEnhancedReceivingData(null);
   };
 
