@@ -111,10 +111,10 @@
     </script>
 
     <!-- SEO -->
-    <link rel="canonical" href="https://specverse.app/" />
-    
+    <link id="canonicalLink" rel="canonical" href="https://specverse.app/" />
+
     <!-- PWA Icons & Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    <link id="pwaManifest" rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/sv-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/sv-icon.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/sv-icon.png" />
@@ -122,7 +122,40 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/sv-icon.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/sv-icon.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="/sv-icon.png" />
-    
+
+    <script>
+      // IMPORTANT (iOS Add to Home Screen): Safari uses the page's manifest start_url.
+      // If the main app manifest is active, iOS will save /landing.
+      // When user is on Procurement routes, switch to the dedicated Procurement manifest.
+      (function () {
+        try {
+          var path = window.location.pathname || "";
+          var search = window.location.search || "";
+          var isProcurement =
+            path === "/procurement-pin-access" ||
+            path === "/procurement.html" ||
+            path.indexOf("/procurement") === 0 ||
+            search.indexOf("app=procurement") !== -1;
+
+          if (!isProcurement) return;
+
+          var manifest = document.getElementById("pwaManifest");
+          if (manifest) manifest.setAttribute("href", "/procurement-manifest.json");
+
+          var canonical = document.getElementById("canonicalLink");
+          if (canonical) canonical.setAttribute("href", window.location.origin + "/procurement-pin-access?app=procurement");
+
+          var appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (appleTitle) appleTitle.setAttribute("content", "SV Procurement");
+
+          var appName = document.querySelector('meta[name="application-name"]');
+          if (appName) appName.setAttribute("content", "SV Procurement");
+
+          document.title = "SV Procurement - Purchase Orders & Receiving";
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
