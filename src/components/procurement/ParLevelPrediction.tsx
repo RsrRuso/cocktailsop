@@ -15,9 +15,11 @@ import {
   Clock,
   ArrowUpRight,
   ArrowDownRight,
-  Minus
+  Minus,
+  FileText,
+  Calendar
 } from "lucide-react";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 
 interface ParLevelPredictionProps {
   workspaceId: string | null;
@@ -32,6 +34,7 @@ interface ItemOrderHistory {
   total_quantity: number;
   first_order_date: string;
   last_order_date: string;
+  days_tracked: number;
   avg_quantity_per_order: number;
   orders_per_week: number;
   daily_average: number;
@@ -46,6 +49,7 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<'3days' | 'week' | '2weeks' | 'month'>('week');
 
+  // Fetch ALL purchase order items from ALL documents
   const { data: orderHistory, isLoading } = useQuery({
     queryKey: ['par-level-prediction', workspaceId],
     queryFn: async () => {
@@ -56,6 +60,7 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
           item_code,
           quantity,
           purchase_orders!inner (
+            id,
             order_date,
             workspace_id,
             status
@@ -70,17 +75,33 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
     enabled: open && !!workspaceId,
   });
 
-  const parLevelData = useMemo(() => {
-    if (!orderHistory || orderHistory.length === 0) return [];
+  // Calculate par levels based on ALL historical data
+  const { parLevelData, totalDocuments, dateRange } = useMemo(() => {
+    if (!orderHistory || orderHistory.length === 0) {
+      return { parLevelData: [], totalDocuments: 0, dateRange: null };
+    }
 
+    // Count unique PO documents
+    const uniquePOIds = new Set<string>();
+    let earliestDate: Date | null = null;
+    let latestDate: Date | null = null;
+
+    // Group by item name
     const itemMap = new Map<string, {
       item_code: string | null;
-      orders: { date: string; quantity: number }[];
+      orders: { date: string; quantity: number; poId: string }[];
     }>();
 
     orderHistory.forEach((item: any) => {
       const orderDate = item.purchase_orders?.order_date;
-      if (!orderDate) return;
+      const poId = item.purchase_orders?.id;
+      if (!orderDate || !poId) return;
+
+      uniquePOIds.add(poId);
+      
+      const itemDate = new Date(orderDate);
+      if (!earliestDate || itemDate < earliestDate) earliestDate = itemDate;
+      if (!latestDate || itemDate > latestDate) latestDate = itemDate;
 
       const key = item.item_name.toLowerCase().trim();
       if (!itemMap.has(key)) {
@@ -91,7 +112,8 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
       }
       itemMap.get(key)!.orders.push({
         date: orderDate,
-        quantity: Number(item.quantity) || 0
+        quantity: Number(item.quantity) || 0,
+        poId
       });
     });
 
@@ -107,18 +129,24 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
 
       const firstOrderDate = orders[0].date;
       const lastOrderDate = orders[orders.length - 1].date;
+      
+      // Total quantity from ALL orders ever
       const totalQuantity = orders.reduce((sum, o) => sum + o.quantity, 0);
       const totalOrders = orders.length;
+      const uniquePOs = new Set(orders.map(o => o.poId)).size;
 
+      // Days from first order to today
       const daysCovered = Math.max(
         differenceInDays(today, new Date(firstOrderDate)),
-        7
+        7 // Minimum 7 days
       );
 
+      // Daily average = Total qty ever ordered / Total days tracked
       const dailyAverage = totalQuantity / daysCovered;
       const weeksCovered = Math.max(daysCovered / 7, 1);
       const ordersPerWeek = totalOrders / weeksCovered;
 
+      // Trend analysis
       let trend: 'up' | 'down' | 'stable' = 'stable';
       if (orders.length >= 4) {
         const midpoint = Math.floor(orders.length / 2);
@@ -136,6 +164,7 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
         total_quantity: totalQuantity,
         first_order_date: firstOrderDate,
         last_order_date: lastOrderDate,
+        days_tracked: daysCovered,
         avg_quantity_per_order: totalQuantity / totalOrders,
         orders_per_week: ordersPerWeek,
         daily_average: dailyAverage,
@@ -147,7 +176,14 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
       });
     });
 
-    return results.sort((a, b) => b.daily_average - a.daily_average);
+    return {
+      parLevelData: results.sort((a, b) => b.daily_average - a.daily_average),
+      totalDocuments: uniquePOIds.size,
+      dateRange: earliestDate && latestDate ? {
+        from: earliestDate,
+        to: latestDate
+      } : null
+    };
   }, [orderHistory]);
 
   const filteredItems = useMemo(() => {
@@ -171,11 +207,11 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
 
   const getPeriodLabel = () => {
     switch (selectedPeriod) {
-      case '3days': return '3 Days';
-      case 'week': return '1 Week';
-      case '2weeks': return '2 Weeks';
-      case 'month': return '1 Month';
-      default: return '1 Week';
+      case '3days': return '3D';
+      case 'week': return '1W';
+      case '2weeks': return '2W';
+      case 'month': return '1M';
+      default: return '1W';
     }
   };
 
@@ -198,6 +234,19 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
             <TrendingUp className="h-5 w-5 text-primary" />
             Par Level Prediction
           </DialogTitle>
+          {/* Data Source Info */}
+          {totalDocuments > 0 && dateRange && (
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-1">
+              <span className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                {totalDocuments} PO{totalDocuments > 1 ? 's' : ''} analyzed
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd, yyyy')}
+              </span>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col p-3 pt-2 gap-2">
@@ -252,7 +301,7 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
           <ScrollArea className="flex-1 -mx-3 px-3">
             {isLoading ? (
               <div className="py-8 text-center text-muted-foreground text-sm">
-                Analyzing order history...
+                Analyzing all order history...
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
@@ -297,23 +346,27 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
                       )}
                     </div>
                     
-                    {/* Stats Grid - All Visible */}
-                    <div className="grid grid-cols-4 gap-1.5 text-xs">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-5 gap-1 text-xs">
                       <div className="bg-muted/50 rounded p-1.5 text-center">
-                        <p className="text-[9px] text-muted-foreground">Total Qty</p>
-                        <p className="font-bold">{item.total_quantity}</p>
+                        <p className="text-[8px] text-muted-foreground">Total Qty</p>
+                        <p className="font-bold text-sm">{item.total_quantity}</p>
                       </div>
                       <div className="bg-muted/50 rounded p-1.5 text-center">
-                        <p className="text-[9px] text-muted-foreground">Orders</p>
-                        <p className="font-bold">{item.total_orders}</p>
+                        <p className="text-[8px] text-muted-foreground">Orders</p>
+                        <p className="font-bold text-sm">{item.total_orders}</p>
                       </div>
                       <div className="bg-muted/50 rounded p-1.5 text-center">
-                        <p className="text-[9px] text-muted-foreground">Daily Avg</p>
-                        <p className="font-bold">{item.daily_average.toFixed(1)}</p>
+                        <p className="text-[8px] text-muted-foreground">Days</p>
+                        <p className="font-bold text-sm">{item.days_tracked}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded p-1.5 text-center">
+                        <p className="text-[8px] text-muted-foreground">Avg/Day</p>
+                        <p className="font-bold text-sm">{item.daily_average.toFixed(1)}</p>
                       </div>
                       <div className="bg-primary/10 rounded p-1.5 text-center">
-                        <p className="text-[9px] text-muted-foreground">Par ({getPeriodLabel()})</p>
-                        <p className="font-bold text-primary">{getParValue(item)}</p>
+                        <p className="text-[8px] text-muted-foreground">Par {getPeriodLabel()}</p>
+                        <p className="font-bold text-sm text-primary">{getParValue(item)}</p>
                       </div>
                     </div>
                   </Card>
@@ -327,8 +380,8 @@ const ParLevelPrediction = ({ workspaceId, open, onOpenChange }: ParLevelPredict
             <div className="flex items-start gap-2">
               <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                <span className="font-medium">How it works:</span> Daily avg = Total qty purchased ÷ Days tracked. 
-                Par levels are projections based on this daily consumption rate.
+                <span className="font-medium">Formula:</span> Daily Avg = Total Qty (all POs) ÷ Days since first order. 
+                Par = Daily Avg × Period days.
               </p>
             </div>
           </Card>
