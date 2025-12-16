@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -17,26 +17,12 @@ import { isWorkNotification } from "@/components/notifications/NotificationItem"
 import { motion, AnimatePresence } from "framer-motion";
 import { isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface Notification {
-  id: string;
-  type: string;
-  content: string;
-  read: boolean;
-  created_at: string;
-  post_id?: string;
-  reel_id?: string;
-  story_id?: string;
-  music_share_id?: string;
-  event_id?: string;
-  reference_user_id?: string;
-}
+import { useNotificationsData, Notification } from "@/hooks/useNotificationsData";
 
 type FilterType = 'all' | 'work' | 'social';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { notifications, isLoading, refreshNotifications, setNotifications } = useNotificationsData();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const navigate = useNavigate();
@@ -137,33 +123,12 @@ const Notifications = () => {
     toast.success("Test notification sent!");
   };
 
-  const fetchNotifications = useCallback(async (showLoadingState = true) => {
-    if (showLoadingState) setIsLoading(true);
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .neq("type", "message")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (data) setNotifications(data as Notification[]);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
-
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await fetchNotifications(false);
+    await refreshNotifications();
+    setIsRefreshing(false);
     toast.success("Refreshed");
-  }, [fetchNotifications]);
+  }, [refreshNotifications]);
 
   useEffect(() => {
     const setupSubscription = async () => {
@@ -178,8 +143,6 @@ const Notifications = () => {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
-      fetchNotifications();
       
       subscriptionRef.current = supabase
         .channel(`notifications-${user.id}-${Date.now()}`)
@@ -197,7 +160,7 @@ const Notifications = () => {
               processedNotificationsRef.current = new Set(items.slice(-50));
             }
             
-            fetchNotifications(false);
+            refreshNotifications();
             showNotification('New Notification', newNotification.content, newNotification.type as any);
             
             await showPushNotification('New Notification', newNotification.content, {
@@ -232,7 +195,7 @@ const Notifications = () => {
         subscriptionRef.current = null;
       }
     };
-  }, [fetchNotifications, showNotification, showPushNotification]);
+  }, [refreshNotifications, showNotification, showPushNotification]);
 
   const handleMarkAllAsRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -248,14 +211,14 @@ const Notifications = () => {
       toast.error("Failed to mark all as read");
     } else {
       toast.success("All marked as read");
-      fetchNotifications(false);
+      refreshNotifications();
     }
   };
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       await supabase.from("notifications").update({ read: true }).eq("id", notification.id);
-      fetchNotifications(false);
+      refreshNotifications();
     }
 
     // Navigation logic (same as before)

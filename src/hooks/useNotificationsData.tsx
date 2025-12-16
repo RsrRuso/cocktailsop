@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Notification {
+export interface Notification {
   id: string;
   type: string;
   content: string;
@@ -22,16 +22,20 @@ let notificationsCache: {
   userId: string;
 } | null = null;
 
-const CACHE_TIME = 30 * 1000; // 30 seconds for notifications (more time-sensitive)
+const CACHE_TIME = 1 * 60 * 1000; // 1 minute
 
-export const useNotificationsData = (userId: string | null) => {
-  const [notifications, setNotifications] = useState<Notification[]>(
-    notificationsCache?.userId === userId ? notificationsCache.data : []
-  );
-  const [isLoading, setIsLoading] = useState(
-    !notificationsCache || notificationsCache.userId !== userId
-  );
+export const useNotificationsData = () => {
+  const [notifications, setNotifications] = useState<Notification[]>(notificationsCache?.data || []);
+  const [isLoading, setIsLoading] = useState(!notificationsCache);
+  const [userId, setUserId] = useState<string | null>(null);
   const isMounted = useRef(true);
+
+  // Get user on mount
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
 
   const fetchNotifications = useCallback(async (skipCache = false) => {
     if (!userId) return;
@@ -73,103 +77,57 @@ export const useNotificationsData = (userId: string | null) => {
     }
   }, [userId]);
 
-  const refreshNotifications = useCallback(() => {
+  const refreshNotifications = useCallback(async () => {
     return fetchNotifications(true);
   }, [fetchNotifications]);
 
+  // Invalidate cache (call when notifications are updated)
   const invalidateCache = useCallback(() => {
     notificationsCache = null;
   }, []);
 
-  // Add notification to cache (for real-time updates)
-  const addNotification = useCallback((notification: Notification) => {
-    setNotifications(prev => {
-      const updated = [notification, ...prev.filter(n => n.id !== notification.id)];
-      if (notificationsCache) {
-        notificationsCache.data = updated;
-      }
-      return updated;
-    });
-  }, []);
-
-  // Mark notification as read
-  const markAsRead = useCallback(async (notificationId: string) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === notificationId ? { ...n, read: true } : n
-    ));
-    
-    await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
-    
-    if (notificationsCache) {
-      notificationsCache.data = notificationsCache.data.map(n =>
-        n.id === notificationId ? { ...n, read: true } : n
-      );
-    }
-  }, []);
-
-  // Mark all as read
-  const markAllAsRead = useCallback(async () => {
-    if (!userId) return;
-    
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', userId)
-      .eq('read', false);
-    
-    if (notificationsCache) {
-      notificationsCache.data = notificationsCache.data.map(n => ({ ...n, read: true }));
-    }
-  }, [userId]);
-
   useEffect(() => {
     isMounted.current = true;
-    fetchNotifications();
+    if (userId) {
+      fetchNotifications();
+    }
     return () => { isMounted.current = false; };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, userId]);
 
   return { 
     notifications, 
     isLoading, 
     refreshNotifications, 
     invalidateCache,
-    addNotification,
-    markAsRead,
-    markAllAsRead,
-    setNotifications
+    setNotifications,
+    userId
   };
 };
 
 // Prefetch notifications for instant loading
-export const prefetchNotificationsData = async (userId: string) => {
-  if (notificationsCache && notificationsCache.userId === userId && 
-      Date.now() - notificationsCache.timestamp < CACHE_TIME) return;
+export const prefetchNotificationsData = async () => {
+  if (notificationsCache && Date.now() - notificationsCache.timestamp < CACHE_TIME) return;
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .neq('type', 'message')
       .order('created_at', { ascending: false })
       .limit(100);
 
     if (data) {
-      notificationsCache = {
-        data: data as Notification[],
+      notificationsCache = { 
+        data: data as Notification[], 
         timestamp: Date.now(),
-        userId
+        userId: user.id
       };
     }
   } catch (e) {
     console.error('Notifications prefetch failed');
   }
-};
-
-// Get unread count from cache
-export const getUnreadNotificationsCount = (): number => {
-  if (!notificationsCache) return 0;
-  return notificationsCache.data.filter(n => !n.read).length;
 };
