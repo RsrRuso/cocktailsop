@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   profile: any | null;
   isLoading: boolean;
+  isPendingPasswordReset: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -15,16 +16,27 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   profile: null,
   isLoading: true,
+  isPendingPasswordReset: false,
   refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+// Helper to check if current URL has password recovery params
+const isPasswordRecoveryUrl = () => {
+  const hash = window.location.hash;
+  if (!hash) return false;
+  const hashParams = new URLSearchParams(hash.substring(1));
+  return hashParams.get('type') === 'recovery' || 
+         (hashParams.get('access_token') && window.location.pathname.includes('password-reset'));
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPendingPasswordReset, setIsPendingPasswordReset] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -53,12 +65,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true;
 
+    // Check if this is a password recovery URL on mount
+    if (isPasswordRecoveryUrl()) {
+      setIsPendingPasswordReset(true);
+    }
+
     const syncSession = async () => {
+      // Don't sync session if user is in password recovery mode
+      if (isPasswordRecoveryUrl()) {
+        return;
+      }
+
       try {
-        // Refresh tokens if needed (important after the app was backgrounded/closed)
         await supabase.auth.refreshSession();
       } catch {
-        // Ignore refresh errors; we'll fall back to the current stored session
+        // Ignore refresh errors
       }
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -77,14 +98,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     // Set up auth state listener FIRST (prevents missing events during init)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
+
+      // Handle PASSWORD_RECOVERY event - don't treat as logged in
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPendingPasswordReset(true);
+        // Don't set user/session - they must reset password first
+        return;
+      }
+
+      // If we're on a recovery URL, don't treat session as valid login
+      if (isPasswordRecoveryUrl()) {
+        setIsPendingPasswordReset(true);
+        return;
+      }
+
+      // Password was successfully reset - clear the flag
+      if (event === 'USER_UPDATED' && isPendingPasswordReset) {
+        setIsPendingPasswordReset(false);
+      }
 
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        // Fetch profile in background (don't block) - deferred to prevent deadlock
         setTimeout(() => {
           fetchProfile(session.user.id);
         }, 0);
@@ -96,6 +134,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Initial session check
     const initAuth = async () => {
       try {
+        // Skip normal auth if this is a password recovery URL
+        if (isPasswordRecoveryUrl()) {
+          setIsPendingPasswordReset(true);
+          setIsLoading(false);
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!isMounted) return;
@@ -148,10 +193,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       removeAppListener?.();
     };
-  }, []);
+  }, [isPendingPasswordReset]);
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, isLoading, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, isLoading, isPendingPasswordReset, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
