@@ -4,7 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Delete, Package, Truck, LogOut, ClipboardList } from "lucide-react";
+import { Loader2, Delete, Package, Truck, LogOut, ClipboardList, Download, Share } from "lucide-react";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 
 interface ProcurementStaff {
   id: string;
@@ -28,6 +33,9 @@ export default function ProcurementPinAccess() {
   const [isPinLoading, setIsPinLoading] = useState(false);
   const [loggedInStaff, setLoggedInStaff] = useState<ProcurementStaff | null>(null);
   const [loggedInWorkspace, setLoggedInWorkspace] = useState<Workspace | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   useEffect(() => {
     fetchWorkspaces();
@@ -39,6 +47,18 @@ export default function ProcurementPinAccess() {
       setLoggedInStaff(staff);
       setLoggedInWorkspace(workspace);
     }
+
+    // PWA Install Detection
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(isIOSDevice);
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
   }, []);
 
   const fetchWorkspaces = async () => {
@@ -125,6 +145,17 @@ export default function ProcurementPinAccess() {
     setSelectedWorkspace(null);
     setPin("");
     sessionStorage.removeItem('procurement_staff_session');
+  };
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        toast({ title: "App installed successfully!" });
+        setDeferredPrompt(null);
+      }
+    }
   };
 
   const handleActionSelect = (action: 'po' | 'receiving') => {
@@ -270,6 +301,55 @@ export default function ProcurementPinAccess() {
                 </Button>
               ))
             )}
+
+            {/* Install to Home Screen Section */}
+            <div className="pt-4 border-t mt-4">
+              {deferredPrompt ? (
+                <Button 
+                  onClick={handleInstall} 
+                  className="w-full gap-2"
+                  variant="secondary"
+                >
+                  <Download className="w-4 h-4" />
+                  Add to Home Screen
+                </Button>
+              ) : showInstallGuide ? (
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-center">How to install:</p>
+                  {isIOS ? (
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>1. Tap the <Share className="w-4 h-4 inline" /> Share button</p>
+                      <p>2. Scroll down and tap "Add to Home Screen"</p>
+                      <p>3. Tap "Add" in the top right</p>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>1. Tap the menu (⋮) in your browser</p>
+                      <p>2. Tap "Add to Home Screen" or "Install App"</p>
+                      <p>3. Confirm the installation</p>
+                    </div>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => setShowInstallGuide(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full text-muted-foreground"
+                  onClick={() => setShowInstallGuide(true)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Add to Home Screen
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
