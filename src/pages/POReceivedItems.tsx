@@ -629,6 +629,13 @@ const POReceivedItems = () => {
       }
     }
     
+    // Sync to LAB Ops stock movements
+    try {
+      await syncToLabOpsMovements(receivedItemsList, recordId, staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null));
+    } catch (syncError) {
+      console.log('LAB Ops sync skipped:', syncError);
+    }
+    
     // Refresh data and show variance report
     queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
     queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
@@ -640,6 +647,69 @@ const POReceivedItems = () => {
     setPendingMatchedOrder(null);
     setPendingOrderItems([]);
     setEnhancedReceivingData(null);
+  };
+  
+  // Sync received items to LAB Ops stock movements
+  const syncToLabOpsMovements = async (items: any[], recordId: string, receivedBy: string | null) => {
+    // Get LAB Ops inventory items to match
+    const { data: inventoryItems } = await supabase
+      .from('lab_ops_inventory_items')
+      .select('id, name, outlet_id');
+    
+    if (!inventoryItems?.length) return;
+    
+    // Get default location for the outlet
+    const { data: locations } = await supabase
+      .from('lab_ops_locations')
+      .select('id, outlet_id, name')
+      .limit(100);
+    
+    for (const item of items) {
+      if (item.quantity <= 0) continue;
+      
+      // Try to find matching inventory item by name (case-insensitive)
+      const matchedItem = inventoryItems.find(inv => 
+        inv.name.toLowerCase() === item.item_name?.toLowerCase()
+      );
+      
+      if (matchedItem) {
+        // Find a location for this outlet
+        const location = locations?.find(loc => loc.outlet_id === matchedItem.outlet_id);
+        
+        // Create stock movement
+        await supabase.from('lab_ops_stock_movements').insert({
+          inventory_item_id: matchedItem.id,
+          to_location_id: location?.id || null,
+          qty: item.quantity,
+          movement_type: 'purchase',
+          reference_type: 'po_receiving',
+          reference_id: recordId,
+          notes: `PO Receiving: ${item.item_name}`,
+          created_by: user?.id
+        });
+        
+        // Also update stock levels
+        const { data: existingLevel } = await supabase
+          .from('lab_ops_stock_levels')
+          .select('id, quantity')
+          .eq('inventory_item_id', matchedItem.id)
+          .eq('location_id', location?.id)
+          .single();
+        
+        if (existingLevel) {
+          await supabase
+            .from('lab_ops_stock_levels')
+            .update({ quantity: (existingLevel.quantity || 0) + item.quantity })
+            .eq('id', existingLevel.id);
+        } else if (location) {
+          await supabase.from('lab_ops_stock_levels').insert({
+            inventory_item_id: matchedItem.id,
+            location_id: location.id,
+            quantity: item.quantity
+          });
+        }
+      }
+    }
   };
 
   const generateVarianceReport = (

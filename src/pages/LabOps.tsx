@@ -36,7 +36,7 @@ import {
   Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin
 } from "lucide-react";
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 
@@ -2412,7 +2412,13 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const fetchMovements = async () => {
     const { data } = await supabase
       .from("lab_ops_stock_movements")
-      .select("*, lab_ops_inventory_items(name)")
+      .select(`
+        *,
+        lab_ops_inventory_items(name),
+        to_location:lab_ops_locations!lab_ops_stock_movements_to_location_id_fkey(name),
+        from_location:lab_ops_locations!lab_ops_stock_movements_from_location_id_fkey(name),
+        created_by_profile:profiles!lab_ops_stock_movements_created_by_fkey(full_name, username, email)
+      `)
       .order("created_at", { ascending: false })
       .limit(50);
     setMovements(data || []);
@@ -2899,6 +2905,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                       mov.movement_type === 'return' ? 'Return' :
                                       mov.reference_type || mov.movement_type || 'Movement';
                     const quantity = mov.qty || mov.quantity || 0;
+                    const receivedBy = mov.created_by_profile?.full_name || mov.created_by_profile?.username || mov.created_by_profile?.email || 'Unknown';
+                    const toStore = mov.to_location?.name;
+                    const fromStore = mov.from_location?.name;
                     
                     return (
                       <div key={mov.id} className="p-4 bg-muted/50 rounded-lg border border-border/50">
@@ -2915,6 +2924,28 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Calendar className="h-3 w-3" />
                                 {new Date(mov.created_at).toLocaleString()}
                               </p>
+                              <p className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span className="font-medium text-foreground">{receivedBy}</span>
+                              </p>
+                              {(toStore || fromStore) && (
+                                <p className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {mov.movement_type === 'transfer' && fromStore && toStore ? (
+                                    <span>{fromStore} → {toStore}</span>
+                                  ) : toStore ? (
+                                    <span>To: <span className="font-medium text-foreground">{toStore}</span></span>
+                                  ) : fromStore ? (
+                                    <span>From: <span className="font-medium text-foreground">{fromStore}</span></span>
+                                  ) : null}
+                                </p>
+                              )}
+                              {mov.reference_type && mov.reference_id && (
+                                <p className="flex items-center gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  <span className="text-xs">Ref: {mov.reference_type}</span>
+                                </p>
+                              )}
                               {mov.notes && (
                                 <p className="text-xs italic">"{mov.notes}"</p>
                               )}
