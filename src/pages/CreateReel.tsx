@@ -78,6 +78,7 @@ const CreateReel = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [clipDuration, setClipDuration] = useState(30); // Default 30 sec, max 60 sec
   const [isPlaying, setIsPlaying] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [activeTool, setActiveTool] = useState<ActiveTool>('none');
@@ -119,9 +120,55 @@ const CreateReel = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio } = useAutoMusicExtraction();
+
+  // Sync audio with video playback
+  useEffect(() => {
+    if (!audioRef.current || !selectedMusic?.preview_audio) return;
+    audioRef.current.src = selectedMusic.preview_audio;
+    audioRef.current.load();
+  }, [selectedMusic]);
+
+  // Animate playhead during playback
+  useEffect(() => {
+    const updatePlayhead = () => {
+      if (videoRef.current && isPlaying) {
+        setCurrentTime(videoRef.current.currentTime);
+        animationFrameRef.current = requestAnimationFrame(updatePlayhead);
+      }
+    };
+
+    if (isPlaying) {
+      animationFrameRef.current = requestAnimationFrame(updatePlayhead);
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isPlaying]);
+
+  // Handle play/pause for both video and audio
+  const togglePlayback = useCallback(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        audioRef.current?.pause();
+      } else {
+        videoRef.current.play();
+        if (audioRef.current && selectedMusic) {
+          audioRef.current.currentTime = videoRef.current.currentTime;
+          audioRef.current.play();
+        }
+      }
+      setIsPlaying(!isPlaying);
+    }
+  }, [isPlaying, selectedMusic]);
 
   const fonts = ['Arial', 'Impact', 'Comic Sans MS', 'Courier New', 'Georgia', 'Times New Roman'];
   const animations = ['None', 'Fade In', 'Slide Up', 'Bounce', 'Pop'];
@@ -499,25 +546,31 @@ const CreateReel = () => {
             }`}
             style={getFilterStyle()}
           >
+            {/* Hidden Audio Element for Music */}
+            <audio ref={audioRef} className="hidden" loop />
+            
             {mainVideo.type === 'video' ? (
               <video
                 ref={videoRef}
                 src={mainVideo.url}
                 className="w-full h-full object-cover"
                 playsInline
-                loop
+                muted={!!selectedMusic}
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                onClick={() => {
-                  if (videoRef.current) {
-                    if (isPlaying) {
-                      videoRef.current.pause();
-                    } else {
-                      videoRef.current.play();
-                    }
-                    setIsPlaying(!isPlaying);
+                onTimeUpdate={(e) => {
+                  const time = e.currentTarget.currentTime;
+                  setCurrentTime(time);
+                  // Stop at clip duration limit
+                  if (time >= clipDuration && videoRef.current) {
+                    videoRef.current.pause();
+                    videoRef.current.currentTime = 0;
+                    audioRef.current?.pause();
+                    if (audioRef.current) audioRef.current.currentTime = 0;
+                    setCurrentTime(0);
+                    setIsPlaying(false);
                   }
                 }}
+                onClick={togglePlayback}
               />
             ) : (
               <img src={mainVideo.url} alt="" className="w-full h-full object-cover" />
@@ -588,19 +641,36 @@ const CreateReel = () => {
                 exit={{ opacity: 0, y: 100 }}
                 className="flex-1 overflow-y-auto pb-safe"
               >
+                {/* Duration Adjuster */}
+                <div className="px-4 py-2 bg-zinc-900/90 border-b border-white/5">
+                  <div className="flex items-center justify-between text-xs text-white/60 mb-1">
+                    <span>Duration</span>
+                    <span className={clipDuration === 30 ? 'text-primary' : ''}>
+                      {clipDuration}s {clipDuration === 30 && '(recommended)'}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[clipDuration]}
+                    onValueChange={([val]) => setClipDuration(val)}
+                    min={5}
+                    max={60}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-[10px] text-white/40 mt-1">
+                    <span>5s</span>
+                    <span>30s</span>
+                    <span>60s</span>
+                  </div>
+                </div>
+
                 {/* Timeline Controls */}
                 <div className="px-4 py-3 bg-black/80">
                   <div className="flex items-center justify-center gap-4 text-white/80 text-sm">
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => {
-                        if (videoRef.current) {
-                          if (isPlaying) videoRef.current.pause();
-                          else videoRef.current.play();
-                          setIsPlaying(!isPlaying);
-                        }
-                      }}
+                      onClick={togglePlayback}
                       className="text-white hover:bg-white/10"
                     >
                       {isPlaying ? <Pause className="w-6 h-6 fill-white" /> : <Play className="w-6 h-6" />}
@@ -609,7 +679,7 @@ const CreateReel = () => {
                     <div className="text-center">
                       <span className="text-white font-mono">{formatTime(currentTime)}</span>
                       <span className="text-white/40 font-mono mx-1">/</span>
-                      <span className="text-white/60 font-mono">{formatTime(duration)}</span>
+                      <span className="text-white/60 font-mono">{formatTime(Math.min(duration, clipDuration))}</span>
                     </div>
                     
                     <Button variant="ghost" size="icon" className="text-white/60 hover:bg-white/10">
@@ -626,19 +696,23 @@ const CreateReel = () => {
                   <div 
                     className="relative cursor-pointer"
                     onClick={(e) => {
-                      if (videoRef.current && duration > 0) {
+                      const maxDur = Math.min(duration, clipDuration);
+                      if (videoRef.current && maxDur > 0) {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const clickX = e.clientX - rect.left;
                         const percentage = clickX / rect.width;
-                        const newTime = percentage * duration;
+                        const newTime = percentage * maxDur;
                         videoRef.current.currentTime = newTime;
+                        if (audioRef.current && selectedMusic) {
+                          audioRef.current.currentTime = newTime;
+                        }
                         setCurrentTime(newTime);
                       }
                     }}
                   >
                     <div className="flex gap-0.5 overflow-hidden py-1">
                       {selectedItems.map((item) => (
-                        <div key={item.id} className="w-16 h-12 flex-shrink-0 rounded overflow-hidden border border-white/20">
+                        <div key={item.id} className="flex-1 h-12 rounded overflow-hidden border border-white/20 relative">
                           {item.type === 'video' ? (
                             <video src={item.url} className="w-full h-full object-cover" muted />
                           ) : (
@@ -648,15 +722,16 @@ const CreateReel = () => {
                       ))}
                     </div>
                     {/* Animated Playhead */}
-                    <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none transition-all duration-100"
-                      style={{ 
-                        left: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%'
+                    <motion.div 
+                      className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none z-10"
+                      animate={{ 
+                        left: `${Math.min(duration, clipDuration) > 0 ? (currentTime / Math.min(duration, clipDuration)) * 100 : 0}%`
                       }}
+                      transition={{ type: 'tween', ease: 'linear', duration: 0.05 }}
                     >
                       <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
 
