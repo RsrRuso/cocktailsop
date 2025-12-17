@@ -1773,6 +1773,7 @@ function MenuModule({ outletId }: { outletId: string }) {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("items");
   const [itemFilter, setItemFilter] = useState<"active" | "inactive">("active");
+  const [menuItemSearch, setMenuItemSearch] = useState("");
   const [draggedItem, setDraggedItem] = useState<any>(null);
   const [draggedCategory, setDraggedCategory] = useState<any>(null);
   
@@ -2131,10 +2132,22 @@ function MenuModule({ outletId }: { outletId: string }) {
                   Inactive ({menuItems.filter(i => !i.is_active).length})
                 </Button>
               </div>
+              {/* Search Field */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search menu items..."
+                  value={menuItemSearch}
+                  onChange={(e) => setMenuItemSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {(() => {
-                const filteredItems = menuItems.filter(i => itemFilter === "active" ? i.is_active : !i.is_active);
+                const filteredItems = menuItems
+                  .filter(i => itemFilter === "active" ? i.is_active : !i.is_active)
+                  .filter(i => !menuItemSearch || i.name.toLowerCase().includes(menuItemSearch.toLowerCase()));
                 if (filteredItems.length === 0) {
                   return (
                     <p className="text-muted-foreground text-center py-8">
