@@ -294,7 +294,7 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
                         Closing Inventory Count
                       </DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="flex-1 pr-4">
+                    <ScrollArea className="flex-1 max-h-[50vh] pr-4">
                       <div className="space-y-3 py-4">
                         {bottles.map((bottle) => {
                           const closingMl = closingCounts[bottle.id] || bottle.current_level_ml;
@@ -390,17 +390,16 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
                   </div>
                   <div className="p-3 bg-muted/30 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-2">Opening Inventory Preview:</p>
-                    <div className="text-sm space-y-1">
-                      {bottles.slice(0, 5).map(b => (
-                        <div key={b.id} className="flex justify-between">
-                          <span>{b.sku?.name}</span>
-                          <span>{b.current_level_ml}ml</span>
-                        </div>
-                      ))}
-                      {bottles.length > 5 && (
-                        <p className="text-muted-foreground">+ {bottles.length - 5} more bottles</p>
-                      )}
-                    </div>
+                    <ScrollArea className="h-[150px]">
+                      <div className="text-sm space-y-1 pr-3">
+                        {bottles.map(b => (
+                          <div key={b.id} className="flex justify-between py-1">
+                            <span>{b.sku?.name}</span>
+                            <span>{b.current_level_ml}ml</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
                   <Button onClick={handleStartShift} className="w-full">
                     <Play className="h-4 w-4 mr-2" />
