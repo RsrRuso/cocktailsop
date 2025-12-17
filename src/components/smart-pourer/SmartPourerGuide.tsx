@@ -11,7 +11,7 @@ import {
   CheckCircle2, AlertTriangle, TrendingUp, ArrowRight,
   Wifi, Server, BarChart3, Shield, ArrowDown, ArrowRightLeft
 } from 'lucide-react';
-import smartPourerDiagram from '@/assets/smart-pourer-diagram.png';
+import smartPourerDevice from '@/assets/smart-pourer-device.jpeg';
 
 interface SmartPourerGuideProps {
   open: boolean;
@@ -76,11 +76,11 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
                     <Bluetooth className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                     The Smart Pourer Device
                   </h3>
-                  <div className="rounded-xl overflow-hidden border bg-gradient-to-b from-background to-muted/30">
+                  <div className="flex justify-center p-4 md:p-8 rounded-xl bg-gradient-to-b from-background to-muted/30 border">
                     <img 
-                      src={smartPourerDiagram} 
-                      alt="Smart Pourer Device Diagram" 
-                      className="w-full h-auto"
+                      src={smartPourerDevice} 
+                      alt="Smart Pourer Device" 
+                      className="max-h-48 md:max-h-72 w-auto object-contain"
                     />
                   </div>
                   <div className="mt-3 md:mt-4 grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
