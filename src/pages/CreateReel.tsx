@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,8 @@ type ActiveTool = 'none' | 'text' | 'sticker' | 'audio' | 'overlay' | 'edit' | '
 
 const CreateReel = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'edits' | 'drafts' | 'templates'>('edits');
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -168,8 +169,37 @@ const CreateReel = () => {
     }
   };
 
-  // Auto-trigger file picker immediately on mount
+  // Auto-trigger file picker immediately on mount (unless preloaded media is provided)
   useEffect(() => {
+    const state = (location.state ?? {}) as any;
+    const stateUrl: string | null =
+      state?.preloadedMedia?.url ||
+      state?.preloadedImage ||
+      state?.preloadedVideo ||
+      null;
+
+    const queryImage = searchParams.get('image');
+    const queryVideo = searchParams.get('video');
+    const url = stateUrl || queryImage || queryVideo;
+
+    if (url) {
+      const stateType = state?.preloadedMedia?.type as MediaItem['type'] | undefined;
+      const type: MediaItem['type'] = (queryVideo ? 'video' : stateType) || (state?.preloadedVideo ? 'video' : 'image');
+
+      const item: MediaItem = {
+        id: `${Date.now()}-preloaded`,
+        url,
+        type,
+        selected: false,
+        order: 0,
+      };
+
+      setMediaItems([item]);
+      setSelectedItems([{ ...item, order: 1 }]);
+      setShowEditor(true);
+      return;
+    }
+
     const storedMedia = sessionStorage.getItem('reelMedia');
     if (storedMedia) {
       try {
@@ -179,7 +209,7 @@ const CreateReel = () => {
           url: file.url,
           type: file.type.startsWith('video/') ? 'video' : 'image',
           selected: false,
-          order: index
+          order: index,
         }));
         setMediaItems(items);
         if (items.length > 0) {
@@ -193,7 +223,7 @@ const CreateReel = () => {
     } else {
       fileInputRef.current?.click();
     }
-  }, []);
+  }, [location.state, searchParams]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

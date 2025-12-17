@@ -2,7 +2,7 @@
 import React, { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -189,6 +189,11 @@ const PageLoader = () => (
   </div>
 );
 
+const LegacyRedirect = ({ to }: { to: string }) => {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace state={location.state} />;
+};
+
 // Wrapper component inside Router to use routing hooks
 const AppContent = () => {
   usePageTransition(); // Now inside Router context
@@ -294,6 +299,10 @@ const AppContent = () => {
           <Route path="/create/post" element={<CreatePost />} />
           <Route path="/create/story" element={<CreateStory />} />
           <Route path="/create/reel" element={<CreateReel />} />
+          {/* Legacy routes */}
+          <Route path="/create-post" element={<LegacyRedirect to="/create/post" />} />
+          <Route path="/create-story" element={<LegacyRedirect to="/create/story" />} />
+          <Route path="/create-reel" element={<LegacyRedirect to="/create/reel" />} />
           <Route path="/story-options" element={<StoryOptions />} />
           <Route path="/story/:userId" element={<StoryViewer />} />
           <Route path="/reels" element={<Reels />} />

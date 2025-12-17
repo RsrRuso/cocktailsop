@@ -82,11 +82,11 @@ export const ShareAnalyticsDialog = ({
     const uploadedUrl = await uploadToStorage(image);
     if (uploadedUrl) {
       onOpenChange(false);
-      navigate('/create-story', { 
-        state: { 
+      navigate('/create/story', {
+        state: {
           preloadedMedia: { url: uploadedUrl, type: 'image' },
-          caption: `📊 ${title}`
-        } 
+          caption: `📊 ${title}`,
+        },
       });
       toast.success("Opening Story editor...");
     } else {
@@ -101,11 +101,11 @@ export const ShareAnalyticsDialog = ({
     const uploadedUrl = await uploadToStorage(image);
     if (uploadedUrl) {
       onOpenChange(false);
-      navigate('/create-post', { 
-        state: { 
+      navigate('/create/post', {
+        state: {
           preloadedMedia: [uploadedUrl],
-          caption: `📊 ${title}`
-        } 
+          caption: `📊 ${title}`,
+        },
       });
       toast.success("Opening Post editor...");
     } else {
@@ -120,11 +120,11 @@ export const ShareAnalyticsDialog = ({
     const uploadedUrl = await uploadToStorage(image);
     if (uploadedUrl) {
       onOpenChange(false);
-      navigate('/create-reel', { 
-        state: { 
+      navigate(`/create/reel?image=${encodeURIComponent(uploadedUrl)}`, {
+        state: {
           preloadedImage: uploadedUrl,
-          caption: `📊 ${title}`
-        } 
+          caption: `📊 ${title}`,
+        },
       });
       toast.success("Opening Reel editor...");
     } else {
