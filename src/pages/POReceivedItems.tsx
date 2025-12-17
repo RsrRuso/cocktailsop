@@ -1356,10 +1356,15 @@ const POReceivedItems = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['po-received-records'] })}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['po-received-records'] });
+                queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+                toast.success("Refreshed");
+              }}
+              disabled={isLoadingRecent}
               title="Refresh"
             >
-              <RefreshCw className="w-5 h-5 text-muted-foreground" />
+              <RefreshCw className={`w-5 h-5 text-muted-foreground ${isLoadingRecent ? 'animate-spin' : ''}`} />
             </Button>
             {!staffMode && (
               <Button 
