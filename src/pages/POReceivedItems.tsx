@@ -1225,43 +1225,79 @@ const POReceivedItems = () => {
       };
     });
     
+    // jsPDF default fonts don't reliably support some currency symbols (e.g. AED Arabic glyphs).
+    // Use ISO codes in PDFs to guarantee readability.
+    const pdfCurrency = ((): string => {
+      const map: Record<string, string> = {
+        USD: 'USD',
+        EUR: 'EUR',
+        GBP: 'GBP',
+        AED: 'AED',
+        AUD: 'AUD',
+      };
+      return map[currency] || currency;
+    })();
+
+    const formatPdfCurrency = (value: number) =>
+      `${pdfCurrency} ${value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+
     const doc = new jsPDF({ orientation: 'landscape' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    
+
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text('Par Stock Forecast Report', pageWidth / 2, 20, { align: 'center' });
-    doc.setFontSize(10);
+
     doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
-    
+    doc.setFontSize(10);
+    doc.text(`Week period: ${format(weekStart, 'MMM d, yyyy')} - ${format(weekEnd, 'MMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`Month period: ${format(monthStart, 'MMM d, yyyy')} - ${format(monthEnd, 'MMM d, yyyy')}`, pageWidth / 2, 34, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 40, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+
     // Summary
     const totalWeeklyQty = itemForecast.reduce((sum, i) => sum + i.weekly_qty, 0);
     const totalMonthlyQty = itemForecast.reduce((sum, i) => sum + i.monthly_qty, 0);
     const totalWeeklyCost = itemForecast.reduce((sum, i) => sum + i.weekly_cost, 0);
     const totalMonthlyCost = itemForecast.reduce((sum, i) => sum + i.monthly_cost, 0);
-    
+
     doc.setFillColor(240, 240, 240);
-    doc.roundedRect(14, 35, pageWidth - 28, 20, 3, 3, 'F');
-    doc.text(`Weekly: ${totalWeeklyQty.toFixed(0)} units | ${currencySymbols[currency]}${totalWeeklyCost.toFixed(2)}`, 20, 47);
-    doc.text(`Monthly: ${totalMonthlyQty.toFixed(0)} units | ${currencySymbols[currency]}${totalMonthlyCost.toFixed(2)}`, 120, 47);
-    doc.text(`Weekly Par (20% buffer): ${Math.ceil(totalWeeklyQty * 1.2)} units`, 220, 47);
-    
+    doc.roundedRect(14, 45, pageWidth - 28, 20, 3, 3, 'F');
+    doc.setFontSize(10);
+    doc.text(`Weekly: ${totalWeeklyQty.toFixed(0)} units | ${formatPdfCurrency(totalWeeklyCost)}`, 20, 57);
+    doc.text(`Monthly: ${totalMonthlyQty.toFixed(0)} units | ${formatPdfCurrency(totalMonthlyCost)}`, 120, 57);
+    doc.text(`Weekly Par (20% buffer): ${Math.ceil(totalWeeklyQty * 1.2)} units`, 220, 57);
+
     autoTable(doc, {
-      startY: 60,
+      startY: 72,
       head: [['Item', 'Total Qty', 'Weekly Qty', 'Weekly Par', 'Weekly Cost', 'Monthly Qty', 'Monthly Par', 'Monthly Cost']],
       body: itemForecast.map(item => [
         item.item_name,
         item.total_qty.toFixed(0),
         item.weekly_qty.toFixed(0),
         item.weekly_par.toString(),
-        `${currencySymbols[currency]}${item.weekly_cost.toFixed(2)}`,
+        formatPdfCurrency(item.weekly_cost),
         item.monthly_qty.toFixed(0),
         item.monthly_par.toString(),
-        `${currencySymbols[currency]}${item.monthly_cost.toFixed(2)}`
+        formatPdfCurrency(item.monthly_cost),
       ]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [34, 197, 94] },
+      columnStyles: {
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+      },
     });
     
     doc.save(`par-stock-forecast-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
