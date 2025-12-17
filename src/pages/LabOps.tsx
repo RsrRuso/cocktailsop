@@ -2354,7 +2354,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [showStockTake, setShowStockTake] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("items");
+  const [inventorySearch, setInventorySearch] = useState("");
   
   // Form states
   const [newItemName, setNewItemName] = useState("");
@@ -2445,6 +2447,40 @@ function InventoryModule({ outletId }: { outletId: string }) {
     setShowAddItem(false);
     fetchItems();
     toast({ title: "Inventory item created" });
+  };
+
+  const updateInventoryItem = async () => {
+    if (!editingItem || !editingItem.name.trim()) return;
+
+    await supabase
+      .from("lab_ops_inventory_items")
+      .update({
+        name: editingItem.name.trim(),
+        sku: editingItem.sku?.trim() || null,
+        base_unit: editingItem.base_unit,
+        par_level: parseFloat(editingItem.par_level) || 0,
+      })
+      .eq("id", editingItem.id);
+
+    setEditingItem(null);
+    fetchItems();
+    toast({ title: "Inventory item updated" });
+  };
+
+  const deleteInventoryItem = async (itemId: string) => {
+    if (!confirm("Delete this inventory item? This will also remove all stock levels and movements.")) return;
+
+    // Delete related data first
+    await supabase.from("lab_ops_stock_levels").delete().eq("inventory_item_id", itemId);
+    await supabase.from("lab_ops_stock_movements").delete().eq("inventory_item_id", itemId);
+    await supabase.from("lab_ops_inventory_item_costs").delete().eq("inventory_item_id", itemId);
+    
+    // Delete the item
+    await supabase.from("lab_ops_inventory_items").delete().eq("id", itemId);
+
+    fetchItems();
+    fetchMovements();
+    toast({ title: "Inventory item deleted" });
   };
 
   const addStock = async () => {
@@ -2599,37 +2635,63 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 </Dialog>
               </div>
             </CardHeader>
+            {/* Search Field */}
+            <div className="px-6 pb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search inventory items..."
+                  value={inventorySearch}
+                  onChange={(e) => setInventorySearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
             <CardContent>
-              {items.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No inventory items yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {items.map((item) => {
-                    const stock = getTotalStock(item);
-                    const isLow = stock < (item.par_level || 0);
-                    return (
-                      <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
-                        <div>
+              {(() => {
+                const filteredItems = items.filter(item => 
+                  !inventorySearch || item.name.toLowerCase().includes(inventorySearch.toLowerCase())
+                );
+                if (filteredItems.length === 0) {
+                  return <p className="text-muted-foreground text-center py-8">
+                    {inventorySearch ? "No matching inventory items" : "No inventory items yet"}
+                  </p>;
+                }
+                return (
+                  <div className="space-y-2">
+                    {filteredItems.map((item) => {
+                      const stock = getTotalStock(item);
+                      const isLow = stock < (item.par_level || 0);
+                      return (
+                        <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{item.name}</p>
+                              {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{item.sku || "No SKU"} • {item.base_unit}</p>
+                          </div>
                           <div className="flex items-center gap-2">
-                            <p className="font-medium">{item.name}</p>
-                            {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                            <div className="text-right mr-2">
+                              <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
+                              <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
+                            </div>
+                            <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">{item.sku || "No SKU"} • {item.base_unit}</p>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
-                            <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
-                          </div>
-                          <Button size="sm" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
@@ -2726,6 +2788,60 @@ function InventoryModule({ outletId }: { outletId: string }) {
             </div>
             <Button onClick={addStock} className="w-full">Add Stock</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Inventory Item Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Inventory Item</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <div className="space-y-4 py-4">
+              <div>
+                <Label>Name</Label>
+                <Input 
+                  value={editingItem.name} 
+                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} 
+                />
+              </div>
+              <div>
+                <Label>SKU (Optional)</Label>
+                <Input 
+                  value={editingItem.sku || ""} 
+                  onChange={(e) => setEditingItem({ ...editingItem, sku: e.target.value })} 
+                />
+              </div>
+              <div>
+                <Label>Base Unit</Label>
+                <Select 
+                  value={editingItem.base_unit} 
+                  onValueChange={(val) => setEditingItem({ ...editingItem, base_unit: val })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="piece">Piece</SelectItem>
+                    <SelectItem value="ml">ml</SelectItem>
+                    <SelectItem value="L">L</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                    <SelectItem value="kg">kg</SelectItem>
+                    <SelectItem value="bottle">Bottle</SelectItem>
+                    <SelectItem value="case">Case</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Par Level</Label>
+                <Input 
+                  type="number" 
+                  value={editingItem.par_level || ""} 
+                  onChange={(e) => setEditingItem({ ...editingItem, par_level: e.target.value })} 
+                />
+              </div>
+              <Button onClick={updateInventoryItem} className="w-full">Save Changes</Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
