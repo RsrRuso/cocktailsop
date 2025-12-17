@@ -138,6 +138,55 @@ export const useMixologistGroups = () => {
     },
   });
 
+  const updateGroup = useMutation({
+    mutationFn: async ({ id, name, description }: { id: string; name: string; description?: string }) => {
+      const { data, error } = await supabase
+        .from('mixologist_groups')
+        .update({ name, description, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mixologist-groups'] });
+      toast.success("Group updated!");
+    },
+    onError: (error) => {
+      toast.error("Failed to update group: " + error.message);
+    },
+  });
+
+  const deleteGroup = useMutation({
+    mutationFn: async (groupId: string) => {
+      // First delete all group members
+      const { error: membersError } = await supabase
+        .from('mixologist_group_members')
+        .delete()
+        .eq('group_id', groupId);
+      
+      if (membersError) throw membersError;
+
+      // Then delete the group
+      const { error } = await supabase
+        .from('mixologist_groups')
+        .delete()
+        .eq('id', groupId);
+      
+      if (error) throw error;
+      return groupId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mixologist-groups'] });
+      toast.success("Group deleted!");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete group: " + error.message);
+    },
+  });
+
   const getGroupMembers = async (groupId: string) => {
     // Fetch members first
     const { data: memberRows, error: membersError } = await supabase
@@ -174,6 +223,8 @@ export const useMixologistGroups = () => {
     groups,
     isLoading,
     createGroup: createGroup.mutate,
+    updateGroup: updateGroup.mutate,
+    deleteGroup: deleteGroup.mutate,
     addMember: addMember.mutate,
     getGroupMembers,
   };
