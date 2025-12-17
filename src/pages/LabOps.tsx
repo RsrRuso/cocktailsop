@@ -2967,7 +2967,21 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                   ) : null}
                                 </p>
                               )}
-                              {mov.reference_type && mov.reference_id && (
+                              {mov.reference_type === 'po_receiving' && (
+                                <p className="flex items-center gap-1">
+                                  <FileText className="h-3 w-3 text-primary" />
+                                  <span className="text-xs text-primary font-medium">From PO Receiving</span>
+                                  <Button 
+                                    variant="link" 
+                                    size="sm" 
+                                    className="h-auto p-0 text-xs ml-1"
+                                    onClick={() => window.location.href = '/po-received-items'}
+                                  >
+                                    View →
+                                  </Button>
+                                </p>
+                              )}
+                              {mov.reference_type && mov.reference_type !== 'po_receiving' && mov.reference_id && (
                                 <p className="flex items-center gap-1">
                                   <FileText className="h-3 w-3" />
                                   <span className="text-xs">Ref: {mov.reference_type}</span>
