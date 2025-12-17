@@ -200,38 +200,52 @@ const PurchaseOrders = () => {
       const { data: receivedRecords, error: receivedError } = await receivedQuery;
       if (receivedError) throw receivedError;
 
-      const receivedByDoc = new Map<string, { hasDiscrepancy: boolean; summary?: { short?: number; over?: number; missing?: number; extra?: number; matched?: number } }>();
-      (receivedRecords || []).forEach((r: any) => {
-        const doc = String(r.document_number || '').trim().toUpperCase();
-        if (!doc) return;
+       const normalizeDocCode = (value: unknown) => {
+         return String(value ?? '')
+           .normalize('NFKD')
+           .replace(/[\u200B-\u200D\uFEFF]/g, '')
+           .replace(/[^a-zA-Z0-9]/g, '')
+           .toUpperCase();
+       };
 
-        const summary = r.variance_data?.summary;
-        const hasDiscrepancy = !!summary && (
-          (summary.short || 0) > 0 ||
-          (summary.over || 0) > 0 ||
-          (summary.missing || 0) > 0 ||
-          (summary.extra || 0) > 0
-        );
+       const receivedByDoc = new Map<
+         string,
+         {
+           hasDiscrepancy: boolean;
+           summary?: { short?: number; over?: number; missing?: number; extra?: number; matched?: number };
+         }
+       >();
+       (receivedRecords || []).forEach((r: any) => {
+         const doc = normalizeDocCode(r.document_number);
+         if (!doc) return;
 
-        const prev = receivedByDoc.get(doc);
-        receivedByDoc.set(doc, { 
-          hasDiscrepancy: (prev?.hasDiscrepancy || false) || hasDiscrepancy,
-          summary: summary || prev?.summary
-        });
-      });
+         const summary = r.variance_data?.summary;
+         const hasDiscrepancy = !!summary && (
+           (summary.short || 0) > 0 ||
+           (summary.over || 0) > 0 ||
+           (summary.missing || 0) > 0 ||
+           (summary.extra || 0) > 0
+         );
 
-      // Mark POs as received if they have matching receiving records
-      return (data || []).map((order) => {
-        const doc = String(order.order_number || '').trim().toUpperCase();
-        const rec = doc ? receivedByDoc.get(doc) : undefined;
+         const prev = receivedByDoc.get(doc);
+         receivedByDoc.set(doc, {
+           hasDiscrepancy: (prev?.hasDiscrepancy || false) || hasDiscrepancy,
+           summary: summary || prev?.summary,
+         });
+       });
 
-        return {
-          ...order,
-          has_received: !!rec,
-          has_discrepancy: !!rec?.hasDiscrepancy,
-          variance_summary: rec?.summary,
-        };
-      }) as (PurchaseOrder & { has_received: boolean; has_discrepancy: boolean; variance_summary?: { short?: number; over?: number; missing?: number; extra?: number } })[];
+       // Mark POs as received if they have matching receiving records
+       return (data || []).map((order) => {
+         const doc = normalizeDocCode(order.order_number);
+         const rec = doc ? receivedByDoc.get(doc) : undefined;
+
+         return {
+           ...order,
+           has_received: !!rec,
+           has_discrepancy: !!rec?.hasDiscrepancy,
+           variance_summary: rec?.summary,
+         };
+       }) as (PurchaseOrder & { has_received: boolean; has_discrepancy: boolean; variance_summary?: { short?: number; over?: number; missing?: number; extra?: number } })[];
     },
     enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
