@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type ContentType = 'post' | 'reel';
+type ContentType = 'post' | 'reel' | 'event' | 'story';
 
 interface EngagementState {
   likedIds: Set<string>;
@@ -12,8 +12,8 @@ interface EngagementState {
 
 interface EngagementConfig {
   likesTable: string;
-  savesTable: string;
-  repostsTable: string;
+  savesTable: string | null;
+  repostsTable: string | null;
   idColumn: string;
 }
 
@@ -29,6 +29,18 @@ const CONFIGS: Record<ContentType, EngagementConfig> = {
     savesTable: 'reel_saves',
     repostsTable: 'reel_reposts',
     idColumn: 'reel_id',
+  },
+  event: {
+    likesTable: 'event_likes',
+    savesTable: null,
+    repostsTable: null,
+    idColumn: 'event_id',
+  },
+  story: {
+    likesTable: 'status_likes',
+    savesTable: null,
+    repostsTable: null,
+    idColumn: 'status_id',
   },
 };
 
@@ -68,20 +80,29 @@ export const useEngagement = (
     if (!userId) return;
 
     try {
-      const [likesRes, savesRes, repostsRes] = await Promise.all([
-        supabase
-          .from(config.likesTable as any)
-          .select(config.idColumn)
-          .eq('user_id', userId),
-        supabase
+      // Always fetch likes
+      const likesRes = await supabase
+        .from(config.likesTable as any)
+        .select(config.idColumn)
+        .eq('user_id', userId);
+      
+      // Only fetch saves/reposts if tables exist for this content type
+      let savesRes = { data: [] as any[] };
+      let repostsRes = { data: [] as any[] };
+      
+      if (config.savesTable) {
+        savesRes = await supabase
           .from(config.savesTable as any)
           .select(config.idColumn)
-          .eq('user_id', userId),
-        supabase
+          .eq('user_id', userId);
+      }
+      
+      if (config.repostsTable) {
+        repostsRes = await supabase
           .from(config.repostsTable as any)
           .select(config.idColumn)
-          .eq('user_id', userId),
-      ]);
+          .eq('user_id', userId);
+      }
 
       const newState: EngagementState = {
         likedIds: new Set(

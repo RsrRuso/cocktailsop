@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain, Bookmark, Trash2, Flag, Link, Download } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
-import { useLike } from "@/hooks/useLike";
+import { useEngagement } from "@/hooks/useEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -192,8 +192,8 @@ export default function StoryViewer() {
   
   const musicData = getMusicData();
 
-  const { likedItems, toggleLike } = useLike("story", currentUserId);
-  const isLiked = currentStory ? likedItems.has(currentStory.id) : false;
+  const storyEngagement = useEngagement("story", currentUserId);
+  const isLiked = currentStory ? storyEngagement.isLiked(currentStory.id) : false;
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -546,7 +546,7 @@ export default function StoryViewer() {
     if (!currentStory || !currentUserId) return;
 
     const wasLiked = isLiked;
-    await toggleLike(currentStory.id);
+    await storyEngagement.toggleLike(currentStory.id);
 
     // Create heart burst animation for both like AND unlike
     // More hearts (25) for extra impact, with 3D-style appearance
@@ -576,7 +576,7 @@ export default function StoryViewer() {
     }, 900);
     
     if ('vibrate' in navigator) navigator.vibrate(wasLiked ? [10] : [15, 30, 15]);
-  }, [currentStory, currentUserId, isLiked, toggleLike, heartColors]);
+  }, [currentStory, currentUserId, isLiked, storyEngagement, heartColors]);
 
   // Show hearts burst when story has likes from other users
   const showLikesHeartsBurst = useCallback((likeCount: number, storyId: string) => {

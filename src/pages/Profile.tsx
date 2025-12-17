@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import { useCareerMetrics } from "@/hooks/useCareerMetrics";
-import { useLike } from "@/hooks/useLike";
+import { useEngagement } from "@/hooks/useEngagement";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
@@ -128,48 +128,35 @@ const Profile = () => {
   // Query client for optimistic updates
   const queryClient = useQueryClient();
   
-  // Optimistic like count updaters
-  const handlePostLikeChange = useCallback((postId: string, delta: number) => {
+  // Unified count change handler for posts
+  const handlePostCountChange = useCallback((postId: string, type: 'like' | 'save' | 'repost', delta: number) => {
     queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
-      old?.map(p => p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count || 0) + delta) } : p) || []
+      old?.map(p => {
+        if (p.id !== postId) return p;
+        if (type === 'like') return { ...p, like_count: Math.max(0, (p.like_count || 0) + delta) };
+        if (type === 'save') return { ...p, save_count: Math.max(0, (p.save_count || 0) + delta) };
+        if (type === 'repost') return { ...p, repost_count: Math.max(0, (p.repost_count || 0) + delta) };
+        return p;
+      }) || []
     );
   }, [queryClient, user?.id]);
   
-  const handleReelLikeChange = useCallback((reelId: string, delta: number) => {
+  // Unified count change handler for reels
+  const handleReelCountChange = useCallback((reelId: string, type: 'like' | 'save' | 'repost', delta: number) => {
     queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
-      old?.map(r => r.id === reelId ? { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) } : r) || []
+      old?.map(r => {
+        if (r.id !== reelId) return r;
+        if (type === 'like') return { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) };
+        if (type === 'save') return { ...r, save_count: Math.max(0, (r.save_count || 0) + delta) };
+        if (type === 'repost') return { ...r, repost_count: Math.max(0, (r.repost_count || 0) + delta) };
+        return r;
+      }) || []
     );
   }, [queryClient, user?.id]);
   
-  // Optimistic save count updaters
-  const handlePostSaveChange = useCallback((postId: string, delta: number) => {
-    queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
-      old?.map(p => p.id === postId ? { ...p, save_count: Math.max(0, (p.save_count || 0) + delta) } : p) || []
-    );
-  }, [queryClient, user?.id]);
-  
-  const handleReelSaveChange = useCallback((reelId: string, delta: number) => {
-    queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
-      old?.map(r => r.id === reelId ? { ...r, save_count: Math.max(0, (r.save_count || 0) + delta) } : r) || []
-    );
-  }, [queryClient, user?.id]);
-  
-  // Optimistic repost count updaters
-  const handlePostRepostChange = useCallback((postId: string, delta: number) => {
-    queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
-      old?.map(p => p.id === postId ? { ...p, repost_count: Math.max(0, (p.repost_count || 0) + delta) } : p) || []
-    );
-  }, [queryClient, user?.id]);
-  
-  const handleReelRepostChange = useCallback((reelId: string, delta: number) => {
-    queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
-      old?.map(r => r.id === reelId ? { ...r, repost_count: Math.max(0, (r.repost_count || 0) + delta) } : r) || []
-    );
-  }, [queryClient, user?.id]);
-  
-  // Optimistic like hooks for instant updates
-  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useLike('post', user?.id, handlePostLikeChange);
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useLike('reel', user?.id, handleReelLikeChange);
+  // Unified engagement hooks for posts and reels
+  const postEngagement = useEngagement('post', user?.id, handlePostCountChange);
+  const reelEngagement = useEngagement('reel', user?.id, handleReelCountChange);
   
   // Calculate birthday from profile data directly (no extra request)
   const birthdayData = useMemo(() => {
@@ -195,8 +182,8 @@ const Profile = () => {
   useEffect(() => {
     if (!user?.id) return;
     
-    fetchLikedPosts();
-    fetchLikedReels();
+    postEngagement.fetchEngagement();
+    reelEngagement.fetchEngagement();
     
     // Subscribe to posts changes
     const postsChannel = supabase
@@ -214,16 +201,7 @@ const Profile = () => {
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
     };
-  }, [user?.id, fetchLikedPosts, fetchLikedReels, refetchAll]);
-  
-  // Handlers for feed items
-  const handleLikePost = useCallback((postId: string) => {
-    togglePostLike(postId);
-  }, [togglePostLike]);
-
-  const handleLikeReel = useCallback((reelId: string) => {
-    toggleReelLike(reelId);
-  }, [toggleReelLike]);
+  }, [user?.id, postEngagement.fetchEngagement, reelEngagement.fetchEngagement, refetchAll]);
 
   const handleDeletePost = useCallback(async (postId: string) => {
     if (!window.confirm("Are you sure you want to delete this post?")) return;
@@ -562,9 +540,13 @@ const Profile = () => {
                       key={`${item.type}-${item.id}`}
                       item={item}
                       currentUserId={user?.id}
-                      isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+                      isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
+                      isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
+                      isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
                       mutedVideos={mutedVideos}
-                      onLike={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
+                      onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
+                      onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
+                      onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
                       onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
                       onEdit={() => navigate(item.type === 'post' ? `/post/${item.id}/edit` : `/reel/${item.id}/edit`)}
                       onComment={() => refetchAll()}

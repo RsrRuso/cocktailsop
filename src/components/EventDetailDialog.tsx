@@ -16,7 +16,7 @@ import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
 import UnifiedLikesDialog from '@/components/unified/UnifiedLikesDialog';
 import UnifiedAttendeesDialog from '@/components/unified/UnifiedAttendeesDialog';
 import UnifiedAdvancedCommentsDialog from '@/components/unified/UnifiedAdvancedCommentsDialog';
-import { useLike } from '@/hooks/useLike';
+import { useEngagement } from '@/hooks/useEngagement';
 
 interface Event {
   id: string;
@@ -53,13 +53,13 @@ interface EventDetailDialogProps {
 
 export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }: EventDetailDialogProps) => {
   const { user } = useAuth();
-  const { likedItems, toggleLike } = useLike('event', user?.id);
+  const eventEngagement = useEngagement('event', user?.id);
   const [isAttending, setIsAttending] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [attendeeCount, setAttendeeCount] = useState(0);
   
-  const hasLiked = event?.id ? likedItems.has(event.id) : false;
+  const hasLiked = event?.id ? eventEngagement.isLiked(event.id) : false;
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +182,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
 
   const handleLike = async () => {
     if (!event || !user) return;
-    await toggleLike(event.id);
+    await eventEngagement.toggleLike(event.id);
   };
 
   const handleAttendance = async () => {

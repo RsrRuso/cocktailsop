@@ -10,7 +10,7 @@ import ShareDialog from "@/components/ShareDialog";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
-import { useLike } from "@/hooks/useLike";
+import { useEngagement } from "@/hooks/useEngagement";
 
 const PostDetail = () => {
   const { id } = useParams();
@@ -24,8 +24,10 @@ const PostDetail = () => {
   const [mutedVideos] = useState(new Set<string>());
   
   // Use unified engagement hook
-  const { likedItems, toggleLike } = useLike('post', user?.id);
-  const isLiked = id ? likedItems.has(id) : false;
+  const postEngagement = useEngagement('post', user?.id);
+  const isLiked = id ? postEngagement.isLiked(id) : false;
+  const isSaved = id ? postEngagement.isSaved(id) : false;
+  const isReposted = id ? postEngagement.isReposted(id) : false;
 
   useEffect(() => {
     if (id) {
@@ -88,7 +90,7 @@ const PostDetail = () => {
 
   const handleLike = () => {
     if (id) {
-      toggleLike(id);
+      postEngagement.toggleLike(id);
     }
   };
 
@@ -155,8 +157,12 @@ const PostDetail = () => {
           item={post}
           currentUserId={user?.id}
           isLiked={isLiked}
+          isSaved={isSaved}
+          isReposted={isReposted}
           mutedVideos={mutedVideos}
           onLike={handleLike}
+          onSave={() => id && postEngagement.toggleSave(id)}
+          onRepost={() => id && postEngagement.toggleRepost(id)}
           onDelete={handleDelete}
           onEdit={() => navigate(`/edit-post/${post.id}`)}
           onComment={() => setShowComments(true)}

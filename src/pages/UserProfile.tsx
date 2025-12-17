@@ -22,7 +22,7 @@ import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 import { useUserBirthday } from "@/hooks/useUserBirthday";
 import { FeedItem } from "@/components/FeedItem";
-import { useLike } from "@/hooks/useLike";
+import { useEngagement } from "@/hooks/useEngagement";
 
 interface Profile {
   id: string;
@@ -80,8 +80,8 @@ const UserProfileFeed = ({
   setMutedVideos: React.Dispatch<React.SetStateAction<Set<string>>>;
   navigate: (path: string, options?: any) => void;
 }) => {
-  const { likedItems: likedPosts, toggleLike: togglePostLike } = useLike('post', currentUserId);
-  const { likedItems: likedReels, toggleLike: toggleReelLike } = useLike('reel', currentUserId);
+  const postEngagement = useEngagement('post', currentUserId);
+  const reelEngagement = useEngagement('reel', currentUserId);
 
   const handleToggleMute = useCallback((videoId: string) => {
     setMutedVideos(prev => {
@@ -137,9 +137,13 @@ const UserProfileFeed = ({
           key={`${item.type}-${item.id}`}
           item={item}
           currentUserId={currentUserId || ''}
-          isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+          isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
+          isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
+          isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
           mutedVideos={mutedVideos}
-          onLike={() => item.type === 'post' ? togglePostLike(item.id) : toggleReelLike(item.id)}
+          onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
+          onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
+          onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
           onDelete={() => {}}
           onEdit={() => {}}
           onComment={() => {}}
