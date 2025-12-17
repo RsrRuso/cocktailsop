@@ -34,6 +34,8 @@ const WORK_NOTIFICATION_TYPES = new Set([
   'access_request',
   'access_granted', 
   'access_denied',
+  'workspace_invite',
+  'group_invite',
   // Inventory
   'stock_alert',
   'fifo_alert',
@@ -61,6 +63,8 @@ const WORK_NOTIFICATION_TOOLS: Record<string, { tool: string; color: string }> =
   access_request: { tool: "FIFO Workspace", color: "bg-orange-500/20 text-orange-400" },
   access_granted: { tool: "Workspace", color: "bg-emerald-500/20 text-emerald-400" },
   access_denied: { tool: "Workspace", color: "bg-red-500/20 text-red-400" },
+  workspace_invite: { tool: "Workspace", color: "bg-cyan-500/20 text-cyan-400" },
+  group_invite: { tool: "Groups", color: "bg-purple-500/20 text-purple-400" },
   // Inventory
   stock_alert: { tool: "Inventory", color: "bg-red-500/20 text-red-400" },
   fifo_alert: { tool: "FIFO Manager", color: "bg-amber-500/20 text-amber-400" },
@@ -121,6 +125,8 @@ const getNotificationConfig = (type: string) => {
     po_received: { icon: FileText, bg: "bg-green-500/20", color: "text-green-500" },
     purchase_order: { icon: ShoppingCart, bg: "bg-blue-500/20", color: "text-blue-500" },
     receiving: { icon: FileText, bg: "bg-green-500/20", color: "text-green-500" },
+    workspace_invite: { icon: Users, bg: "bg-cyan-500/20", color: "text-cyan-500" },
+    group_invite: { icon: Users, bg: "bg-purple-500/20", color: "text-purple-500" },
     internal_email: { icon: Send, bg: "bg-indigo-500/20", color: "text-indigo-500" },
     default: { icon: Bell, bg: "bg-primary/20", color: "text-primary" },
   };
