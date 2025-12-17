@@ -3077,14 +3077,11 @@ function InventoryModule({ outletId }: { outletId: string }) {
               <>
                 <p className="text-sm font-medium">Enter actual counts for each item:</p>
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                  {items.map((item) => {
-                    const stockLevels = item.lab_ops_stock_levels || [];
-                    const totalStock = stockLevels.reduce((sum: number, sl: any) => sum + (sl.quantity || 0), 0);
-                    return (
+                  {items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between gap-3 p-2 bg-muted/30 rounded">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">System: {totalStock} {item.base_unit}</p>
+                        <p className="text-xs text-muted-foreground">System: {item.current_stock || 0} {item.unit}</p>
                       </div>
                       <Input
                         type="number"
@@ -3094,8 +3091,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                         onChange={(e) => setStockTakeCounts(prev => ({ ...prev, [item.id]: e.target.value }))}
                       />
                     </div>
-                    );
-                  })}
+                  ))}
                 </div>
                 <Button 
                   className="w-full" 
@@ -3106,8 +3102,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                         .filter(([_, count]) => count !== "")
                         .map(([itemId, count]) => {
                           const item = items.find(i => i.id === itemId);
-                          const stockLevels = item?.lab_ops_stock_levels || [];
-                          const systemQty = stockLevels.reduce((sum: number, sl: any) => sum + (sl.quantity || 0), 0);
+                          const systemQty = item?.current_stock || 0;
                           const countedQty = parseFloat(count);
                           return {
                             stock_take_id: selectedStockTake.id,
