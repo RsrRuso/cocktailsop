@@ -5482,6 +5482,7 @@ export type Database = {
           item_type: string | null
           name: string
           outlet_id: string
+          recipe_id: string | null
           remaining_serves: number | null
           serving_ml: number | null
           sub_category: string | null
@@ -5505,6 +5506,7 @@ export type Database = {
           item_type?: string | null
           name: string
           outlet_id: string
+          recipe_id?: string | null
           remaining_serves?: number | null
           serving_ml?: number | null
           sub_category?: string | null
@@ -5528,6 +5530,7 @@ export type Database = {
           item_type?: string | null
           name?: string
           outlet_id?: string
+          recipe_id?: string | null
           remaining_serves?: number | null
           serving_ml?: number | null
           sub_category?: string | null
@@ -5555,6 +5558,13 @@ export type Database = {
             columns: ["outlet_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_menu_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_recipes"
             referencedColumns: ["id"]
           },
         ]
@@ -6007,6 +6017,74 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_pending_received_items: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          document_number: string | null
+          id: string
+          item_code: string | null
+          item_name: string
+          outlet_id: string | null
+          po_record_id: string | null
+          quantity: number
+          received_by: string | null
+          received_date: string | null
+          status: string | null
+          supplier_name: string | null
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          document_number?: string | null
+          id?: string
+          item_code?: string | null
+          item_name: string
+          outlet_id?: string | null
+          po_record_id?: string | null
+          quantity?: number
+          received_by?: string | null
+          received_date?: string | null
+          status?: string | null
+          supplier_name?: string | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          document_number?: string | null
+          id?: string
+          item_code?: string | null
+          item_name?: string
+          outlet_id?: string | null
+          po_record_id?: string | null
+          quantity?: number
+          received_by?: string | null
+          received_date?: string | null
+          status?: string | null
+          supplier_name?: string | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_pending_received_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
             referencedColumns: ["id"]
           },
         ]
