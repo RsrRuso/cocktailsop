@@ -18,8 +18,25 @@ export const compressImage = async (
   file: File,
   maxWidth: number = 1920,
   maxHeight: number = 1920,
-  quality: number = 0.85
+  quality: number = 0.85,
+  outputMime?: string
 ): Promise<File> => {
+  const supported = new Set(["image/jpeg", "image/png", "image/webp"]);
+  const targetType = outputMime && supported.has(outputMime)
+    ? outputMime
+    : (supported.has(file.type) ? file.type : "image/jpeg");
+
+  const mimeToExt = (mime: string) => {
+    if (mime === "image/png") return "png";
+    if (mime === "image/webp") return "webp";
+    return "jpg";
+  };
+
+  const normalizeName = (originalName: string, mime: string) => {
+    const base = originalName.replace(/\.[^/.]+$/, "");
+    return `${base}.${mimeToExt(mime)}`;
+  };
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -50,18 +67,21 @@ export const compressImage = async (
 
         canvas.toBlob(
           (blob) => {
-            if (blob) {
-              const compressedFile = new File([blob], file.name, {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            } else {
+            if (!blob) {
               reject(new Error("Compression failed"));
+              return;
             }
+
+            resolve(
+              new File([blob], normalizeName(file.name, targetType), {
+                type: targetType,
+                lastModified: Date.now(),
+              })
+            );
           },
-          "image/jpeg",
-          quality
+          targetType,
+          // PNG ignores quality; WebP/JPEG respect it
+          targetType === "image/png" ? undefined : quality
         );
       };
       img.onerror = reject;
@@ -273,23 +293,34 @@ export const smartUpload = async (
 
   try {
     let fileToUpload = file;
-    
+
     // Compress images before upload
     if (file.type.startsWith("image/")) {
       onStageChange("Compressing image");
       onProgress(10);
-      
+
+      // Reels bucket rejects some mimes (e.g. JPEG). Keep image reels as PNG.
+      const outputMime = bucket === "reels" ? "image/png" : undefined;
+
       try {
-        fileToUpload = await compressImage(file);
-      } catch (error) {
+        fileToUpload = await compressImage(file, 1920, 1920, 0.85, outputMime);
+      } catch {
         fileToUpload = file;
       }
-      
+
       onProgress(20);
     }
 
-    // Generate unique filename
-    const fileExt = fileToUpload.name.split(".").pop();
+    const mimeToExt = (mime: string) => {
+      if (mime === "image/png") return "png";
+      if (mime === "image/webp") return "webp";
+      if (mime === "image/jpeg") return "jpg";
+      if (mime === "video/mp4") return "mp4";
+      return (fileToUpload.name.split(".").pop() || "bin").toLowerCase();
+    };
+
+    // Generate unique filename (prefer mime-based extension)
+    const fileExt = mimeToExt(fileToUpload.type);
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
     // Check file size - 200MB limit for reels
