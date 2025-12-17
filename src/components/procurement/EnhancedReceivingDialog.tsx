@@ -146,100 +146,167 @@ export const EnhancedReceivingDialog = ({
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Header
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Receiving Report', pageWidth / 2, 20, { align: 'center' });
+    // Use simple currency format to avoid encoding issues
+    const formatCurrency = (value: number) => {
+      return `${currencySymbol} ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
     
+    // Header with accent line
+    doc.setFillColor(34, 197, 94);
+    doc.rect(0, 0, pageWidth, 8, 'F');
+    
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Receiving Report', pageWidth / 2, 25, { align: 'center' });
+    
+    // Document info section
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Document: ${receivingData.doc_no || 'N/A'}`, 14, 35);
-    doc.text(`Date: ${format(new Date(), 'PPpp')}`, 14, 42);
-    doc.text(`Type: ${receivingData.documentType.toUpperCase()}`, 14, 49);
+    doc.setTextColor(100, 100, 100);
     
-    // Summary
+    let yPos = 38;
+    doc.text(`Document: ${receivingData.doc_no || 'N/A'}`, 14, yPos);
+    doc.text(`Date: ${format(new Date(), 'PPpp')}`, pageWidth - 14, yPos, { align: 'right' });
+    yPos += 7;
+    doc.text(`Type: ${receivingData.documentType.toUpperCase()}`, 14, yPos);
+    
+    // Summary Box
+    yPos += 12;
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, yPos, pageWidth - 28, 45, 3, 3, 'FD');
+    
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Summary', 14, 62);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Summary', 20, yPos + 10);
     
-    doc.setFontSize(10);
+    // Left column
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Total Placed: ${stats.placed}`, 14, 70);
-    doc.text(`Received (Ticked): ${stats.received}`, 14, 77);
-    doc.text(`Pending (Excluded): ${stats.pending}`, 14, 84);
-    doc.text(`Unmatched (Rejected): ${stats.unmatched}`, 14, 91);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Total Placed: ${stats.placed}`, 20, yPos + 20);
+    doc.text(`Received (Ticked): ${stats.received}`, 20, yPos + 27);
+    doc.text(`Pending (Excluded): ${stats.pending}`, 20, yPos + 34);
+    doc.text(`Unmatched (Rejected): ${stats.unmatched}`, 20, yPos + 41);
     
-    doc.text(`Market Items: ${stats.marketReceivedCount}/${stats.marketCount} (${currencySymbol}${stats.marketValue.toFixed(2)})`, 100, 70);
-    doc.text(`Material Items: ${stats.materialReceivedCount}/${stats.materialCount} (${currencySymbol}${stats.materialValue.toFixed(2)})`, 100, 77);
-    doc.text(`Total Value: ${currencySymbol}${stats.receivedValue.toFixed(2)}`, 100, 84);
+    // Right column - Item breakdown
+    const rightX = pageWidth / 2 + 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Market Items:`, rightX, yPos + 20);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${stats.marketReceivedCount}/${stats.marketCount} (${formatCurrency(stats.marketValue)})`, rightX + 30, yPos + 20);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Material Items:`, rightX, yPos + 27);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${stats.materialReceivedCount}/${stats.materialCount} (${formatCurrency(stats.materialValue)})`, rightX + 30, yPos + 27);
+    
+    // Total value highlight
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(rightX - 2, yPos + 32, 75, 10, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Total Value: ${formatCurrency(stats.receivedValue)}`, rightX + 2, yPos + 39);
+    doc.setTextColor(0, 0, 0);
+    
+    yPos += 55;
     
     // Received Items Table
     const receivedItems = items.filter(i => i.isReceived);
     if (receivedItems.length > 0) {
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('Received Items', 14, 105);
+      doc.setTextColor(34, 197, 94);
+      doc.text('Received Items', 14, yPos);
+      doc.setTextColor(0, 0, 0);
       
       autoTable(doc, {
-        startY: 110,
+        startY: yPos + 5,
         head: [['Code', 'Item', 'Type', 'Qty', 'Unit Price', 'Total']],
         body: receivedItems.map(item => [
           item.item_code || '-',
           item.item_name,
           item.documentType === 'market' ? 'Market (ML)' : item.documentType === 'material' ? 'Material (RQ)' : 'Unknown',
           item.quantity.toString(),
-          `${currencySymbol}${item.price_per_unit.toFixed(2)}`,
-          `${currencySymbol}${item.price_total.toFixed(2)}`
+          formatCurrency(item.price_per_unit),
+          formatCurrency(item.price_total)
         ]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [34, 197, 94] }
+        styles: { 
+          fontSize: 8,
+          cellPadding: 3,
+          overflow: 'linebreak'
+        },
+        headStyles: { 
+          fillColor: [34, 197, 94],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 28 },
+          3: { cellWidth: 15, halign: 'center' },
+          4: { cellWidth: 28, halign: 'right' },
+          5: { cellWidth: 28, halign: 'right' }
+        }
       });
     }
     
     // Excluded/Pending Items Table (unticked items)
     const excludedItems = items.filter(i => !i.isReceived);
     if (excludedItems.length > 0) {
-      const finalY = (doc as any).lastAutoTable?.finalY || 110;
-      doc.setFontSize(12);
+      const finalY = (doc as any).lastAutoTable?.finalY || yPos;
+      
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('Excluded Items (Pending)', 14, finalY + 15);
+      doc.setTextColor(239, 68, 68);
+      doc.text('Excluded Items (Pending)', 14, finalY + 12);
+      doc.setTextColor(0, 0, 0);
       
       autoTable(doc, {
-        startY: finalY + 20,
+        startY: finalY + 17,
         head: [['Code', 'Item', 'Type', 'Qty', 'Value']],
         body: excludedItems.map(item => [
           item.item_code || '-',
           item.item_name,
-          item.documentType === 'market' ? 'Procurement (ML)' : item.documentType === 'material' ? 'Material Group (RQ)' : 'Unknown',
+          item.documentType === 'market' ? 'Market (ML)' : item.documentType === 'material' ? 'Material (RQ)' : 'Unknown',
           item.quantity.toString(),
-          `${currencySymbol}${item.price_total.toFixed(2)}`
+          formatCurrency(item.price_total)
         ]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [239, 68, 68] }
+        styles: { 
+          fontSize: 8,
+          cellPadding: 3
+        },
+        headStyles: { 
+          fillColor: [239, 68, 68],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [254, 242, 242]
+        },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          1: { cellWidth: 65 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 20, halign: 'center' },
+          4: { cellWidth: 30, halign: 'right' }
+        }
       });
     }
     
-    // Unmatched/Rejected Items Table
-    const unmatchedItems = items.filter(i => !i.matchedInPO);
-    if (unmatchedItems.length > 0) {
-      const finalY = (doc as any).lastAutoTable?.finalY || 110;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Unmatched Items (Not in PO - Rejected)', 14, finalY + 15);
-      
-      autoTable(doc, {
-        startY: finalY + 20,
-        head: [['Code', 'Item', 'Qty', 'Reason']],
-        body: unmatchedItems.map(item => [
-          item.item_code || '-',
-          item.item_name,
-          item.quantity.toString(),
-          'Code not found in Purchase Orders'
-        ]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [168, 85, 247] }
-      });
-    }
+    // Footer
+    const pageCount = doc.internal.pages.length - 1;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generated by SpecVerse Procurement`, 14, doc.internal.pageSize.getHeight() - 10);
+    doc.text(`Page 1 of ${pageCount}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
     
     doc.save(`receiving-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
     toast.success("Report downloaded");
