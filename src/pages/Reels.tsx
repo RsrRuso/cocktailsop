@@ -18,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useViewTracking } from "@/hooks/useViewTracking";
 import { ReelItemWrapper } from "@/components/ReelItemWrapper";
 import { ReelsFullscreenViewer } from "@/components/ReelsFullscreenViewer";
-import { useLike } from "@/hooks/useLike";
+import { useEngagement } from "@/hooks/useEngagement";
 
 interface Reel {
   id: string;
@@ -68,14 +68,16 @@ const Reels = () => {
   const [showLivestreamComments, setShowLivestreamComments] = useState(false);
 
   // Optimistic like count updater
-  const handleLikeCountChange = useCallback((reelId: string, delta: number) => {
-    setReels(prev => prev.map(r => 
-      r.id === reelId ? { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) } : r
-    ));
+  const handleLikeCountChange = useCallback((reelId: string, type: 'like' | 'save' | 'repost', delta: number) => {
+    if (type === 'like') {
+      setReels(prev => prev.map(r => 
+        r.id === reelId ? { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) } : r
+      ));
+    }
   }, []);
 
-  // Use centralized useLike hook for consistent like/unlike behavior
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useLike('reel', user?.id, handleLikeCountChange);
+  // Use centralized useEngagement hook for consistent like/unlike behavior
+  const reelEngagement = useEngagement('reel', user?.id, handleLikeCountChange);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -89,7 +91,7 @@ const Reels = () => {
   useEffect(() => {
     if (user) {
       fetchReels();
-      fetchLikedReels();
+      reelEngagement.fetchEngagement();
     }
 
     // Subscribe to reel updates for comment counts
@@ -174,10 +176,10 @@ const Reels = () => {
     setReels(reelsWithProfiles);
   };
 
-  // Use toggleReelLike from useLike hook for like/unlike
+  // Use reelEngagement for like/unlike
   const handleLikeReel = useCallback((reelId: string) => {
-    toggleReelLike(reelId);
-  }, [toggleReelLike]);
+    reelEngagement.toggleLike(reelId);
+  }, [reelEngagement]);
 
   const handleDeleteReel = async (reelId: string) => {
     if (!user?.id) {
@@ -281,7 +283,7 @@ const Reels = () => {
                 currentIndex={currentIndex}
                 user={user}
                 mutedVideos={mutedVideos}
-                likedReels={likedReels}
+                likedReels={reelEngagement.likedIds}
                 setMutedVideos={setMutedVideos}
                 handleLikeReel={handleLikeReel}
                 setSelectedReelForLikes={setSelectedReelForLikes}
@@ -333,7 +335,7 @@ const Reels = () => {
         reels={reels}
         initialIndex={fullscreenStartIndex}
         currentUserId={user?.id || ''}
-        likedReels={likedReels}
+        likedReels={reelEngagement.likedIds}
         onLike={handleLikeReel}
         onComment={(reelId) => {
           setSelectedReelForComments(reelId);

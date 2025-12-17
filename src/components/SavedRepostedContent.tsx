@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Bookmark, Repeat2, MessageCircle } from 'lucide-react';
 import { FeedItem } from './FeedItem';
 import { getBadgeColor } from '@/lib/profileUtils';
-import { useLike } from '@/hooks/useLike';
+import { useEngagement } from '@/hooks/useEngagement';
 
 interface SavedRepostedContentProps {
   userId: string;
@@ -43,9 +43,9 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
-  // Optimistic like hooks
-  const { likedItems: likedPosts, toggleLike: togglePostLike } = useLike('post', userId);
-  const { likedItems: likedReels, toggleLike: toggleReelLike } = useLike('reel', userId);
+  // Unified engagement hooks
+  const postEngagement = useEngagement('post', userId);
+  const reelEngagement = useEngagement('reel', userId);
 
   const fetchContent = useCallback(async () => {
     if (!userId) return;
@@ -351,9 +351,13 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
               <FeedItem
                 item={item}
                 currentUserId={userId}
-                isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+                isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
+                isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
+                isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
                 mutedVideos={mutedVideos}
-                onLike={() => item.type === 'post' ? togglePostLike(item.id) : toggleReelLike(item.id)}
+                onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
+                onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
+                onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
                 onDelete={() => {}}
                 onEdit={() => {}}
                 onComment={() => fetchContent()}
