@@ -397,28 +397,34 @@ export const FeedItem = memo(({
           </div>
         </div>
 
-        {/* Engagement Stats */}
+        {/* Engagement Stats - only show counts > 0 */}
         <div className="flex items-center gap-4 mt-2 text-sm">
-          <button 
-            onClick={() => setShowLikes(true)}
-            className="font-semibold text-foreground hover:opacity-70 transition-opacity"
-          >
-            {(item.like_count || 0).toLocaleString()} likes
-          </button>
+          {(item.like_count || 0) > 0 && (
+            <button 
+              onClick={() => setShowLikes(true)}
+              className="font-semibold text-foreground hover:opacity-70 transition-opacity"
+            >
+              {item.like_count.toLocaleString()} likes
+            </button>
+          )}
           
-          <button 
-            onClick={() => setShowReposts(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {(item.repost_count || 0).toLocaleString()} reposts
-          </button>
+          {(item.repost_count || 0) > 0 && (
+            <button 
+              onClick={() => setShowReposts(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {item.repost_count.toLocaleString()} reposts
+            </button>
+          )}
           
-          <button 
-            onClick={() => setShowSaves(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {(item.save_count || 0).toLocaleString()} saves
-          </button>
+          {(item.save_count || 0) > 0 && (
+            <button 
+              onClick={() => setShowSaves(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {item.save_count.toLocaleString()} saves
+            </button>
+          )}
         </div>
 
         {/* Caption */}
