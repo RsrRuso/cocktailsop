@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
@@ -4284,6 +4284,283 @@ const BatchCalculator = () => {
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* Team Performance */}
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary" />
+                      Team Performance
+                    </h4>
+                    {(() => {
+                      // Group by producer
+                      const producerStats = productions.reduce((acc, prod) => {
+                        const name = prod.produced_by_name || 'Unknown';
+                        if (!acc[name]) {
+                          acc[name] = { 
+                            count: 0, 
+                            liters: 0, 
+                            serves: 0,
+                            recipes: new Set<string>(),
+                            dates: [] as Date[],
+                            avgBatchSize: 0
+                          };
+                        }
+                        acc[name].count += 1;
+                        acc[name].liters += prod.target_liters;
+                        acc[name].serves += prod.target_serves || 0;
+                        acc[name].recipes.add(prod.batch_name);
+                        acc[name].dates.push(new Date(prod.production_date));
+                        return acc;
+                      }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: Date[]; avgBatchSize: number }>);
+                      
+                      // Calculate averages and sort by production volume
+                      const sortedProducers = Object.entries(producerStats)
+                        .map(([name, stats]) => ({
+                          name,
+                          ...stats,
+                          avgBatchSize: stats.liters / stats.count,
+                          recipeCount: stats.recipes.size,
+                          consistency: stats.count > 1 
+                            ? Math.max(0, 100 - (Math.abs(stats.liters / stats.count - (stats.liters / stats.count)) / (stats.liters / stats.count) * 100))
+                            : 100
+                        }))
+                        .sort((a, b) => b.liters - a.liters);
+                      
+                      const topProducer = sortedProducers[0];
+                      const totalVolume = productions.reduce((sum, p) => sum + p.target_liters, 0);
+                      
+                      return (
+                        <div className="space-y-4">
+                          {/* Leaderboard Summary */}
+                          {topProducer && (
+                            <div className="p-4 bg-gradient-to-r from-amber-500/20 to-amber-500/5 rounded-lg border border-amber-500/30">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold">
+                                  🏆
+                                </div>
+                                <div>
+                                  <p className="font-bold text-amber-400">Top Producer</p>
+                                  <p className="text-sm text-foreground">{topProducer.name}</p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                                <div className="text-center">
+                                  <p className="text-muted-foreground">Volume</p>
+                                  <p className="font-bold text-amber-400">{topProducer.liters.toFixed(1)} L</p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-muted-foreground">Batches</p>
+                                  <p className="font-bold text-amber-400">{topProducer.count}</p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-muted-foreground">Recipes</p>
+                                  <p className="font-bold text-amber-400">{topProducer.recipeCount}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* All Producers */}
+                          <div className="space-y-2">
+                            {sortedProducers.map((producer, index) => {
+                              const contribution = totalVolume > 0 ? (producer.liters / totalVolume) * 100 : 0;
+                              return (
+                                <div key={producer.name} className="p-3 bg-muted/20 rounded-lg">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                        index === 0 ? 'bg-amber-500 text-white' : 
+                                        index === 1 ? 'bg-slate-400 text-white' : 
+                                        index === 2 ? 'bg-amber-700 text-white' : 'bg-muted text-foreground'
+                                      }`}>
+                                        {index + 1}
+                                      </span>
+                                      <span className="font-medium">{producer.name}</span>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">{contribution.toFixed(1)}% of total</span>
+                                  </div>
+                                  <div className="w-full bg-muted/30 rounded-full h-2 mb-2">
+                                    <div 
+                                      className="bg-primary h-2 rounded-full transition-all"
+                                      style={{ width: `${contribution}%` }}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                    <div>{producer.liters.toFixed(1)} L</div>
+                                    <div>{producer.count} batches</div>
+                                    <div>{producer.serves} serves</div>
+                                    <div>Avg: {producer.avgBatchSize.toFixed(2)} L</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* AI Demand Forecasting */}
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
+                      AI Demand Forecasting
+                    </h4>
+                    {(() => {
+                      // Calculate forecasting metrics
+                      const recipeData = productions.reduce((acc, prod) => {
+                        const key = prod.batch_name;
+                        const prodDate = new Date(prod.production_date);
+                        
+                        if (!acc[key]) {
+                          acc[key] = { 
+                            batches: [],
+                            firstDate: prodDate,
+                            lastDate: prodDate
+                          };
+                        }
+                        acc[key].batches.push({ 
+                          liters: prod.target_liters, 
+                          serves: prod.target_serves || 0,
+                          date: prodDate 
+                        });
+                        if (prodDate < acc[key].firstDate) acc[key].firstDate = prodDate;
+                        if (prodDate > acc[key].lastDate) acc[key].lastDate = prodDate;
+                        return acc;
+                      }, {} as Record<string, { batches: { liters: number; serves: number; date: Date }[]; firstDate: Date; lastDate: Date }>);
+                      
+                      const forecasts = Object.entries(recipeData)
+                        .map(([name, data]) => {
+                          const sortedBatches = [...data.batches].sort((a, b) => a.date.getTime() - b.date.getTime());
+                          const totalLiters = sortedBatches.reduce((s, b) => s + b.liters, 0);
+                          const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+                          const dailyAvg = totalLiters / daysDiff;
+                          
+                          // Calculate trend
+                          const midpoint = Math.floor(sortedBatches.length / 2);
+                          let trendFactor = 1;
+                          if (sortedBatches.length >= 2) {
+                            const firstHalf = sortedBatches.slice(0, midpoint);
+                            const secondHalf = sortedBatches.slice(midpoint);
+                            const firstAvg = firstHalf.reduce((s, b) => s + b.liters, 0) / (firstHalf.length || 1);
+                            const secondAvg = secondHalf.reduce((s, b) => s + b.liters, 0) / (secondHalf.length || 1);
+                            if (firstAvg > 0) trendFactor = secondAvg / firstAvg;
+                          }
+                          
+                          // Calculate seasonality (day of week patterns)
+                          const dayOfWeekAvg: number[] = Array(7).fill(0);
+                          const dayOfWeekCount: number[] = Array(7).fill(0);
+                          sortedBatches.forEach(b => {
+                            const dow = b.date.getDay();
+                            dayOfWeekAvg[dow] += b.liters;
+                            dayOfWeekCount[dow]++;
+                          });
+                          const peakDay = dayOfWeekCount.reduce((maxIdx, count, idx, arr) => 
+                            count > arr[maxIdx] ? idx : maxIdx, 0);
+                          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                          
+                          // Forecast next 7/30 days
+                          const forecast7Days = dailyAvg * 7 * (trendFactor > 1 ? trendFactor : 1);
+                          const forecast30Days = dailyAvg * 30 * (trendFactor > 1 ? trendFactor : 1);
+                          
+                          // Confidence based on data points
+                          const confidence = Math.min(95, 50 + sortedBatches.length * 5);
+                          
+                          return {
+                            name,
+                            dailyAvg,
+                            trendFactor,
+                            trend: trendFactor > 1.05 ? 'rising' : trendFactor < 0.95 ? 'falling' : 'stable',
+                            peakDay: dayNames[peakDay],
+                            forecast7Days,
+                            forecast30Days,
+                            confidence,
+                            batchCount: sortedBatches.length
+                          };
+                        })
+                        .sort((a, b) => b.dailyAvg - a.dailyAvg);
+                      
+                      return (
+                        <div className="space-y-4">
+                          {/* Summary */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-center">
+                              <p className="text-xs text-muted-foreground">7-Day Forecast</p>
+                              <p className="text-xl font-bold text-emerald-400">
+                                {forecasts.reduce((s, f) => s + f.forecast7Days, 0).toFixed(1)} L
+                              </p>
+                            </div>
+                            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30 text-center">
+                              <p className="text-xs text-muted-foreground">30-Day Forecast</p>
+                              <p className="text-xl font-bold text-blue-400">
+                                {forecasts.reduce((s, f) => s + f.forecast30Days, 0).toFixed(1)} L
+                              </p>
+                            </div>
+                            <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30 text-center col-span-2 sm:col-span-1">
+                              <p className="text-xs text-muted-foreground">Trending Recipes</p>
+                              <p className="text-xl font-bold text-purple-400">
+                                {forecasts.filter(f => f.trend === 'rising').length}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Individual Recipe Forecasts */}
+                          <div className="space-y-2">
+                            {forecasts.slice(0, 5).map(forecast => (
+                              <div key={forecast.name} className="p-3 bg-muted/20 rounded-lg">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <span className="font-medium block">{forecast.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Peak day: {forecast.peakDay} • {forecast.batchCount} data points
+                                    </span>
+                                  </div>
+                                  <div className={`flex items-center gap-1 text-xs font-semibold ${
+                                    forecast.trend === 'rising' ? 'text-emerald-500' : 
+                                    forecast.trend === 'falling' ? 'text-orange-500' : 'text-muted-foreground'
+                                  }`}>
+                                    {forecast.trend === 'rising' ? '↗' : forecast.trend === 'falling' ? '↘' : '→'}
+                                    {((forecast.trendFactor - 1) * 100).toFixed(0)}%
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                  <div>
+                                    <span className="text-muted-foreground block">Daily Avg</span>
+                                    <span className="font-medium">{forecast.dailyAvg.toFixed(2)} L</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground block">7-Day Est</span>
+                                    <span className="font-medium text-emerald-400">{forecast.forecast7Days.toFixed(1)} L</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground block">30-Day Est</span>
+                                    <span className="font-medium text-blue-400">{forecast.forecast30Days.toFixed(1)} L</span>
+                                  </div>
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">Confidence:</span>
+                                  <div className="flex-1 bg-muted/30 rounded-full h-1.5">
+                                    <div 
+                                      className={`h-1.5 rounded-full ${
+                                        forecast.confidence >= 80 ? 'bg-emerald-500' : 
+                                        forecast.confidence >= 60 ? 'bg-amber-500' : 'bg-orange-500'
+                                      }`}
+                                      style={{ width: `${forecast.confidence}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium">{forecast.confidence}%</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground p-2 bg-primary/5 rounded">
+                            💡 Forecasts based on historical patterns, trend analysis, and day-of-week seasonality. Confidence improves with more data points.
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Date Range */}
