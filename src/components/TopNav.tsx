@@ -45,6 +45,11 @@ interface TopNavProps {
 const TopNav = ({ isVisible = true }: TopNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Hide on fullscreen pages (Reels, Story Viewer)
+  const hideOnRoutes = ['/reels', '/story-viewer'];
+  const shouldHide = hideOnRoutes.some(route => location.pathname.startsWith(route));
+  
   const { user, profile } = useAuth(); // Use cached auth
   const { lightTap } = useHaptic();
   const { toast } = useToast();
@@ -262,6 +267,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
         return 'from-amber-700 to-amber-900';
     }
   };
+
+  // Don't render on fullscreen pages
+  if (shouldHide) return null;
 
   return (
     <>
