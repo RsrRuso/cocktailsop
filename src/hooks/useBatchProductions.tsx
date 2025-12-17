@@ -90,10 +90,12 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
   const createProduction = useMutation({
     mutationFn: async ({
       production,
-      ingredients
+      ingredients,
+      outletId
     }: {
       production: Omit<BatchProduction, 'id' | 'created_at' | 'user_id'>;
       ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
+      outletId?: string; // LAB Ops outlet to sync inventory with
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -132,6 +134,20 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
         .from('batch_productions')
         .update({ qr_code_data: qrUrl })
         .eq('id', productionData.id);
+
+      // Sync with LAB Ops inventory if outlet specified
+      if (outletId) {
+        try {
+          const { data: syncResult } = await supabase.rpc('sync_batch_to_inventory', {
+            p_production_id: productionData.id,
+            p_outlet_id: outletId,
+            p_action: 'deduct'
+          });
+          console.log('Inventory sync result:', syncResult);
+        } catch (syncError) {
+          console.warn('Inventory sync failed (non-blocking):', syncError);
+        }
+      }
 
       return productionData;
     },
@@ -182,11 +198,24 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       productionId,
       productionUpdates,
       ingredients,
+      outletId
     }: {
       productionId: string;
       productionUpdates: Partial<Omit<BatchProduction, 'id' | 'created_at'>>;
       ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
+      outletId?: string; // LAB Ops outlet to sync inventory with
     }) => {
+      // First restore previous inventory deductions
+      if (outletId) {
+        try {
+          await supabase.rpc('restore_batch_inventory', {
+            p_production_id: productionId
+          });
+        } catch (restoreError) {
+          console.warn('Inventory restore failed (non-blocking):', restoreError);
+        }
+      }
+
       // Delete old ingredients first
       const { error: deleteError } = await supabase
         .from('batch_production_ingredients')
@@ -216,6 +245,21 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
         .maybeSingle();
 
       if (updateError) throw updateError;
+
+      // Sync new ingredients with LAB Ops inventory
+      if (outletId) {
+        try {
+          const { data: syncResult } = await supabase.rpc('sync_batch_to_inventory', {
+            p_production_id: productionId,
+            p_outlet_id: outletId,
+            p_action: 'deduct'
+          });
+          console.log('Inventory sync result:', syncResult);
+        } catch (syncError) {
+          console.warn('Inventory sync failed (non-blocking):', syncError);
+        }
+      }
+
       return data as BatchProduction | null;
     },
     onSuccess: async (data) => {
@@ -260,7 +304,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
   });
 
   const deleteProduction = useMutation({
-    mutationFn: async (productionId: string) => {
+    mutationFn: async ({ productionId, outletId }: { productionId: string; outletId?: string }) => {
       console.log('deleteProduction called with productionId:', productionId);
       
       // Get production data before deletion for notifications
@@ -274,6 +318,18 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
 
       if (!production) {
         throw new Error("Production not found or you don't have permission to delete it");
+      }
+
+      // Restore inventory before deletion
+      if (outletId) {
+        try {
+          await supabase.rpc('restore_batch_inventory', {
+            p_production_id: productionId
+          });
+          console.log('Inventory restored for deleted batch');
+        } catch (restoreError) {
+          console.warn('Inventory restore failed (non-blocking):', restoreError);
+        }
       }
 
       // Delete ingredients first

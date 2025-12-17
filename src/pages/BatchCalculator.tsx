@@ -630,7 +630,7 @@ const BatchCalculator = () => {
       return;
     }
 
-    deleteProduction(productionId);
+    deleteProduction({ productionId });
   };
   const handleAISuggestions = async () => {
     if (!recipeName) {
