@@ -7067,6 +7067,7 @@ export type Database = {
           location_id: string | null
           outlet_id: string
           started_at: string | null
+          started_by: string | null
           status: string | null
         }
         Insert: {
@@ -7077,6 +7078,7 @@ export type Database = {
           location_id?: string | null
           outlet_id: string
           started_at?: string | null
+          started_by?: string | null
           status?: string | null
         }
         Update: {
@@ -7087,6 +7089,7 @@ export type Database = {
           location_id?: string | null
           outlet_id?: string
           started_at?: string | null
+          started_by?: string | null
           status?: string | null
         }
         Relationships: [
