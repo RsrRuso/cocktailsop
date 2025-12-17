@@ -1351,6 +1351,48 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_monetization: {
+        Row: {
+          available_balance: number | null
+          badges_enabled: boolean | null
+          created_at: string | null
+          id: string
+          is_creator: boolean | null
+          pending_balance: number | null
+          subscriptions_enabled: boolean | null
+          tips_enabled: boolean | null
+          total_earnings: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number | null
+          badges_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_creator?: boolean | null
+          pending_balance?: number | null
+          subscriptions_enabled?: boolean | null
+          tips_enabled?: boolean | null
+          total_earnings?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          available_balance?: number | null
+          badges_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_creator?: boolean | null
+          pending_balance?: number | null
+          subscriptions_enabled?: boolean | null
+          tips_enabled?: boolean | null
+          total_earnings?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       creator_roles: {
         Row: {
           created_at: string
@@ -1369,6 +1411,72 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["creator_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      creator_subscriptions: {
+        Row: {
+          benefits: string[] | null
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_monthly: number
+          subscriber_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          benefits?: string[] | null
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_monthly: number
+          subscriber_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          benefits?: string[] | null
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_monthly?: number
+          subscriber_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      creator_tips: {
+        Row: {
+          amount: number
+          created_at: string | null
+          creator_id: string
+          id: string
+          message: string | null
+          tipper_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          message?: string | null
+          tipper_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          message?: string | null
+          tipper_id?: string | null
         }
         Relationships: []
       }
@@ -9901,6 +10009,85 @@ export type Database = {
         }
         Relationships: []
       }
+      promoted_content: {
+        Row: {
+          budget: number
+          clicks: number | null
+          created_at: string | null
+          daily_budget: number | null
+          end_date: string | null
+          event_id: string | null
+          id: string
+          impressions: number | null
+          post_id: string | null
+          reel_id: string | null
+          spent: number | null
+          start_date: string | null
+          status: string | null
+          target_audience: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          budget: number
+          clicks?: number | null
+          created_at?: string | null
+          daily_budget?: number | null
+          end_date?: string | null
+          event_id?: string | null
+          id?: string
+          impressions?: number | null
+          post_id?: string | null
+          reel_id?: string | null
+          spent?: number | null
+          start_date?: string | null
+          status?: string | null
+          target_audience?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          budget?: number
+          clicks?: number | null
+          created_at?: string | null
+          daily_budget?: number | null
+          end_date?: string | null
+          event_id?: string | null
+          id?: string
+          impressions?: number | null
+          post_id?: string | null
+          reel_id?: string | null
+          spent?: number | null
+          start_date?: string | null
+          status?: string | null
+          target_audience?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promoted_content_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promoted_content_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promoted_content_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string
@@ -10680,6 +10867,60 @@ export type Database = {
           business_phone?: string | null
           created_at?: string | null
           id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shop_products: {
+        Row: {
+          category: string | null
+          compare_at_price: number | null
+          created_at: string | null
+          description: string | null
+          digital_file_url: string | null
+          id: string
+          images: string[] | null
+          inventory_count: number | null
+          is_active: boolean | null
+          is_digital: boolean | null
+          name: string
+          price: number
+          product_type: string | null
+          seller_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          digital_file_url?: string | null
+          id?: string
+          images?: string[] | null
+          inventory_count?: number | null
+          is_active?: boolean | null
+          is_digital?: boolean | null
+          name: string
+          price: number
+          product_type?: string | null
+          seller_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          digital_file_url?: string | null
+          id?: string
+          images?: string[] | null
+          inventory_count?: number | null
+          is_active?: boolean | null
+          is_digital?: boolean | null
+          name?: string
+          price?: number
+          product_type?: string | null
+          seller_id?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -13354,6 +13595,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          expires_at: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+          subscriber_id: string
+          subscription_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          subscriber_id: string
+          subscription_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          subscriber_id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "creator_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       variance_reports: {
         Row: {
