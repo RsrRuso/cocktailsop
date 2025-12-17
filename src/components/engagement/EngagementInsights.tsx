@@ -64,7 +64,7 @@ export const EngagementInsights = ({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-foreground/80">Smart Insights</h3>
+      <h3 className="text-sm font-semibold text-white/80">Smart Insights</h3>
       <div className="grid grid-cols-2 gap-3">
         {insights.map((insight, index) => (
           <motion.div
@@ -73,12 +73,12 @@ export const EngagementInsights = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="p-3 bg-card/50 backdrop-blur-sm border-border/50">
+            <Card className="p-3 bg-black/40 backdrop-blur-md border-white/10">
               <div className="flex items-center gap-2 mb-2">
                 <insight.icon className={`w-4 h-4 ${insight.color}`} />
-                <span className="text-xs text-muted-foreground">{insight.label}</span>
+                <span className="text-xs text-white/60">{insight.label}</span>
               </div>
-              <div className="text-lg font-bold text-foreground mb-2">{insight.value}</div>
+              <div className="text-lg font-bold text-white mb-2">{insight.value}</div>
               <Progress value={insight.progress} className="h-1" />
             </Card>
           </motion.div>

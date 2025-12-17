@@ -15,11 +15,11 @@ export const OptimalPostingTime = () => {
   ];
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 border-border/50">
+    <Card className="p-4 bg-black/40 backdrop-blur-md border-white/10">
       <div className="flex items-center gap-2 mb-4">
         <Clock className="w-5 h-5 text-blue-500" />
-        <h3 className="font-semibold text-foreground">Best Times to Post</h3>
-        <Badge variant="secondary" className="ml-auto">AI Prediction</Badge>
+        <h3 className="font-semibold text-white">Best Times to Post</h3>
+        <Badge variant="secondary" className="ml-auto bg-primary/20 text-primary border-0">AI Prediction</Badge>
       </div>
 
       <div className="space-y-2">
@@ -34,13 +34,13 @@ export const OptimalPostingTime = () => {
               className={`p-3 ${
                 slot.recommended
                   ? 'bg-primary/10 border-primary/50'
-                  : 'bg-card/30'
+                  : 'bg-white/5 border-white/10'
               } transition-all hover:scale-[1.02]`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium text-sm text-foreground">
+                  <Clock className="w-4 h-4 text-white/60" />
+                  <span className="font-medium text-sm text-white">
                     {slot.day} at {slot.time}
                   </span>
                   {slot.recommended && (
@@ -50,17 +50,17 @@ export const OptimalPostingTime = () => {
                     </Badge>
                   )}
                 </div>
-                <span className="text-xs font-semibold text-foreground">
+                <span className="text-xs font-semibold text-white">
                   {slot.score}% Score
                 </span>
               </div>
 
               <div className="flex items-center gap-4 mb-2">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1 text-xs text-white/60">
                   <Users className="w-3 h-3" />
                   <span>{slot.audience.toLocaleString()} active</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1 text-xs text-white/60">
                   <TrendingUp className="w-3 h-3" />
                   <span>High engagement</span>
                 </div>
@@ -72,9 +72,9 @@ export const OptimalPostingTime = () => {
         ))}
       </div>
 
-      <div className="mt-4 p-3 rounded-lg bg-background/50 border border-border/50">
-        <p className="text-xs text-muted-foreground">
-          💡 <span className="font-semibold text-foreground">Pro Tip:</span> Your audience is most active
+      <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
+        <p className="text-xs text-white/60">
+          💡 <span className="font-semibold text-white">Pro Tip:</span> Your audience is most active
           between 6 PM - 10 PM. Schedule posts during these peak hours for maximum reach.
         </p>
       </div>

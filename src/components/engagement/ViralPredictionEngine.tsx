@@ -75,17 +75,17 @@ export const ViralPredictionEngine = ({
   const status = getViralStatus();
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-blue-500/10 border-border/50">
+    <Card className="p-4 bg-black/40 backdrop-blur-md border-white/10">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-pink-500 animate-pulse" />
-        <h3 className="font-semibold text-foreground">Viral Prediction Engine</h3>
-        <Badge variant="secondary" className="ml-auto">AI-Powered</Badge>
+        <h3 className="font-semibold text-white">Viral Prediction Engine</h3>
+        <Badge variant="secondary" className="ml-auto bg-primary/20 text-primary border-0">AI-Powered</Badge>
       </div>
 
       {/* Viral Probability */}
-      <div className="mb-6 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+      <div className="mb-6 p-4 rounded-lg bg-white/5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-muted-foreground">Viral Probability</span>
+          <span className="text-sm text-white/60">Viral Probability</span>
           <span className={`text-lg font-bold ${status.color}`}>{status.label}</span>
         </div>
         <div className="flex items-baseline gap-2 mb-3">
@@ -98,22 +98,22 @@ export const ViralPredictionEngine = ({
 
       {/* Viral Factors */}
       <div className="space-y-2 mb-4">
-        <h4 className="text-sm font-semibold text-foreground mb-3">Viral Factors</h4>
+        <h4 className="text-sm font-semibold text-white mb-3">Viral Factors</h4>
         {factors.map((factor, index) => (
           <motion.div
             key={factor.label}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
+            className="flex items-center gap-3 p-2 rounded-lg bg-white/5"
           >
-            <div className={`p-2 rounded-lg bg-card ${factor.color}`}>
+            <div className={`p-2 rounded-lg bg-black/40 ${factor.color}`}>
               <factor.icon className="w-3 h-3" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-foreground">{factor.label}</span>
-                <span className="text-xs font-bold text-foreground">{factor.score}</span>
+                <span className="text-xs font-medium text-white">{factor.label}</span>
+                <span className="text-xs font-bold text-white">{factor.score}</span>
               </div>
               <Progress value={factor.score} className="h-1" />
             </div>
@@ -122,15 +122,15 @@ export const ViralPredictionEngine = ({
       </div>
 
       {/* 24h Predictions */}
-      <div className="p-4 rounded-lg bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-border/50">
+      <div className="p-4 rounded-lg bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <Award className="w-4 h-4 text-yellow-500" />
-          <h4 className="text-sm font-semibold text-foreground">24h Predictions</h4>
+          <h4 className="text-sm font-semibold text-white">24h Predictions</h4>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">Views</div>
-            <div className="text-lg font-bold text-foreground">
+            <div className="text-xs text-white/60 mb-1">Views</div>
+            <div className="text-lg font-bold text-white">
               {prediction24h.views.toLocaleString()}
             </div>
             <div className="text-xs text-green-500">
@@ -138,8 +138,8 @@ export const ViralPredictionEngine = ({
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">Likes</div>
-            <div className="text-lg font-bold text-foreground">
+            <div className="text-xs text-white/60 mb-1">Likes</div>
+            <div className="text-lg font-bold text-white">
               {prediction24h.likes.toLocaleString()}
             </div>
             <div className="text-xs text-green-500">
@@ -147,8 +147,8 @@ export const ViralPredictionEngine = ({
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">Shares</div>
-            <div className="text-lg font-bold text-foreground">
+            <div className="text-xs text-white/60 mb-1">Shares</div>
+            <div className="text-lg font-bold text-white">
               {prediction24h.shares.toLocaleString()}
             </div>
             <div className="text-xs text-green-500">

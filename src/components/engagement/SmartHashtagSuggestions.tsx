@@ -66,11 +66,11 @@ export const SmartHashtagSuggestions = ({
   };
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 border-border/50">
+    <Card className="p-4 bg-black/40 backdrop-blur-md border-white/10">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-purple-500" />
-          <h3 className="text-sm font-semibold text-foreground">AI Hashtag Suggestions</h3>
+          <h3 className="text-sm font-semibold text-white">AI Hashtag Suggestions</h3>
         </div>
         {selected.size > 0 && (
           <Button
@@ -127,10 +127,10 @@ export const SmartHashtagSuggestions = ({
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="mt-3 pt-3 border-t border-border/50"
+          className="mt-3 pt-3 border-t border-white/10"
         >
-          <p className="text-xs text-muted-foreground">
-            Estimated reach: <span className="font-semibold text-foreground">
+          <p className="text-xs text-white/60">
+            Estimated reach: <span className="font-semibold text-white">
               {Array.from(selected)
                 .reduce((sum, tag) => {
                   const s = suggestions.find(s => s.tag === tag);
