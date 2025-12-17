@@ -108,7 +108,7 @@ export const EnhancedLikesDialog = ({
   };
 
   const handleShareToStory = () => {
-    navigate('/create-story', { state: { shareContent: { type: contentType, id: contentId } } });
+    navigate('/create/story', { state: { shareContent: { type: contentType, id: contentId } } });
     onOpenChange(false);
     toast.success("Opening story creator...");
   };

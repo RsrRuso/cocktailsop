@@ -263,9 +263,9 @@ export default function ReelEditorPro() {
                 videoUrl={videoUrl}
                 onImportVideo={(url, destination) => {
                   const routes = {
-                    reel: `/create-reel?video=${encodeURIComponent(url)}`,
-                    story: `/create-story?video=${encodeURIComponent(url)}`,
-                    post: `/create-post?video=${encodeURIComponent(url)}`
+                    reel: `/create/reel?video=${encodeURIComponent(url)}`,
+                    story: `/create/story?video=${encodeURIComponent(url)}`,
+                    post: `/create/post?video=${encodeURIComponent(url)}`,
                   };
                   navigate(routes[destination]);
                 }}
