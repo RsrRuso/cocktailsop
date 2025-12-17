@@ -127,18 +127,23 @@ export function BatchProductionVariance({ outletId }: BatchProductionVariancePro
       // Calculate variance for each recipe
       recipeMap.forEach((recipe) => {
         recipe.variance = recipe.totalProducedServes - recipe.totalSold;
-        recipe.variancePercent = recipe.totalProducedServes > 0 
-          ? Math.round((recipe.variance / recipe.totalProducedServes) * 100)
-          : 0;
         
+        // Only calculate meaningful variance percent when we have sales data
         if (recipe.totalSold === 0) {
+          recipe.variancePercent = 0; // No variance percent without sales
           recipe.status = 'no-sales';
-        } else if (Math.abs(recipe.variancePercent) <= 5) {
-          recipe.status = 'matched';
-        } else if (recipe.variance > 0) {
-          recipe.status = 'over'; // Produced more than sold
         } else {
-          recipe.status = 'under'; // Sold more than produced (possible theft/untracked)
+          // Calculate variance as percentage of SOLD (not produced) for accuracy
+          // This shows how much extra/short we are relative to actual consumption
+          recipe.variancePercent = Math.round((recipe.variance / recipe.totalSold) * 100);
+          
+          if (Math.abs(recipe.variancePercent) <= 5) {
+            recipe.status = 'matched';
+          } else if (recipe.variance > 0) {
+            recipe.status = 'over'; // Produced more than sold (surplus stock)
+          } else {
+            recipe.status = 'under'; // Sold more than produced (possible loss/theft)
+          }
         }
       });
 
@@ -168,11 +173,11 @@ export function BatchProductionVariance({ outletId }: BatchProductionVariancePro
       case 'matched':
         return <Badge className="bg-green-500/20 text-green-400 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Matched</Badge>;
       case 'over':
-        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30"><TrendingUp className="w-3 h-3 mr-1" />+{variancePercent}% Surplus</Badge>;
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30"><TrendingUp className="w-3 h-3 mr-1" />+{variancePercent}% Stock</Badge>;
       case 'under':
-        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30"><TrendingDown className="w-3 h-3 mr-1" />{variancePercent}% Short</Badge>;
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30"><TrendingDown className="w-3 h-3 mr-1" />{Math.abs(variancePercent)}% Short</Badge>;
       default:
-        return <Badge variant="outline" className="text-muted-foreground"><AlertTriangle className="w-3 h-3 mr-1" />No Sales Data</Badge>;
+        return <Badge variant="outline" className="text-muted-foreground"><AlertTriangle className="w-3 h-3 mr-1" />Awaiting Sales</Badge>;
     }
   };
 
@@ -183,7 +188,8 @@ export function BatchProductionVariance({ outletId }: BatchProductionVariancePro
   }), { produced: 0, sold: 0, liters: 0 });
 
   const overallVariance = totals.produced - totals.sold;
-  const overallPercent = totals.produced > 0 ? Math.round((overallVariance / totals.produced) * 100) : 0;
+  // Calculate percentage relative to sold (how much extra/short relative to consumption)
+  const overallPercent = totals.sold > 0 ? Math.round((overallVariance / totals.sold) * 100) : 0;
 
   const exportReport = () => {
     const report = {
