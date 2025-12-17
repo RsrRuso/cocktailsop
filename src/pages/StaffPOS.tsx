@@ -506,26 +506,38 @@ export default function StaffPOS() {
         *,
         lab_ops_tables(name, table_number),
         server:lab_ops_staff(full_name),
-        lab_ops_order_items(id, qty, unit_price, lab_ops_menu_items(name))
+        lab_ops_order_items(
+          id,
+          menu_item_id,
+          qty,
+          unit_price,
+          lab_ops_menu_items(name, serving_ml)
+        )
       `)
       .eq("outlet_id", outletId)
       .in("status", ["open", "sent"])
       .order("created_at", { ascending: false });
-    
+
     setOpenOrders(data || []);
   };
 
   const fetchClosedOrders = async (outletId: string, date: string) => {
     const startOfDay = `${date}T00:00:00.000Z`;
     const endOfDay = `${date}T23:59:59.999Z`;
-    
+
     const { data } = await supabase
       .from("lab_ops_orders")
       .select(`
         *,
         lab_ops_tables(name, table_number, turnover_count),
         server:lab_ops_staff(full_name),
-        lab_ops_order_items(id, qty, unit_price, lab_ops_menu_items(name)),
+        lab_ops_order_items(
+          id,
+          menu_item_id,
+          qty,
+          unit_price,
+          lab_ops_menu_items(name, serving_ml)
+        ),
         lab_ops_payments(payment_method, amount)
       `)
       .eq("outlet_id", outletId)
@@ -533,18 +545,18 @@ export default function StaffPOS() {
       .gte("closed_at", startOfDay)
       .lte("closed_at", endOfDay)
       .order("closed_at", { ascending: false });
-    
+
     setClosedOrders(data || []);
   };
 
   const closeOrder = async (order: any) => {
     if (!outlet || !staff) return;
-    
+
     setClosingOrder(true);
     try {
       const orderItems = order.lab_ops_order_items || [];
       const subtotal = orderItems.reduce((sum: number, item: any) => sum + (item.unit_price * item.qty), 0);
-      
+
       // Create payment record
       const { error: paymentError } = await supabase.from("lab_ops_payments").insert({
         order_id: order.id,
@@ -557,40 +569,32 @@ export default function StaffPOS() {
         throw new Error(`Payment failed: ${paymentError.message}`);
       }
 
-      // Fetch menu item details for each order item to record sales
-      const menuItemIds = orderItems.map((item: any) => item.menu_item_id).filter(Boolean);
-      const { data: menuItemsData } = await supabase
-        .from("lab_ops_menu_items")
-        .select("id, name, serving_ml, batch_recipe_id")
-        .in("id", menuItemIds);
-      
-      const menuItemMap = new Map(menuItemsData?.map(m => [m.id, m]) || []);
-
       // Record sales in lab_ops_sales for batch tracking
       const salesRecords = orderItems
         .filter((item: any) => item.menu_item_id)
         .map((item: any) => {
-          const menuItem = menuItemMap.get(item.menu_item_id);
-          const servingMl = menuItem?.serving_ml || 90;
+          const itemName = item.lab_ops_menu_items?.name || "Unknown Item";
+          const qty = Number(item.qty || 0);
+          const servingMl = Number(item.lab_ops_menu_items?.serving_ml || 90);
+          const unitPrice = Number(item.unit_price || 0);
+
           return {
             outlet_id: outlet.id,
             order_id: order.id,
-            item_name: menuItem?.name || "Unknown Item",
-            quantity: item.qty,
+            item_name: itemName,
+            quantity: qty,
             ml_per_serving: servingMl,
-            total_ml_sold: servingMl * item.qty,
-            unit_price: item.unit_price,
-            total_price: item.unit_price * item.qty,
+            total_ml_sold: servingMl * qty,
+            unit_price: unitPrice || null,
+            total_price: unitPrice ? unitPrice * qty : null,
             sold_at: new Date().toISOString(),
             sold_by: staff.id,
           };
         });
 
       if (salesRecords.length > 0) {
-        const { error: salesError } = await supabase
-          .from("lab_ops_sales")
-          .insert(salesRecords);
-        
+        const { error: salesError } = await supabase.from("lab_ops_sales").insert(salesRecords);
+
         if (salesError) {
           console.error("Sales insert error:", salesError);
           // Don't throw - sales recording failure shouldn't block order close
