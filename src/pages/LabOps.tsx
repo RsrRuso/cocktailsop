@@ -3038,11 +3038,34 @@ function InventoryModule({ outletId }: { outletId: string }) {
       <Dialog open={!!selectedStockTake} onOpenChange={(open) => !open && setSelectedStockTake(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Stock Take #{selectedStockTake?.id.slice(0, 8)}
-              <Badge className="ml-2" variant={selectedStockTake?.status === "completed" ? "default" : "secondary"}>
-                {selectedStockTake?.status}
-              </Badge>
+            <DialogTitle className="flex items-center justify-between">
+              <span>
+                Stock Take #{selectedStockTake?.id.slice(0, 8)}
+                <Badge className="ml-2" variant={selectedStockTake?.status === "completed" ? "default" : "secondary"}>
+                  {selectedStockTake?.status}
+                </Badge>
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={async () => {
+                  if (!confirm("Delete this stock take?")) return;
+                  try {
+                    // Delete lines first
+                    await supabase.from("lab_ops_stock_take_lines").delete().eq("stock_take_id", selectedStockTake.id);
+                    // Delete stock take
+                    await supabase.from("lab_ops_stock_takes").delete().eq("id", selectedStockTake.id);
+                    toast({ title: "Stock take deleted" });
+                    setSelectedStockTake(null);
+                    fetchStockTakes();
+                  } catch (error: any) {
+                    toast({ title: "Error deleting", description: error.message, variant: "destructive" });
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -3112,9 +3135,30 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 </Button>
               </>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p className="text-sm font-medium">Completed: {selectedStockTake?.completed_at && new Date(selectedStockTake.completed_at).toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">This stock take has been completed.</p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      // Delete existing lines and reopen
+                      await supabase.from("lab_ops_stock_take_lines").delete().eq("stock_take_id", selectedStockTake.id);
+                      await supabase
+                        .from("lab_ops_stock_takes")
+                        .update({ status: "in_progress", completed_at: null })
+                        .eq("id", selectedStockTake.id);
+                      toast({ title: "Stock take reopened for editing" });
+                      setSelectedStockTake({ ...selectedStockTake, status: "in_progress", completed_at: null });
+                      fetchStockTakes();
+                    } catch (error: any) {
+                      toast({ title: "Error reopening", description: error.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Reopen & Edit
+                </Button>
               </div>
             )}
           </div>
