@@ -77,15 +77,17 @@ export const EngagementButtons = ({
               )}
             />
           </motion.div>
-          <motion.span 
-            className="font-semibold tabular-nums"
-            key={likeCount}
-            initial={{ y: -10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            {likeCount}
-          </motion.span>
+          {likeCount > 0 && (
+            <motion.span 
+              className="font-semibold tabular-nums"
+              key={likeCount}
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              {likeCount}
+            </motion.span>
+          )}
         </Button>
         
         <AnimatePresence>
@@ -124,7 +126,7 @@ export const EngagementButtons = ({
         aria-label="Comment"
       >
         <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-        <span className="font-semibold tabular-nums">{commentCount}</span>
+        {commentCount > 0 && <span className="font-semibold tabular-nums">{commentCount}</span>}
       </Button>
 
       {/* Share Button */}
@@ -137,7 +139,7 @@ export const EngagementButtons = ({
           aria-label="Share"
         >
           <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          <span className="font-semibold tabular-nums">{shareCount}</span>
+          {shareCount > 0 && <span className="font-semibold tabular-nums">{shareCount}</span>}
         </Button>
       )}
 
