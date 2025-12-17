@@ -77,9 +77,12 @@ export function BatchProductionVariance({ outletId }: BatchProductionVariancePro
         const recipeName = prod.batch_recipes?.recipe_name || prod.batch_name;
         const ingredients = prod.batch_recipes?.ingredients || [];
         
-        // Calculate serving size from ingredients
+        // Calculate serving size from ingredients (always parse as number)
         const totalMlPerServe = ingredients.reduce((sum: number, ing: any) => {
-          if (ing.unit === 'ml') return sum + (ing.amount || 0);
+          if (String(ing.unit || '').toLowerCase() === 'ml') {
+            const amt = parseFloat(String(ing.amount || '0').replace(/[^0-9.]/g, ''));
+            return sum + (isNaN(amt) ? 0 : amt);
+          }
           return sum;
         }, 0);
 
