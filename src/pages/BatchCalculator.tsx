@@ -2685,6 +2685,555 @@ const BatchCalculator = () => {
     }
   };
 
+  // Download Trends & Forecast Report (no production data)
+  const downloadTrendsForecastReport = async () => {
+    try {
+      if (!productions || productions.length === 0) {
+        toast.error("No production data for trends analysis");
+        return;
+      }
+
+      const doc = new jsPDF();
+      
+      // Color palette
+      const deepBlue: [number, number, number] = [30, 58, 138];
+      const skyBlue: [number, number, number] = [56, 189, 248];
+      const emerald: [number, number, number] = [16, 185, 129];
+      const amber: [number, number, number] = [245, 158, 11];
+      const slate: [number, number, number] = [51, 65, 85];
+      
+      // Header
+      doc.setFillColor(...deepBlue);
+      doc.rect(0, 0, 210, 22, 'F');
+      doc.setFillColor(...skyBlue);
+      doc.rect(0, 22, 210, 2, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("TRENDS & FORECAST REPORT", 105, 12, { align: 'center' });
+      
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      doc.text(`Analysis Date: ${reportDate}`, 105, 19, { align: 'center' });
+      
+      let yPos = 30;
+      
+      // Calculate period
+      const firstDate = new Date(Math.min(...productions.map(p => new Date(p.production_date).getTime())));
+      const lastDate = new Date(Math.max(...productions.map(p => new Date(p.production_date).getTime())));
+      const totalDays = Math.max(1, Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      
+      // Period info
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(12, yPos, 186, 15, 2, 2, 'F');
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text("Analysis Period:", 16, yPos + 6);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${firstDate.toLocaleDateString()} - ${lastDate.toLocaleDateString()} (${totalDays} days)`, 55, yPos + 6);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Productions:", 16, yPos + 12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${productions.length} batches`, 55, yPos + 12);
+      
+      yPos += 20;
+      
+      // Overall Metrics
+      const totalLiters = productions.reduce((sum, p) => sum + p.target_liters, 0);
+      const totalServes = productions.reduce((sum, p) => sum + (p.target_serves || 0), 0);
+      const dailyAvgLiters = totalLiters / totalDays;
+      const dailyAvgServes = totalServes / totalDays;
+      
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("OVERALL PRODUCTION METRICS", 15, yPos + 4.5);
+      yPos += 10;
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      doc.text(`Total Volume: ${totalLiters.toFixed(2)} L`, 16, yPos);
+      doc.text(`Total Servings: ${totalServes}`, 80, yPos);
+      doc.text(`Daily Avg: ${dailyAvgLiters.toFixed(2)} L/day`, 140, yPos);
+      yPos += 5;
+      doc.text(`Avg Batch: ${(totalLiters / productions.length).toFixed(2)} L`, 16, yPos);
+      doc.text(`Avg Serves/Batch: ${Math.round(totalServes / productions.length)}`, 80, yPos);
+      doc.text(`Daily Avg: ${dailyAvgServes.toFixed(1)} serves/day`, 140, yPos);
+      
+      yPos += 15;
+      
+      // Recipe-by-Recipe Forecast Analysis
+      doc.setFillColor(...emerald);
+      doc.rect(12, yPos, 186, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("RECIPE FORECAST ANALYSIS", 15, yPos + 4.5);
+      yPos += 10;
+      
+      // Group by recipe
+      const recipeData = productions.reduce((acc, prod) => {
+        const key = prod.batch_name;
+        const prodDate = new Date(prod.production_date);
+        
+        if (!acc[key]) {
+          acc[key] = { batches: [], firstDate: prodDate, lastDate: prodDate };
+        }
+        acc[key].batches.push({ liters: prod.target_liters, serves: prod.target_serves || 0, date: prodDate });
+        if (prodDate < acc[key].firstDate) acc[key].firstDate = prodDate;
+        if (prodDate > acc[key].lastDate) acc[key].lastDate = prodDate;
+        return acc;
+      }, {} as Record<string, { batches: { liters: number; serves: number; date: Date }[]; firstDate: Date; lastDate: Date }>);
+      
+      Object.entries(recipeData)
+        .sort(([, a], [, b]) => b.batches.reduce((s, b) => s + b.liters, 0) - a.batches.reduce((s, b) => s + b.liters, 0))
+        .forEach(([name, data]) => {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          const recipeTotalLiters = data.batches.reduce((s, b) => s + b.liters, 0);
+          const recipeDays = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+          const dailyAvg = recipeTotalLiters / recipeDays;
+          
+          // Trend calculation
+          const now = new Date();
+          const cutoff7 = new Date(now); cutoff7.setDate(cutoff7.getDate() - 7);
+          const cutoff30 = new Date(now); cutoff30.setDate(cutoff30.getDate() - 30);
+          
+          const recent7 = data.batches.filter(b => b.date >= cutoff7);
+          const recent30 = data.batches.filter(b => b.date >= cutoff30);
+          
+          const avg7 = recent7.length > 0 ? recent7.reduce((s, b) => s + b.liters, 0) / 7 : dailyAvg;
+          const avg30 = recent30.length > 0 ? recent30.reduce((s, b) => s + b.liters, 0) / 30 : dailyAvg;
+          const trendFactor = avg30 > 0 ? avg7 / avg30 : 1;
+          const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
+          
+          const buffer = 1.2;
+          const weeklyPar = avg7 * buffer * 7;
+          const monthlyPar = avg7 * buffer * 30;
+          
+          // Recipe card
+          doc.setFillColor(248, 250, 252);
+          doc.roundedRect(12, yPos, 186, 22, 2, 2, 'F');
+          doc.setDrawColor(...skyBlue);
+          doc.setLineWidth(0.3);
+          doc.roundedRect(12, yPos, 186, 22, 2, 2, 'S');
+          
+          doc.setTextColor(...deepBlue);
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.text(name.substring(0, 40), 16, yPos + 5);
+          
+          const trendColor: [number, number, number] = trendFactor > 1.05 ? emerald : trendFactor < 0.95 ? amber : slate;
+          const trendLabel = trendFactor > 1.05 ? 'RISING' : trendFactor < 0.95 ? 'FALLING' : 'STABLE';
+          doc.setTextColor(...trendColor);
+          doc.setFontSize(7);
+          doc.text(`Trend: ${trendLabel} (${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%)`, 150, yPos + 5);
+          
+          doc.setTextColor(...slate);
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.text(`${data.batches.length} batches | ${recipeTotalLiters.toFixed(1)}L total | ${dailyAvg.toFixed(2)} L/day avg`, 16, yPos + 11);
+          
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Weekly Par: ${weeklyPar.toFixed(1)} L`, 16, yPos + 17);
+          doc.setTextColor(...amber);
+          doc.text(`Monthly Par: ${monthlyPar.toFixed(1)} L`, 70, yPos + 17);
+          doc.setTextColor(...skyBlue);
+          doc.text(`Daily Target: ${(avg7 * buffer).toFixed(2)} L`, 130, yPos + 17);
+          
+          yPos += 26;
+        });
+      
+      // Calculation Logic
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFillColor(240, 249, 255);
+      doc.roundedRect(12, yPos, 186, 30, 2, 2, 'F');
+      doc.setDrawColor(...skyBlue);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(12, yPos, 186, 30, 2, 2, 'S');
+      
+      doc.setTextColor(...deepBlue);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text("Calculation Logic:", 16, yPos + 6);
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.text("1. Daily Average = Total Liters / Days in Period", 16, yPos + 12);
+      doc.text("2. Trend Factor = (Last 7-day avg) / (Last 30-day avg) - shows direction of change", 16, yPos + 17);
+      doc.text("3. Par Levels = Daily Average x Period Days x 1.2 (20% safety buffer)", 16, yPos + 22);
+      doc.text("4. Forecasts dynamically adjust based on rising/falling production trends", 16, yPos + 27);
+      
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`Trends & Forecast Report - Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+      }
+      
+      doc.save("Trends_Forecast_Report.pdf");
+      toast.success("Trends & Forecast report downloaded!");
+    } catch (error) {
+      console.error("Error generating trends report:", error);
+      toast.error("Failed to generate trends report");
+    }
+  };
+
+  // Download Par Level Report
+  const downloadParLevelReport = async () => {
+    try {
+      if (!productions || productions.length === 0) {
+        toast.error("No production data for par level analysis");
+        return;
+      }
+
+      const doc = new jsPDF();
+      
+      const deepBlue: [number, number, number] = [30, 58, 138];
+      const emerald: [number, number, number] = [16, 185, 129];
+      const amber: [number, number, number] = [245, 158, 11];
+      const slate: [number, number, number] = [51, 65, 85];
+      
+      // Header
+      doc.setFillColor(...emerald);
+      doc.rect(0, 0, 210, 22, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("PAR LEVEL ANALYSIS REPORT", 105, 12, { align: 'center' });
+      
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      doc.text(`Generated: ${reportDate}`, 105, 19, { align: 'center' });
+      
+      let yPos = 30;
+      
+      // Period calculation
+      const firstDate = new Date(Math.min(...productions.map(p => new Date(p.production_date).getTime())));
+      const lastDate = new Date(Math.max(...productions.map(p => new Date(p.production_date).getTime())));
+      const totalDays = Math.max(1, Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      
+      // Period info
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(12, yPos, 186, 12, 2, 2, 'F');
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      doc.text(`Period: ${firstDate.toLocaleDateString()} - ${lastDate.toLocaleDateString()} (${totalDays} days)`, 16, yPos + 8);
+      
+      yPos += 18;
+      
+      // Table header
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text("Recipe", 14, yPos + 5.5);
+      doc.text("Batches", 70, yPos + 5.5);
+      doc.text("Daily", 90, yPos + 5.5);
+      doc.text("Weekly", 110, yPos + 5.5);
+      doc.text("2-Week", 135, yPos + 5.5);
+      doc.text("Monthly", 160, yPos + 5.5);
+      doc.text("Quarterly", 183, yPos + 5.5);
+      yPos += 10;
+      
+      // Group by recipe
+      const recipeData = productions.reduce((acc, prod) => {
+        const key = prod.batch_name;
+        const prodDate = new Date(prod.production_date);
+        if (!acc[key]) acc[key] = { batches: [], firstDate: prodDate, lastDate: prodDate };
+        acc[key].batches.push({ liters: prod.target_liters, date: prodDate });
+        if (prodDate < acc[key].firstDate) acc[key].firstDate = prodDate;
+        if (prodDate > acc[key].lastDate) acc[key].lastDate = prodDate;
+        return acc;
+      }, {} as Record<string, { batches: { liters: number; date: Date }[]; firstDate: Date; lastDate: Date }>);
+      
+      let rowIndex = 0;
+      Object.entries(recipeData)
+        .sort(([, a], [, b]) => b.batches.reduce((s, b) => s + b.liters, 0) - a.batches.reduce((s, b) => s + b.liters, 0))
+        .forEach(([name, data]) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+            // Repeat header
+            doc.setFillColor(...deepBlue);
+            doc.rect(12, yPos, 186, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            doc.text("Recipe", 14, yPos + 5.5);
+            doc.text("Batches", 70, yPos + 5.5);
+            doc.text("Daily", 90, yPos + 5.5);
+            doc.text("Weekly", 110, yPos + 5.5);
+            doc.text("2-Week", 135, yPos + 5.5);
+            doc.text("Monthly", 160, yPos + 5.5);
+            doc.text("Quarterly", 183, yPos + 5.5);
+            yPos += 10;
+          }
+          
+          const recipeTotalLiters = data.batches.reduce((s, b) => s + b.liters, 0);
+          const recipeDays = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+          const dailyAvg = recipeTotalLiters / recipeDays;
+          const buffer = 1.2;
+          
+          if (rowIndex % 2 === 0) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(12, yPos - 2, 186, 7, 'F');
+          }
+          
+          doc.setTextColor(...slate);
+          doc.setFontSize(6.5);
+          doc.setFont("helvetica", "normal");
+          doc.text(name.substring(0, 25), 14, yPos + 3);
+          doc.text(`${data.batches.length}`, 70, yPos + 3);
+          
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${(dailyAvg * buffer).toFixed(1)}L`, 90, yPos + 3);
+          doc.text(`${(dailyAvg * buffer * 7).toFixed(1)}L`, 110, yPos + 3);
+          doc.text(`${(dailyAvg * buffer * 14).toFixed(1)}L`, 135, yPos + 3);
+          doc.text(`${(dailyAvg * buffer * 30).toFixed(1)}L`, 160, yPos + 3);
+          doc.text(`${(dailyAvg * buffer * 90).toFixed(1)}L`, 183, yPos + 3);
+          
+          yPos += 7;
+          rowIndex++;
+        });
+      
+      yPos += 10;
+      
+      // Logic description
+      doc.setFillColor(240, 249, 255);
+      doc.roundedRect(12, yPos, 186, 25, 2, 2, 'F');
+      doc.setTextColor(...deepBlue);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text("Calculation Logic:", 16, yPos + 6);
+      doc.setTextColor(...slate);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Daily Average = Total Liters Produced / ${totalDays} Days in Period`, 16, yPos + 12);
+      doc.text("Par Level = Daily Average x Period Days x 1.2 (20% safety buffer)", 16, yPos + 17);
+      doc.text("All par levels are based on historical production rates and include safety margin", 16, yPos + 22);
+      
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`Par Level Analysis - Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+      }
+      
+      doc.save("Par_Level_Report.pdf");
+      toast.success("Par Level report downloaded!");
+    } catch (error) {
+      console.error("Error generating par level report:", error);
+      toast.error("Failed to generate par level report");
+    }
+  };
+
+  // Download Ingredient Summary Report
+  const downloadIngredientSummaryReport = async () => {
+    try {
+      if (!productions || productions.length === 0) {
+        toast.error("No production data for ingredient summary");
+        return;
+      }
+
+      // Fetch all production ingredients
+      const allProductionIds = productions.map(p => p.id);
+      const { data: allIngredients, error } = await supabase
+        .from('batch_production_ingredients')
+        .select('*')
+        .in('production_id', allProductionIds);
+      
+      if (error) throw error;
+
+      // Fetch master spirits for bottle calculations
+      const { data: spirits } = await supabase
+        .from('master_spirits')
+        .select('*');
+
+      const doc = new jsPDF();
+      
+      const deepBlue: [number, number, number] = [30, 58, 138];
+      const amber: [number, number, number] = [245, 158, 11];
+      const emerald: [number, number, number] = [16, 185, 129];
+      const slate: [number, number, number] = [51, 65, 85];
+      const lightGray: [number, number, number] = [248, 250, 252];
+      
+      // Header
+      doc.setFillColor(...amber);
+      doc.rect(0, 0, 210, 22, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("INGREDIENT CONSUMPTION SUMMARY", 105, 12, { align: 'center' });
+      
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      doc.text(`Report Date: ${reportDate}`, 105, 19, { align: 'center' });
+      
+      let yPos = 30;
+      
+      // Period info
+      const firstDate = new Date(Math.min(...productions.map(p => new Date(p.production_date).getTime())));
+      const lastDate = new Date(Math.max(...productions.map(p => new Date(p.production_date).getTime())));
+      
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(12, yPos, 186, 12, 2, 2, 'F');
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      doc.text(`Period: ${firstDate.toLocaleDateString()} - ${lastDate.toLocaleDateString()}`, 16, yPos + 5);
+      doc.text(`Total Batches: ${productions.length}`, 120, yPos + 5);
+      
+      yPos += 18;
+      
+      // Aggregate ingredients
+      const ingredientTotals = new Map<string, { totalMl: number; bottleSize: number | null }>();
+      
+      if (allIngredients) {
+        allIngredients.forEach((ing: any) => {
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const matchingSpirit = spirits?.find(s => 
+            s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 
+            ing.ingredient_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          );
+          
+          const existing = ingredientTotals.get(ing.ingredient_name);
+          if (existing) {
+            existing.totalMl += scaledMl;
+          } else {
+            ingredientTotals.set(ing.ingredient_name, {
+              totalMl: scaledMl,
+              bottleSize: matchingSpirit?.bottle_size_ml || null
+            });
+          }
+        });
+      }
+      
+      // Summary stats
+      let totalMlAll = 0;
+      let totalBottlesAll = 0;
+      ingredientTotals.forEach(({ totalMl, bottleSize }) => {
+        totalMlAll += totalMl;
+        if (bottleSize) totalBottlesAll += Math.floor(totalMl / bottleSize);
+      });
+      
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("CONSUMPTION TOTALS", 15, yPos + 4.5);
+      yPos += 10;
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      doc.text(`Total ML Consumed: ${totalMlAll.toFixed(0)} ml`, 16, yPos);
+      doc.text(`Total Bottles: ${totalBottlesAll}`, 80, yPos);
+      doc.text(`Unique Ingredients: ${ingredientTotals.size}`, 140, yPos);
+      
+      yPos += 12;
+      
+      // Ingredient table
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 7, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text("#", 14, yPos + 5);
+      doc.text("Ingredient", 22, yPos + 5);
+      doc.text("Total ML", 110, yPos + 5);
+      doc.text("Bottles", 145, yPos + 5);
+      doc.text("Leftover ML", 170, yPos + 5);
+      yPos += 9;
+      
+      const sortedIngredients = Array.from(ingredientTotals.entries())
+        .sort((a, b) => b[1].totalMl - a[1].totalMl);
+      
+      sortedIngredients.forEach(([name, { totalMl, bottleSize }], index) => {
+        if (yPos > 275) {
+          doc.addPage();
+          yPos = 20;
+          // Repeat header
+          doc.setFillColor(...deepBlue);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.text("#", 14, yPos + 5);
+          doc.text("Ingredient", 22, yPos + 5);
+          doc.text("Total ML", 110, yPos + 5);
+          doc.text("Bottles", 145, yPos + 5);
+          doc.text("Leftover ML", 170, yPos + 5);
+          yPos += 9;
+        }
+        
+        if (index % 2 === 0) {
+          doc.setFillColor(...lightGray);
+          doc.rect(12, yPos - 2, 186, 6, 'F');
+        }
+        
+        const bottles = bottleSize ? Math.floor(totalMl / bottleSize) : 0;
+        const leftover = bottleSize ? (totalMl % bottleSize) : 0;
+        
+        doc.setTextColor(...slate);
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${index + 1}`, 14, yPos + 2);
+        doc.text(name.substring(0, 40), 22, yPos + 2);
+        
+        doc.setTextColor(...deepBlue);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${totalMl.toFixed(0)}`, 110, yPos + 2);
+        
+        doc.setTextColor(...emerald);
+        doc.text(bottles > 0 ? `${bottles}` : '-', 145, yPos + 2);
+        
+        doc.setTextColor(...amber);
+        doc.text(leftover > 0 ? `${leftover.toFixed(0)}` : '-', 170, yPos + 2);
+        
+        yPos += 6;
+      });
+      
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`Ingredient Summary - Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+      }
+      
+      doc.save("Ingredient_Summary_Report.pdf");
+      toast.success("Ingredient Summary report downloaded!");
+    } catch (error) {
+      console.error("Error generating ingredient summary:", error);
+      toast.error("Failed to generate ingredient summary");
+    }
+  };
+
   // Normalize name for fuzzy matching
   const normalizeName = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -3438,15 +3987,47 @@ const BatchCalculator = () => {
                 </div>
                 
                 {productions && productions.length > 0 && (
-                  <Button
-                    variant="default"
-                    onClick={downloadAllBatchesReport}
-                    className="w-full py-6"
-                    size="lg"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Download Report
-                  </Button>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Download Reports:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Button
+                        variant="default"
+                        onClick={downloadAllBatchesReport}
+                        className="w-full py-5"
+                        size="lg"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Production Data
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={downloadTrendsForecastReport}
+                        className="w-full py-5 border-primary/50 hover:bg-primary/10"
+                        size="lg"
+                      >
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Trends & Forecast
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={downloadParLevelReport}
+                        className="w-full py-5 border-emerald-500/50 hover:bg-emerald-500/10"
+                        size="lg"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Par Level Analysis
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={downloadIngredientSummaryReport}
+                        className="w-full py-5 border-amber-500/50 hover:bg-amber-500/10"
+                        size="lg"
+                      >
+                        <History className="w-4 h-4 mr-2" />
+                        Ingredient Summary
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
               
