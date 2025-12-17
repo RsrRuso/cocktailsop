@@ -2361,6 +2361,8 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [importText, setImportText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [selectedStockTake, setSelectedStockTake] = useState<any>(null);
+  const [stockTakeCounts, setStockTakeCounts] = useState<Record<string, string>>({});
   
   // Form states
   const [newItemName, setNewItemName] = useState("");
@@ -2921,7 +2923,14 @@ function InventoryModule({ outletId }: { outletId: string }) {
               ) : (
                 <div className="space-y-2">
                   {stockTakes.map((st) => (
-                    <div key={st.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div 
+                      key={st.id} 
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                      onClick={() => {
+                        setSelectedStockTake(st);
+                        setStockTakeCounts({});
+                      }}
+                    >
                       <div>
                         <p className="font-medium">Stock Take #{st.id.slice(0, 8)}</p>
                         <p className="text-xs text-muted-foreground">
@@ -3022,6 +3031,93 @@ function InventoryModule({ outletId }: { outletId: string }) {
               <Button onClick={updateInventoryItem} className="w-full">Save Changes</Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Stock Take Detail Dialog */}
+      <Dialog open={!!selectedStockTake} onOpenChange={(open) => !open && setSelectedStockTake(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Stock Take #{selectedStockTake?.id.slice(0, 8)}
+              <Badge className="ml-2" variant={selectedStockTake?.status === "completed" ? "default" : "secondary"}>
+                {selectedStockTake?.status}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Started: {selectedStockTake && new Date(selectedStockTake.created_at).toLocaleString()}
+            </p>
+            
+            {selectedStockTake?.status === "in_progress" ? (
+              <>
+                <p className="text-sm font-medium">Enter actual counts for each item:</p>
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-3 p-2 bg-muted/30 rounded">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">System: {item.current_stock || 0} {item.unit}</p>
+                      </div>
+                      <Input
+                        type="number"
+                        className="w-24"
+                        placeholder="Count"
+                        value={stockTakeCounts[item.id] || ""}
+                        onChange={(e) => setStockTakeCounts(prev => ({ ...prev, [item.id]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={async () => {
+                    try {
+                      // Save stock take lines
+                      const lines = Object.entries(stockTakeCounts)
+                        .filter(([_, count]) => count !== "")
+                        .map(([itemId, count]) => {
+                          const item = items.find(i => i.id === itemId);
+                          const systemQty = item?.current_stock || 0;
+                          const countedQty = parseFloat(count);
+                          return {
+                            stock_take_id: selectedStockTake.id,
+                            inventory_item_id: itemId,
+                            system_qty: systemQty,
+                            counted_qty: countedQty,
+                            variance_qty: countedQty - systemQty
+                          };
+                        });
+                      
+                      if (lines.length > 0) {
+                        await supabase.from("lab_ops_stock_take_lines").insert(lines);
+                      }
+                      
+                      // Complete the stock take
+                      await supabase
+                        .from("lab_ops_stock_takes")
+                        .update({ status: "completed", completed_at: new Date().toISOString() })
+                        .eq("id", selectedStockTake.id);
+                      
+                      toast({ title: "Stock take completed" });
+                      setSelectedStockTake(null);
+                      fetchStockTakes();
+                    } catch (error: any) {
+                      toast({ title: "Error completing stock take", description: error.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  Complete Stock Take
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Completed: {selectedStockTake?.completed_at && new Date(selectedStockTake.completed_at).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">This stock take has been completed.</p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
