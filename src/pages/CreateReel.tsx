@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { PeopleMentionPicker } from "@/components/story/PeopleMentionPicker";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { SegmentedTimeline } from "@/components/reel-editor/SegmentedTimeline";
 
 interface MediaItem {
   id: string;
@@ -792,49 +793,23 @@ const CreateReel = () => {
                   </div>
                 </div>
 
-                {/* Timeline Track */}
-                <div className="px-4 py-2 bg-black">
-                  <div 
-                    className="relative cursor-pointer"
-                    onClick={(e) => {
-                      const maxDur = Math.min(duration, clipDuration);
-                      if (videoRef.current && maxDur > 0) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const clickX = e.clientX - rect.left;
-                        const percentage = clickX / rect.width;
-                        const newTime = percentage * maxDur;
-                        videoRef.current.currentTime = newTime;
-                        if (audioRef.current && selectedMusic) {
-                          audioRef.current.currentTime = newTime;
-                        }
-                        setCurrentTime(newTime);
-                      }
-                    }}
-                  >
-                    <div className="flex gap-0.5 overflow-hidden rounded-lg">
-                      {selectedItems.map((item) => (
-                        <div key={item.id} className="flex-1 h-14 overflow-hidden relative">
-                          {item.type === 'video' ? (
-                            <video src={item.url} className="w-full h-full object-cover" muted />
-                          ) : (
-                            <img src={item.url} alt="" className="w-full h-full object-cover" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    {/* Playhead */}
-                    <motion.div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none z-10"
-                      animate={{ 
-                        left: `${Math.min(duration, clipDuration) > 0 ? (currentTime / Math.min(duration, clipDuration)) * 100 : 0}%`
-                      }}
-                      transition={{ type: 'tween', ease: 'linear', duration: 0.05 }}
-                    >
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full" />
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full" />
-                    </motion.div>
-                  </div>
-                </div>
+                {/* Segmented Timeline Track */}
+                <SegmentedTimeline
+                  currentTime={currentTime}
+                  duration={duration}
+                  clipDuration={clipDuration}
+                  thumbnailUrl={mainVideo.url}
+                  isVideo={mainVideo.type === 'video'}
+                  onSeek={(time) => {
+                    if (videoRef.current && mainVideo.type === 'video') {
+                      videoRef.current.currentTime = time;
+                    }
+                    if (audioRef.current && selectedMusic) {
+                      audioRef.current.currentTime = time;
+                    }
+                    setCurrentTime(time);
+                  }}
+                />
 
                 {/* Quick Access Buttons */}
                 <div className="px-4 py-3 bg-black flex gap-2">
