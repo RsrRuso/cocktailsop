@@ -110,6 +110,11 @@ const BatchCalculator = () => {
   const [showMasterList, setShowMasterList] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupDesc, setEditGroupDesc] = useState("");
+  const [showDeleteGroupDialog, setShowDeleteGroupDialog] = useState(false);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
 
   const aiAnalysisText =
     typeof aiSuggestions === "string"
@@ -145,7 +150,7 @@ const BatchCalculator = () => {
     selectedGroupId,
     staffMode
   );
-  const { groups, createGroup } = useMixologistGroups();
+  const { groups, createGroup, updateGroup, deleteGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
   const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
   const queryClient = useQueryClient();
@@ -3781,31 +3786,103 @@ const BatchCalculator = () => {
                   {groups.map((group) => (
                    <Card key={group.id} className="p-4 glass">
                       <div className="space-y-3">
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-bold truncate">{group.name}</h5>
-                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{group.description}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="lg" 
-                            variant="outline"
-                            onClick={() => {
-                              setManagingGroup(group);
-                              setShowMembersDialog(true);
-                            }}
-                            className="glass-hover flex-1 py-6"
-                          >
-                            <Users className="w-5 h-5 mr-2" />
-                            Members
-                          </Button>
-                          <Button 
-                            size="lg" 
-                            onClick={() => setSelectedGroupId(group.id)}
-                            className={`flex-1 py-6 ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
-                          >
-                            {selectedGroupId === group.id ? "✓ Selected" : "Select"}
-                          </Button>
-                        </div>
+                        {editingGroupId === group.id ? (
+                          // Edit mode
+                          <div className="space-y-3">
+                            <Input
+                              value={editGroupName}
+                              onChange={(e) => setEditGroupName(e.target.value)}
+                              placeholder="Group name"
+                              className="glass h-12"
+                            />
+                            <Textarea
+                              value={editGroupDesc}
+                              onChange={(e) => setEditGroupDesc(e.target.value)}
+                              placeholder="Description (optional)"
+                              className="glass min-h-[60px]"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  if (editGroupName.trim()) {
+                                    updateGroup({ id: group.id, name: editGroupName.trim(), description: editGroupDesc.trim() || undefined });
+                                    setEditingGroupId(null);
+                                  }
+                                }}
+                                className="flex-1"
+                              >
+                                <Save className="w-4 h-4 mr-1" />
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingGroupId(null)}
+                                className="flex-1"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          // View mode
+                          <>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h5 className="font-bold truncate">{group.name}</h5>
+                                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{group.description}</p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingGroupId(group.id);
+                                    setEditGroupName(group.name);
+                                    setEditGroupDesc(group.description || "");
+                                  }}
+                                  className="h-8 w-8"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setDeletingGroupId(group.id);
+                                    setShowDeleteGroupDialog(true);
+                                  }}
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="lg" 
+                                variant="outline"
+                                onClick={() => {
+                                  setManagingGroup(group);
+                                  setShowMembersDialog(true);
+                                }}
+                                className="glass-hover flex-1 py-6"
+                              >
+                                <Users className="w-5 h-5 mr-2" />
+                                Members
+                              </Button>
+                              <Button 
+                                size="lg" 
+                                onClick={() => setSelectedGroupId(group.id)}
+                                className={`flex-1 py-6 ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
+                              >
+                                {selectedGroupId === group.id ? "✓ Selected" : "Select"}
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </Card>
                   ))}
@@ -3850,6 +3927,46 @@ const BatchCalculator = () => {
             >
               <Download className="w-4 h-4 mr-2" />
               Download QR Code
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteGroupDialog} onOpenChange={setShowDeleteGroupDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Group</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this group? This will remove all members and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteGroupDialog(false);
+                setDeletingGroupId(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deletingGroupId) {
+                  deleteGroup(deletingGroupId);
+                  if (selectedGroupId === deletingGroupId) {
+                    setSelectedGroupId(null);
+                  }
+                }
+                setShowDeleteGroupDialog(false);
+                setDeletingGroupId(null);
+              }}
+              className="flex-1"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
             </Button>
           </div>
         </DialogContent>
