@@ -96,7 +96,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch synced stock movements from PO receiving
+      // Fetch synced stock movements from PO receiving (both auto-synced and approved)
       const { data: movements } = await supabase
         .from('lab_ops_stock_movements')
         .select(`
@@ -104,7 +104,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
           lab_ops_inventory_items (name, sku),
           lab_ops_locations!lab_ops_stock_movements_to_location_id_fkey (name)
         `)
-        .eq('reference_type', 'po_receiving')
+        .in('reference_type', ['po_receiving', 'po_receiving_approved'])
         .order('created_at', { ascending: false })
         .limit(100);
 
