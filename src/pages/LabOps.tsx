@@ -1772,6 +1772,7 @@ function MenuModule({ outletId }: { outletId: string }) {
   const [showAddModifier, setShowAddModifier] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("items");
+  const [itemFilter, setItemFilter] = useState<"active" | "inactive">("active");
   const [draggedItem, setDraggedItem] = useState<any>(null);
   const [draggedCategory, setDraggedCategory] = useState<any>(null);
   
@@ -2066,88 +2067,115 @@ function MenuModule({ outletId }: { outletId: string }) {
         {/* Menu Items Tab */}
         <TabsContent value="items" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-              <CardTitle className="text-lg">Menu Items</CardTitle>
-              <div className="flex items-center gap-2">
-                {menuItems.length > 0 && (
-                  <Button size="sm" variant="destructive" onClick={deleteAllItems}>
-                    <Trash2 className="h-4 w-4 mr-1" />Delete All
-                  </Button>
-                )}
-                <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
-                  <DialogTrigger asChild>
-                    <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Add Menu Item</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div>
-                        <Label>Name</Label>
-                        <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+            <CardHeader className="flex flex-col gap-3 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <CardTitle className="text-lg">Menu Items</CardTitle>
+                <div className="flex items-center gap-2">
+                  {menuItems.filter(i => itemFilter === "active" ? i.is_active : !i.is_active).length > 0 && (
+                    <Button size="sm" variant="destructive" onClick={deleteAllItems}>
+                      <Trash2 className="h-4 w-4 mr-1" />Delete All
+                    </Button>
+                  )}
+                  <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
+                    <DialogTrigger asChild>
+                      <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add Menu Item</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label>Name</Label>
+                          <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                        </div>
+                        <div>
+                          <Label>Description</Label>
+                          <Textarea value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} />
+                        </div>
+                        <div>
+                          <Label>Price</Label>
+                          <Input type="number" step="0.01" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} />
+                        </div>
+                        <div>
+                          <Label>Category</Label>
+                          <Select value={newItemCategory} onValueChange={setNewItemCategory}>
+                            <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                            <SelectContent>
+                              {categories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button onClick={createMenuItem} className="w-full">Create Item</Button>
                       </div>
-                      <div>
-                        <Label>Description</Label>
-                        <Textarea value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} />
-                      </div>
-                      <div>
-                        <Label>Price</Label>
-                        <Input type="number" step="0.01" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} />
-                      </div>
-                      <div>
-                        <Label>Category</Label>
-                        <Select value={newItemCategory} onValueChange={setNewItemCategory}>
-                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                          <SelectContent>
-                            {categories.map((cat) => (
-                              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button onClick={createMenuItem} className="w-full">Create Item</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              {/* Active/Inactive Filter Tabs */}
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant={itemFilter === "active" ? "default" : "outline"}
+                  onClick={() => setItemFilter("active")}
+                >
+                  Active ({menuItems.filter(i => i.is_active).length})
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={itemFilter === "inactive" ? "secondary" : "outline"}
+                  onClick={() => setItemFilter("inactive")}
+                >
+                  Inactive ({menuItems.filter(i => !i.is_active).length})
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {menuItems.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No menu items yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {menuItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{item.name}</p>
-                          <Badge variant={item.is_active ? "default" : "secondary"}>
-                            {item.is_active ? "Active" : "Inactive"}
-                          </Badge>
+              {(() => {
+                const filteredItems = menuItems.filter(i => itemFilter === "active" ? i.is_active : !i.is_active);
+                if (filteredItems.length === 0) {
+                  return (
+                    <p className="text-muted-foreground text-center py-8">
+                      {itemFilter === "active" ? "No active menu items" : "No inactive menu items"}
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {filteredItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{item.name}</p>
+                            <Badge variant={item.is_active ? "default" : "secondary"}>
+                              {item.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {item.lab_ops_categories?.name || "Uncategorized"} • ${Number(item.base_price).toFixed(2)}
+                            {item.lab_ops_categories?.type && (
+                              <span className="ml-2">
+                                • {item.lab_ops_categories.type === 'drink' ? 'Bar' : 'Kitchen'}
+                              </span>
+                            )}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {item.lab_ops_categories?.name || "Uncategorized"} • ${Number(item.base_price).toFixed(2)}
-                          {item.lab_ops_categories?.type && (
-                            <span className="ml-2">
-                              • {item.lab_ops_categories.type === 'drink' ? 'Bar' : 'Kitchen'}
-                            </span>
-                          )}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <Switch checked={item.is_active} onCheckedChange={() => toggleItemStatus(item)} />
+                          <Button size="icon" variant="ghost" onClick={() => setEditingItem(item)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteItem(item.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Switch checked={item.is_active} onCheckedChange={() => toggleItemStatus(item)} />
-                        <Button size="icon" variant="ghost" onClick={() => setEditingItem(item)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteItem(item.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
