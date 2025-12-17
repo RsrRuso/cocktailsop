@@ -473,13 +473,30 @@ const POReceivedItems = () => {
           setPendingOrderItems(poItems || []);
 
           const poItemsByCode = new Map<string, any>();
+          const poItemsBySuffix = new Map<string, any>();
           const poItemsByName = new Map<string, any>();
+          const poItemsByFuzzyName = new Map<string, any>();
+          
+          // Helper functions for matching
+          const extractNumericSuffix = (code: string): string => {
+            const numericPart = String(code || '').replace(/[^0-9]/g, '');
+            return numericPart.length > 6 ? numericPart.slice(-6) : numericPart;
+          };
+          const normalizeFuzzyName = (name: string): string => {
+            return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          };
+          
           (poItems || []).forEach((poi: any) => {
             if (poi.item_code) {
               poItemsByCode.set(normalizeItemCode(poi.item_code), poi);
+              const suffix = extractNumericSuffix(poi.item_code);
+              if (suffix && suffix.length >= 4) {
+                poItemsBySuffix.set(suffix, poi);
+              }
             }
             if (poi.item_name) {
               poItemsByName.set(String(poi.item_name).trim().toLowerCase(), poi);
+              poItemsByFuzzyName.set(normalizeFuzzyName(poi.item_name), poi);
             }
           });
 
@@ -490,10 +507,28 @@ const POReceivedItems = () => {
             const itemCode = item.item_code || '';
             const normalizedItemCode = itemCode ? normalizeItemCode(itemCode) : '';
             const normalizedItemName = String(item.item_name || item.name || '').trim().toLowerCase();
+            const fuzzyItemName = normalizeFuzzyName(item.item_name || item.name || '');
+            const itemSuffix = itemCode ? extractNumericSuffix(itemCode) : '';
 
-            const matchedPOItem = itemCode
-              ? poItemsByCode.get(normalizedItemCode)
-              : poItemsByName.get(normalizedItemName);
+            // Multi-strategy matching
+            let matchedPOItem = null;
+            
+            // 1. Try exact code match
+            if (itemCode && poItemsByCode.has(normalizedItemCode)) {
+              matchedPOItem = poItemsByCode.get(normalizedItemCode);
+            }
+            // 2. Try numeric suffix match (handles Z00007286 vs 200007286)
+            if (!matchedPOItem && itemSuffix && itemSuffix.length >= 4 && poItemsBySuffix.has(itemSuffix)) {
+              matchedPOItem = poItemsBySuffix.get(itemSuffix);
+            }
+            // 3. Try exact name match
+            if (!matchedPOItem && poItemsByName.has(normalizedItemName)) {
+              matchedPOItem = poItemsByName.get(normalizedItemName);
+            }
+            // 4. Try fuzzy name match
+            if (!matchedPOItem && poItemsByFuzzyName.has(fuzzyItemName)) {
+              matchedPOItem = poItemsByFuzzyName.get(fuzzyItemName);
+            }
 
             const matchedInPO = !!matchedPOItem;
 
@@ -770,9 +805,16 @@ const POReceivedItems = () => {
     const varianceItems: VarianceItem[] = [];
     const matchedReceivedKeys = new Set<string>();
     
-    // Normalize item code - remove decimals, spaces, leading zeros for comparison
+    // Normalize item code - extract only numeric portion for matching
     const normalizeCode = (code: string): string => {
       return String(code || '').replace(/[.\s]/g, '').replace(/^0+/, '').trim().toLowerCase();
+    };
+    
+    // Extract numeric suffix (last 6+ digits) for fallback matching
+    const extractNumericSuffix = (code: string): string => {
+      const numericPart = String(code || '').replace(/[^0-9]/g, '');
+      // Get last 6 digits minimum, or full number if shorter
+      return numericPart.length > 6 ? numericPart.slice(-6) : numericPart;
     };
     
     // Normalize name for fuzzy matching - remove special chars, extra spaces
@@ -780,19 +822,39 @@ const POReceivedItems = () => {
       return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     };
     
+    // Extract key words from name for matching (first 3 significant words)
+    const extractKeyWords = (name: string): string => {
+      return String(name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 2)
+        .slice(0, 4)
+        .join('');
+    };
+    
     // Build received maps for multi-strategy matching
     const receivedByCode = new Map<string, any>();
+    const receivedByNumericSuffix = new Map<string, any>();
     const receivedByName = new Map<string, any>();
     const receivedByFuzzyName = new Map<string, any>();
+    const receivedByKeyWords = new Map<string, any>();
     
     receivedItems.forEach(item => {
       if (item.item_code) {
-        receivedByCode.set(normalizeCode(item.item_code), item);
+        const code = normalizeCode(item.item_code);
+        receivedByCode.set(code, item);
+        // Also index by numeric suffix for cross-format matching
+        const suffix = extractNumericSuffix(item.item_code);
+        if (suffix && suffix.length >= 4) {
+          receivedByNumericSuffix.set(suffix, item);
+        }
       }
       const name = String(item.item_name || '').trim().toLowerCase();
       if (name) {
         receivedByName.set(name, item);
         receivedByFuzzyName.set(normalizeName(name), item);
+        receivedByKeyWords.set(extractKeyWords(name), item);
       }
     });
     
@@ -807,6 +869,15 @@ const POReceivedItems = () => {
         if (receivedByCode.has(code)) {
           received = receivedByCode.get(code);
           matchKey = `code:${code}`;
+        }
+      }
+      
+      // Strategy 1b: Match by numeric suffix (handles Z00007286 vs 200007286)
+      if (!received && ordered.item_code) {
+        const suffix = extractNumericSuffix(ordered.item_code);
+        if (suffix && suffix.length >= 4 && receivedByNumericSuffix.has(suffix)) {
+          received = receivedByNumericSuffix.get(suffix);
+          matchKey = `suffix:${suffix}`;
         }
       }
       
@@ -825,6 +896,15 @@ const POReceivedItems = () => {
         if (receivedByFuzzyName.has(fuzzyName)) {
           received = receivedByFuzzyName.get(fuzzyName);
           matchKey = `fuzzy:${fuzzyName}`;
+        }
+      }
+      
+      // Strategy 3b: Match by key words (first 4 significant words)
+      if (!received && ordered.item_name) {
+        const keyWords = extractKeyWords(ordered.item_name);
+        if (keyWords && receivedByKeyWords.has(keyWords)) {
+          received = receivedByKeyWords.get(keyWords);
+          matchKey = `keywords:${keyWords}`;
         }
       }
       
@@ -873,13 +953,17 @@ const POReceivedItems = () => {
     // Check for extra items (received but not matched to any ordered item)
     receivedItems.forEach(received => {
       const codeKey = received.item_code ? `code:${normalizeCode(received.item_code)}` : '';
+      const suffixKey = received.item_code ? `suffix:${extractNumericSuffix(received.item_code)}` : '';
       const nameKey = `name:${String(received.item_name || '').trim().toLowerCase()}`;
       const fuzzyKey = `fuzzy:${normalizeName(received.item_name || '')}`;
+      const keyWordsKey = `keywords:${extractKeyWords(received.item_name || '')}`;
       
       // Check if this received item was matched via any strategy
       const wasMatched = (codeKey && matchedReceivedKeys.has(codeKey)) ||
+                        (suffixKey && matchedReceivedKeys.has(suffixKey)) ||
                         matchedReceivedKeys.has(nameKey) ||
                         matchedReceivedKeys.has(fuzzyKey) ||
+                        matchedReceivedKeys.has(keyWordsKey) ||
                         Array.from(matchedReceivedKeys).some(k => k.startsWith('partial:') && k.includes(String(received.item_name || '').trim().toLowerCase()));
       
       if (!wasMatched) {
