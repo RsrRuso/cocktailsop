@@ -19,17 +19,16 @@ import {
 interface Device {
   id: string;
   device_code: string;
-  display_name: string | null;
   status: string;
 }
 
 interface SKU {
   id: string;
   sku_code: string;
-  spirit_name: string;
+  name: string;
   brand: string | null;
-  category: string;
-  bottle_size_ml: number;
+  spirit_type: string;
+  default_bottle_size_ml: number;
   cost_per_ml: number | null;
 }
 
@@ -90,7 +89,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
       // Fetch devices
       const { data: devicesData } = await supabase
         .from('smart_pourer_devices')
-        .select('id, device_code, display_name, status')
+        .select('id, device_code, status')
         .eq('outlet_id', outletId)
         .eq('status', 'active');
 
@@ -116,7 +115,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
         .from('smart_pourer_device_pairings')
         .select(`
           *,
-          device:smart_pourer_devices(id, device_code, display_name, status),
+          device:smart_pourer_devices(id, device_code, status),
           bottle:smart_pourer_bottles(*, sku:smart_pourer_skus(*))
         `)
         .eq('is_active', true)
@@ -148,8 +147,8 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
           outlet_id: outletId,
           sku_id: newBottle.sku_id,
           qr_or_nfc_code: newBottle.qr_code || null,
-          bottle_size_ml: selectedSKU?.bottle_size_ml || newBottle.bottle_size_ml,
-          current_level_ml: selectedSKU?.bottle_size_ml || newBottle.bottle_size_ml,
+          bottle_size_ml: selectedSKU?.default_bottle_size_ml || newBottle.bottle_size_ml,
+          current_level_ml: selectedSKU?.default_bottle_size_ml || newBottle.bottle_size_ml,
           status: 'active',
         });
 
@@ -272,7 +271,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
                     <SelectContent>
                       {skus.map((sku) => (
                         <SelectItem key={sku.id} value={sku.id}>
-                          {sku.spirit_name} - {sku.bottle_size_ml}ml
+                          {sku.name} - {sku.default_bottle_size_ml}ml
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -313,7 +312,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
                     <SelectContent>
                       {getAvailableDevices().map((device) => (
                         <SelectItem key={device.id} value={device.id}>
-                          {device.display_name || device.device_code}
+                          {device.device_code}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -328,7 +327,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
                     <SelectContent>
                       {getAvailableBottles().map((bottle) => (
                         <SelectItem key={bottle.id} value={bottle.id}>
-                          {bottle.sku?.spirit_name || 'Unknown'} ({getLevelPercentage(bottle).toFixed(0)}% full)
+                          {bottle.sku?.name || 'Unknown'} ({getLevelPercentage(bottle).toFixed(0)}% full)
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -391,7 +390,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
                           Device
                         </div>
                         <p className="font-medium text-sm">
-                          {device?.display_name || device?.device_code || 'Unknown'}
+                          {device?.device_code || 'Unknown'}
                         </p>
                       </div>
 
@@ -402,7 +401,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
                           Bottle
                         </div>
                         <p className="font-medium text-sm">
-                          {bottle?.sku?.spirit_name || 'Unknown'}
+                          {bottle?.sku?.name || 'Unknown'}
                         </p>
                       </div>
                     </div>
@@ -449,7 +448,7 @@ export function SmartPourerBottlePairing({ outletId }: SmartPourerBottlePairingP
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-sm">{sku?.spirit_name || 'Unknown'}</p>
+                        <p className="font-medium text-sm">{sku?.name || 'Unknown'}</p>
                         <p className="text-xs text-muted-foreground">{sku?.brand}</p>
                       </div>
                       <Badge variant={levelPct < 20 ? 'destructive' : levelPct < 40 ? 'secondary' : 'default'}>

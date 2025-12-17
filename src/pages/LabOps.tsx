@@ -14,6 +14,7 @@ import { StaffPerformancePanel } from "@/components/lab-ops/StaffPerformancePane
 import { FinancialRealityPanel } from "@/components/lab-ops/FinancialRealityPanel";
 import { BLEPourerIntegration } from "@/components/lab-ops/BLEPourerIntegration";
 import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
+import { SmartPourerModule } from "@/components/smart-pourer/SmartPourerModule";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -761,7 +762,7 @@ export default function LabOps() {
             </TabsContent>
 
             <TabsContent value="pourers">
-              <BLEPourerIntegration outletId={selectedOutlet.id} />
+              <SmartPourerModule outletId={selectedOutlet.id} />
             </TabsContent>
 
             <TabsContent value="export">
