@@ -6520,6 +6520,13 @@ export type Database = {
             referencedRelation: "lab_ops_outlets"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lab_ops_sales_sold_by_staff_fkey"
+            columns: ["sold_by"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lab_ops_sales_transactions: {

@@ -102,9 +102,12 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
         const ingredients = recipe.ingredients || [];
         const currentServes = recipe.current_serves || 1;
         
-        // Calculate total ml from all ml-based ingredients (parse as number to avoid string concatenation)
+        // Calculate total ml from all ml-based ingredients (always parse as number)
         const totalMl = ingredients.reduce((sum: number, ing: any) => {
-          if (ing.unit === 'ml') return sum + (parseFloat(ing.amount) || 0);
+          if (String(ing.unit || '').toLowerCase() === 'ml') {
+            const amt = parseFloat(String(ing.amount || '0').replace(/[^0-9.]/g, ''));
+            return sum + (isNaN(amt) ? 0 : amt);
+          }
           return sum;
         }, 0);
         
