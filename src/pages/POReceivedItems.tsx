@@ -1638,6 +1638,15 @@ const POReceivedItems = () => {
                       maximumFractionDigits: 2,
                     })}`;
 
+                  // Calculate period from received records
+                  const dates = (recentReceived || [])
+                    .map(r => new Date(r.received_date))
+                    .filter(d => !isNaN(d.getTime()))
+                    .sort((a, b) => a.getTime() - b.getTime());
+                  const periodStart = dates.length > 0 ? format(dates[0], 'MMM d, yyyy') : 'N/A';
+                  const periodEnd = dates.length > 0 ? format(dates[dates.length - 1], 'MMM d, yyyy') : 'N/A';
+                  const periodText = periodStart === periodEnd ? periodStart : `${periodStart} - ${periodEnd}`;
+
                   const doc = new jsPDF();
                   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -1646,22 +1655,27 @@ const POReceivedItems = () => {
                   doc.text('Overall Received Items Report', pageWidth / 2, 20, { align: 'center' });
                   doc.setFontSize(10);
                   doc.setFont('helvetica', 'normal');
-                  doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
+                  doc.text(`Period: ${periodText}`, pageWidth / 2, 28, { align: 'center' });
+                  doc.setFontSize(8);
+                  doc.setTextColor(120, 120, 120);
+                  doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 34, { align: 'center' });
+                  doc.setTextColor(0, 0, 0);
 
                   // Summary totals
                   const totalQty = receivedSummary.reduce((sum, i) => sum + (i.total_qty || 0), 0);
                   const totalValue = receivedSummary.reduce((sum, i) => sum + (i.total_price || 0), 0);
 
                   doc.setFillColor(240, 240, 240);
-                  doc.roundedRect(14, 35, pageWidth - 28, 15, 3, 3, 'F');
+                  doc.roundedRect(14, 40, pageWidth - 28, 15, 3, 3, 'F');
+                  doc.setFontSize(10);
                   doc.text(
                     `Total Items: ${receivedSummary.length} | Total Qty: ${totalQty.toFixed(0)} | Total Value: ${formatPdfCurrency(totalValue)}`,
                     20,
-                    45
+                    50
                   );
 
                   autoTable(doc, {
-                    startY: 55,
+                    startY: 60,
                     head: [['Item Name', 'Times Received', 'Total Qty', 'Avg Price', 'Total Value']],
                     body: receivedSummary.map((item: any) => [
                       item.item_name,
