@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { 
   Zap, Bluetooth, Scale, Activity, Clock, Brain, 
   ShoppingCart, Database, Package, BookOpen, Link2,
@@ -23,8 +23,8 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] md:w-auto h-[90vh] md:h-[85vh] p-0 gap-0">
-        <DialogHeader className="p-4 md:p-6 pb-2 border-b">
+      <DialogContent className="left-0 top-0 translate-x-0 translate-y-0 w-screen h-[100dvh] max-w-none rounded-none p-0 gap-0 flex flex-col sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-[95vw] sm:h-[85vh] sm:max-w-4xl sm:rounded-lg">
+        <DialogHeader className="p-4 md:p-6 pb-2 border-b pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-6">
           <DialogTitle className="flex items-center gap-2 md:gap-3">
             <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
               <Zap className="h-4 w-4 md:h-5 md:w-5 text-white" />
@@ -38,7 +38,7 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="px-3 md:px-6 pt-3 md:pt-4 border-b overflow-x-auto scrollbar-hide">
             <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-xl min-w-max">
               <TabsTrigger value="overview" className="px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm">Overview</TabsTrigger>
@@ -49,7 +49,7 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
             </TabsList>
           </div>
 
-          <ScrollArea className="flex-1 p-3 md:p-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-6 overscroll-contain pb-[calc(env(safe-area-inset-bottom)+16px)]">
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="mt-0 space-y-4 md:space-y-6">
               <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
@@ -389,18 +389,18 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
             </TabsContent>
 
             {/* VARIANCE LOGIC TAB */}
-            <TabsContent value="variance" className="mt-0 space-y-6">
+            <TabsContent value="variance" className="mt-0 space-y-4 md:space-y-6">
               <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Scale className="w-5 h-5 text-amber-500" />
+                <CardContent className="p-4 md:p-6">
+                  <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 flex items-center gap-2">
+                    <Scale className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
                     Variance Calculation Engine
                   </h3>
 
                   {/* Variance Flow Diagram */}
                   <div className="space-y-4">
                     {/* Inputs */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
                       <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
                         <Activity className="w-5 h-5 mx-auto mb-1 text-green-500" />
                         <div className="text-xs font-medium">Pour Events</div>
@@ -429,7 +429,7 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
                         <Scale className="w-6 h-6 mx-auto mb-1 text-purple-500" />
                         <div className="font-semibold text-purple-400">Variance Calculations</div>
                       </div>
-                      <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3 text-center text-xs">
                         <div>
                           <div className="font-medium">vs SOP</div>
                           <div className="text-muted-foreground">(Poured - Recipe)</div>
@@ -451,7 +451,7 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
                     </div>
 
                     {/* Output Thresholds */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
                       <div className="p-3 rounded-lg bg-green-500/20 border border-green-500/30 text-center">
                         <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-green-500" />
                         <div className="text-xs font-medium text-green-400">&lt; 5% Variance</div>
@@ -516,9 +516,9 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
 
               {/* Anomaly Detection Flow */}
               <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-pink-500" />
+                <CardContent className="p-4 md:p-6">
+                  <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 flex items-center gap-2">
+                    <Brain className="w-4 h-4 md:w-5 md:h-5 text-pink-500" />
                     AI Anomaly Detection Flow
                   </h3>
 
@@ -527,7 +527,7 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
                     {/* Data Collection */}
                     <div className="p-4 rounded-xl bg-muted/30 border">
                       <div className="text-sm font-semibold mb-3 text-muted-foreground">DATA COLLECTION</div>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div className="p-2 rounded-lg bg-background border text-center text-xs">Pour Events</div>
                         <div className="p-2 rounded-lg bg-background border text-center text-xs">Time Patterns</div>
                         <div className="p-2 rounded-lg bg-background border text-center text-xs">Staff Data</div>
@@ -542,7 +542,7 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
                     {/* AI Analysis */}
                     <div className="p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
                       <div className="text-sm font-semibold mb-3 text-pink-400 text-center">AI ANALYSIS</div>
-                      <div className="flex justify-center gap-4 text-xs">
+                      <div className="flex flex-wrap justify-center gap-2 md:gap-4 text-xs">
                         <div className="p-2 rounded-lg bg-background border">Pattern Recognition</div>
                         <div className="p-2 rounded-lg bg-background border">Threshold Comparison</div>
                         <div className="p-2 rounded-lg bg-background border">Time-based Rules</div>
@@ -597,10 +597,10 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
             </TabsContent>
 
             {/* SETUP GUIDE TAB */}
-            <TabsContent value="setup" className="mt-0 space-y-6">
+            <TabsContent value="setup" className="mt-0 space-y-4 md:space-y-6">
               <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-bold mb-4">Quick Start Setup</h3>
+                <CardContent className="p-4 md:p-6">
+                  <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4">Quick Start Setup</h3>
                   
                   {/* Setup Flow */}
                   <div className="flex items-center gap-2 flex-wrap justify-center mb-6 p-4 rounded-xl bg-muted/30">
@@ -827,10 +827,10 @@ export function SmartPourerGuide({ open, onOpenChange }: SmartPourerGuideProps) 
                 </Card>
               </div>
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
 
-        <div className="p-4 md:p-6 border-t">
+        <div className="p-4 md:p-6 border-t pb-[calc(env(safe-area-inset-bottom)+1rem)]">
           <Button onClick={() => onOpenChange(false)} className="w-full">
             <CheckCircle2 className="w-4 h-4 mr-2" />
             Got it!
