@@ -639,6 +639,7 @@ const POReceivedItems = () => {
     // Refresh data and show variance report
     queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
     queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
+    queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }); // Update PO status to Received
     
     setVarianceReport(report);
     setShowVarianceDialog(true);
