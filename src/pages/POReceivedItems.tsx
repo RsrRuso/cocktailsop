@@ -768,32 +768,80 @@ const POReceivedItems = () => {
     supplier?: string
   ): VarianceReport => {
     const varianceItems: VarianceItem[] = [];
-    const orderedMap = new Map<string, any>();
-    const receivedMap = new Map<string, any>();
+    const matchedReceivedKeys = new Set<string>();
     
     // Normalize item code - remove decimals, spaces, leading zeros for comparison
     const normalizeCode = (code: string): string => {
-      return String(code).replace(/[.\s]/g, '').replace(/^0+/, '').trim().toLowerCase();
+      return String(code || '').replace(/[.\s]/g, '').replace(/^0+/, '').trim().toLowerCase();
     };
     
-    // Build maps for comparison (prioritize ML/item code, fall back to name only when no code)
-    orderedItems.forEach(item => {
-      const key = item.item_code
-        ? `code:${normalizeCode(item.item_code)}`
-        : `name:${String(item.item_name).trim().toLowerCase()}`;
-      orderedMap.set(key, item);
-    });
+    // Normalize name for fuzzy matching - remove special chars, extra spaces
+    const normalizeName = (name: string): string => {
+      return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    };
+    
+    // Build received maps for multi-strategy matching
+    const receivedByCode = new Map<string, any>();
+    const receivedByName = new Map<string, any>();
+    const receivedByFuzzyName = new Map<string, any>();
     
     receivedItems.forEach(item => {
-      const key = item.item_code
-        ? `code:${normalizeCode(item.item_code)}`
-        : `name:${String(item.item_name).trim().toLowerCase()}`;
-      receivedMap.set(key, item);
+      if (item.item_code) {
+        receivedByCode.set(normalizeCode(item.item_code), item);
+      }
+      const name = String(item.item_name || '').trim().toLowerCase();
+      if (name) {
+        receivedByName.set(name, item);
+        receivedByFuzzyName.set(normalizeName(name), item);
+      }
     });
     
-    // Check ordered items against received
-    orderedMap.forEach((ordered, key) => {
-      const received = receivedMap.get(key);
+    // Match ordered items against received using multi-strategy matching
+    orderedItems.forEach(ordered => {
+      let received: any = null;
+      let matchKey = '';
+      
+      // Strategy 1: Match by item code (highest priority)
+      if (ordered.item_code) {
+        const code = normalizeCode(ordered.item_code);
+        if (receivedByCode.has(code)) {
+          received = receivedByCode.get(code);
+          matchKey = `code:${code}`;
+        }
+      }
+      
+      // Strategy 2: Match by exact name
+      if (!received && ordered.item_name) {
+        const name = String(ordered.item_name).trim().toLowerCase();
+        if (receivedByName.has(name)) {
+          received = receivedByName.get(name);
+          matchKey = `name:${name}`;
+        }
+      }
+      
+      // Strategy 3: Match by fuzzy name (remove special chars, spaces)
+      if (!received && ordered.item_name) {
+        const fuzzyName = normalizeName(ordered.item_name);
+        if (receivedByFuzzyName.has(fuzzyName)) {
+          received = receivedByFuzzyName.get(fuzzyName);
+          matchKey = `fuzzy:${fuzzyName}`;
+        }
+      }
+      
+      // Strategy 4: Partial name match (contains check)
+      if (!received && ordered.item_name) {
+        const orderedNameLower = String(ordered.item_name).trim().toLowerCase();
+        for (const [name, item] of receivedByName.entries()) {
+          if (name.includes(orderedNameLower) || orderedNameLower.includes(name)) {
+            received = item;
+            matchKey = `partial:${name}`;
+            break;
+          }
+        }
+      }
+      
+      if (matchKey) matchedReceivedKeys.add(matchKey);
+      
       const orderedQty = ordered.quantity || 0;
       const receivedQty = received?.quantity || 0;
       const variance = receivedQty - orderedQty;
@@ -822,9 +870,19 @@ const POReceivedItems = () => {
       });
     });
     
-    // Check for extra items (received but not ordered)
-    receivedMap.forEach((received, key) => {
-      if (!orderedMap.has(key)) {
+    // Check for extra items (received but not matched to any ordered item)
+    receivedItems.forEach(received => {
+      const codeKey = received.item_code ? `code:${normalizeCode(received.item_code)}` : '';
+      const nameKey = `name:${String(received.item_name || '').trim().toLowerCase()}`;
+      const fuzzyKey = `fuzzy:${normalizeName(received.item_name || '')}`;
+      
+      // Check if this received item was matched via any strategy
+      const wasMatched = (codeKey && matchedReceivedKeys.has(codeKey)) ||
+                        matchedReceivedKeys.has(nameKey) ||
+                        matchedReceivedKeys.has(fuzzyKey) ||
+                        Array.from(matchedReceivedKeys).some(k => k.startsWith('partial:') && k.includes(String(received.item_name || '').trim().toLowerCase()));
+      
+      if (!wasMatched) {
         varianceItems.push({
           item_code: received.item_code,
           item_name: received.item_name,
