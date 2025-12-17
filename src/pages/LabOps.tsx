@@ -1903,19 +1903,28 @@ function MenuModule({ outletId }: { outletId: string }) {
   };
 
   const deleteItem = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this menu item?")) return;
+    
+    // First delete station mappings
+    await supabase
+      .from("lab_ops_menu_item_stations")
+      .delete()
+      .eq("menu_item_id", id);
+
+    // Then delete the menu item
     const { error } = await supabase
       .from("lab_ops_menu_items")
-      .update({ is_active: false })
+      .delete()
       .eq("id", id);
 
     if (error) {
       console.error("Error deleting menu item", error);
-      toast({ title: "Failed to delete item" });
+      toast({ title: "Failed to delete item", variant: "destructive" });
       return;
     }
 
     fetchMenuItems();
-    toast({ title: "Item deleted" });
+    toast({ title: "Item deleted successfully" });
   };
 
   const deleteAllItems = async () => {
