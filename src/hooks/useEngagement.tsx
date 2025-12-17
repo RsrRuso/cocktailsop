@@ -69,6 +69,8 @@ export const useEngagement = (
     saves: new Set<string>(),
     reposts: new Set<string>(),
   });
+  // Timestamp-based debounce to prevent rapid clicks
+  const lastActionRef = useRef<Map<string, number>>(new Map());
   
   // Keep ref in sync with state
   useEffect(() => {
@@ -155,10 +157,24 @@ export const useEngagement = (
         ? processingRef.current.saves 
         : processingRef.current.reposts;
 
-    // Prevent duplicate clicks
-    if (processingSet.has(itemId)) {
+    const actionKey = `${type}-${itemId}`;
+    const now = Date.now();
+    const lastAction = lastActionRef.current.get(actionKey) || 0;
+    
+    // Prevent rapid clicks within 500ms
+    if (now - lastAction < 500) {
+      console.log(`[ENGAGEMENT] Blocked rapid ${type} on ${itemId}`);
       return;
     }
+
+    // Prevent duplicate clicks while processing
+    if (processingSet.has(itemId)) {
+      console.log(`[ENGAGEMENT] Blocked duplicate ${type} on ${itemId} - already processing`);
+      return;
+    }
+    
+    // Mark timestamp immediately
+    lastActionRef.current.set(actionKey, now);
 
     const stateKey = type === 'like' ? 'likedIds' : type === 'save' ? 'savedIds' : 'repostedIds';
     const wasActive = stateRef.current[stateKey].has(itemId);
@@ -225,6 +241,10 @@ export const useEngagement = (
       onCountChange?.(itemId, type, wasActive ? 1 : -1);
     } finally {
       processingSet.delete(itemId);
+      // Clean up old timestamps (older than 2 seconds)
+      setTimeout(() => {
+        lastActionRef.current.delete(`${type}-${itemId}`);
+      }, 2000);
     }
   }, [userId, config, onCountChange]);
 
