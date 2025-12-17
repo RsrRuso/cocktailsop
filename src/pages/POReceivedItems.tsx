@@ -1185,48 +1185,62 @@ const POReceivedItems = () => {
       return;
     }
     
-    // Calculate weekly and monthly averages
-    const now = new Date();
-    const weekStart = startOfWeek(now);
-    const weekEnd = endOfWeek(now);
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
+    // Calculate data period from actual received items
+    const dates = receivedItems.map(item => new Date(item.received_date));
+    const dataStartDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const dataEndDate = new Date(Math.max(...dates.map(d => d.getTime())));
     
-    const weeklyItems = receivedItems.filter(item => {
-      const date = new Date(item.received_date);
-      return date >= weekStart && date <= weekEnd;
+    // Calculate total days in data period (minimum 1 day)
+    const totalDays = Math.max(1, Math.ceil((dataEndDate.getTime() - dataStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    
+    // Group items by name and calculate totals
+    const itemMap = new Map<string, { total_qty: number; total_value: number; order_count: number; avg_price: number }>();
+    
+    receivedItems.forEach(item => {
+      const key = item.item_name.toLowerCase();
+      const existing = itemMap.get(key) || { total_qty: 0, total_value: 0, order_count: 0, avg_price: 0 };
+      existing.total_qty += item.quantity || 0;
+      existing.total_value += item.total_price || 0;
+      existing.order_count += 1;
+      itemMap.set(key, existing);
     });
     
-    const monthlyItems = receivedItems.filter(item => {
-      const date = new Date(item.received_date);
-      return date >= monthStart && date <= monthEnd;
+    // Calculate averages and update avg_price
+    itemMap.forEach((value, key) => {
+      value.avg_price = value.total_qty > 0 ? value.total_value / value.total_qty : 0;
     });
     
-    // Group by item name for forecasting
-    const itemForecast = receivedSummary.map((item: any) => {
-      const weeklyQty = weeklyItems
-        .filter(wi => wi.item_name.toLowerCase() === item.item_name.toLowerCase())
-        .reduce((sum, wi) => sum + (wi.quantity || 0), 0);
+    // Calculate forecast based on daily average
+    const itemForecast = Array.from(itemMap.entries()).map(([itemName, data]) => {
+      // Daily average = total qty ordered / days in period
+      const dailyAvg = data.total_qty / totalDays;
       
-      const monthlyQty = monthlyItems
-        .filter(mi => mi.item_name.toLowerCase() === item.item_name.toLowerCase())
-        .reduce((sum, mi) => sum + (mi.quantity || 0), 0);
+      // Project weekly (7 days) and monthly (30 days)
+      const weeklyQty = dailyAvg * 7;
+      const monthlyQty = dailyAvg * 30;
+      
+      // Find original item name with proper casing
+      const originalItem = receivedItems.find(i => i.item_name.toLowerCase() === itemName);
       
       return {
-        item_name: item.item_name,
-        total_qty: item.total_qty,
+        item_name: originalItem?.item_name || itemName,
+        total_qty: data.total_qty,
+        order_count: data.order_count,
+        daily_avg: dailyAvg,
         weekly_qty: weeklyQty,
         monthly_qty: monthlyQty,
         weekly_par: Math.ceil(weeklyQty * 1.2), // 20% buffer
         monthly_par: Math.ceil(monthlyQty * 1.2),
-        avg_price: item.avg_price,
-        weekly_cost: weeklyQty * item.avg_price,
-        monthly_cost: monthlyQty * item.avg_price
+        avg_price: data.avg_price,
+        weekly_cost: weeklyQty * data.avg_price,
+        monthly_cost: monthlyQty * data.avg_price
       };
     });
     
-    // jsPDF default fonts don't reliably support some currency symbols (e.g. AED Arabic glyphs).
-    // Use ISO codes in PDFs to guarantee readability.
+    // Sort by total qty descending
+    itemForecast.sort((a, b) => b.total_qty - a.total_qty);
+    
+    // jsPDF default fonts don't reliably support some currency symbols
     const pdfCurrency = ((): string => {
       const map: Record<string, string> = {
         USD: 'USD',
@@ -1247,47 +1261,64 @@ const POReceivedItems = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     const pageWidth = doc.internal.pageSize.getWidth();
 
+    // Title
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text('Par Stock Forecast Report', pageWidth / 2, 20, { align: 'center' });
 
+    // Data period info
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Week period: ${format(weekStart, 'MMM d, yyyy')} - ${format(weekEnd, 'MMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
-    doc.text(`Month period: ${format(monthStart, 'MMM d, yyyy')} - ${format(monthEnd, 'MMM d, yyyy')}`, pageWidth / 2, 34, { align: 'center' });
+    doc.text(`Data Period: ${format(dataStartDate, 'MMM d, yyyy')} - ${format(dataEndDate, 'MMM d, yyyy')} (${totalDays} days)`, pageWidth / 2, 28, { align: 'center' });
 
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
-    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 40, { align: 'center' });
+    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 34, { align: 'center' });
     doc.setTextColor(0, 0, 0);
 
-    // Summary
+    // Logic description box
+    doc.setFillColor(230, 245, 255);
+    doc.roundedRect(14, 38, pageWidth - 28, 22, 3, 3, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Calculation Logic:', 18, 46);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`1. Daily Average = Total Qty Ordered / ${totalDays} days in period`, 18, 52);
+    doc.text('2. Weekly Projection = Daily Average x 7 days  |  Monthly Projection = Daily Average x 30 days', 18, 57);
+    doc.text('3. Par Level = Projected Qty + 20% safety buffer', 150, 52);
+
+    // Summary stats
     const totalWeeklyQty = itemForecast.reduce((sum, i) => sum + i.weekly_qty, 0);
     const totalMonthlyQty = itemForecast.reduce((sum, i) => sum + i.monthly_qty, 0);
     const totalWeeklyCost = itemForecast.reduce((sum, i) => sum + i.weekly_cost, 0);
     const totalMonthlyCost = itemForecast.reduce((sum, i) => sum + i.monthly_cost, 0);
+    const totalDailyAvg = itemForecast.reduce((sum, i) => sum + i.daily_avg, 0);
 
     doc.setFillColor(240, 240, 240);
-    doc.roundedRect(14, 45, pageWidth - 28, 20, 3, 3, 'F');
-    doc.setFontSize(10);
-    doc.text(`Weekly: ${totalWeeklyQty.toFixed(0)} units | ${formatPdfCurrency(totalWeeklyCost)}`, 20, 57);
-    doc.text(`Monthly: ${totalMonthlyQty.toFixed(0)} units | ${formatPdfCurrency(totalMonthlyCost)}`, 120, 57);
-    doc.text(`Weekly Par (20% buffer): ${Math.ceil(totalWeeklyQty * 1.2)} units`, 220, 57);
+    doc.roundedRect(14, 63, pageWidth - 28, 18, 3, 3, 'F');
+    doc.setFontSize(9);
+    doc.text(`Daily Avg: ${totalDailyAvg.toFixed(1)} units`, 20, 73);
+    doc.text(`Weekly Forecast: ${totalWeeklyQty.toFixed(0)} units | ${formatPdfCurrency(totalWeeklyCost)}`, 80, 73);
+    doc.text(`Monthly Forecast: ${totalMonthlyQty.toFixed(0)} units | ${formatPdfCurrency(totalMonthlyCost)}`, 180, 73);
 
+    // Data table with daily avg column
     autoTable(doc, {
-      startY: 72,
-      head: [['Item', 'Total Qty', 'Weekly Qty', 'Weekly Par', 'Weekly Cost', 'Monthly Qty', 'Monthly Par', 'Monthly Cost']],
+      startY: 85,
+      head: [['Item', 'Total Qty', 'Orders', 'Daily Avg', 'Weekly Qty', 'Weekly Par', 'Weekly Cost', 'Monthly Qty', 'Monthly Par', 'Monthly Cost']],
       body: itemForecast.map(item => [
         item.item_name,
         item.total_qty.toFixed(0),
-        item.weekly_qty.toFixed(0),
+        item.order_count.toString(),
+        item.daily_avg.toFixed(2),
+        item.weekly_qty.toFixed(1),
         item.weekly_par.toString(),
         formatPdfCurrency(item.weekly_cost),
-        item.monthly_qty.toFixed(0),
+        item.monthly_qty.toFixed(1),
         item.monthly_par.toString(),
         formatPdfCurrency(item.monthly_cost),
       ]),
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
       headStyles: { fillColor: [34, 197, 94] },
       columnStyles: {
         1: { halign: 'right' },
@@ -1297,6 +1328,8 @@ const POReceivedItems = () => {
         5: { halign: 'right' },
         6: { halign: 'right' },
         7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
       },
     });
     
