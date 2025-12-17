@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Bookmark, Camera, Music, MessageCircle } from "lucide-react";
+import { Loader2, Bookmark, Camera, Music, MessageCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 interface SavesDialogProps {
@@ -28,7 +26,6 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
   const [saves, setSaves] = useState<SaveUser[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open && contentId) {
@@ -105,109 +102,103 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
     onOpenChange(false);
   };
 
-  const renderShareOptions = () => (
-    <div className="flex items-center justify-around py-4 border-b border-white/10">
-      <button
-        onClick={handleShareToStory}
-        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
-      >
-        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
-          <Camera className="w-6 h-6 text-white" />
-        </div>
-        <span className="text-xs text-white/80">Story</span>
-      </button>
-      <button
-        onClick={handleShareToMusic}
-        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
-      >
-        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center">
-          <Music className="w-6 h-6 text-white" />
-        </div>
-        <span className="text-xs text-white/80">Music</span>
-      </button>
-      <button
-        onClick={handleShareToStatus}
-        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
-      >
-        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center">
-          <MessageCircle className="w-6 h-6 text-white" />
-        </div>
-        <span className="text-xs text-white/80">Status</span>
-      </button>
-    </div>
-  );
-
-  const renderSavesList = () => (
-    <>
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-white" />
-        </div>
-      ) : saves.length === 0 ? (
-        <p className="text-center text-white/60 py-8 text-base">No saves yet</p>
-      ) : (
-        <div className="space-y-2">
-          {saves.map((save) => (
-            <div 
-              key={save.id}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 active:bg-white/20 cursor-pointer transition-colors"
-              onClick={() => {
-                navigate(`/user/${save.user_id}`);
-                onOpenChange(false);
-              }}
-            >
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={save.avatar_url || undefined} />
-                <AvatarFallback className="text-base bg-white/20 text-white">{save.username?.[0] || '?'}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate text-white">
-                  {save.full_name || save.username}
-                </p>
-                <p className="text-sm text-white/60 truncate">
-                  @{save.username}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  );
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85vh] bg-black/80 backdrop-blur-xl border-0">
-          <DrawerHeader className="border-b border-white/10 pb-3">
-            <DrawerTitle className="flex items-center justify-center gap-2 text-lg text-white">
-              <Bookmark className="w-5 h-5 text-yellow-500" />
-              Saved By
-            </DrawerTitle>
-          </DrawerHeader>
-          {renderShareOptions()}
-          <div className="overflow-y-auto flex-1 max-h-[50vh] px-4 py-3 pb-safe">
-            {renderSavesList()}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[80vh] bg-black/70 backdrop-blur-xl border-0 z-50">
-        <DialogHeader className="border-b border-white/10 pb-3">
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <Bookmark className="w-5 h-5 text-yellow-500" />
-            Saved By
-          </DialogTitle>
-        </DialogHeader>
-        {renderShareOptions()}
-        <div className="overflow-y-auto max-h-[50vh] py-2">
-          {renderSavesList()}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+        <DialogPrimitive.Content className="fixed inset-x-4 top-[15%] bottom-[15%] z-50 mx-auto max-w-sm flex flex-col">
+          {/* Close button */}
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute right-2 top-2 z-10 p-2 rounded-full bg-black/40 text-white/80 hover:text-white hover:bg-black/60 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Header */}
+          <div className="p-6 pb-4 text-center">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="relative p-3 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500">
+                <Bookmark className="w-6 h-6 text-white" />
+              </div>
+              <DialogPrimitive.Title className="text-xl font-semibold text-white">
+                Saved By
+              </DialogPrimitive.Title>
+            </div>
+            <p className="text-sm text-white/60">{saves.length} total saves</p>
+          </div>
+
+          {/* Share Options */}
+          <div className="flex items-center justify-around py-4 px-6">
+            <button
+              onClick={handleShareToStory}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
+                <Camera className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-sm text-white/80">Story</span>
+            </button>
+            <button
+              onClick={handleShareToMusic}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center">
+                <Music className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-sm text-white/80">Music</span>
+            </button>
+            <button
+              onClick={handleShareToStatus}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center">
+                <MessageCircle className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-sm text-white/80">Status</span>
+            </button>
+          </div>
+
+          {/* Saves List */}
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-white" />
+              </div>
+            ) : saves.length === 0 ? (
+              <p className="text-center text-white/60 py-8">No saves yet</p>
+            ) : (
+              <div className="space-y-2">
+                {saves.map((save) => (
+                  <div 
+                    key={save.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-colors backdrop-blur-sm"
+                    onClick={() => {
+                      navigate(`/user/${save.user_id}`);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Avatar className="w-11 h-11 ring-2 ring-white/20">
+                      <AvatarImage src={save.avatar_url || undefined} />
+                      <AvatarFallback className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white">
+                        {save.username?.[0] || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate text-white">
+                        {save.full_name || save.username}
+                      </p>
+                      <p className="text-xs text-white/60 truncate">
+                        @{save.username}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
