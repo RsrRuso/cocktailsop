@@ -2,120 +2,132 @@ import React from 'react';
 
 const SmartPourerDeviceDiagram = () => {
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-3">
       <svg 
-        viewBox="0 0 120 280" 
-        className="w-24 h-56 md:w-32 md:h-72"
+        viewBox="0 0 80 180" 
+        className="w-16 h-36 md:w-20 md:h-44"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Pour Spout - top tube */}
+        {/* Pour Spout - narrow tube */}
         <path 
-          d="M50 0 L70 0 L72 80 L48 80 Z" 
-          fill="hsl(var(--muted))" 
-          stroke="hsl(var(--border))" 
-          strokeWidth="1.5"
+          d="M35 0 L45 0 L46 45 L34 45 Z" 
+          fill="#1a1a1a" 
+          stroke="#333"
+          strokeWidth="1"
         />
         
-        {/* Flow sensor ring */}
+        {/* Flow sensor ring - micro */}
         <ellipse 
-          cx="60" 
-          cy="85" 
-          rx="14" 
-          ry="6" 
-          fill="hsl(var(--primary))" 
-          opacity="0.8"
-        />
-        
-        {/* Main body - cork-like shape */}
-        <path 
-          d="M35 90 
-             C25 95, 20 110, 20 130
-             C20 160, 25 190, 35 220
-             L85 220
-             C95 190, 100 160, 100 130
-             C100 110, 95 95, 85 90
-             Z" 
-          fill="url(#bodyGradient)" 
-          stroke="hsl(var(--border))" 
-          strokeWidth="1.5"
-        />
-        
-        {/* BLE chip area */}
-        <rect 
-          x="45" 
-          y="120" 
-          width="30" 
-          height="20" 
-          rx="3" 
-          fill="hsl(var(--primary))" 
+          cx="40" 
+          cy="48" 
+          rx="8" 
+          ry="3" 
+          fill="#f59e0b" 
           opacity="0.9"
         />
+        
+        {/* Main body - sleek rounded shape */}
+        <path 
+          d="M22 52 
+             C14 56, 10 68, 10 82
+             C10 105, 14 128, 22 145
+             L58 145
+             C66 128, 70 105, 70 82
+             C70 68, 66 56, 58 52
+             Z" 
+          fill="#0a0a0a" 
+          stroke="#333"
+          strokeWidth="1"
+        />
+        
+        {/* Inner body highlight */}
+        <path 
+          d="M26 56 
+             C20 60, 16 70, 16 82
+             C16 102, 19 122, 26 138
+             L54 138
+             C61 122, 64 102, 64 82
+             C64 70, 60 60, 54 56
+             Z" 
+          fill="url(#bodyGradient)" 
+          opacity="0.3"
+        />
+        
+        {/* BLE chip - micro sized */}
+        <rect 
+          x="30" 
+          y="72" 
+          width="20" 
+          height="12" 
+          rx="2" 
+          fill="#f59e0b"
+        />
         <text 
-          x="60" 
-          y="133" 
+          x="40" 
+          y="80" 
           textAnchor="middle" 
-          fill="hsl(var(--primary-foreground))" 
-          fontSize="6" 
+          fill="#000" 
+          fontSize="5" 
           fontWeight="bold"
         >
           BLE
         </text>
         
-        {/* LED indicator */}
+        {/* LED indicator - micro */}
         <circle 
-          cx="60" 
-          cy="160" 
-          r="6" 
+          cx="40" 
+          cy="100" 
+          r="4" 
           fill="#22c55e"
           className="animate-pulse"
         />
         <circle 
-          cx="60" 
-          cy="160" 
-          r="8" 
+          cx="40" 
+          cy="100" 
+          r="6" 
           fill="none"
           stroke="#22c55e"
-          strokeWidth="1"
+          strokeWidth="0.5"
           opacity="0.5"
         />
         
-        {/* Bottom seal ring */}
+        {/* Bottom seal - subtle */}
         <ellipse 
-          cx="60" 
-          cy="225" 
-          rx="28" 
-          ry="8" 
-          fill="hsl(var(--muted-foreground))" 
+          cx="40" 
+          cy="148" 
+          rx="18" 
+          ry="5" 
+          fill="#333"
           opacity="0.4"
         />
         
         {/* Gradients */}
         <defs>
           <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--muted))" />
-            <stop offset="50%" stopColor="hsl(var(--card))" />
-            <stop offset="100%" stopColor="hsl(var(--muted))" />
+            <stop offset="0%" stopColor="#222" />
+            <stop offset="50%" stopColor="#333" />
+            <stop offset="100%" stopColor="#222" />
           </linearGradient>
         </defs>
       </svg>
       
-      {/* Feature labels */}
-      <div className="grid grid-cols-2 gap-2 text-xs md:text-sm w-full max-w-xs">
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-          <div className="w-2 h-2 rounded-full bg-primary" />
+      {/* Feature labels - compact chips */}
+      <div className="grid grid-cols-2 gap-1.5 text-[10px] w-full max-w-[200px]">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/40 border border-white/10">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           <span className="text-muted-foreground">Pour Spout</span>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-          <div className="w-2 h-2 rounded-full bg-primary" />
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/40 border border-white/10">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           <span className="text-muted-foreground">Flow Sensor</span>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-          <div className="w-2 h-2 rounded-full bg-blue-500" />
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/40 border border-white/10">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
           <span className="text-muted-foreground">BLE Chip</span>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/40 border border-white/10">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
           <span className="text-muted-foreground">LED Status</span>
         </div>
       </div>
