@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { SmartPourerDeviceManagement } from './SmartPourerDeviceManagement';
 import { SmartPourerBottlePairing } from './SmartPourerBottlePairing';
 import { SmartPourerLiveBarView } from './SmartPourerLiveBarView';
@@ -10,9 +11,10 @@ import { SmartPourerRecipeEngine } from './SmartPourerRecipeEngine';
 import { SmartPourerPOSSync } from './SmartPourerPOSSync';
 import { SmartPourerAnomalyDetection } from './SmartPourerAnomalyDetection';
 import { SmartPourerOfflineSync } from './SmartPourerOfflineSync';
+import { SmartPourerGuide } from './SmartPourerGuide';
 import { 
   Bluetooth, Link2, Activity, Scale, Clock, Package, 
-  BookOpen, Zap, ShoppingCart, Brain, Database
+  BookOpen, Zap, ShoppingCart, Brain, Database, HelpCircle
 } from 'lucide-react';
 
 interface SmartPourerModuleProps {
@@ -22,19 +24,33 @@ interface SmartPourerModuleProps {
 
 export function SmartPourerModule({ outletId, outletName }: SmartPourerModuleProps) {
   const [activeTab, setActiveTab] = useState('live');
+  const [showGuide, setShowGuide] = useState(false);
 
   return (
     <div className="space-y-4">
       {/* Module Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-          <Zap className="h-5 w-5 text-white" />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <Zap className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Smart Pourer</h2>
+            <p className="text-xs text-muted-foreground">Hardware-powered physical consumption intelligence</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-bold">Smart Pourer</h2>
-          <p className="text-xs text-muted-foreground">Hardware-powered consumption intelligence</p>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowGuide(true)}
+          className="gap-2"
+        >
+          <HelpCircle className="h-4 w-4" />
+          Guide
+        </Button>
       </div>
+
+      <SmartPourerGuide open={showGuide} onOpenChange={setShowGuide} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
