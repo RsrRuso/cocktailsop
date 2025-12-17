@@ -10832,6 +10832,38 @@ export type Database = {
           },
         ]
       }
+      reel_tags: {
+        Row: {
+          created_at: string
+          id: string
+          reel_id: string
+          tagged_by_user_id: string
+          tagged_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reel_id: string
+          tagged_by_user_id: string
+          tagged_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reel_id?: string
+          tagged_by_user_id?: string
+          tagged_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_tags_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reel_views: {
         Row: {
           id: string
