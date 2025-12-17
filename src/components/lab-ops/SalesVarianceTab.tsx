@@ -4,7 +4,8 @@ import { PourerManagement } from './PourerManagement';
 import { SalesTracking } from './SalesTracking';
 import { VarianceAnalysis } from './VarianceAnalysis';
 import { BatchProductionVariance } from './BatchProductionVariance';
-import { Wine, DollarSign, Scale, Beaker } from 'lucide-react';
+import { BatchMenuSync } from './BatchMenuSync';
+import { Wine, DollarSign, Scale, Beaker, ListChecks } from 'lucide-react';
 
 interface SalesVarianceTabProps {
   outletId: string;
@@ -12,12 +13,16 @@ interface SalesVarianceTabProps {
 }
 
 export function SalesVarianceTab({ outletId, outletName }: SalesVarianceTabProps) {
-  const [activeTab, setActiveTab] = useState('batch');
+  const [activeTab, setActiveTab] = useState('menu');
 
   return (
     <div className="space-y-3 sm:space-y-4 px-1">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsTrigger value="menu" className="gap-1.5 py-2 text-xs sm:text-sm">
+            <ListChecks className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline sm:inline">Menu</span>
+          </TabsTrigger>
           <TabsTrigger value="batch" className="gap-1.5 py-2 text-xs sm:text-sm">
             <Beaker className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline sm:inline">Batch</span>
@@ -35,6 +40,10 @@ export function SalesVarianceTab({ outletId, outletName }: SalesVarianceTabProps
             <span className="hidden xs:inline sm:inline">Sales</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="menu" className="mt-4">
+          <BatchMenuSync outletId={outletId} />
+        </TabsContent>
 
         <TabsContent value="batch" className="mt-4">
           <BatchProductionVariance outletId={outletId} />

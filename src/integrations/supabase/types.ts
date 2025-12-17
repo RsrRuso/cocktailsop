@@ -5468,6 +5468,7 @@ export type Database = {
       lab_ops_menu_items: {
         Row: {
           base_price: number
+          batch_recipe_id: string | null
           category_id: string | null
           created_at: string | null
           default_serving_ml: number | null
@@ -5481,12 +5482,16 @@ export type Database = {
           item_type: string | null
           name: string
           outlet_id: string
+          remaining_serves: number | null
+          serving_ml: number | null
           sub_category: string | null
           tax_rate: number | null
+          total_produced_serves: number | null
           updated_at: string | null
         }
         Insert: {
           base_price: number
+          batch_recipe_id?: string | null
           category_id?: string | null
           created_at?: string | null
           default_serving_ml?: number | null
@@ -5500,12 +5505,16 @@ export type Database = {
           item_type?: string | null
           name: string
           outlet_id: string
+          remaining_serves?: number | null
+          serving_ml?: number | null
           sub_category?: string | null
           tax_rate?: number | null
+          total_produced_serves?: number | null
           updated_at?: string | null
         }
         Update: {
           base_price?: number
+          batch_recipe_id?: string | null
           category_id?: string | null
           created_at?: string | null
           default_serving_ml?: number | null
@@ -5519,11 +5528,21 @@ export type Database = {
           item_type?: string | null
           name?: string
           outlet_id?: string
+          remaining_serves?: number | null
+          serving_ml?: number | null
           sub_category?: string | null
           tax_rate?: number | null
+          total_produced_serves?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lab_ops_menu_items_batch_recipe_id_fkey"
+            columns: ["batch_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "batch_recipes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_ops_menu_items_category_id_fkey"
             columns: ["category_id"]
