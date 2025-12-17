@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
+import { CampaignScheduleDialog } from './CampaignScheduleDialog';
 
 interface SmartAdSuggestionsProps {
   contentId: string;
@@ -18,6 +19,8 @@ export const SmartAdSuggestions = ({
   engagementRate,
 }: SmartAdSuggestionsProps) => {
   const [budget, setBudget] = useState([50]);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState('Lookalike Audience');
 
   // Calculate ad predictions
   const predictedReach = Math.round(currentReach * (1 + budget[0] * 0.5));
@@ -168,10 +171,21 @@ export const SmartAdSuggestions = ({
         ))}
       </div>
 
-      <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600">
+      <Button 
+        onClick={() => setShowScheduleDialog(true)}
+        className="w-full mt-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+      >
         <Calendar className="w-4 h-4 mr-2" />
         Schedule Campaign
       </Button>
+
+      <CampaignScheduleDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        budget={budget[0]}
+        predictedReach={predictedReach}
+        strategy={selectedStrategy}
+      />
     </Card>
   );
 };

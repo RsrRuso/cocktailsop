@@ -166,6 +166,7 @@ const POMasterItems = lazy(() => import("@/pages/POMasterItems"));
 const POReceivedItems = lazy(() => import("@/pages/POReceivedItems"));
 const ProcurementPinAccess = lazy(() => import("@/pages/ProcurementPinAccess"));
 const BatchCalculatorPinAccess = lazy(() => import("@/pages/BatchCalculatorPinAccess"));
+const CampaignPayment = lazy(() => import("@/pages/CampaignPayment"));
 
 // Studio & Content Creation
 const Studio = lazy(() => import("./pages/Studio"));
@@ -368,6 +369,8 @@ const AppContent = () => {
           <Route path="/moderation" element={<Moderation />} />
           <Route path="/analytics/post/:postId" element={<PostAnalytics />} />
           <Route path="/analytics/reel/:reelId" element={<PostAnalytics />} />
+          
+          <Route path="/campaign-payment" element={<CampaignPayment />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
