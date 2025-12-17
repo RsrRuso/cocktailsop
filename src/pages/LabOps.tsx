@@ -2741,7 +2741,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
         <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="items">Items</TabsTrigger>
           <TabsTrigger value="po-received">PO Received</TabsTrigger>
