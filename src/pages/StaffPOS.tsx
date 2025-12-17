@@ -557,6 +557,46 @@ export default function StaffPOS() {
         throw new Error(`Payment failed: ${paymentError.message}`);
       }
 
+      // Fetch menu item details for each order item to record sales
+      const menuItemIds = orderItems.map((item: any) => item.menu_item_id).filter(Boolean);
+      const { data: menuItemsData } = await supabase
+        .from("lab_ops_menu_items")
+        .select("id, name, serving_ml, batch_recipe_id")
+        .in("id", menuItemIds);
+      
+      const menuItemMap = new Map(menuItemsData?.map(m => [m.id, m]) || []);
+
+      // Record sales in lab_ops_sales for batch tracking
+      const salesRecords = orderItems
+        .filter((item: any) => item.menu_item_id)
+        .map((item: any) => {
+          const menuItem = menuItemMap.get(item.menu_item_id);
+          const servingMl = menuItem?.serving_ml || 90;
+          return {
+            outlet_id: outlet.id,
+            order_id: order.id,
+            item_name: menuItem?.name || "Unknown Item",
+            quantity: item.qty,
+            ml_per_serving: servingMl,
+            total_ml_sold: servingMl * item.qty,
+            unit_price: item.unit_price,
+            total_price: item.unit_price * item.qty,
+            sold_at: new Date().toISOString(),
+            sold_by: staff.id,
+          };
+        });
+
+      if (salesRecords.length > 0) {
+        const { error: salesError } = await supabase
+          .from("lab_ops_sales")
+          .insert(salesRecords);
+        
+        if (salesError) {
+          console.error("Sales insert error:", salesError);
+          // Don't throw - sales recording failure shouldn't block order close
+        }
+      }
+
       // Close order - this makes it appear in stats
       const { error: orderError } = await supabase
         .from("lab_ops_orders")
