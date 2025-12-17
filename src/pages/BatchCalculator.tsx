@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
@@ -4396,6 +4396,351 @@ const BatchCalculator = () => {
                               );
                             })}
                           </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Activity Heatmap */}
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-purple-500" />
+                      Activity Heatmap
+                    </h4>
+                    {(() => {
+                      // Create heatmap data: day of week vs time of day
+                      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                      const timeSlots = ['Morning (6-12)', 'Afternoon (12-18)', 'Evening (18-24)', 'Night (0-6)'];
+                      
+                      // Initialize heatmap grid
+                      const heatmapData: number[][] = Array(7).fill(null).map(() => Array(4).fill(0));
+                      const dayTotals: number[] = Array(7).fill(0);
+                      const timeTotals: number[] = Array(4).fill(0);
+                      
+                      productions.forEach(prod => {
+                        const date = new Date(prod.created_at || prod.production_date);
+                        const dayOfWeek = date.getDay();
+                        const hour = date.getHours();
+                        
+                        let timeSlot = 3; // Night (0-6)
+                        if (hour >= 6 && hour < 12) timeSlot = 0; // Morning
+                        else if (hour >= 12 && hour < 18) timeSlot = 1; // Afternoon
+                        else if (hour >= 18) timeSlot = 2; // Evening
+                        
+                        heatmapData[dayOfWeek][timeSlot]++;
+                        dayTotals[dayOfWeek]++;
+                        timeTotals[timeSlot]++;
+                      });
+                      
+                      const maxValue = Math.max(...heatmapData.flat(), 1);
+                      const peakDayIdx = dayTotals.indexOf(Math.max(...dayTotals));
+                      const peakTimeIdx = timeTotals.indexOf(Math.max(...timeTotals));
+                      
+                      // Calculate streaks
+                      const sortedDates = [...new Set(productions.map(p => 
+                        new Date(p.production_date).toDateString()
+                      ))].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+                      
+                      let currentStreak = 0;
+                      let maxStreak = 0;
+                      let tempStreak = 1;
+                      
+                      for (let i = 1; i < sortedDates.length; i++) {
+                        const prev = new Date(sortedDates[i - 1]);
+                        const curr = new Date(sortedDates[i]);
+                        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays === 1) {
+                          tempStreak++;
+                        } else {
+                          maxStreak = Math.max(maxStreak, tempStreak);
+                          tempStreak = 1;
+                        }
+                      }
+                      maxStreak = Math.max(maxStreak, tempStreak);
+                      
+                      // Check if last production was recent (within 2 days)
+                      if (sortedDates.length > 0) {
+                        const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+                        const today = new Date();
+                        const daysSinceLastProd = Math.round((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+                        if (daysSinceLastProd <= 2) {
+                          currentStreak = tempStreak;
+                        }
+                      }
+                      
+                      return (
+                        <div className="space-y-4">
+                          {/* Peak Activity Summary */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30 text-center">
+                              <p className="text-xs text-muted-foreground">Peak Day</p>
+                              <p className="text-lg font-bold text-purple-400">{dayNames[peakDayIdx]}</p>
+                              <p className="text-xs text-muted-foreground">{dayTotals[peakDayIdx]} batches</p>
+                            </div>
+                            <div className="p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/30 text-center">
+                              <p className="text-xs text-muted-foreground">Peak Time</p>
+                              <p className="text-lg font-bold text-indigo-400">{timeSlots[peakTimeIdx].split(' ')[0]}</p>
+                              <p className="text-xs text-muted-foreground">{timeTotals[peakTimeIdx]} batches</p>
+                            </div>
+                            <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30 text-center">
+                              <p className="text-xs text-muted-foreground">Current Streak</p>
+                              <p className="text-lg font-bold text-amber-400">{currentStreak} 🔥</p>
+                              <p className="text-xs text-muted-foreground">days</p>
+                            </div>
+                            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-center">
+                              <p className="text-xs text-muted-foreground">Best Streak</p>
+                              <p className="text-lg font-bold text-emerald-400">{maxStreak} 🏆</p>
+                              <p className="text-xs text-muted-foreground">days</p>
+                            </div>
+                          </div>
+                          
+                          {/* Heatmap Grid */}
+                          <div className="overflow-x-auto">
+                            <div className="min-w-[400px]">
+                              <div className="grid grid-cols-5 gap-1 text-xs">
+                                <div className="p-2"></div>
+                                {timeSlots.map(slot => (
+                                  <div key={slot} className="p-2 text-center text-muted-foreground font-medium">
+                                    {slot.split(' ')[0]}
+                                  </div>
+                                ))}
+                                
+                                {dayNames.map((day, dayIdx) => (
+                                  <React.Fragment key={day}>
+                                    <div className="p-2 text-muted-foreground font-medium flex items-center">
+                                      {day}
+                                    </div>
+                                    {heatmapData[dayIdx].map((value, timeIdx) => {
+                                      const intensity = value / maxValue;
+                                      return (
+                                        <div
+                                          key={`${dayIdx}-${timeIdx}`}
+                                          className="p-2 rounded-md flex items-center justify-center text-xs font-bold transition-all hover:scale-105 cursor-default"
+                                          style={{
+                                            backgroundColor: value > 0 
+                                              ? `hsl(262, 83%, ${65 - intensity * 30}%, ${0.3 + intensity * 0.7})`
+                                              : 'hsl(0, 0%, 20%)',
+                                            color: intensity > 0.5 ? 'white' : 'hsl(0, 0%, 60%)'
+                                          }}
+                                          title={`${day} ${timeSlots[timeIdx]}: ${value} batches`}
+                                        >
+                                          {value > 0 ? value : '-'}
+                                        </div>
+                                      );
+                                    })}
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Day of Week Distribution */}
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground font-medium">Weekly Distribution</p>
+                            {dayNames.map((day, idx) => {
+                              const percentage = productions.length > 0 ? (dayTotals[idx] / productions.length) * 100 : 0;
+                              return (
+                                <div key={day} className="flex items-center gap-2">
+                                  <span className="text-xs w-8 text-muted-foreground">{day}</span>
+                                  <div className="flex-1 bg-muted/30 rounded-full h-2">
+                                    <div 
+                                      className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs w-12 text-right text-muted-foreground">
+                                    {dayTotals[idx]} ({percentage.toFixed(0)}%)
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground p-2 bg-primary/5 rounded">
+                            💡 Heatmap shows production frequency by day and time. Darker cells = more activity.
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Enhanced Team Leaderboards */}
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-500" />
+                      Team Leaderboards
+                    </h4>
+                    {(() => {
+                      // Calculate advanced producer metrics
+                      const producerMetrics = productions.reduce((acc, prod) => {
+                        const name = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
+                        if (!acc[name]) {
+                          acc[name] = { 
+                            count: 0, 
+                            liters: 0, 
+                            serves: 0,
+                            recipes: new Set<string>(),
+                            dates: [] as string[],
+                            batches: [] as { date: Date; liters: number }[]
+                          };
+                        }
+                        acc[name].count += 1;
+                        acc[name].liters += prod.target_liters;
+                        acc[name].serves += prod.target_serves || 0;
+                        acc[name].recipes.add(prod.batch_name);
+                        acc[name].dates.push(new Date(prod.production_date).toDateString());
+                        acc[name].batches.push({ date: new Date(prod.production_date), liters: prod.target_liters });
+                        return acc;
+                      }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: string[]; batches: { date: Date; liters: number }[] }>);
+                      
+                      // Calculate rankings and achievements
+                      const rankings = Object.entries(producerMetrics).map(([name, stats]) => {
+                        // Calculate consistency (standard deviation of batch sizes)
+                        const avgBatch = stats.liters / stats.count;
+                        const variance = stats.batches.reduce((sum, b) => sum + Math.pow(b.liters - avgBatch, 2), 0) / stats.count;
+                        const stdDev = Math.sqrt(variance);
+                        const consistencyScore = Math.max(0, 100 - (stdDev / avgBatch * 100));
+                        
+                        // Calculate streak
+                        const uniqueDates = [...new Set(stats.dates)].sort((a, b) => 
+                          new Date(a).getTime() - new Date(b).getTime()
+                        );
+                        let maxStreak = 1;
+                        let tempStreak = 1;
+                        for (let i = 1; i < uniqueDates.length; i++) {
+                          const prev = new Date(uniqueDates[i - 1]);
+                          const curr = new Date(uniqueDates[i]);
+                          const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+                          if (diffDays === 1) {
+                            tempStreak++;
+                            maxStreak = Math.max(maxStreak, tempStreak);
+                          } else {
+                            tempStreak = 1;
+                          }
+                        }
+                        
+                        // Achievements
+                        const achievements: string[] = [];
+                        if (stats.count >= 10) achievements.push('🎯 10+ Batches');
+                        if (stats.count >= 25) achievements.push('⭐ 25+ Batches');
+                        if (stats.count >= 50) achievements.push('💎 50+ Batches');
+                        if (stats.recipes.size >= 5) achievements.push('📚 Recipe Master');
+                        if (stats.liters >= 100) achievements.push('🏭 100L Club');
+                        if (maxStreak >= 3) achievements.push('🔥 Streak Keeper');
+                        if (maxStreak >= 7) achievements.push('⚡ Week Warrior');
+                        if (consistencyScore >= 90) achievements.push('🎖️ Consistent');
+                        
+                        return {
+                          name,
+                          ...stats,
+                          recipeCount: stats.recipes.size,
+                          avgBatch,
+                          consistencyScore,
+                          maxStreak,
+                          achievements,
+                          activeDays: uniqueDates.length
+                        };
+                      });
+                      
+                      // Sort by different criteria
+                      const byVolume = [...rankings].sort((a, b) => b.liters - a.liters);
+                      const byBatches = [...rankings].sort((a, b) => b.count - a.count);
+                      const byConsistency = [...rankings].sort((a, b) => b.consistencyScore - a.consistencyScore);
+                      const byStreak = [...rankings].sort((a, b) => b.maxStreak - a.maxStreak);
+                      
+                      return (
+                        <div className="space-y-4">
+                          {/* Category Leaderboards */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                              <p className="text-xs text-muted-foreground mb-1">🏆 Top Volume</p>
+                              <p className="font-bold text-amber-400 truncate">{byVolume[0]?.name || '-'}</p>
+                              <p className="text-xs text-muted-foreground">{byVolume[0]?.liters.toFixed(1) || 0} L</p>
+                            </div>
+                            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                              <p className="text-xs text-muted-foreground mb-1">🎯 Most Active</p>
+                              <p className="font-bold text-blue-400 truncate">{byBatches[0]?.name || '-'}</p>
+                              <p className="text-xs text-muted-foreground">{byBatches[0]?.count || 0} batches</p>
+                            </div>
+                            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+                              <p className="text-xs text-muted-foreground mb-1">🎖️ Most Consistent</p>
+                              <p className="font-bold text-emerald-400 truncate">{byConsistency[0]?.name || '-'}</p>
+                              <p className="text-xs text-muted-foreground">{byConsistency[0]?.consistencyScore.toFixed(0) || 0}%</p>
+                            </div>
+                            <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                              <p className="text-xs text-muted-foreground mb-1">🔥 Best Streak</p>
+                              <p className="font-bold text-orange-400 truncate">{byStreak[0]?.name || '-'}</p>
+                              <p className="text-xs text-muted-foreground">{byStreak[0]?.maxStreak || 0} days</p>
+                            </div>
+                          </div>
+                          
+                          {/* Full Leaderboard */}
+                          <div className="space-y-2">
+                            {byVolume.map((producer, index) => (
+                              <div key={producer.name} className="p-3 bg-muted/20 rounded-lg">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+                                      index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg' : 
+                                      index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white' : 
+                                      index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-white' : 
+                                      'bg-muted text-foreground'
+                                    }`}>
+                                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                                    </span>
+                                    <div>
+                                      <span className="font-medium block">{producer.name}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {producer.activeDays} active days • {producer.recipeCount} recipes
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="font-bold text-primary">{producer.liters.toFixed(1)} L</span>
+                                    <p className="text-xs text-muted-foreground">{producer.count} batches</p>
+                                  </div>
+                                </div>
+                                
+                                {/* Stats Row */}
+                                <div className="grid grid-cols-4 gap-2 text-xs mb-2">
+                                  <div className="text-center p-1.5 bg-muted/30 rounded">
+                                    <p className="text-muted-foreground">Avg Batch</p>
+                                    <p className="font-medium">{producer.avgBatch.toFixed(2)} L</p>
+                                  </div>
+                                  <div className="text-center p-1.5 bg-muted/30 rounded">
+                                    <p className="text-muted-foreground">Consistency</p>
+                                    <p className={`font-medium ${producer.consistencyScore >= 80 ? 'text-emerald-400' : producer.consistencyScore >= 60 ? 'text-amber-400' : 'text-orange-400'}`}>
+                                      {producer.consistencyScore.toFixed(0)}%
+                                    </p>
+                                  </div>
+                                  <div className="text-center p-1.5 bg-muted/30 rounded">
+                                    <p className="text-muted-foreground">Best Streak</p>
+                                    <p className="font-medium">{producer.maxStreak} 🔥</p>
+                                  </div>
+                                  <div className="text-center p-1.5 bg-muted/30 rounded">
+                                    <p className="text-muted-foreground">Serves</p>
+                                    <p className="font-medium">{producer.serves}</p>
+                                  </div>
+                                </div>
+                                
+                                {/* Achievements */}
+                                {producer.achievements.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {producer.achievements.map((achievement, idx) => (
+                                      <span key={idx} className="text-xs px-2 py-0.5 bg-primary/10 rounded-full border border-primary/20">
+                                        {achievement}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground p-2 bg-primary/5 rounded">
+                            💡 Rankings update automatically. Complete more batches to unlock achievements!
+                          </p>
                         </div>
                       );
                     })()}
