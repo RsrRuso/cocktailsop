@@ -260,8 +260,8 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <DialogPrimitive.Content className="fixed inset-x-4 top-[10%] bottom-[10%] z-50 mx-auto max-w-md flex flex-col overflow-hidden">
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
+        <DialogPrimitive.Content className="fixed inset-0 sm:inset-x-4 sm:top-[5%] sm:bottom-[5%] z-50 mx-auto sm:max-w-md flex flex-col overflow-hidden">
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}
