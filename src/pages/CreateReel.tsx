@@ -136,34 +136,56 @@ const CreateReel = () => {
     { name: 'Lark', preset: 'lark', style: { brightness: 115, contrast: 90, saturation: 120 } },
   ];
 
-  // Fetch music tracks
+  // Fetch music tracks from Music Box
   useEffect(() => {
     if (activeTool === 'audio') {
       fetchMusicTracks();
     }
-  }, [activeTool, musicTab]);
+  }, [activeTool, musicTab, musicSearch]);
 
   const fetchMusicTracks = async () => {
     try {
-      const { data, error } = await supabase
-        .from('platform_music_library')
+      let query = supabase
+        .from('music_tracks')
         .select('*')
-        .eq('is_active', true)
-        .order('popularity_score', { ascending: false })
-        .limit(50);
+        .eq('status', 'approved');
+
+      // Filter by tab
+      if (musicTab === 'original') {
+        query = query.contains('tags', ['extracted']);
+      } else if (musicTab === 'trending') {
+        query = query.order('created_at', { ascending: false });
+      }
+
+      // Search filter
+      if (musicSearch) {
+        query = query.or(`title.ilike.%${musicSearch}%,artist.ilike.%${musicSearch}%`);
+      }
+
+      const { data, error } = await query.limit(50);
 
       if (!error && data) {
-        setMusicTracks(data.map((track: any) => ({
-          id: track.id,
-          track_id: track.track_id,
-          title: track.title,
-          artist: track.artist,
-          duration: track.duration_seconds?.toString() || '0',
-          preview_url: track.cover_image_url,
-          spotify_url: track.spotify_url,
-          preview_audio: track.preview_url,
-          reel_count: `${Math.floor(Math.random() * 500)}K reels`
-        })));
+        // Get reel counts for each track
+        const tracksWithCounts = await Promise.all(data.map(async (track: any) => {
+          const { count } = await supabase
+            .from('reels')
+            .select('*', { count: 'exact', head: true })
+            .eq('music_url', track.original_url);
+          
+          return {
+            id: track.id,
+            track_id: track.id,
+            title: track.title,
+            artist: track.artist || 'Unknown Artist',
+            duration: track.duration_sec?.toString() || '30',
+            preview_url: null, // No cover image for extracted tracks
+            spotify_url: null,
+            preview_audio: track.original_url,
+            reel_count: count && count > 0 ? `${count} reels` : 'New'
+          };
+        }));
+        
+        setMusicTracks(tracksWithCounts);
       }
     } catch (error) {
       console.error('Error fetching music:', error);
