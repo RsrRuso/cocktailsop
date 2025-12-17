@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Repeat2, Camera, Music, MessageCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -160,43 +161,45 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
           </div>
 
           {/* Reposts List */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
-              </div>
-            ) : reposts.length === 0 ? (
-              <p className="text-center text-white/60 py-8">No reposts yet</p>
-            ) : (
-              <div className="space-y-2">
-                {reposts.map((repost) => (
-                  <div 
-                    key={repost.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-colors backdrop-blur-sm"
-                    onClick={() => {
-                      navigate(`/user/${repost.user_id}`);
-                      onOpenChange(false);
-                    }}
-                  >
-                    <Avatar className="w-11 h-11 ring-2 ring-white/20">
-                      <AvatarImage src={repost.avatar_url || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white">
-                        {repost.username?.[0] || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate text-white">
-                        {repost.full_name || repost.username}
-                      </p>
-                      <p className="text-xs text-white/60 truncate">
-                        @{repost.username}
-                      </p>
+          <ScrollArea className="flex-1">
+            <div className="px-6 pb-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
+                </div>
+              ) : reposts.length === 0 ? (
+                <p className="text-center text-white/60 py-8">No reposts yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {reposts.map((repost) => (
+                    <div 
+                      key={repost.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-colors backdrop-blur-sm"
+                      onClick={() => {
+                        navigate(`/user/${repost.user_id}`);
+                        onOpenChange(false);
+                      }}
+                    >
+                      <Avatar className="w-11 h-11 ring-2 ring-white/20">
+                        <AvatarImage src={repost.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white">
+                          {repost.username?.[0] || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate text-white">
+                          {repost.full_name || repost.username}
+                        </p>
+                        <p className="text-xs text-white/60 truncate">
+                          @{repost.username}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

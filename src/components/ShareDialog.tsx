@@ -2,6 +2,7 @@ import { useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Share2, Copy, MessageCircle, Instagram, Download, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import UserSelectionDialog from "./UserSelectionDialog";
@@ -283,105 +284,107 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post
           </div>
 
           {/* Content - Scrollable */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6">
-            {/* Send via DM Section */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-white/80">Share in Direct Message</label>
-              <Button
-                onClick={() => setShowUserSelection(true)}
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-              >
-                <Send className="w-5 h-5 mr-2" />
-                Send via Direct Message
-              </Button>
+          <ScrollArea className="flex-1">
+            <div className="px-6 pb-6 space-y-6">
+              {/* Send via DM Section */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-white/80">Share in Direct Message</label>
+                <Button
+                  onClick={() => setShowUserSelection(true)}
+                  className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                >
+                  <Send className="w-5 h-5 mr-2" />
+                  Send via Direct Message
+                </Button>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-white/20" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-transparent px-2 text-white/60">Or share externally</span>
+                </div>
+              </div>
+
+              {/* External Share Section */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-white/80">Share Externally</label>
+                
+                {/* Copy Link */}
+                <div className="flex gap-2">
+                  <Input 
+                    value={shareUrl} 
+                    readOnly 
+                    className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40" 
+                  />
+                  <Button 
+                    onClick={handleCopyLink} 
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <Copy className="w-4 h-4" />
+                    {copied ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+
+                {/* Instagram Story - Featured */}
+                <Button
+                  onClick={handleShareToInstagramStory}
+                  disabled={isGeneratingStory}
+                  className="w-full h-14 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 text-white font-medium"
+                >
+                  {isGeneratingStory ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Generating Story...
+                    </>
+                  ) : (
+                    <>
+                      <Instagram className="w-5 h-5 mr-2" />
+                      Share to Instagram Story
+                    </>
+                  )}
+                </Button>
+
+                {/* Social Media */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => handleShareExternal("whatsapp")}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                  <Button
+                    onClick={() => handleShareExternal("telegram")}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Telegram
+                  </Button>
+                  <Button
+                    onClick={() => handleShareExternal("twitter")}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    𝕏
+                    <span className="ml-2">Twitter</span>
+                  </Button>
+                  <Button
+                    onClick={() => handleShareExternal("facebook")}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    f
+                    <span className="ml-2">Facebook</span>
+                  </Button>
+                </div>
+              </div>
             </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/20" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-transparent px-2 text-white/60">Or share externally</span>
-              </div>
-            </div>
-
-            {/* External Share Section */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-white/80">Share Externally</label>
-              
-              {/* Copy Link */}
-              <div className="flex gap-2">
-                <Input 
-                  value={shareUrl} 
-                  readOnly 
-                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40" 
-                />
-                <Button 
-                  onClick={handleCopyLink} 
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  <Copy className="w-4 h-4" />
-                  {copied ? "Copied!" : "Copy"}
-                </Button>
-              </div>
-
-              {/* Instagram Story - Featured */}
-              <Button
-                onClick={handleShareToInstagramStory}
-                disabled={isGeneratingStory}
-                className="w-full h-14 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 text-white font-medium"
-              >
-                {isGeneratingStory ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Story...
-                  </>
-                ) : (
-                  <>
-                    <Instagram className="w-5 h-5 mr-2" />
-                    Share to Instagram Story
-                  </>
-                )}
-              </Button>
-
-              {/* Social Media */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  onClick={() => handleShareExternal("whatsapp")}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  WhatsApp
-                </Button>
-                <Button
-                  onClick={() => handleShareExternal("telegram")}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Telegram
-                </Button>
-                <Button
-                  onClick={() => handleShareExternal("twitter")}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  𝕏
-                  <span className="ml-2">Twitter</span>
-                </Button>
-                <Button
-                  onClick={() => handleShareExternal("facebook")}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  f
-                  <span className="ml-2">Facebook</span>
-                </Button>
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
 

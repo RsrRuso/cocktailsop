@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bookmark, Camera, Music, MessageCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -160,43 +161,45 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
           </div>
 
           {/* Saves List */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
-              </div>
-            ) : saves.length === 0 ? (
-              <p className="text-center text-white/60 py-8">No saves yet</p>
-            ) : (
-              <div className="space-y-2">
-                {saves.map((save) => (
-                  <div 
-                    key={save.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-colors backdrop-blur-sm"
-                    onClick={() => {
-                      navigate(`/user/${save.user_id}`);
-                      onOpenChange(false);
-                    }}
-                  >
-                    <Avatar className="w-11 h-11 ring-2 ring-white/20">
-                      <AvatarImage src={save.avatar_url || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white">
-                        {save.username?.[0] || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate text-white">
-                        {save.full_name || save.username}
-                      </p>
-                      <p className="text-xs text-white/60 truncate">
-                        @{save.username}
-                      </p>
+          <ScrollArea className="flex-1">
+            <div className="px-6 pb-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
+                </div>
+              ) : saves.length === 0 ? (
+                <p className="text-center text-white/60 py-8">No saves yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {saves.map((save) => (
+                    <div 
+                      key={save.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-colors backdrop-blur-sm"
+                      onClick={() => {
+                        navigate(`/user/${save.user_id}`);
+                        onOpenChange(false);
+                      }}
+                    >
+                      <Avatar className="w-11 h-11 ring-2 ring-white/20">
+                        <AvatarImage src={save.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white">
+                          {save.username?.[0] || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate text-white">
+                          {save.full_name || save.username}
+                        </p>
+                        <p className="text-xs text-white/60 truncate">
+                          @{save.username}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
