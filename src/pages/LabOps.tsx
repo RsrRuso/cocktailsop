@@ -36,7 +36,7 @@ import {
   Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User
 } from "lucide-react";
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 
@@ -2888,18 +2888,45 @@ function InventoryModule({ outletId }: { outletId: string }) {
               {movements.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No stock movements yet</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {movements.map((mov) => (
-                    <div key={mov.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{mov.lab_ops_inventory_items?.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(mov.created_at).toLocaleString()} • {mov.reference_type}
-                        </p>
+                    <div key={mov.id} className="p-4 bg-muted/50 rounded-lg border border-border/50">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold truncate">{mov.lab_ops_inventory_items?.name}</p>
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              {mov.reference_type === 'receive' ? 'Received' : 
+                               mov.reference_type === 'adjustment' ? 'Adjusted' :
+                               mov.reference_type === 'transfer' ? 'Transfer' :
+                               mov.reference_type === 'sale' ? 'Sale' :
+                               mov.reference_type === 'waste' ? 'Waste' :
+                               mov.reference_type || 'Movement'}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <p className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(mov.created_at).toLocaleString()}
+                            </p>
+                            {mov.performed_by && (
+                              <p className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {mov.performed_by}
+                              </p>
+                            )}
+                            {mov.reason && (
+                              <p className="text-xs italic">"{mov.reason}"</p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={mov.movement_type === "in" ? "default" : "destructive"}
+                          className="text-base font-bold px-3 py-1 shrink-0"
+                        >
+                          {mov.movement_type === "in" ? "+" : "-"}{mov.quantity}
+                        </Badge>
                       </div>
-                      <Badge variant={mov.movement_type === "in" ? "default" : "destructive"}>
-                        {mov.movement_type === "in" ? "+" : "-"}{mov.quantity}
-                      </Badge>
                     </div>
                   ))}
                 </div>
