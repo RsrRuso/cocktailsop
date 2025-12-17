@@ -2802,22 +2802,35 @@ const BatchCalculator = () => {
           const recipeDays = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
           const dailyAvg = recipeTotalLiters / recipeDays;
           
-          // Trend calculation
-          const now = new Date();
-          const cutoff7 = new Date(now); cutoff7.setDate(cutoff7.getDate() - 7);
-          const cutoff30 = new Date(now); cutoff30.setDate(cutoff30.getDate() - 30);
+          // Trend calculation - compare first half vs second half of production period
+          const sortedBatches = [...data.batches].sort((a, b) => a.date.getTime() - b.date.getTime());
+          const midpoint = Math.floor(sortedBatches.length / 2);
           
-          const recent7 = data.batches.filter(b => b.date >= cutoff7);
-          const recent30 = data.batches.filter(b => b.date >= cutoff30);
-          
-          const avg7 = recent7.length > 0 ? recent7.reduce((s, b) => s + b.liters, 0) / 7 : dailyAvg;
-          const avg30 = recent30.length > 0 ? recent30.reduce((s, b) => s + b.liters, 0) / 30 : dailyAvg;
-          const trendFactor = avg30 > 0 ? avg7 / avg30 : 1;
+          let trendFactor = 1;
+          if (sortedBatches.length >= 2) {
+            const firstHalf = sortedBatches.slice(0, midpoint);
+            const secondHalf = sortedBatches.slice(midpoint);
+            
+            // Calculate average liters per batch for each half
+            const firstHalfAvg = firstHalf.length > 0 
+              ? firstHalf.reduce((s, b) => s + b.liters, 0) / firstHalf.length 
+              : 0;
+            const secondHalfAvg = secondHalf.length > 0 
+              ? secondHalf.reduce((s, b) => s + b.liters, 0) / secondHalf.length 
+              : 0;
+            
+            // Calculate trend based on production frequency and volume
+            if (firstHalfAvg > 0) {
+              trendFactor = secondHalfAvg / firstHalfAvg;
+            } else if (secondHalfAvg > 0) {
+              trendFactor = 1.5; // New recipe with increasing production
+            }
+          }
           const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
           
           const buffer = 1.2;
-          const weeklyPar = avg7 * buffer * 7;
-          const monthlyPar = avg7 * buffer * 30;
+          const weeklyPar = dailyAvg * buffer * 7;
+          const monthlyPar = dailyAvg * buffer * 30;
           
           // Recipe card
           doc.setFillColor(248, 250, 252);
@@ -2848,7 +2861,7 @@ const BatchCalculator = () => {
           doc.setTextColor(...amber);
           doc.text(`Monthly Par: ${monthlyPar.toFixed(1)} L`, 70, yPos + 17);
           doc.setTextColor(...skyBlue);
-          doc.text(`Daily Target: ${(avg7 * buffer).toFixed(2)} L`, 130, yPos + 17);
+          doc.text(`Daily Target: ${(dailyAvg * buffer).toFixed(2)} L`, 130, yPos + 17);
           
           yPos += 26;
         });
