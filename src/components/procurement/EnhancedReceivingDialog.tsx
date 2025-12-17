@@ -146,9 +146,36 @@ export const EnhancedReceivingDialog = ({
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
+    // Map currency symbols to ASCII-safe versions for PDF
+    const getAsciiCurrency = (symbol: string) => {
+      const currencyMap: Record<string, string> = {
+        '$': 'USD',
+        '€': 'EUR',
+        '£': 'GBP',
+        '¥': 'JPY',
+        '₹': 'INR',
+        'د.إ': 'AED',
+        'AED': 'AED',
+        'A$': 'AUD',
+        'C$': 'CAD',
+        '₽': 'RUB',
+        '₩': 'KRW',
+        '฿': 'THB',
+        '₺': 'TRY',
+        'R': 'ZAR',
+        'kr': 'SEK',
+        'CHF': 'CHF',
+        'zł': 'PLN',
+        'Kč': 'CZK',
+      };
+      return currencyMap[symbol] || symbol.replace(/[^\x00-\x7F]/g, '') || 'USD';
+    };
+    
+    const safeCurrency = getAsciiCurrency(currencySymbol);
+    
     // Use simple currency format to avoid encoding issues
     const formatCurrency = (value: number) => {
-      return `${currencySymbol} ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `${safeCurrency} ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
     
     // Header with accent line
