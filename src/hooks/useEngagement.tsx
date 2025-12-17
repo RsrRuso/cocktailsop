@@ -77,7 +77,12 @@ export const useEngagement = (
 
   // Fetch all engagement states in parallel
   const fetchEngagement = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log(`[ENGAGEMENT] Skipping fetch for ${contentType} - no userId`);
+      return;
+    }
+
+    console.log(`[ENGAGEMENT] Fetching ${contentType} engagement for user:`, userId);
 
     try {
       // Always fetch likes
@@ -85,6 +90,8 @@ export const useEngagement = (
         .from(config.likesTable as any)
         .select(config.idColumn)
         .eq('user_id', userId);
+      
+      console.log(`[ENGAGEMENT] ${contentType} likes response:`, likesRes.data?.length, 'items');
       
       // Only fetch saves/reposts if tables exist for this content type
       let savesRes = { data: [] as any[] };
@@ -104,16 +111,16 @@ export const useEngagement = (
           .eq('user_id', userId);
       }
 
+      const likedItems = (likesRes.data as any[] || []).map(item => item[config.idColumn]);
+      const savedItems = (savesRes.data as any[] || []).map(item => item[config.idColumn]);
+      const repostedItems = (repostsRes.data as any[] || []).map(item => item[config.idColumn]);
+
+      console.log(`[ENGAGEMENT] ${contentType} - liked:`, likedItems.length, 'saved:', savedItems.length, 'reposted:', repostedItems.length);
+
       const newState: EngagementState = {
-        likedIds: new Set(
-          (likesRes.data as any[] || []).map(item => item[config.idColumn])
-        ),
-        savedIds: new Set(
-          (savesRes.data as any[] || []).map(item => item[config.idColumn])
-        ),
-        repostedIds: new Set(
-          (repostsRes.data as any[] || []).map(item => item[config.idColumn])
-        ),
+        likedIds: new Set(likedItems),
+        savedIds: new Set(savedItems),
+        repostedIds: new Set(repostedItems),
       };
 
       setState(newState);
@@ -123,12 +130,13 @@ export const useEngagement = (
     }
   }, [userId, config, contentType]);
 
-  // Fetch on mount/userId change
+  // Fetch on mount/userId change - use separate effect with stable deps
   useEffect(() => {
     if (userId) {
+      console.log(`[ENGAGEMENT] useEffect triggered for ${contentType}, userId:`, userId);
       fetchEngagement();
     }
-  }, [userId, fetchEngagement]);
+  }, [userId, contentType]);
 
   // Generic toggle function with optimistic updates
   const toggle = useCallback(async (

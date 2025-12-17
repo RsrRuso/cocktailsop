@@ -228,9 +228,8 @@ const Home = () => {
     };
     
     fetchViewedStories();
-    postEngagement.fetchEngagement();
-    reelEngagement.fetchEngagement();
-  }, [user?.id, postEngagement.fetchEngagement, reelEngagement.fetchEngagement]);
+    // Note: engagement is now fetched automatically by useEngagement hook when userId changes
+  }, [user?.id]);
 
   // Realtime subscriptions
   useEffect(() => {
