@@ -2410,18 +2410,45 @@ function InventoryModule({ outletId }: { outletId: string }) {
   };
 
   const fetchMovements = async () => {
-    const { data } = await supabase
+    const { data: movementsData } = await supabase
       .from("lab_ops_stock_movements")
-      .select(`
-        *,
-        lab_ops_inventory_items(name),
-        to_location:lab_ops_locations!lab_ops_stock_movements_to_location_id_fkey(name),
-        from_location:lab_ops_locations!lab_ops_stock_movements_from_location_id_fkey(name),
-        created_by_profile:profiles!lab_ops_stock_movements_created_by_fkey(full_name, username, email)
-      `)
+      .select(`*, lab_ops_inventory_items(name)`)
       .order("created_at", { ascending: false })
       .limit(50);
-    setMovements(data || []);
+    
+    if (!movementsData || movementsData.length === 0) {
+      setMovements([]);
+      return;
+    }
+    
+    // Get unique IDs for batch fetching
+    const createdByIds = [...new Set(movementsData.map(m => m.created_by).filter(Boolean))];
+    const toLocationIds = [...new Set(movementsData.map(m => m.to_location_id).filter(Boolean))];
+    const fromLocationIds = [...new Set(movementsData.map(m => m.from_location_id).filter(Boolean))];
+    const allLocationIds = [...new Set([...toLocationIds, ...fromLocationIds])];
+    
+    // Batch fetch profiles and locations
+    const [profilesRes, locationsRes] = await Promise.all([
+      createdByIds.length > 0 
+        ? supabase.from("profiles").select("id, full_name, username, email").in("id", createdByIds)
+        : { data: [] },
+      allLocationIds.length > 0
+        ? supabase.from("lab_ops_locations").select("id, name").in("id", allLocationIds)
+        : { data: [] }
+    ]);
+    
+    const profilesMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+    const locationsMap = new Map((locationsRes.data || []).map(l => [l.id, l]));
+    
+    // Enrich movements with profile and location data
+    const enrichedMovements = movementsData.map(mov => ({
+      ...mov,
+      created_by_profile: mov.created_by ? profilesMap.get(mov.created_by) : null,
+      to_location: mov.to_location_id ? locationsMap.get(mov.to_location_id) : null,
+      from_location: mov.from_location_id ? locationsMap.get(mov.from_location_id) : null,
+    }));
+    
+    setMovements(enrichedMovements);
   };
 
   const createItem = async () => {
