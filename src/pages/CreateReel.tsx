@@ -393,25 +393,30 @@ const CreateReel = () => {
         return;
       }
 
-      const firstVideo = selectedItems.find(i => i.type === 'video');
-      if (!firstVideo) {
-        toast.error("Please select at least one video");
-        setIsUploading(false);
-        return;
-      }
+      const firstItem = selectedItems[0];
+      const isImage = firstItem.type === 'image';
 
-      const response = await fetch(firstVideo.url);
+      const response = await fetch(firstItem.url);
       const blob = await response.blob();
-      const file = new File([blob], 'reel.mp4', { type: 'video/mp4' });
+      
+      let fileToUpload: File;
+      let mediaUrl: string;
 
-      let videoToUpload = file;
-
-      if (needsCompression(file)) {
-        toast.info(`Compressing ${getFileSizeMB(file).toFixed(1)}MB video...`);
-        videoToUpload = await compressVideo(file, 45);
+      if (isImage) {
+        // For images, upload directly as image
+        fileToUpload = new File([blob], `reel-${Date.now()}.png`, { type: 'image/png' });
+        toast.info("Creating reel from image...");
+      } else {
+        // For videos, handle compression
+        fileToUpload = new File([blob], 'reel.mp4', { type: 'video/mp4' });
+        
+        if (needsCompression(fileToUpload)) {
+          toast.info(`Compressing ${getFileSizeMB(fileToUpload).toFixed(1)}MB video...`);
+          fileToUpload = await compressVideo(fileToUpload, 45);
+        }
       }
 
-      const result = await uploadSingle('reels', user.id, videoToUpload);
+      const result = await uploadSingle('reels', user.id, fileToUpload);
       
       if (result.error) throw result.error;
 
@@ -421,10 +426,14 @@ const CreateReel = () => {
         caption: captionText || "",
         thumbnail_url: result.publicUrl,
         music_url: selectedMusic?.preview_audio || null,
+        duration: clipDuration,
+        is_image_reel: isImage,
       });
 
-      toast.success("Reel uploaded!");
-      extractAndAnalyzeAudio(result.publicUrl, 'reel');
+      toast.success("Reel published!");
+      if (!isImage) {
+        extractAndAnalyzeAudio(result.publicUrl, 'reel');
+      }
       navigate("/reels");
     } catch (error: any) {
       console.error("Error:", error);
