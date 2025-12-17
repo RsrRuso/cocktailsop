@@ -235,6 +235,10 @@ const Notifications = () => {
     else if (notification.type === 'internal_email') navigate('/email');
     else if (['batch_submission', 'batch_edit', 'batch_delete', 'recipe_created', 'member_added'].includes(notification.type)) navigate('/batch-calculator');
     else if (notification.type === 'certificate_earned') navigate(notification.reference_user_id ? `/user/${notification.reference_user_id}` : '/exam-center');
+    else if (['purchase_order', 'po_created'].includes(notification.type)) navigate('/purchase-orders');
+    else if (['receiving', 'po_received'].includes(notification.type)) navigate('/po-received-items');
+    else if (notification.type === 'workspace_invite') navigate('/workspace-management');
+    else if (notification.type === 'group_invite') navigate('/batch-calculator');
     else if (['follow', 'unfollow', 'profile_view'].includes(notification.type) && notification.reference_user_id) navigate(`/user/${notification.reference_user_id}`);
     else if (notification.type === 'new_user') navigate('/explore');
     else if (notification.type === 'new_post' && notification.post_id) navigate(`/post/${notification.post_id}`);
