@@ -199,6 +199,8 @@ export const useEngagement = (
     onCountChange?.(itemId, type, wasActive ? -1 : 1);
 
     try {
+      let duplicateNoOp = false;
+
       if (wasActive) {
         const { error } = await supabase
           .from(table as any)
@@ -210,15 +212,25 @@ export const useEngagement = (
         const { error } = await supabase
           .from(table as any)
           .insert({ [config.idColumn]: itemId, user_id: userId });
-        // Ignore duplicate key error
-        if (error && error.code !== '23505') throw error;
+
+        // If the row already exists (e.g. double-fire from UI), undo optimistic count.
+        if (error) {
+          if ((error as any).code === '23505') {
+            duplicateNoOp = true;
+            onCountChange?.(itemId, type, -1);
+          } else {
+            throw error;
+          }
+        }
       }
-      
-      // Show success toast for save/repost
-      if (type === 'save') {
-        toast.success(wasActive ? 'Removed from saved' : 'Saved');
-      } else if (type === 'repost') {
-        toast.success(wasActive ? 'Repost removed' : 'Reposted');
+
+      // Show success toast for save/repost (but not for duplicate no-op)
+      if (!duplicateNoOp) {
+        if (type === 'save') {
+          toast.success(wasActive ? 'Removed from saved' : 'Saved');
+        } else if (type === 'repost') {
+          toast.success(wasActive ? 'Repost removed' : 'Reposted');
+        }
       }
     } catch (error) {
       console.error(`[ENGAGEMENT] Error toggling ${type}:`, error);

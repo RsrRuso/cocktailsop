@@ -369,7 +369,14 @@ export const FeedItem = memo(({
       <div className="px-3 pt-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={onLike} className="active:scale-75 transition-transform duration-100">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onLike();
+              }}
+              className="active:scale-75 transition-transform duration-100"
+            >
               <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} strokeWidth={1.5} />
             </button>
 
