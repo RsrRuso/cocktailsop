@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy, Share2 } from "lucide-react";
+import { ShareAnalyticsDialog } from "@/components/batch/ShareAnalyticsDialog";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
@@ -115,6 +116,14 @@ const BatchCalculator = () => {
   const [editGroupDesc, setEditGroupDesc] = useState("");
   const [showDeleteGroupDialog, setShowDeleteGroupDialog] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+  
+  // Share analytics state and refs
+  const [showShareTeamPerformance, setShowShareTeamPerformance] = useState(false);
+  const [showShareLeaderboards, setShowShareLeaderboards] = useState(false);
+  const [showShareHeatmap, setShowShareHeatmap] = useState(false);
+  const teamPerformanceRef = useRef<HTMLDivElement>(null);
+  const leaderboardsRef = useRef<HTMLDivElement>(null);
+  const heatmapRef = useRef<HTMLDivElement>(null);
 
   const aiAnalysisText =
     typeof aiSuggestions === "string"
@@ -4287,11 +4296,21 @@ const BatchCalculator = () => {
                   </div>
 
                   {/* Team Performance */}
-                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
-                      <Users className="w-5 h-5 text-primary" />
-                      Team Performance
-                    </h4>
+                  <div ref={teamPerformanceRef} className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        Team Performance
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowShareTeamPerformance(true)}
+                        className="h-8 w-8 p-0 hover:bg-primary/20"
+                      >
+                        <Share2 className="w-4 h-4 text-primary" />
+                      </Button>
+                    </div>
                     {(() => {
                       // Group by producer
                       const producerStats = productions.reduce((acc, prod) => {
@@ -4402,11 +4421,21 @@ const BatchCalculator = () => {
                   </div>
 
                   {/* Activity Heatmap */}
-                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-purple-500" />
-                      Activity Heatmap
-                    </h4>
+                  <div ref={heatmapRef} className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-purple-500" />
+                        Activity Heatmap
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowShareHeatmap(true)}
+                        className="h-8 w-8 p-0 hover:bg-purple-500/20"
+                      >
+                        <Share2 className="w-4 h-4 text-purple-400" />
+                      </Button>
+                    </div>
                     {(() => {
                       // Create heatmap data: day of week vs time of day
                       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -4566,11 +4595,21 @@ const BatchCalculator = () => {
                   </div>
 
                   {/* Enhanced Team Leaderboards */}
-                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-amber-500" />
-                      Team Leaderboards
-                    </h4>
+                  <div ref={leaderboardsRef} className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-amber-500" />
+                        Team Leaderboards
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowShareLeaderboards(true)}
+                        className="h-8 w-8 p-0 hover:bg-amber-500/20"
+                      >
+                        <Share2 className="w-4 h-4 text-amber-400" />
+                      </Button>
+                    </div>
                     {(() => {
                       // Calculate advanced producer metrics
                       const producerMetrics = productions.reduce((acc, prod) => {
@@ -5187,6 +5226,26 @@ const BatchCalculator = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Share Analytics Dialogs */}
+      <ShareAnalyticsDialog
+        open={showShareTeamPerformance}
+        onOpenChange={setShowShareTeamPerformance}
+        contentRef={teamPerformanceRef}
+        title="Team Performance"
+      />
+      <ShareAnalyticsDialog
+        open={showShareLeaderboards}
+        onOpenChange={setShowShareLeaderboards}
+        contentRef={leaderboardsRef}
+        title="Team Leaderboards"
+      />
+      <ShareAnalyticsDialog
+        open={showShareHeatmap}
+        onOpenChange={setShowShareHeatmap}
+        contentRef={heatmapRef}
+        title="Activity Heatmap"
+      />
 
       {!staffMode && <BottomNav />}
     </div>
