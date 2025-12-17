@@ -1618,24 +1618,48 @@ const POReceivedItems = () => {
                     toast.info("No received data to export");
                     return;
                   }
+
+                  // jsPDF default fonts don't reliably support some currency symbols (e.g. AED Arabic glyphs).
+                  // Use ISO codes in PDFs to guarantee readability.
+                  const pdfCurrency = ((): string => {
+                    const map: Record<string, string> = {
+                      USD: 'USD',
+                      EUR: 'EUR',
+                      GBP: 'GBP',
+                      AED: 'AED',
+                      AUD: 'AUD',
+                    };
+                    return map[currency] || currency;
+                  })();
+
+                  const formatPdfCurrency = (value: number) =>
+                    `${pdfCurrency} ${value.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`;
+
                   const doc = new jsPDF();
                   const pageWidth = doc.internal.pageSize.getWidth();
-                  
+
                   doc.setFontSize(20);
                   doc.setFont('helvetica', 'bold');
                   doc.text('Overall Received Items Report', pageWidth / 2, 20, { align: 'center' });
                   doc.setFontSize(10);
                   doc.setFont('helvetica', 'normal');
                   doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
-                  
+
                   // Summary totals
                   const totalQty = receivedSummary.reduce((sum, i) => sum + (i.total_qty || 0), 0);
                   const totalValue = receivedSummary.reduce((sum, i) => sum + (i.total_price || 0), 0);
-                  
+
                   doc.setFillColor(240, 240, 240);
                   doc.roundedRect(14, 35, pageWidth - 28, 15, 3, 3, 'F');
-                  doc.text(`Total Items: ${receivedSummary.length} | Total Qty: ${totalQty.toFixed(0)} | Total Value: ${currencySymbols[currency]}${totalValue.toFixed(2)}`, 20, 45);
-                  
+                  doc.text(
+                    `Total Items: ${receivedSummary.length} | Total Qty: ${totalQty.toFixed(0)} | Total Value: ${formatPdfCurrency(totalValue)}`,
+                    20,
+                    45
+                  );
+
                   autoTable(doc, {
                     startY: 55,
                     head: [['Item Name', 'Times Received', 'Total Qty', 'Avg Price', 'Total Value']],
@@ -1643,13 +1667,19 @@ const POReceivedItems = () => {
                       item.item_name,
                       item.count?.toString() || '1',
                       item.total_qty?.toFixed(0) || '0',
-                      `${currencySymbols[currency]}${(item.avg_price || 0).toFixed(2)}`,
-                      `${currencySymbols[currency]}${(item.total_price || 0).toFixed(2)}`
+                      formatPdfCurrency(item.avg_price || 0),
+                      formatPdfCurrency(item.total_price || 0),
                     ]),
                     styles: { fontSize: 9 },
                     headStyles: { fillColor: [59, 130, 246] },
+                    columnStyles: {
+                      1: { halign: 'center' },
+                      2: { halign: 'right' },
+                      3: { halign: 'right' },
+                      4: { halign: 'right' },
+                    },
                   });
-                  
+
                   doc.save(`overall-received-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
                   toast.success("Report downloaded");
                 }}
