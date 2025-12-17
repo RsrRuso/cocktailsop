@@ -7,9 +7,12 @@ import { SmartPourerVarianceDashboard } from './SmartPourerVarianceDashboard';
 import { SmartPourerSOPWorkflows } from './SmartPourerSOPWorkflows';
 import { SmartPourerSKUManagement } from './SmartPourerSKUManagement';
 import { SmartPourerRecipeEngine } from './SmartPourerRecipeEngine';
+import { SmartPourerPOSSync } from './SmartPourerPOSSync';
+import { SmartPourerAnomalyDetection } from './SmartPourerAnomalyDetection';
+import { SmartPourerOfflineSync } from './SmartPourerOfflineSync';
 import { 
   Bluetooth, Link2, Activity, Scale, Clock, Package, 
-  BookOpen, Zap
+  BookOpen, Zap, ShoppingCart, Brain, Database
 } from 'lucide-react';
 
 interface SmartPourerModuleProps {
@@ -48,6 +51,14 @@ export function SmartPourerModule({ outletId, outletName }: SmartPourerModulePro
               <Scale className="h-4 w-4" />
               <span className="text-[10px] font-medium">Variance</span>
             </TabsTrigger>
+            <TabsTrigger value="pos" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+              <ShoppingCart className="h-4 w-4" />
+              <span className="text-[10px] font-medium">POS</span>
+            </TabsTrigger>
+            <TabsTrigger value="anomaly" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+              <Brain className="h-4 w-4" />
+              <span className="text-[10px] font-medium">AI</span>
+            </TabsTrigger>
             <TabsTrigger value="devices" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
               <Bluetooth className="h-4 w-4" />
               <span className="text-[10px] font-medium">Devices</span>
@@ -64,6 +75,10 @@ export function SmartPourerModule({ outletId, outletName }: SmartPourerModulePro
               <BookOpen className="h-4 w-4" />
               <span className="text-[10px] font-medium">Recipes</span>
             </TabsTrigger>
+            <TabsTrigger value="sync" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+              <Database className="h-4 w-4" />
+              <span className="text-[10px] font-medium">Sync</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -77,6 +92,14 @@ export function SmartPourerModule({ outletId, outletName }: SmartPourerModulePro
 
         <TabsContent value="variance" className="mt-4">
           <SmartPourerVarianceDashboard outletId={outletId} outletName={outletName} />
+        </TabsContent>
+
+        <TabsContent value="pos" className="mt-4">
+          <SmartPourerPOSSync outletId={outletId} />
+        </TabsContent>
+
+        <TabsContent value="anomaly" className="mt-4">
+          <SmartPourerAnomalyDetection outletId={outletId} />
         </TabsContent>
 
         <TabsContent value="devices" className="mt-4">
@@ -93,6 +116,10 @@ export function SmartPourerModule({ outletId, outletName }: SmartPourerModulePro
 
         <TabsContent value="recipes" className="mt-4">
           <SmartPourerRecipeEngine outletId={outletId} />
+        </TabsContent>
+
+        <TabsContent value="sync" className="mt-4">
+          <SmartPourerOfflineSync outletId={outletId} />
         </TabsContent>
       </Tabs>
     </div>

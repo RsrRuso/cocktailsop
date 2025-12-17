@@ -10723,6 +10723,73 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_pourer_anomaly_logs: {
+        Row: {
+          anomaly_type: string
+          details: Json | null
+          detected_at: string | null
+          device_id: string | null
+          dismissed: boolean | null
+          id: string
+          notes: string | null
+          outlet_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string | null
+          sku_id: string | null
+        }
+        Insert: {
+          anomaly_type: string
+          details?: Json | null
+          detected_at?: string | null
+          device_id?: string | null
+          dismissed?: boolean | null
+          id?: string
+          notes?: string | null
+          outlet_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string | null
+          sku_id?: string | null
+        }
+        Update: {
+          anomaly_type?: string
+          details?: Json | null
+          detected_at?: string | null
+          device_id?: string | null
+          dismissed?: boolean | null
+          id?: string
+          notes?: string | null
+          outlet_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string | null
+          sku_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_anomaly_logs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_anomaly_logs_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_anomaly_logs_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       smart_pourer_audit_log: {
         Row: {
           action: string
@@ -10981,6 +11048,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      smart_pourer_offline_queue: {
+        Row: {
+          device_code: string
+          id: string
+          outlet_id: string
+          pour_data: Json
+          queued_at: string | null
+          sync_attempts: number | null
+          sync_error: string | null
+          synced_at: string | null
+        }
+        Insert: {
+          device_code: string
+          id?: string
+          outlet_id: string
+          pour_data: Json
+          queued_at?: string | null
+          sync_attempts?: number | null
+          sync_error?: string | null
+          synced_at?: string | null
+        }
+        Update: {
+          device_code?: string
+          id?: string
+          outlet_id?: string
+          pour_data?: Json
+          queued_at?: string | null
+          sync_attempts?: number | null
+          sync_error?: string | null
+          synced_at?: string | null
+        }
+        Relationships: []
       }
       smart_pourer_pos_recipe_mapping: {
         Row: {
