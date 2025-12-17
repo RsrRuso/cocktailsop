@@ -142,8 +142,8 @@ export const EngagementInsightsDialog = ({
                 </TabsList>
               </div>
 
-              <ScrollArea className="flex-1 overflow-y-auto">
-                <div className="p-3 sm:p-6 space-y-4 pb-8">
+              <ScrollArea className="flex-1 h-full">
+                <div className="p-3 sm:p-6 space-y-4 pb-8 [&_.card]:backdrop-blur-md">
                   <TabsContent value="insights" className="mt-0 space-y-4">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}

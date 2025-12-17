@@ -32,23 +32,23 @@ export const ContentPerformanceAnalytics = ({
   const performanceColor = engagementRate > 10 ? 'text-green-500' : engagementRate > 5 ? 'text-blue-500' : engagementRate > 2 ? 'text-yellow-500' : 'text-red-500';
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border-border/50">
+    <Card className="p-4 bg-black/40 backdrop-blur-md border-white/10">
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="w-5 h-5 text-indigo-500" />
-        <h3 className="font-semibold text-foreground">Performance Analytics</h3>
+        <h3 className="font-semibold text-white">Performance Analytics</h3>
       </div>
 
       {/* Overall Performance */}
-      <div className="mb-4 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+      <div className="mb-4 p-4 rounded-lg bg-white/5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-muted-foreground">Overall Performance</span>
+          <span className="text-sm text-white/60">Overall Performance</span>
           <span className={`text-lg font-bold ${performanceColor}`}>{performance}</span>
         </div>
         <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-3xl font-bold text-foreground">
+          <span className="text-3xl font-bold text-white">
             {engagementRate.toFixed(1)}%
           </span>
-          <span className="text-sm text-muted-foreground">engagement rate</span>
+          <span className="text-sm text-white/60">engagement rate</span>
         </div>
         <Progress value={Math.min(100, engagementRate * 5)} className="h-2" />
       </div>
@@ -61,21 +61,21 @@ export const ContentPerformanceAnalytics = ({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background/70 transition-colors"
+            className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
           >
             <div className={`p-2 rounded-lg bg-card ${metric.color}`}>
               <metric.icon className="w-4 h-4" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-foreground">{metric.label}</span>
-                <span className="text-sm font-bold text-foreground">
+                <span className="text-sm font-medium text-white">{metric.label}</span>
+                <span className="text-sm font-bold text-white">
                   {metric.value.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Progress value={metric.percentage} className="h-1 flex-1" />
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-white/60">
                   {metric.percentage.toFixed(1)}%
                 </span>
               </div>
@@ -85,12 +85,12 @@ export const ContentPerformanceAnalytics = ({
       </div>
 
       {/* Insights */}
-      <div className="mt-4 p-3 rounded-lg bg-background/50 border border-border/50">
+      <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
         <div className="flex items-start gap-2">
           <TrendingUp className="w-4 h-4 text-green-500 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-foreground mb-1">AI Insight</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs font-semibold text-white mb-1">AI Insight</p>
+            <p className="text-xs text-white/60">
               {engagementRate > 10
                 ? 'Outstanding performance! Your content is resonating exceptionally well with your audience.'
                 : engagementRate > 5

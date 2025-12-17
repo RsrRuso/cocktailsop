@@ -61,17 +61,17 @@ export const SmartAdSuggestions = ({
   ];
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-orange-500/10 via-red-500/10 to-pink-500/10 border-border/50">
+    <Card className="p-4 bg-black/40 backdrop-blur-md border-white/10">
       <div className="flex items-center gap-2 mb-4">
         <Megaphone className="w-5 h-5 text-orange-500" />
-        <h3 className="font-semibold text-foreground">Smart Ad Suggestions</h3>
-        <Badge variant="secondary" className="ml-auto">AI-Powered</Badge>
+        <h3 className="font-semibold text-white">Smart Ad Suggestions</h3>
+        <Badge variant="secondary" className="ml-auto bg-primary/20 text-primary border-0">AI-Powered</Badge>
       </div>
 
       {/* Budget Simulator */}
-      <div className="mb-6 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+      <div className="mb-6 p-4 rounded-lg bg-white/5">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-foreground">Ad Budget</label>
+          <label className="text-sm font-medium text-white">Ad Budget</label>
           <span className="text-lg font-bold text-primary">${budget[0]}</span>
         </div>
         <Slider
@@ -84,21 +84,21 @@ export const SmartAdSuggestions = ({
         />
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 rounded-lg bg-background/50">
+          <div className="p-3 rounded-lg bg-white/5">
             <div className="flex items-center gap-2 mb-1">
               <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">Est. Reach</span>
+              <span className="text-xs text-white/60">Est. Reach</span>
             </div>
-            <div className="text-xl font-bold text-foreground">
+            <div className="text-xl font-bold text-white">
               {predictedReach.toLocaleString()}
             </div>
             <Progress value={75} className="h-1 mt-2" />
           </div>
 
-          <div className="p-3 rounded-lg bg-background/50">
+          <div className="p-3 rounded-lg bg-white/5">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-muted-foreground">Est. ROI</span>
+              <span className="text-xs text-white/60">Est. ROI</span>
             </div>
             <div className="text-xl font-bold text-green-500">
               {roi.toFixed(0)}%
@@ -106,22 +106,22 @@ export const SmartAdSuggestions = ({
             <Progress value={Math.min(100, roi)} className="h-1 mt-2" />
           </div>
 
-          <div className="p-3 rounded-lg bg-background/50">
+          <div className="p-3 rounded-lg bg-white/5">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-purple-500" />
-              <span className="text-xs text-muted-foreground">Engagements</span>
+              <span className="text-xs text-white/60">Engagements</span>
             </div>
-            <div className="text-xl font-bold text-foreground">
+            <div className="text-xl font-bold text-white">
               {predictedEngagement.toLocaleString()}
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-background/50">
+          <div className="p-3 rounded-lg bg-white/5">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="w-4 h-4 text-orange-500" />
-              <span className="text-xs text-muted-foreground">Cost/Engage</span>
+              <span className="text-xs text-white/60">Cost/Engage</span>
             </div>
-            <div className="text-xl font-bold text-foreground">
+            <div className="text-xl font-bold text-white">
               ${costPerEngagement.toFixed(2)}
             </div>
           </div>
@@ -130,7 +130,7 @@ export const SmartAdSuggestions = ({
 
       {/* Ad Strategies */}
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-foreground mb-3">Recommended Strategies</h4>
+        <h4 className="text-sm font-semibold text-white mb-3">Recommended Strategies</h4>
         {adStrategies.map((strategy, index) => (
           <motion.div
             key={strategy.title}
@@ -138,26 +138,26 @@ export const SmartAdSuggestions = ({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="p-3 bg-card/30 hover:bg-card/50 transition-all cursor-pointer group">
+            <Card className="p-3 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group border-white/10">
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg bg-background/50 ${strategy.color}`}>
+                <div className={`p-2 rounded-lg bg-black/40 ${strategy.color}`}>
                   <strategy.icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <h5 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+                    <h5 className="font-medium text-sm text-white group-hover:text-primary transition-colors">
                       {strategy.title}
                     </h5>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs border-white/20 text-white/70">
                       {strategy.cost}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
+                  <p className="text-xs text-white/60 mb-2">
                     {strategy.description}
                   </p>
                   <div className="flex items-center gap-2">
                     <Progress value={strategy.potential} className="h-1 flex-1" />
-                    <span className="text-xs font-semibold text-foreground">
+                    <span className="text-xs font-semibold text-white">
                       {strategy.potential}%
                     </span>
                   </div>
