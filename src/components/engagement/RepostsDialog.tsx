@@ -105,8 +105,8 @@ export const RepostsDialog = ({ open, onOpenChange, contentType, contentId }: Re
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <DialogPrimitive.Content className="fixed inset-x-4 top-[15%] bottom-[15%] z-50 mx-auto max-w-sm flex flex-col">
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
+        <DialogPrimitive.Content className="fixed inset-0 sm:inset-x-4 sm:top-[10%] sm:bottom-[10%] z-50 mx-auto sm:max-w-sm flex flex-col overflow-hidden">
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}
