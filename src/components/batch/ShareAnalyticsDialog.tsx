@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { X, ImageIcon, Film, CircleDot, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -140,7 +141,14 @@ export const ShareAnalyticsDialog = ({
     <DialogPrimitive.Root open={open} onOpenChange={handleClose}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
-        <DialogPrimitive.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-md bg-card border border-border rounded-2xl z-[101] overflow-hidden">
+        <DialogPrimitive.Content 
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-md bg-card border border-border rounded-2xl z-[101] overflow-hidden"
+          aria-describedby={undefined}
+        >
+          <VisuallyHidden.Root>
+            <DialogPrimitive.Title>Share {title}</DialogPrimitive.Title>
+          </VisuallyHidden.Root>
+          
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-2">
