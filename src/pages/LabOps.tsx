@@ -2353,10 +2353,14 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showStockTake, setShowStockTake] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("items");
   const [inventorySearch, setInventorySearch] = useState("");
+  const [importText, setImportText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   
   // Form states
   const [newItemName, setNewItemName] = useState("");
@@ -2483,6 +2487,114 @@ function InventoryModule({ outletId }: { outletId: string }) {
     toast({ title: "Inventory item deleted" });
   };
 
+  const deleteAllInventoryItems = async () => {
+    if (!confirm("Delete ALL inventory items? This will remove all stock levels, movements, and costs. This action cannot be undone!")) return;
+    
+    setIsDeleting(true);
+    try {
+      // Get all item IDs for this outlet
+      const itemIds = items.map(item => item.id);
+      
+      if (itemIds.length === 0) {
+        toast({ title: "No items to delete" });
+        return;
+      }
+
+      // Delete related data first
+      for (const itemId of itemIds) {
+        await supabase.from("lab_ops_stock_levels").delete().eq("inventory_item_id", itemId);
+        await supabase.from("lab_ops_stock_movements").delete().eq("inventory_item_id", itemId);
+        await supabase.from("lab_ops_inventory_item_costs").delete().eq("inventory_item_id", itemId);
+      }
+      
+      // Delete all items for this outlet
+      await supabase.from("lab_ops_inventory_items").delete().eq("outlet_id", outletId);
+
+      fetchItems();
+      fetchMovements();
+      toast({ title: `${itemIds.length} inventory items deleted` });
+    } catch (error: any) {
+      toast({ title: "Error deleting items", description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const importInventoryItems = async () => {
+    if (!importText.trim()) {
+      toast({ title: "Please paste CSV data", variant: "destructive" });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const lines = importText.trim().split("\n");
+      const hasHeader = lines[0].toLowerCase().includes("name") || lines[0].toLowerCase().includes("sku");
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+      
+      let imported = 0;
+      let skipped = 0;
+
+      for (const line of dataLines) {
+        if (!line.trim()) continue;
+        
+        // Parse CSV: Name,SKU,Unit,ParLevel,Cost
+        const parts = line.split(",").map(p => p.trim().replace(/^"|"$/g, ''));
+        const [name, sku, unit, parLevel, cost] = parts;
+        
+        if (!name) {
+          skipped++;
+          continue;
+        }
+
+        // Check if item already exists
+        const { data: existing } = await supabase
+          .from("lab_ops_inventory_items")
+          .select("id")
+          .eq("outlet_id", outletId)
+          .eq("name", name)
+          .single();
+
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
+        // Create item
+        const { data: newItem, error } = await supabase
+          .from("lab_ops_inventory_items")
+          .insert({
+            outlet_id: outletId,
+            name,
+            sku: sku || null,
+            base_unit: unit || "piece",
+            par_level: parseFloat(parLevel) || 0,
+          })
+          .select()
+          .single();
+
+        if (!error && newItem && cost) {
+          await supabase.from("lab_ops_inventory_item_costs").insert({
+            inventory_item_id: newItem.id,
+            unit_cost: parseFloat(cost) || 0,
+          });
+        }
+
+        if (!error) imported++;
+        else skipped++;
+      }
+
+      setImportText("");
+      setShowImportDialog(false);
+      fetchItems();
+      toast({ title: `Imported ${imported} items`, description: skipped > 0 ? `${skipped} items skipped (duplicates or empty)` : undefined });
+    } catch (error: any) {
+      toast({ title: "Import failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const addStock = async () => {
     if (!selectedItem || !stockQty || !stockLocation) return;
 
@@ -2585,8 +2697,57 @@ function InventoryModule({ outletId }: { outletId: string }) {
         <TabsContent value="items" className="mt-4">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-              <CardTitle className="text-lg">Inventory Items</CardTitle>
+              <CardTitle className="text-lg">Inventory Items ({items.length})</CardTitle>
               <div className="flex gap-2 flex-wrap">
+                {/* Import Dialog */}
+                <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1" />Import</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Import Inventory Items</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="p-3 bg-muted rounded-lg text-sm">
+                        <p className="font-medium mb-2">CSV Format:</p>
+                        <code className="text-xs">Name,SKU,Unit,ParLevel,Cost</code>
+                        <p className="text-muted-foreground mt-2 text-xs">
+                          Example:<br/>
+                          Vodka,VOD001,bottle,10,25.50<br/>
+                          Lime Juice,LJ001,ml,500,0.02
+                        </p>
+                      </div>
+                      <div>
+                        <Label>Paste CSV Data</Label>
+                        <Textarea 
+                          value={importText}
+                          onChange={(e) => setImportText(e.target.value)}
+                          placeholder="Name,SKU,Unit,ParLevel,Cost&#10;Vodka,VOD001,bottle,10,25.50"
+                          rows={8}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <Button onClick={importInventoryItems} disabled={isImporting} className="w-full">
+                        {isImporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+                        {isImporting ? "Importing..." : "Import Items"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Delete All Button */}
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={deleteAllInventoryItems}
+                  disabled={isDeleting || items.length === 0}
+                >
+                  {isDeleting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
+                  Delete All
+                </Button>
+
+                {/* Add Item Dialog */}
                 <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
                   <DialogTrigger asChild>
                     <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
