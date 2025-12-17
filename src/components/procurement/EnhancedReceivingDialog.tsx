@@ -1,14 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   CheckCircle, XCircle, AlertTriangle, Package, ShoppingCart, 
-  Wrench, FileText, Save, X, Download, Filter, Coins
+  Wrench, FileText, Save, X, Download, Filter, Coins, Edit2
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -56,13 +57,18 @@ export const EnhancedReceivingDialog = ({
   const [items, setItems] = useState<ParsedReceivingItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'market' | 'material'>('all');
   const [isSaving, setIsSaving] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  // Initialize items when dialog opens with new data
-  useMemo(() => {
+  // Initialize items when dialog opens with new data - ALL ticked by default
+  useEffect(() => {
     if (receivingData?.items) {
       setItems(receivingData.items.map(item => ({
         ...item,
-        isReceived: item.matchedInPO // Auto-tick if matched in PO
+        isReceived: true, // All items ticked by default
+        // If matched in PO and has matchedPOItem, use PO quantity
+        quantity: item.matchedInPO && item.matchedPOItem?.quantity 
+          ? item.matchedPOItem.quantity 
+          : item.quantity
       })));
     }
   }, [receivingData]);
@@ -76,8 +82,21 @@ export const EnhancedReceivingDialog = ({
   const toggleAll = (received: boolean) => {
     setItems(prev => prev.map(item => ({
       ...item,
-      isReceived: received // Toggle all items, not just matched
+      isReceived: received
     })));
+  };
+
+  // Update item field (for editable fields)
+  const updateItem = (index: number, field: keyof ParsedReceivingItem, value: any) => {
+    setItems(prev => prev.map((item, i) => {
+      if (i !== index) return item;
+      const updated = { ...item, [field]: value };
+      // Auto-recalculate total when qty or price changes
+      if (field === 'quantity' || field === 'price_per_unit') {
+        updated.price_total = (updated.quantity || 0) * (updated.price_per_unit || 0);
+      }
+      return updated;
+    }));
   };
 
   // Filter items by type
@@ -445,6 +464,7 @@ export const EnhancedReceivingDialog = ({
             ) : (
               filteredItems.map((item, index) => {
                 const originalIndex = items.findIndex(i => i === item);
+                const isEditing = editingIndex === originalIndex;
                 return (
                   <Card 
                     key={index}
@@ -455,7 +475,6 @@ export const EnhancedReceivingDialog = ({
                           ? 'bg-green-500/5 border-green-500/30' 
                           : 'bg-red-500/5 border-red-500/30'
                     }`}
-                    onClick={() => toggleItemReceived(originalIndex)}
                   >
                     <div className="flex items-start gap-2 sm:gap-3">
                       {/* Checkbox */}
@@ -479,19 +498,68 @@ export const EnhancedReceivingDialog = ({
                               ✓
                             </Badge>
                           )}
+                          {item.matchedInPO && item.matchedPOItem && (
+                            <Badge variant="outline" className="text-[8px] sm:text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/30 px-1">
+                              PO: {item.matchedPOItem.quantity}
+                            </Badge>
+                          )}
                         </div>
-                        <p className="font-medium text-xs sm:text-sm mt-0.5 line-clamp-2">{item.item_name}</p>
-                        <div className="flex items-center gap-2 sm:gap-4 mt-1 text-[10px] sm:text-xs text-muted-foreground">
-                          <span>Qty: <span className="font-semibold text-foreground">{item.quantity}</span></span>
-                          <span>@ {currencySymbol}{item.price_per_unit.toFixed(2)}</span>
-                        </div>
+                        
+                        {isEditing ? (
+                          <div className="mt-1.5 space-y-1.5">
+                            <Input
+                              value={item.item_name}
+                              onChange={(e) => updateItem(originalIndex, 'item_name', e.target.value)}
+                              className="h-7 text-xs"
+                              placeholder="Item name"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateItem(originalIndex, 'quantity', parseFloat(e.target.value) || 0)}
+                                className="h-7 text-xs w-20"
+                                placeholder="Qty"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <Input
+                                type="number"
+                                value={item.price_per_unit}
+                                onChange={(e) => updateItem(originalIndex, 'price_per_unit', parseFloat(e.target.value) || 0)}
+                                className="h-7 text-xs flex-1"
+                                placeholder="Price"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-medium text-xs sm:text-sm mt-0.5 line-clamp-2">{item.item_name}</p>
+                            <div className="flex items-center gap-2 sm:gap-4 mt-1 text-[10px] sm:text-xs text-muted-foreground">
+                              <span>Qty: <span className="font-semibold text-foreground">{item.quantity}</span></span>
+                              <span>@ {currencySymbol}{item.price_per_unit.toFixed(2)}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                       
-                      {/* Total */}
-                      <div className="text-right shrink-0">
+                      {/* Total + Edit Button */}
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1">
                         <p className={`font-bold text-xs sm:text-sm ${item.isReceived ? 'text-green-500' : 'text-muted-foreground'}`}>
                           {currencySymbol}{item.price_total.toFixed(2)}
                         </p>
+                        <Button
+                          size="sm"
+                          variant={isEditing ? "default" : "ghost"}
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingIndex(isEditing ? null : originalIndex);
+                          }}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   </Card>
