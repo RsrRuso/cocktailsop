@@ -4295,7 +4295,7 @@ const BatchCalculator = () => {
                     {(() => {
                       // Group by producer
                       const producerStats = productions.reduce((acc, prod) => {
-                        const name = prod.produced_by_name || 'Unknown';
+                        const name = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
                         if (!acc[name]) {
                           acc[name] = { 
                             count: 0, 
