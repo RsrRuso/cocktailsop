@@ -10866,7 +10866,9 @@ export type Database = {
           caption: string | null
           comment_count: number | null
           created_at: string | null
+          duration: number | null
           id: string
+          is_image_reel: boolean | null
           like_count: number | null
           music_track_id: string | null
           music_url: string | null
@@ -10882,7 +10884,9 @@ export type Database = {
           caption?: string | null
           comment_count?: number | null
           created_at?: string | null
+          duration?: number | null
           id?: string
+          is_image_reel?: boolean | null
           like_count?: number | null
           music_track_id?: string | null
           music_url?: string | null
@@ -10898,7 +10902,9 @@ export type Database = {
           caption?: string | null
           comment_count?: number | null
           created_at?: string | null
+          duration?: number | null
           id?: string
+          is_image_reel?: boolean | null
           like_count?: number | null
           music_track_id?: string | null
           music_url?: string | null
