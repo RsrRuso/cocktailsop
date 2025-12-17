@@ -100,10 +100,16 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
         
         const existing = recipeMap.get(recipe.id);
         const ingredients = recipe.ingredients || [];
-        const servingMl = ingredients.reduce((sum: number, ing: any) => {
-          if (ing.unit === 'ml') return sum + (ing.amount || 0);
+        const currentServes = recipe.current_serves || 1;
+        
+        // Calculate total ml from all ml-based ingredients (parse as number to avoid string concatenation)
+        const totalMl = ingredients.reduce((sum: number, ing: any) => {
+          if (ing.unit === 'ml') return sum + (parseFloat(ing.amount) || 0);
           return sum;
-        }, 0) || 90;
+        }, 0);
+        
+        // Per-serve ml = total ml / number of serves in recipe
+        const servingMl = totalMl > 0 ? Math.round(totalMl / currentServes) : 90;
 
         const syncInfo = syncedMap.get(recipe.id);
         const recipeLower = recipe.recipe_name.toLowerCase().trim();
