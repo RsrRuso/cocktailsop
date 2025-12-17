@@ -890,6 +890,26 @@ function POSModule({ outletId }: { outletId: string }) {
   const createOrder = async () => {
     if (!selectedTable || !user) return;
 
+    // Check if table already has an open order
+    const { data: existingOrder } = await supabase
+      .from("lab_ops_orders")
+      .select("*")
+      .eq("table_id", selectedTable.id)
+      .eq("status", "open")
+      .single();
+
+    if (existingOrder) {
+      // Use existing order instead of creating duplicate
+      setCurrentOrder(existingOrder);
+      const { data: items } = await supabase
+        .from("lab_ops_order_items")
+        .select("*, lab_ops_menu_items(name)")
+        .eq("order_id", existingOrder.id);
+      setOrderItems(items || []);
+      toast({ title: "Table already has an open order - loaded existing order" });
+      return;
+    }
+
     const { data, error } = await supabase
       .from("lab_ops_orders")
       .insert({
@@ -915,33 +935,48 @@ function POSModule({ outletId }: { outletId: string }) {
   const addItemToOrder = async (menuItem: any, modifierIds: string[] = [], note: string = "") => {
     let orderId = currentOrder?.id;
     
-    // If no current order, create one first
-    if (!orderId) {
-      const { data: userData } = await supabase.auth.getUser();
-      const { data: newOrder, error: orderError } = await supabase
+    // If no current order, check database for existing open order first
+    if (!orderId && selectedTable?.id) {
+      const { data: existingOrder } = await supabase
         .from("lab_ops_orders")
-        .insert({
-          outlet_id: outletId,
-          table_id: selectedTable.id,
-          order_type: "dine-in",
-          status: "open",
-          staff_id: userData?.user?.id,
-        })
-        .select()
+        .select("*")
+        .eq("table_id", selectedTable.id)
+        .eq("status", "open")
         .single();
+      
+      if (existingOrder) {
+        // Use existing order instead of creating duplicate
+        orderId = existingOrder.id;
+        setCurrentOrder(existingOrder);
+        toast({ title: "Added to existing order for this table" });
+      } else {
+        // No existing order, create new one
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: newOrder, error: orderError } = await supabase
+          .from("lab_ops_orders")
+          .insert({
+            outlet_id: outletId,
+            table_id: selectedTable.id,
+            order_type: "dine-in",
+            status: "open",
+            staff_id: userData?.user?.id,
+          })
+          .select()
+          .single();
 
-      if (orderError || !newOrder) {
-        toast({ title: "Failed to create order", variant: "destructive" });
-        return;
+        if (orderError || !newOrder) {
+          toast({ title: "Failed to create order", variant: "destructive" });
+          return;
+        }
+
+        orderId = newOrder.id;
+        setCurrentOrder(newOrder);
+        await supabase
+          .from("lab_ops_tables")
+          .update({ status: "seated" })
+          .eq("id", selectedTable.id);
+        fetchTables();
       }
-
-      orderId = newOrder.id;
-      setCurrentOrder(newOrder);
-      await supabase
-        .from("lab_ops_tables")
-        .update({ status: "seated" })
-        .eq("id", selectedTable.id);
-      fetchTables();
     }
 
     const modifierPrice = modifierIds.reduce((sum, id) => {

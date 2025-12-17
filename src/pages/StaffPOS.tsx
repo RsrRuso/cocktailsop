@@ -661,29 +661,47 @@ export default function StaffPOS() {
     
     setSendingOrder(true);
     try {
-      // Calculate totals
-      const subtotal = orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
-      
-      // Create order
-      const { data: order, error: orderError } = await supabase
+      // Check if table already has an open order
+      const { data: existingOrder } = await supabase
         .from("lab_ops_orders")
-        .insert({
-          outlet_id: outlet.id,
-          table_id: selectedTable.id,
-          server_id: staff.id,
-          covers,
-          status: "open",
-          subtotal,
-          total_amount: subtotal, // Will be updated when order is closed with discounts/tax
-        })
-        .select()
+        .select("*")
+        .eq("table_id", selectedTable.id)
+        .in("status", ["open", "sent"])
         .single();
 
-      if (orderError) throw orderError;
+      let orderId: string;
+      let isExistingOrder = false;
+
+      if (existingOrder) {
+        // Add to existing order instead of creating duplicate
+        orderId = existingOrder.id;
+        isExistingOrder = true;
+      } else {
+        // Calculate totals
+        const subtotal = orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        
+        // Create new order
+        const { data: order, error: orderError } = await supabase
+          .from("lab_ops_orders")
+          .insert({
+            outlet_id: outlet.id,
+            table_id: selectedTable.id,
+            server_id: staff.id,
+            covers,
+            status: "open",
+            subtotal,
+            total_amount: subtotal,
+          })
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+        orderId = order.id;
+      }
 
       // Create order items
       const items = orderItems.map(item => ({
-        order_id: order.id,
+        order_id: orderId,
         menu_item_id: item.menu_item_id,
         qty: item.qty,
         unit_price: item.price,
@@ -698,16 +716,37 @@ export default function StaffPOS() {
 
       if (itemsError) throw itemsError;
 
+      // Update order subtotal if adding to existing order
+      if (isExistingOrder) {
+        const { data: allItems } = await supabase
+          .from("lab_ops_order_items")
+          .select("qty, unit_price")
+          .eq("order_id", orderId);
+        
+        const newSubtotal = (allItems || []).reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0);
+        
+        await supabase
+          .from("lab_ops_orders")
+          .update({ subtotal: newSubtotal, total_amount: newSubtotal })
+          .eq("id", orderId);
+      }
+
       // Update table status
       await supabase
         .from("lab_ops_tables")
         .update({ status: "seated" as const })
         .eq("id", selectedTable.id);
 
-      toast({ title: "Order sent!", description: `Order sent to kitchen/bar for ${selectedTable.name}` });
+      toast({ 
+        title: isExistingOrder ? "Items added to existing order!" : "Order sent!", 
+        description: isExistingOrder 
+          ? `Added ${orderItems.length} item(s) to ${selectedTable.name}'s open bill`
+          : `Order sent to kitchen/bar for ${selectedTable.name}` 
+      });
       setOrderItems([]);
       setSelectedTable(null);
       setCovers(2);
+      if (outlet) fetchOpenOrders(outlet.id);
     } catch (error: any) {
       console.error("Error sending order:", error);
       toast({ title: "Failed to send order", description: error.message, variant: "destructive" });
