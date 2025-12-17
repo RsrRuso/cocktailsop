@@ -697,8 +697,64 @@ export default function StaffPOS() {
         .then(() => {});
     }
     
+    // Real-time ingredient deduction based on recipe
+    if ((item as any).recipe_id) {
+      deductRecipeIngredients((item as any).recipe_id, 1);
+    }
+    
     // Auto-navigate to bill on mobile
     setMobileView("bill");
+  };
+
+  // Deduct recipe ingredients from inventory in real-time
+  const deductRecipeIngredients = async (recipeId: string, servings: number) => {
+    try {
+      // Fetch recipe ingredients
+      const { data: ingredients } = await supabase
+        .from("lab_ops_recipe_ingredients")
+        .select("inventory_item_id, qty, unit")
+        .eq("recipe_id", recipeId);
+
+      if (!ingredients?.length) return;
+
+      // Deduct each ingredient from stock
+      for (const ingredient of ingredients) {
+        const deductAmount = (ingredient.qty || 0) * servings;
+        
+        // Get current stock level
+        const { data: stockLevels } = await supabase
+          .from("lab_ops_stock_levels")
+          .select("id, quantity, location_id")
+          .eq("inventory_item_id", ingredient.inventory_item_id)
+          .gt("quantity", 0)
+          .order("quantity", { ascending: false })
+          .limit(1);
+
+        if (stockLevels?.length) {
+          const stockLevel = stockLevels[0];
+          const newQuantity = Math.max(0, stockLevel.quantity - deductAmount);
+          
+          // Update stock level
+          await supabase
+            .from("lab_ops_stock_levels")
+            .update({ quantity: newQuantity })
+            .eq("id", stockLevel.id);
+
+          // Record movement
+          await supabase.from("lab_ops_stock_movements").insert({
+            inventory_item_id: ingredient.inventory_item_id,
+            from_location_id: stockLevel.location_id,
+            qty: deductAmount,
+            movement_type: "sale",
+            reference_type: "recipe_consumption",
+            reference_id: recipeId,
+            notes: `Recipe consumption for order`
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Recipe ingredient deduction error:", error);
+    }
   };
 
   const updateQuantity = async (itemId: string, delta: number) => {

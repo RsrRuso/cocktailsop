@@ -656,13 +656,42 @@ const POReceivedItems = () => {
       .from('lab_ops_inventory_items')
       .select('id, name, outlet_id');
     
-    if (!inventoryItems?.length) return;
+    if (!inventoryItems?.length) {
+      // No inventory items - add all to pending queue
+      const { data: outlets } = await supabase.from('lab_ops_outlets').select('id').limit(1);
+      const defaultOutletId = outlets?.[0]?.id;
+      
+      if (defaultOutletId) {
+        for (const item of items) {
+          if (item.quantity <= 0) continue;
+          await supabase.from('lab_ops_pending_received_items').insert({
+            outlet_id: defaultOutletId,
+            item_name: item.item_name,
+            item_code: item.item_code || null,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.price_per_unit || 0,
+            total_price: item.price_total || 0,
+            document_number: enhancedReceivingData?.doc_no || null,
+            supplier_name: pendingMatchedOrder?.supplier_name || enhancedReceivingData?.location || null,
+            received_date: new Date().toISOString().split('T')[0],
+            received_by: receivedBy,
+            po_record_id: recordId,
+            status: 'pending'
+          });
+        }
+      }
+      return;
+    }
     
     // Get default location for the outlet
     const { data: locations } = await supabase
       .from('lab_ops_locations')
       .select('id, outlet_id, name')
       .limit(100);
+    
+    const { data: outlets } = await supabase.from('lab_ops_outlets').select('id').limit(1);
+    const defaultOutletId = outlets?.[0]?.id || inventoryItems[0]?.outlet_id;
     
     for (const item of items) {
       if (item.quantity <= 0) continue;
@@ -673,10 +702,9 @@ const POReceivedItems = () => {
       );
       
       if (matchedItem) {
-        // Find a location for this outlet
+        // Found match - create stock movement
         const location = locations?.find(loc => loc.outlet_id === matchedItem.outlet_id);
         
-        // Create stock movement
         await supabase.from('lab_ops_stock_movements').insert({
           inventory_item_id: matchedItem.id,
           to_location_id: location?.id || null,
@@ -688,7 +716,7 @@ const POReceivedItems = () => {
           created_by: user?.id
         });
         
-        // Also update stock levels
+        // Update stock levels
         const { data: existingLevel } = await supabase
           .from('lab_ops_stock_levels')
           .select('id, quantity')
@@ -706,6 +734,25 @@ const POReceivedItems = () => {
             inventory_item_id: matchedItem.id,
             location_id: location.id,
             quantity: item.quantity
+          });
+        }
+      } else {
+        // No match - add to pending queue for approval
+        if (defaultOutletId) {
+          await supabase.from('lab_ops_pending_received_items').insert({
+            outlet_id: defaultOutletId,
+            item_name: item.item_name,
+            item_code: item.item_code || null,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.price_per_unit || 0,
+            total_price: item.price_total || 0,
+            document_number: enhancedReceivingData?.doc_no || null,
+            supplier_name: pendingMatchedOrder?.supplier_name || enhancedReceivingData?.location || null,
+            received_date: new Date().toISOString().split('T')[0],
+            received_by: receivedBy,
+            po_record_id: recordId,
+            status: 'pending'
           });
         }
       }
