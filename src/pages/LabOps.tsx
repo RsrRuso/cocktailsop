@@ -2681,14 +2681,16 @@ function InventoryModule({ outletId }: { outletId: string }) {
               Low Stock Alert ({lowStockItems.length} items)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 flex-wrap">
-              {lowStockItems.map((item) => (
-                <Badge key={item.id} variant="destructive">
-                  {item.name}: {getTotalStock(item)} / {item.par_level}
-                </Badge>
-              ))}
-            </div>
+          <CardContent className="p-3">
+            <ScrollArea className="h-24">
+              <div className="flex gap-2 flex-wrap pr-3">
+                {lowStockItems.map((item) => (
+                  <Badge key={item.id} variant="destructive" className="text-xs">
+                    {item.name}: {getTotalStock(item)} / {item.par_level}
+                  </Badge>
+                ))}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
       )}
