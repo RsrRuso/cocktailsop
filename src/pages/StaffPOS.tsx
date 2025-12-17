@@ -71,6 +71,7 @@ interface MenuItem {
   name: string;
   base_price: number;
   category_id: string;
+  remaining_serves: number | null;
 }
 
 export default function StaffPOS() {
@@ -428,10 +429,13 @@ export default function StaffPOS() {
   const fetchMenuItems = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_menu_items")
-      .select("*")
+      .select("id, name, base_price, category_id, remaining_serves")
       .eq("outlet_id", outletId)
       .eq("is_active", true);
-    setMenuItems(data || []);
+    setMenuItems((data || []).map(item => ({
+      ...item,
+      remaining_serves: item.remaining_serves ?? null
+    })));
   };
 
   const fetchOutletStaff = async (outletId: string) => {
@@ -662,7 +666,7 @@ export default function StaffPOS() {
     setActiveTab("pos");
   };
 
-  const addToOrder = (item: MenuItem) => {
+  const addToOrder = async (item: MenuItem) => {
     const existing = orderItems.find(o => o.menu_item_id === item.id);
     if (existing) {
       setOrderItems(orderItems.map(o => 
@@ -676,11 +680,31 @@ export default function StaffPOS() {
         price: item.base_price
       }]);
     }
+    
+    // Optimistically update local remaining stock
+    if (item.remaining_serves !== null && item.remaining_serves > 0) {
+      setMenuItems(prev => prev.map(m => 
+        m.id === item.id && m.remaining_serves !== null
+          ? { ...m, remaining_serves: Math.max(0, m.remaining_serves - 1) }
+          : m
+      ));
+      
+      // Update database in background (fire and forget)
+      supabase
+        .from("lab_ops_menu_items")
+        .update({ remaining_serves: Math.max(0, item.remaining_serves - 1) })
+        .eq("id", item.id)
+        .then(() => {});
+    }
+    
     // Auto-navigate to bill on mobile
     setMobileView("bill");
   };
 
-  const updateQuantity = (itemId: string, delta: number) => {
+  const updateQuantity = async (itemId: string, delta: number) => {
+    const currentItem = orderItems.find(o => o.menu_item_id === itemId);
+    const menuItem = menuItems.find(m => m.id === itemId);
+    
     setOrderItems(orderItems.map(o => {
       if (o.menu_item_id === itemId) {
         const newQty = o.qty + delta;
@@ -688,10 +712,52 @@ export default function StaffPOS() {
       }
       return o;
     }).filter(o => o.qty > 0));
+    
+    // Update remaining stock when quantity changes
+    if (menuItem && menuItem.remaining_serves !== null) {
+      const newRemaining = delta > 0 
+        ? Math.max(0, menuItem.remaining_serves - 1)
+        : menuItem.remaining_serves + 1;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.remaining_serves !== null
+          ? { ...m, remaining_serves: newRemaining }
+          : m
+      ));
+      
+      // Update database
+      supabase
+        .from("lab_ops_menu_items")
+        .update({ remaining_serves: newRemaining })
+        .eq("id", itemId)
+        .then(() => {});
+    }
   };
 
-  const removeItem = (itemId: string) => {
+  const removeItem = async (itemId: string) => {
+    const removedItem = orderItems.find(o => o.menu_item_id === itemId);
+    const menuItem = menuItems.find(m => m.id === itemId);
+    
     setOrderItems(orderItems.filter(o => o.menu_item_id !== itemId));
+    
+    // Restore stock when item is removed
+    if (removedItem && menuItem && menuItem.remaining_serves !== null) {
+      const restoredAmount = removedItem.qty;
+      const newRemaining = menuItem.remaining_serves + restoredAmount;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.remaining_serves !== null
+          ? { ...m, remaining_serves: newRemaining }
+          : m
+      ));
+      
+      // Update database
+      supabase
+        .from("lab_ops_menu_items")
+        .update({ remaining_serves: newRemaining })
+        .eq("id", itemId)
+        .then(() => {});
+    }
   };
 
   const updateItemNote = (itemId: string, note: string) => {
@@ -1722,23 +1788,44 @@ export default function StaffPOS() {
                 <div className="grid grid-cols-2 gap-1 p-1">
                   {filteredItems.map(item => {
                     const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
+                    const hasStock = item.remaining_serves !== null;
+                    const isLowStock = hasStock && item.remaining_serves !== null && item.remaining_serves <= 5;
+                    const isOutOfStock = hasStock && item.remaining_serves === 0;
                     return (
                       <Button
                         key={item.id}
                         variant="outline"
-                        className={`h-12 flex flex-col items-start justify-between p-1.5 transition-all ${
-                          isInOrder 
-                            ? 'bg-amber-500/90 border-amber-400 text-amber-950 hover:bg-amber-400' 
-                            : 'bg-card hover:bg-muted'
+                        className={`h-14 flex flex-col items-start justify-between p-1.5 transition-all relative ${
+                          isOutOfStock
+                            ? 'bg-muted/50 border-muted text-muted-foreground opacity-60 cursor-not-allowed'
+                            : isInOrder 
+                              ? 'bg-amber-500/90 border-amber-400 text-amber-950 hover:bg-amber-400' 
+                              : 'bg-card hover:bg-muted'
                         }`}
-                        onClick={() => addToOrder(item)}
+                        onClick={() => !isOutOfStock && addToOrder(item)}
+                        disabled={isOutOfStock}
                       >
                         <span className={`text-[11px] font-medium text-left line-clamp-1 leading-tight ${isInOrder ? 'text-amber-950' : ''}`}>
                           {item.name}
                         </span>
-                        <span className={`text-xs font-semibold ${isInOrder ? 'text-amber-800' : 'text-primary'}`}>
-                          ${item.base_price.toFixed(2)}
-                        </span>
+                        <div className="flex items-center justify-between w-full">
+                          <span className={`text-xs font-semibold ${isInOrder ? 'text-amber-800' : 'text-primary'}`}>
+                            ${item.base_price.toFixed(2)}
+                          </span>
+                          {hasStock && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              isOutOfStock 
+                                ? 'bg-red-500/20 text-red-400' 
+                                : isLowStock 
+                                  ? 'bg-amber-500/20 text-amber-400'
+                                  : isInOrder
+                                    ? 'bg-amber-800/30 text-amber-900'
+                                    : 'bg-green-500/20 text-green-400'
+                            }`}>
+                              {isOutOfStock ? 'OUT' : item.remaining_serves}
+                            </span>
+                          )}
+                        </div>
                       </Button>
                     );
                   })}
