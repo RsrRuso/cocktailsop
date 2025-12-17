@@ -710,10 +710,14 @@ const PurchaseOrders = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+                toast.success("Refreshed");
+              }}
+              disabled={isLoading}
               title="Refresh"
             >
-              <RefreshCw className="w-5 h-5 text-muted-foreground" />
+              <RefreshCw className={`w-5 h-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
             {!staffMode && (
               <Button 
