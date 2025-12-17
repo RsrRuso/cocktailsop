@@ -2497,23 +2497,30 @@ function InventoryModule({ outletId }: { outletId: string }) {
       
       if (itemIds.length === 0) {
         toast({ title: "No items to delete" });
+        setIsDeleting(false);
         return;
       }
 
-      // Delete related data first
-      for (const itemId of itemIds) {
-        await supabase.from("lab_ops_stock_levels").delete().eq("inventory_item_id", itemId);
-        await supabase.from("lab_ops_stock_movements").delete().eq("inventory_item_id", itemId);
-        await supabase.from("lab_ops_inventory_item_costs").delete().eq("inventory_item_id", itemId);
-      }
+      // Delete related data first (in parallel for speed)
+      const deletePromises = itemIds.flatMap(itemId => [
+        supabase.from("lab_ops_recipe_ingredients").delete().eq("inventory_item_id", itemId),
+        supabase.from("lab_ops_stock_levels").delete().eq("inventory_item_id", itemId),
+        supabase.from("lab_ops_stock_movements").delete().eq("inventory_item_id", itemId),
+        supabase.from("lab_ops_inventory_item_costs").delete().eq("inventory_item_id", itemId),
+      ]);
+      
+      await Promise.all(deletePromises);
       
       // Delete all items for this outlet
-      await supabase.from("lab_ops_inventory_items").delete().eq("outlet_id", outletId);
+      const { error } = await supabase.from("lab_ops_inventory_items").delete().eq("outlet_id", outletId);
+      
+      if (error) throw error;
 
       fetchItems();
       fetchMovements();
       toast({ title: `${itemIds.length} inventory items deleted` });
     } catch (error: any) {
+      console.error("Delete all error:", error);
       toast({ title: "Error deleting items", description: error.message, variant: "destructive" });
     } finally {
       setIsDeleting(false);
