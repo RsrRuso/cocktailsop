@@ -450,68 +450,70 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
               </Card>
 
               {filteredPending.map((item) => (
-                <Card key={item.id} className="p-4 border-l-4 border-l-amber-500">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Package className="h-4 w-4 text-amber-500" />
-                        <span className="font-semibold">{item.item_name}</span>
-                        <Badge variant="outline" className="border-amber-500/50 text-amber-500">
-                          Pending
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        {item.item_code && (
-                          <p>Code: {item.item_code}</p>
-                        )}
-                        <p className="flex items-center gap-1">
-                          <FileText className="h-3 w-3" />
-                          {item.document_number || 'No Doc#'}
-                        </p>
-                        {item.supplier_name && (
-                          <p>{item.supplier_name}</p>
-                        )}
-                        <p className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {item.received_date ? format(new Date(item.received_date), 'MMM dd, yyyy') : 'N/A'}
-                        </p>
-                        {item.received_by && (
-                          <p className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {item.received_by}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <Badge variant="secondary" className="text-base font-bold px-3 py-1">
-                        {item.quantity} {item.unit || 'units'}
+                <Card key={item.id} className="p-3 sm:p-4 border-l-4 border-l-amber-500">
+                  {/* Header with name and quantity badge */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <Package className="h-4 w-4 text-amber-500 shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base break-words">{item.item_name}</span>
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-500 text-xs shrink-0">
+                        Pending
                       </Badge>
-                      {item.total_price > 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          ${item.total_price.toFixed(2)}
-                        </p>
-                      )}
-                      <div className="flex gap-2 mt-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => openApprovalDialog(item)}
-                          className="gap-1"
-                        >
-                          <Plus className="h-3 w-3" />
-                          Add to Inventory
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleReject(item)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-sm sm:text-base font-bold px-2 sm:px-3 py-1 shrink-0">
+                      {item.quantity} {item.unit || 'BOT'}
+                    </Badge>
+                  </div>
+                  
+                  {/* Details */}
+                  <div className="space-y-1 text-xs sm:text-sm text-muted-foreground mb-3">
+                    {item.item_code && (
+                      <p className="break-all">Code: {item.item_code}</p>
+                    )}
+                    <p className="flex items-center gap-1">
+                      <FileText className="h-3 w-3 shrink-0" />
+                      <span className="break-all">{item.document_number || 'No Doc#'}</span>
+                    </p>
+                    {item.supplier_name && (
+                      <p className="break-words">{item.supplier_name}</p>
+                    )}
+                    <p className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3 shrink-0" />
+                      {item.received_date ? format(new Date(item.received_date), 'MMM dd, yyyy') : 'N/A'}
+                    </p>
+                    {item.received_by && (
+                      <p className="flex items-center gap-1">
+                        <User className="h-3 w-3 shrink-0" />
+                        {item.received_by}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions - full width on mobile */}
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                    {item.total_price > 0 && (
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        ${item.total_price.toFixed(2)}
+                      </p>
+                    )}
+                    <div className="flex gap-2 ml-auto">
+                      <Button 
+                        size="sm" 
+                        onClick={() => openApprovalDialog(item)}
+                        className="gap-1 text-xs sm:text-sm h-8 px-2 sm:px-3"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span className="hidden xs:inline">Add to Inventory</span>
+                        <span className="xs:hidden">Add</span>
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleReject(item)}
+                        className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </Card>
