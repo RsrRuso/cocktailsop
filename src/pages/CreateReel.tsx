@@ -72,6 +72,7 @@ const CreateReel = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'edits' | 'drafts' | 'templates'>('edits');
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
