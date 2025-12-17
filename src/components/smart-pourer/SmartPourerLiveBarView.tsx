@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
   Activity, Wine, Droplets, Clock, AlertTriangle, 
-  BatteryLow, TrendingUp, Users, Zap
+  BatteryLow, TrendingUp, Zap
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -19,8 +19,8 @@ interface PourEvent {
   poured_ml: number;
   started_at: string;
   error_flag: boolean;
-  device?: { display_name: string | null; device_code: string };
-  bottle?: { sku?: { spirit_name: string; brand: string | null } };
+  device?: { device_code: string };
+  bottle?: { sku?: { name: string; brand: string | null } };
 }
 
 interface LiveStats {
@@ -50,7 +50,8 @@ export function SmartPourerLiveBarView({ outletId }: SmartPourerLiveBarViewProps
   useEffect(() => {
     if (outletId) {
       fetchLiveData();
-      subscribeToLiveEvents();
+      const cleanup = subscribeToLiveEvents();
+      return cleanup;
     }
   }, [outletId]);
 
@@ -63,9 +64,9 @@ export function SmartPourerLiveBarView({ outletId }: SmartPourerLiveBarViewProps
       const { data: pours, error: poursError } = await supabase
         .from('smart_pourer_pour_events')
         .select(`
-          *,
-          device:smart_pourer_devices(display_name, device_code),
-          bottle:smart_pourer_bottles(sku:smart_pourer_skus(spirit_name, brand))
+          id, device_id, bottle_id, sku_id, poured_ml, started_at, error_flag,
+          device:smart_pourer_devices(device_code),
+          bottle:smart_pourer_bottles(sku:smart_pourer_skus(name, brand))
         `)
         .gte('started_at', today.toISOString())
         .order('started_at', { ascending: false })
@@ -80,16 +81,16 @@ export function SmartPourerLiveBarView({ outletId }: SmartPourerLiveBarViewProps
         .eq('outlet_id', outletId);
 
       // Calculate stats
-      const pourData = pours || [];
-      const totalMl = pourData.reduce((sum, p) => sum + (p.poured_ml || 0), 0);
-      const errorPours = pourData.filter(p => p.error_flag).length;
+      const pourData = (pours as any) || [];
+      const totalMl = pourData.reduce((sum: number, p: any) => sum + (p.poured_ml || 0), 0);
+      const errorPours = pourData.filter((p: any) => p.error_flag).length;
       const activeDevices = devices?.filter(d => d.status === 'active').length || 0;
-      const lowBatteryDevices = devices?.filter(d => d.battery_level < 20).length || 0;
+      const lowBatteryDevices = devices?.filter(d => (d.battery_level || 100) < 20).length || 0;
 
       // Calculate top SKUs
       const skuMap = new Map<string, { name: string; count: number; ml: number }>();
-      pourData.forEach(p => {
-        const name = p.bottle?.sku?.spirit_name || 'Unknown';
+      pourData.forEach((p: any) => {
+        const name = p.bottle?.sku?.name || 'Unknown';
         const existing = skuMap.get(name) || { name, count: 0, ml: 0 };
         existing.count += 1;
         existing.ml += p.poured_ml || 0;
@@ -125,10 +126,7 @@ export function SmartPourerLiveBarView({ outletId }: SmartPourerLiveBarViewProps
         schema: 'public',
         table: 'smart_pourer_pour_events',
       }, (payload) => {
-        // Add new pour event to the list
         fetchLiveData();
-        
-        // Show toast for new pour
         const pour = payload.new as any;
         toast.info(`Pour recorded: ${pour.poured_ml}ml`, {
           description: 'New pour event detected',
@@ -137,7 +135,7 @@ export function SmartPourerLiveBarView({ outletId }: SmartPourerLiveBarViewProps
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => { supabase.removeChannel(channel); };
   };
 
   if (isLoading) {
@@ -277,10 +275,10 @@ export function SmartPourerLiveBarView({ outletId }: SmartPourerLiveBarViewProps
                         </div>
                         <div>
                           <p className="text-sm font-medium">
-                            {pour.bottle?.sku?.spirit_name || 'Unknown Product'}
+                            {pour.bottle?.sku?.name || 'Unknown Product'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {pour.device?.display_name || pour.device?.device_code || 'Unknown Device'}
+                            {pour.device?.device_code || 'Unknown Device'}
                           </p>
                         </div>
                       </div>
