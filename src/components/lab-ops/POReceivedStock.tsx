@@ -197,8 +197,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
           name: newItemName,
           sku: newItemSku || null,
           base_unit: baseUnit || approvalItem.unit || 'unit',
-          par_level: parseInt(parLevel) || 0,
-          category_id: null
+          par_level: parseInt(parLevel) || 0
         })
         .select('id')
         .single();
