@@ -122,9 +122,20 @@ const CreateReel = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio } = useAutoMusicExtraction();
+
+  // Check if current media is image
+  const isImageMode = selectedItems.length > 0 && selectedItems[0]?.type === 'image';
+
+  // Set duration for images
+  useEffect(() => {
+    if (isImageMode && showEditor) {
+      setDuration(clipDuration);
+    }
+  }, [isImageMode, showEditor, clipDuration]);
 
   // Sync audio with video playback
   useEffect(() => {
@@ -133,29 +144,60 @@ const CreateReel = () => {
     audioRef.current.load();
   }, [selectedMusic]);
 
-  // Animate playhead during playback
+  // Animate playhead during playback (for both video and image)
   useEffect(() => {
-    const updatePlayhead = () => {
-      if (videoRef.current && isPlaying) {
-        setCurrentTime(videoRef.current.currentTime);
-        animationFrameRef.current = requestAnimationFrame(updatePlayhead);
-      }
-    };
+    if (isImageMode && isPlaying) {
+      // For images, use interval to simulate playback
+      const startTime = Date.now() - (currentTime * 1000);
+      
+      playbackIntervalRef.current = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (elapsed >= clipDuration) {
+          setCurrentTime(0);
+          setIsPlaying(false);
+          audioRef.current?.pause();
+          if (audioRef.current) audioRef.current.currentTime = 0;
+          if (playbackIntervalRef.current) clearInterval(playbackIntervalRef.current);
+        } else {
+          setCurrentTime(elapsed);
+        }
+      }, 50);
 
-    if (isPlaying) {
+      return () => {
+        if (playbackIntervalRef.current) clearInterval(playbackIntervalRef.current);
+      };
+    } else if (!isImageMode && isPlaying) {
+      // For videos, use animation frame
+      const updatePlayhead = () => {
+        if (videoRef.current && isPlaying) {
+          setCurrentTime(videoRef.current.currentTime);
+          animationFrameRef.current = requestAnimationFrame(updatePlayhead);
+        }
+      };
       animationFrameRef.current = requestAnimationFrame(updatePlayhead);
+
+      return () => {
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      };
     }
+  }, [isPlaying, isImageMode, clipDuration]);
 
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [isPlaying]);
-
-  // Handle play/pause for both video and audio
+  // Handle play/pause for both video/image and audio
   const togglePlayback = useCallback(() => {
-    if (videoRef.current) {
+    if (isImageMode) {
+      // For images, just control audio and playhead
+      if (isPlaying) {
+        audioRef.current?.pause();
+        if (playbackIntervalRef.current) clearInterval(playbackIntervalRef.current);
+      } else {
+        if (audioRef.current && selectedMusic) {
+          audioRef.current.currentTime = currentTime;
+          audioRef.current.play();
+        }
+      }
+      setIsPlaying(!isPlaying);
+    } else if (videoRef.current) {
+      // For videos
       if (isPlaying) {
         videoRef.current.pause();
         audioRef.current?.pause();
@@ -168,7 +210,7 @@ const CreateReel = () => {
       }
       setIsPlaying(!isPlaying);
     }
-  }, [isPlaying, selectedMusic]);
+  }, [isPlaying, selectedMusic, isImageMode, currentTime]);
 
   const fonts = ['Arial', 'Impact', 'Comic Sans MS', 'Courier New', 'Georgia', 'Times New Roman'];
   const animations = ['None', 'Fade In', 'Slide Up', 'Bounce', 'Pop'];
@@ -573,7 +615,37 @@ const CreateReel = () => {
                 onClick={togglePlayback}
               />
             ) : (
-              <img src={mainVideo.url} alt="" className="w-full h-full object-cover" />
+              <div className="relative w-full h-full cursor-pointer" onClick={togglePlayback}>
+                <img src={mainVideo.url} alt="" className="w-full h-full object-cover" />
+                {/* Play/Pause Overlay for Images */}
+                <AnimatePresence>
+                  {!isPlaying && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="absolute inset-0 flex items-center justify-center bg-black/20"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white fill-white ml-1" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {/* Progress Ring for Image Playback */}
+                {isPlaying && (
+                  <div className="absolute top-3 right-3 w-8 h-8">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
+                      <circle cx="16" cy="16" r="14" fill="none" stroke="white" strokeOpacity="0.3" strokeWidth="2" />
+                      <circle 
+                        cx="16" cy="16" r="14" fill="none" stroke="white" strokeWidth="2"
+                        strokeDasharray={`${(currentTime / clipDuration) * 88} 88`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
             )}
             
             {/* Text Overlays */}
