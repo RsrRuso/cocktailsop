@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, AtSign, Check, X } from "lucide-react";
+import { Search, AtSign, Check, X, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Profile {
   id: string;
@@ -32,6 +33,7 @@ export function PeopleMentionPicker({
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selected, setSelected] = useState<Profile[]>(selectedPeople);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'followers' | 'following'>('following');
 
   useEffect(() => {
     setSelected(selectedPeople);
@@ -43,16 +45,45 @@ export function PeopleMentionPicker({
       
       setLoading(true);
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        let profileIds: string[] = [];
+
+        if (activeTab === 'following') {
+          // Get people the user follows
+          const { data: followingData } = await supabase
+            .from("follows")
+            .select("following_id")
+            .eq("follower_id", user.id);
+          
+          profileIds = followingData?.map(f => f.following_id) || [];
+        } else {
+          // Get people who follow the user
+          const { data: followersData } = await supabase
+            .from("follows")
+            .select("follower_id")
+            .eq("following_id", user.id);
+          
+          profileIds = followersData?.map(f => f.follower_id) || [];
+        }
+
+        if (profileIds.length === 0) {
+          setProfiles([]);
+          setLoading(false);
+          return;
+        }
+
         let query = supabase
           .from("profiles")
           .select("id, username, full_name, avatar_url")
-          .limit(20);
+          .in("id", profileIds);
 
         if (search) {
           query = query.or(`username.ilike.%${search}%,full_name.ilike.%${search}%`);
         }
 
-        const { data } = await query;
+        const { data } = await query.limit(30);
         if (data) setProfiles(data);
       } catch (error) {
         console.error("Error fetching profiles:", error);
@@ -63,7 +94,7 @@ export function PeopleMentionPicker({
 
     const debounce = setTimeout(fetchProfiles, 300);
     return () => clearTimeout(debounce);
-  }, [search, open]);
+  }, [search, open, activeTab]);
 
   const toggleSelect = (profile: Profile) => {
     setSelected(prev => {
@@ -99,6 +130,14 @@ export function PeopleMentionPicker({
             className="pl-9"
           />
         </div>
+
+        {/* Tabs for Followers/Following */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'followers' | 'following')}>
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="following" className="text-sm">Following</TabsTrigger>
+            <TabsTrigger value="followers" className="text-sm">Followers</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Selected People */}
         {selected.length > 0 && (
