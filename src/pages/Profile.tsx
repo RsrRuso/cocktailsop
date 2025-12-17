@@ -36,6 +36,7 @@ import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 import { FeedItem } from "@/components/FeedItem";
 import { SavedRepostedContent } from "@/components/SavedRepostedContent";
+import { MonetizationHub } from "@/components/monetization";
 
 interface Profile {
   id: string;
@@ -512,6 +513,9 @@ const Profile = () => {
             )}
           </div>
         </div>
+
+        {/* Monetization Hub */}
+        <MonetizationHub userId={user.id} />
 
         {/* Content Tabs */}
         <Tabs defaultValue="feed" className="w-full">
