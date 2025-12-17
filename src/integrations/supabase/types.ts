@@ -443,6 +443,61 @@ export type Database = {
           },
         ]
       }
+      batch_inventory_sync: {
+        Row: {
+          amount_ml: number
+          bottle_id: string | null
+          id: string
+          ingredient_name: string
+          outlet_id: string | null
+          production_id: string
+          sync_type: string
+          synced_at: string
+        }
+        Insert: {
+          amount_ml?: number
+          bottle_id?: string | null
+          id?: string
+          ingredient_name: string
+          outlet_id?: string | null
+          production_id: string
+          sync_type?: string
+          synced_at?: string
+        }
+        Update: {
+          amount_ml?: number
+          bottle_id?: string | null
+          id?: string
+          ingredient_name?: string
+          outlet_id?: string | null
+          production_id?: string
+          sync_type?: string
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_inventory_sync_bottle_id_fkey"
+            columns: ["bottle_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_bottles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_inventory_sync_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_inventory_sync_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "batch_productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_production_ingredients: {
         Row: {
           created_at: string
@@ -14263,6 +14318,10 @@ export type Database = {
       notify_friends_birthday: { Args: never; Returns: undefined }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       refresh_music_popularity: { Args: never; Returns: undefined }
+      restore_batch_inventory: {
+        Args: { p_production_id: string }
+        Returns: Json
+      }
       search_matrix_documents: {
         Args: { p_keywords: string[]; p_user_id: string }
         Returns: {
@@ -14273,6 +14332,14 @@ export type Database = {
           filename: string
           relevance_score: number
         }[]
+      }
+      sync_batch_to_inventory: {
+        Args: {
+          p_action?: string
+          p_outlet_id: string
+          p_production_id: string
+        }
+        Returns: Json
       }
       update_business_analytics: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }
