@@ -19,7 +19,6 @@ import {
 interface Device {
   id: string;
   device_code: string;
-  display_name: string | null;
   firmware_version: string | null;
   battery_level: number;
   status: string;
@@ -38,7 +37,6 @@ export function SmartPourerDeviceManagement({ outletId }: SmartPourerDeviceManag
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDevice, setNewDevice] = useState({
     device_code: '',
-    display_name: '',
     firmware_version: '',
   });
 
@@ -95,7 +93,6 @@ export function SmartPourerDeviceManagement({ outletId }: SmartPourerDeviceManag
         .insert({
           outlet_id: outletId,
           device_code: newDevice.device_code,
-          display_name: newDevice.display_name || null,
           firmware_version: newDevice.firmware_version || null,
           status: 'active',
           battery_level: 100,
@@ -105,7 +102,7 @@ export function SmartPourerDeviceManagement({ outletId }: SmartPourerDeviceManag
 
       toast.success('Device registered successfully');
       setIsAddDialogOpen(false);
-      setNewDevice({ device_code: '', display_name: '', firmware_version: '' });
+      setNewDevice({ device_code: '', firmware_version: '' });
       fetchDevices();
     } catch (error: any) {
       console.error('Error adding device:', error);
@@ -212,14 +209,6 @@ export function SmartPourerDeviceManagement({ outletId }: SmartPourerDeviceManag
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Display Name</Label>
-                  <Input
-                    placeholder="e.g., Bar Station 1"
-                    value={newDevice.display_name}
-                    onChange={(e) => setNewDevice({ ...newDevice, display_name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>Firmware Version</Label>
                   <Input
                     placeholder="e.g., v1.0.0"
@@ -254,14 +243,13 @@ export function SmartPourerDeviceManagement({ outletId }: SmartPourerDeviceManag
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
-                      {device.display_name || device.device_code}
+                      {device.device_code}
                       {device.status === 'active' ? (
                         <Wifi className="h-4 w-4 text-green-500" />
                       ) : (
                         <WifiOff className="h-4 w-4 text-muted-foreground" />
                       )}
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">{device.device_code}</p>
                   </div>
                   {getStatusBadge(device.status)}
                 </div>
