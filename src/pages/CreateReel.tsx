@@ -99,6 +99,8 @@ const CreateReel = () => {
   const [musicSearch, setMusicSearch] = useState("");
   const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
   const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
+  const [musicVolume, setMusicVolume] = useState(80); // 0-100
+  const [originalVolume, setOriginalVolume] = useState(0); // Muted by default when music selected
   
   // Text state
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
@@ -155,8 +157,23 @@ const CreateReel = () => {
   useEffect(() => {
     if (!audioRef.current || !selectedMusic?.preview_audio) return;
     audioRef.current.src = selectedMusic.preview_audio;
+    audioRef.current.volume = musicVolume / 100;
     audioRef.current.load();
   }, [selectedMusic]);
+
+  // Sync music volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = musicVolume / 100;
+    }
+  }, [musicVolume]);
+
+  // Sync video volume (original audio)
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = originalVolume / 100;
+    }
+  }, [originalVolume]);
 
   // Animate playhead during playback (for both video and image)
   useEffect(() => {
@@ -434,7 +451,8 @@ const CreateReel = () => {
       
       if (result.error) throw result.error;
 
-      await supabase.from("reels").insert({
+      // Insert the reel
+      const { data: reelData, error: reelError } = await supabase.from("reels").insert({
         user_id: user.id,
         video_url: result.publicUrl,
         caption: captionText || "",
@@ -442,7 +460,20 @@ const CreateReel = () => {
         music_url: selectedMusic?.preview_audio || null,
         duration: clipDuration,
         is_image_reel: isImage,
-      });
+      }).select('id').single();
+
+      if (reelError) throw reelError;
+
+      // Save tagged people if any
+      if (taggedPeople.length > 0 && reelData?.id) {
+        const tagsToInsert = taggedPeople.map(person => ({
+          reel_id: reelData.id,
+          tagged_user_id: person.id,
+          tagged_by_user_id: user.id,
+        }));
+        
+        await supabase.from("reel_tags").insert(tagsToInsert);
+      }
 
       toast.success("Reel published!");
       if (!isImage) {
@@ -617,8 +648,11 @@ const CreateReel = () => {
                 src={mainVideo.url}
                 className="w-full h-full object-cover"
                 playsInline
-                muted={!!selectedMusic}
-                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                muted={selectedMusic ? originalVolume === 0 : false}
+                onLoadedMetadata={(e) => {
+                  setDuration(e.currentTarget.duration);
+                  e.currentTarget.volume = originalVolume / 100;
+                }}
                 onTimeUpdate={(e) => {
                   const time = e.currentTarget.currentTime;
                   setCurrentTime(time);
@@ -1016,6 +1050,59 @@ const CreateReel = () => {
                   {/* AUDIO/MUSIC TOOL */}
                   {activeTool === 'audio' && (
                     <div className="space-y-4">
+                      {/* Volume Controls - Show when music selected */}
+                      {selectedMusic && (
+                        <div className="bg-zinc-800/50 rounded-xl p-4 space-y-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                              <Music className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-sm font-medium truncate">{selectedMusic.title}</p>
+                              <p className="text-white/50 text-xs">{selectedMusic.artist}</p>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedMusic(null)}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          
+                          <div>
+                            <div className="flex justify-between text-xs text-white/60 mb-2">
+                              <span>Music Volume</span>
+                              <span>{musicVolume}%</span>
+                            </div>
+                            <Slider
+                              value={[musicVolume]}
+                              onValueChange={([val]) => setMusicVolume(val)}
+                              min={0}
+                              max={100}
+                              step={1}
+                              className="w-full [&_[role=slider]]:bg-pink-500 [&_[role=slider]]:border-0"
+                            />
+                          </div>
+                          
+                          <div>
+                            <div className="flex justify-between text-xs text-white/60 mb-2">
+                              <span>Original Audio</span>
+                              <span>{originalVolume}%</span>
+                            </div>
+                            <Slider
+                              value={[originalVolume]}
+                              onValueChange={([val]) => setOriginalVolume(val)}
+                              min={0}
+                              max={100}
+                              step={1}
+                              className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-0"
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex gap-3">
                         <div className="flex-1 relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -1045,7 +1132,7 @@ const CreateReel = () => {
                         ))}
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-1 max-h-[200px] overflow-y-auto">
                         {musicTracks.filter(t => 
                           !musicSearch || t.title.toLowerCase().includes(musicSearch.toLowerCase())
                         ).map((track) => (
@@ -1054,7 +1141,6 @@ const CreateReel = () => {
                             onClick={() => {
                               setSelectedMusic(track);
                               toast.success(`Added: ${track.title}`);
-                              closeTool();
                             }}
                             className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                               selectedMusic?.id === track.id ? 'bg-primary/20' : 'hover:bg-white/5'
