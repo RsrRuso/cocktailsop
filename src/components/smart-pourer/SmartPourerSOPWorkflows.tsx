@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,19 +12,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { 
-  Play, Square, Clock, CheckCircle2, AlertTriangle, Wine,
-  QrCode, Clipboard, FileDown, RefreshCw, User, Calendar
+  Play, Square, Clock, CheckCircle2, Wine,
+  QrCode, Clipboard, FileDown, RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ShiftSession {
   id: string;
   shift_type: string;
-  started_at: string;
-  ended_at: string | null;
-  started_by: string;
+  opened_at: string;
+  closed_at: string | null;
+  opened_by: string | null;
   status: string;
   notes: string | null;
 }
@@ -35,15 +34,7 @@ interface Bottle {
   bottle_size_ml: number;
   current_level_ml: number;
   status: string;
-  sku?: { spirit_name: string; brand: string | null };
-}
-
-interface InventoryCount {
-  bottle_id: string;
-  sku_name: string;
-  opening_ml: number;
-  closing_ml: number;
-  variance_ml: number;
+  sku?: { name: string; brand: string | null };
 }
 
 interface SmartPourerSOPWorkflowsProps {
@@ -54,18 +45,15 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
   const { user } = useAuth();
   const [activeSession, setActiveSession] = useState<ShiftSession | null>(null);
   const [bottles, setBottles] = useState<Bottle[]>([]);
-  const [inventoryCounts, setInventoryCounts] = useState<InventoryCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isStartShiftOpen, setIsStartShiftOpen] = useState(false);
   const [isEndShiftOpen, setIsEndShiftOpen] = useState(false);
-  const [shiftType, setShiftType] = useState('day');
+  const [shiftType, setShiftType] = useState('afternoon');
   const [shiftNotes, setShiftNotes] = useState('');
   const [closingCounts, setClosingCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    if (outletId) {
-      fetchData();
-    }
+    if (outletId) fetchData();
   }, [outletId]);
 
   const fetchData = async () => {
@@ -74,11 +62,11 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
       // Check for active shift session
       const { data: sessionData } = await supabase
         .from('smart_pourer_shift_sessions')
-        .select('*')
+        .select('id, shift_type, opened_at, closed_at, opened_by, status, notes')
         .eq('outlet_id', outletId)
-        .eq('status', 'active')
-        .is('ended_at', null)
-        .order('started_at', { ascending: false })
+        .eq('status', 'open')
+        .is('closed_at', null)
+        .order('opened_at', { ascending: false })
         .limit(1)
         .single();
 
@@ -88,29 +76,19 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
       const { data: bottlesData } = await supabase
         .from('smart_pourer_bottles')
         .select(`
-          *,
-          sku:smart_pourer_skus(spirit_name, brand)
+          id, sku_id, bottle_size_ml, current_level_ml, status,
+          sku:smart_pourer_skus(name, brand)
         `)
         .eq('outlet_id', outletId)
         .eq('status', 'active')
         .order('sku_id');
 
-      setBottles(bottlesData || []);
+      setBottles((bottlesData as any) || []);
 
-      // Initialize inventory counts
+      // Initialize closing counts
       if (bottlesData) {
-        const counts: InventoryCount[] = bottlesData.map(b => ({
-          bottle_id: b.id,
-          sku_name: b.sku?.spirit_name || 'Unknown',
-          opening_ml: b.current_level_ml,
-          closing_ml: b.current_level_ml,
-          variance_ml: 0,
-        }));
-        setInventoryCounts(counts);
-        
-        // Initialize closing counts
         const closingMap: Record<string, number> = {};
-        bottlesData.forEach(b => {
+        bottlesData.forEach((b: any) => {
           closingMap[b.id] = b.current_level_ml;
         });
         setClosingCounts(closingMap);
@@ -128,9 +106,9 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
       const openingSnapshot = bottles.map(b => ({
         outlet_id: outletId,
         sku_id: b.sku_id,
-        opening_ml: b.current_level_ml,
-        closing_ml: 0,
-        snapshot_date: new Date().toISOString().split('T')[0],
+        ml_amount: b.current_level_ml,
+        snapshot_type: 'opening',
+        recorded_by: user?.id,
       }));
 
       await supabase.from('smart_pourer_inventory_snapshots').insert(openingSnapshot);
@@ -141,11 +119,11 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
         .insert({
           outlet_id: outletId,
           shift_type: shiftType,
-          started_by: user?.id,
-          status: 'active',
+          opened_by: user?.id,
+          status: 'open',
           notes: shiftNotes || null,
         })
-        .select()
+        .select('id, shift_type, opened_at, closed_at, opened_by, status, notes')
         .single();
 
       if (error) throw error;
@@ -165,18 +143,17 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
 
     try {
       // Update inventory counts with closing values
-      const today = new Date().toISOString().split('T')[0];
-      
       for (const bottle of bottles) {
         const closingMl = closingCounts[bottle.id] || bottle.current_level_ml;
         
-        // Update snapshot with closing values
-        await supabase
-          .from('smart_pourer_inventory_snapshots')
-          .update({ closing_ml: closingMl })
-          .eq('outlet_id', outletId)
-          .eq('sku_id', bottle.sku_id)
-          .eq('snapshot_date', today);
+        // Save closing snapshot
+        await supabase.from('smart_pourer_inventory_snapshots').insert({
+          outlet_id: outletId,
+          sku_id: bottle.sku_id,
+          ml_amount: closingMl,
+          snapshot_type: 'closing',
+          recorded_by: user?.id,
+        });
 
         // Update bottle level
         await supabase
@@ -189,9 +166,9 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
       const { error } = await supabase
         .from('smart_pourer_shift_sessions')
         .update({
-          status: 'completed',
-          ended_at: new Date().toISOString(),
-          ended_by: user?.id,
+          status: 'closed',
+          closed_at: new Date().toISOString(),
+          closed_by: user?.id,
         })
         .eq('id', activeSession.id);
 
@@ -208,15 +185,12 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
   };
 
   const updateClosingCount = (bottleId: string, value: number) => {
-    setClosingCounts(prev => ({
-      ...prev,
-      [bottleId]: value,
-    }));
+    setClosingCounts(prev => ({ ...prev, [bottleId]: value }));
   };
 
   const getShiftDuration = () => {
     if (!activeSession) return '0h 0m';
-    const start = new Date(activeSession.started_at);
+    const start = new Date(activeSession.opened_at);
     const now = new Date();
     const diff = now.getTime() - start.getTime();
     const hours = Math.floor(diff / 3600000);
@@ -228,7 +202,7 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
     const report = {
       shift: activeSession,
       bottles: bottles.map(b => ({
-        name: b.sku?.spirit_name,
+        name: b.sku?.name,
         opening: b.current_level_ml,
         closing: closingCounts[b.id] || b.current_level_ml,
         variance: (closingCounts[b.id] || b.current_level_ml) - b.current_level_ml,
@@ -292,7 +266,7 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Started</p>
-                  <p className="font-medium">{format(new Date(activeSession.started_at), 'PPp')}</p>
+                  <p className="font-medium">{format(new Date(activeSession.opened_at), 'PPp')}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Shift Type</p>
@@ -331,7 +305,7 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
                               <CardContent className="p-3">
                                 <div className="flex items-center justify-between mb-2">
                                   <div>
-                                    <p className="font-medium">{bottle.sku?.spirit_name}</p>
+                                    <p className="font-medium">{bottle.sku?.name}</p>
                                     <p className="text-xs text-muted-foreground">
                                       Opening: {bottle.current_level_ml}ml / {bottle.bottle_size_ml}ml
                                     </p>
@@ -399,9 +373,9 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="morning">Morning (6am - 2pm)</SelectItem>
-                        <SelectItem value="day">Day (2pm - 10pm)</SelectItem>
+                        <SelectItem value="afternoon">Afternoon (2pm - 10pm)</SelectItem>
+                        <SelectItem value="evening">Evening (6pm - 2am)</SelectItem>
                         <SelectItem value="night">Night (10pm - 6am)</SelectItem>
-                        <SelectItem value="double">Double Shift</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -419,7 +393,7 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
                     <div className="text-sm space-y-1">
                       {bottles.slice(0, 5).map(b => (
                         <div key={b.id} className="flex justify-between">
-                          <span>{b.sku?.spirit_name}</span>
+                          <span>{b.sku?.name}</span>
                           <span>{b.current_level_ml}ml</span>
                         </div>
                       ))}
@@ -458,47 +432,12 @@ export function SmartPourerSOPWorkflows({ outletId }: SmartPourerSOPWorkflowsPro
               <Wine className="h-5 w-5 text-amber-500" />
             </div>
             <div>
-              <p className="font-medium text-sm">Register Bottle</p>
-              <p className="text-xs text-muted-foreground">Add new bottle</p>
+              <p className="font-medium text-sm">Stock Check</p>
+              <p className="text-xs text-muted-foreground">View bottle levels</p>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Current Bottle Status */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Current Bottle Levels ({bottles.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="max-h-[300px]">
-            <div className="divide-y">
-              {bottles.map((bottle) => {
-                const percentage = (bottle.current_level_ml / bottle.bottle_size_ml) * 100;
-                const isLow = percentage < 20;
-                
-                return (
-                  <div key={bottle.id} className={`px-4 py-3 flex items-center justify-between ${isLow ? 'bg-red-500/5' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                      <div>
-                        <p className="font-medium text-sm">{bottle.sku?.spirit_name}</p>
-                        <p className="text-xs text-muted-foreground">{bottle.sku?.brand}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        {bottle.current_level_ml}ml / {bottle.bottle_size_ml}ml
-                      </p>
-                      <Progress value={percentage} className="w-20 h-1.5" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
     </div>
   );
 }
