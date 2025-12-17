@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Brain, X, Video, Eye, Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -107,164 +107,173 @@ export const EngagementInsightsDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] sm:h-[90vh] p-0 gap-0 bg-black/70 backdrop-blur-xl border-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-yellow-500/20">
-                <Brain className="w-6 h-6 text-yellow-500" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl text-white">AI Engagement Intelligence</DialogTitle>
-                <p className="text-sm text-white/60 mt-1">
-                  {contentType === 'reel' ? 'Reel-based AI observations' : 'Advanced insights powered by AI'}
-                </p>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-[95vw] max-w-4xl h-[85vh] translate-x-[-50%] translate-y-[-50%] bg-transparent border-0 shadow-none outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+          {/* Close button */}
+          <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full p-2 bg-black/40 text-white/70 hover:text-white hover:bg-black/60 transition-colors">
+            <X className="h-5 w-5" />
+          </DialogPrimitive.Close>
+
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="p-6 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-yellow-500/20">
+                  <Brain className="w-6 h-6 text-yellow-500" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">AI Engagement Intelligence</h2>
+                  <p className="text-sm text-white/60 mt-1">
+                    {contentType === 'reel' ? 'Reel-based AI observations' : 'Advanced insights powered by AI'}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="px-3 sm:px-6 pt-4 flex-shrink-0">
-            <TabsList className="grid w-full grid-cols-4 h-auto bg-white/10 border-0">
-              <TabsTrigger value="insights" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Insights</TabsTrigger>
-              <TabsTrigger value="boost" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Boost</TabsTrigger>
-              <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Ads</TabsTrigger>
-              <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">Trends</TabsTrigger>
-            </TabsList>
-          </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+              <div className="px-3 sm:px-6 pt-2 flex-shrink-0">
+                <TabsList className="grid w-full grid-cols-4 h-auto bg-white/10 border-0 rounded-xl">
+                  <TabsTrigger value="insights" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg">Insights</TabsTrigger>
+                  <TabsTrigger value="boost" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg">Boost</TabsTrigger>
+                  <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg">Ads</TabsTrigger>
+                  <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3 text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg">Trends</TabsTrigger>
+                </TabsList>
+              </div>
 
-          <ScrollArea className="flex-1 overflow-y-auto">
-            <div className="p-3 sm:p-6 space-y-4 pb-8">
-              <TabsContent value="insights" className="mt-0 space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  {/* Reel-specific AI Observations */}
-                  {contentType === 'reel' && (
-                    <Card className="p-4 bg-white/5 backdrop-blur-sm border-white/10">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Video className="w-5 h-5 text-violet-400" />
-                        <h3 className="font-semibold text-white">Reel AI Observations</h3>
-                        <Badge variant="secondary" className="ml-auto bg-yellow-500/20 text-yellow-400 border-0">AI Analysis</Badge>
-                      </div>
-                      
-                      {isAnalyzing ? (
-                        <div className="flex items-center justify-center py-8 gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                          <span className="text-sm text-white/60">Analyzing reel content...</span>
-                        </div>
-                      ) : reelObservation && (
-                        <div className="space-y-3">
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
-                            <Eye className="w-4 h-4 text-blue-400 mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-white/50 mb-1">Visual Style</p>
-                              <p className="text-sm text-white">{reelObservation.visualStyle}</p>
-                            </div>
+              <ScrollArea className="flex-1 overflow-y-auto">
+                <div className="p-3 sm:p-6 space-y-4 pb-8">
+                  <TabsContent value="insights" className="mt-0 space-y-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4"
+                    >
+                      {/* Reel-specific AI Observations */}
+                      {contentType === 'reel' && (
+                        <Card className="p-4 bg-black/40 backdrop-blur-md border-white/10">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Video className="w-5 h-5 text-violet-400" />
+                            <h3 className="font-semibold text-white">Reel AI Observations</h3>
+                            <Badge variant="secondary" className="ml-auto bg-yellow-500/20 text-yellow-400 border-0">AI Analysis</Badge>
                           </div>
                           
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
-                            <Sparkles className="w-4 h-4 text-purple-400 mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-white/50 mb-1">Content Tone</p>
-                              <p className="text-sm text-white">{reelObservation.contentTone}</p>
+                          {isAnalyzing ? (
+                            <div className="flex items-center justify-center py-8 gap-2">
+                              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                              <span className="text-sm text-white/60">Analyzing reel content...</span>
                             </div>
-                          </div>
-                          
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
-                            <Brain className="w-4 h-4 text-pink-400 mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-white/50 mb-1">Audience Appeal</p>
-                              <p className="text-sm text-white">{reelObservation.audienceAppeal}</p>
+                          ) : reelObservation && (
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                                <Eye className="w-4 h-4 text-blue-400 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-medium text-white/50 mb-1">Visual Style</p>
+                                  <p className="text-sm text-white">{reelObservation.visualStyle}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                                <Sparkles className="w-4 h-4 text-purple-400 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-medium text-white/50 mb-1">Content Tone</p>
+                                  <p className="text-sm text-white">{reelObservation.contentTone}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                                <Brain className="w-4 h-4 text-pink-400 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-medium text-white/50 mb-1">Audience Appeal</p>
+                                  <p className="text-sm text-white">{reelObservation.audienceAppeal}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                                <p className="text-xs font-medium text-green-400 mb-1">💡 AI Improvement Tip</p>
+                                <p className="text-sm text-white">{reelObservation.improvement}</p>
+                              </div>
                             </div>
-                          </div>
-                          
-                          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                            <p className="text-xs font-medium text-green-400 mb-1">💡 AI Improvement Tip</p>
-                            <p className="text-sm text-white">{reelObservation.improvement}</p>
-                          </div>
-                        </div>
+                          )}
+                        </Card>
                       )}
-                    </Card>
-                  )}
 
-                  <ViralPredictionEngine
-                    likes={engagement.likes}
-                    comments={engagement.comments}
-                    shares={engagement.shares}
-                    views={engagement.views}
-                    timePosted={createdAt}
-                  />
-                  
-                  <EngagementInsights
-                    contentId={contentId}
-                    contentType={contentType}
-                    likes={engagement.likes}
-                    comments={engagement.comments}
-                    shares={engagement.shares}
-                    views={engagement.views}
-                    createdAt={createdAt}
-                  />
+                      <ViralPredictionEngine
+                        likes={engagement.likes}
+                        comments={engagement.comments}
+                        shares={engagement.shares}
+                        views={engagement.views}
+                        timePosted={createdAt}
+                      />
+                      
+                      <EngagementInsights
+                        contentId={contentId}
+                        contentType={contentType}
+                        likes={engagement.likes}
+                        comments={engagement.comments}
+                        shares={engagement.shares}
+                        views={engagement.views}
+                        createdAt={createdAt}
+                      />
 
-                  <ContentPerformanceAnalytics
-                    views={engagement.views}
-                    likes={engagement.likes}
-                    comments={engagement.comments}
-                    shares={engagement.shares}
-                  />
-                </motion.div>
-              </TabsContent>
+                      <ContentPerformanceAnalytics
+                        views={engagement.views}
+                        likes={engagement.likes}
+                        comments={engagement.comments}
+                        shares={engagement.shares}
+                      />
+                    </motion.div>
+                  </TabsContent>
 
-              <TabsContent value="boost" className="mt-0 space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  <ContentBoostSuggestions
-                    contentType={contentType}
-                    engagement={{
-                      likes: engagement.likes,
-                      comments: engagement.comments,
-                      shares: engagement.shares,
-                    }}
-                  />
+                  <TabsContent value="boost" className="mt-0 space-y-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4"
+                    >
+                      <ContentBoostSuggestions
+                        contentType={contentType}
+                        engagement={{
+                          likes: engagement.likes,
+                          comments: engagement.comments,
+                          shares: engagement.shares,
+                        }}
+                      />
 
-                  <SmartHashtagSuggestions content={content} />
+                      <SmartHashtagSuggestions content={content} />
 
-                  <OptimalPostingTime />
-                </motion.div>
-              </TabsContent>
+                      <OptimalPostingTime />
+                    </motion.div>
+                  </TabsContent>
 
-              <TabsContent value="ads" className="mt-0">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <SmartAdSuggestions
-                    contentId={contentId}
-                    currentReach={engagement.views}
-                    engagementRate={(engagement.likes + engagement.comments + engagement.shares) / Math.max(engagement.views, 1) * 100}
-                  />
-                </motion.div>
-              </TabsContent>
+                  <TabsContent value="ads" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <SmartAdSuggestions
+                        contentId={contentId}
+                        currentReach={engagement.views}
+                        engagementRate={(engagement.likes + engagement.comments + engagement.shares) / Math.max(engagement.views, 1) * 100}
+                      />
+                    </motion.div>
+                  </TabsContent>
 
-              <TabsContent value="trends" className="mt-0">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <TrendingContentAnalyzer />
-                </motion.div>
-              </TabsContent>
-            </div>
-          </ScrollArea>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+                  <TabsContent value="trends" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <TrendingContentAnalyzer />
+                    </motion.div>
+                  </TabsContent>
+                </div>
+              </ScrollArea>
+            </Tabs>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
