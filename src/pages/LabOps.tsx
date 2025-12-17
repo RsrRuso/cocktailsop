@@ -2647,19 +2647,29 @@ function InventoryModule({ outletId }: { outletId: string }) {
   };
 
   const startStockTake = async () => {
-    const { data, error } = await supabase
-      .from("lab_ops_stock_takes")
-      .insert({
-        outlet_id: outletId,
-        status: "in_progress",
-        started_by: user?.id,
-      })
-      .select()
-      .single();
+    if (!outletId) {
+      toast({ title: "Please select an outlet first", variant: "destructive" });
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from("lab_ops_stock_takes")
+        .insert({
+          outlet_id: outletId,
+          status: "in_progress",
+          started_by: user?.id,
+        })
+        .select()
+        .single();
 
-    if (!error && data) {
+      if (error) throw error;
+      
       toast({ title: "Stock take started" });
       fetchStockTakes();
+    } catch (error: any) {
+      console.error("Start stock take error:", error);
+      toast({ title: "Error starting stock take", description: error.message, variant: "destructive" });
     }
   };
 
