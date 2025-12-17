@@ -10723,6 +10723,758 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_pourer_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          manager_pin_used: boolean | null
+          outlet_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          manager_pin_used?: boolean | null
+          outlet_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          manager_pin_used?: boolean | null
+          outlet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_audit_log_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_bottles: {
+        Row: {
+          bottle_size_ml: number
+          created_at: string
+          current_level_ml: number | null
+          emptied_at: string | null
+          id: string
+          opened_at: string | null
+          outlet_id: string
+          qr_or_nfc_code: string | null
+          sku_id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bottle_size_ml?: number
+          created_at?: string
+          current_level_ml?: number | null
+          emptied_at?: string | null
+          id?: string
+          opened_at?: string | null
+          outlet_id: string
+          qr_or_nfc_code?: string | null
+          sku_id: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bottle_size_ml?: number
+          created_at?: string
+          current_level_ml?: number | null
+          emptied_at?: string | null
+          id?: string
+          opened_at?: string | null
+          outlet_id?: string
+          qr_or_nfc_code?: string | null
+          sku_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_bottles_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_bottles_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_device_pairings: {
+        Row: {
+          bottle_id: string
+          created_at: string
+          device_id: string
+          id: string
+          is_active: boolean | null
+          manager_override: boolean | null
+          paired_at: string
+          paired_by_user: string | null
+          unpaired_at: string | null
+        }
+        Insert: {
+          bottle_id: string
+          created_at?: string
+          device_id: string
+          id?: string
+          is_active?: boolean | null
+          manager_override?: boolean | null
+          paired_at?: string
+          paired_by_user?: string | null
+          unpaired_at?: string | null
+        }
+        Update: {
+          bottle_id?: string
+          created_at?: string
+          device_id?: string
+          id?: string
+          is_active?: boolean | null
+          manager_override?: boolean | null
+          paired_at?: string
+          paired_by_user?: string | null
+          unpaired_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_device_pairings_bottle_id_fkey"
+            columns: ["bottle_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_bottles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_device_pairings_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_devices: {
+        Row: {
+          battery_level: number | null
+          created_at: string
+          device_code: string
+          firmware_version: string | null
+          id: string
+          last_sync_at: string | null
+          outlet_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          battery_level?: number | null
+          created_at?: string
+          device_code: string
+          firmware_version?: string | null
+          id?: string
+          last_sync_at?: string | null
+          outlet_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          battery_level?: number | null
+          created_at?: string
+          device_code?: string
+          firmware_version?: string | null
+          id?: string
+          last_sync_at?: string | null
+          outlet_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_devices_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_inventory_snapshots: {
+        Row: {
+          bottle_count: number | null
+          created_at: string
+          id: string
+          ml_amount: number
+          notes: string | null
+          outlet_id: string
+          recorded_by: string | null
+          sku_id: string
+          snapshot_date: string
+          snapshot_type: string
+        }
+        Insert: {
+          bottle_count?: number | null
+          created_at?: string
+          id?: string
+          ml_amount: number
+          notes?: string | null
+          outlet_id: string
+          recorded_by?: string | null
+          sku_id: string
+          snapshot_date?: string
+          snapshot_type?: string
+        }
+        Update: {
+          bottle_count?: number | null
+          created_at?: string
+          id?: string
+          ml_amount?: number
+          notes?: string | null
+          outlet_id?: string
+          recorded_by?: string | null
+          sku_id?: string
+          snapshot_date?: string
+          snapshot_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_inventory_snapshots_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_inventory_snapshots_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_pos_recipe_mapping: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          outlet_id: string
+          pos_item_code: string | null
+          pos_item_name: string
+          recipe_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          outlet_id: string
+          pos_item_code?: string | null
+          pos_item_name: string
+          recipe_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          outlet_id?: string
+          pos_item_code?: string | null
+          pos_item_name?: string
+          recipe_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_pos_recipe_mapping_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_pos_recipe_mapping_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_pos_sales: {
+        Row: {
+          created_at: string
+          id: string
+          imported_at: string
+          outlet_id: string
+          pos_item_code: string | null
+          pos_item_name: string
+          pos_transaction_id: string | null
+          quantity: number
+          raw_data: Json | null
+          sold_at: string
+          source: string | null
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imported_at?: string
+          outlet_id: string
+          pos_item_code?: string | null
+          pos_item_name: string
+          pos_transaction_id?: string | null
+          quantity?: number
+          raw_data?: Json | null
+          sold_at?: string
+          source?: string | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imported_at?: string
+          outlet_id?: string
+          pos_item_code?: string | null
+          pos_item_name?: string
+          pos_transaction_id?: string | null
+          quantity?: number
+          raw_data?: Json | null
+          sold_at?: string
+          source?: string | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_pos_sales_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_pour_events: {
+        Row: {
+          battery: number | null
+          bottle_id: string | null
+          created_at: string
+          device_id: string
+          ended_at: string | null
+          error_flag: boolean | null
+          error_message: string | null
+          id: string
+          outlet_id: string | null
+          pairing_id: string | null
+          poured_ml: number
+          pulse_count: number | null
+          raw_payload: Json | null
+          sku_id: string | null
+          started_at: string
+          synced_from_offline: boolean | null
+        }
+        Insert: {
+          battery?: number | null
+          bottle_id?: string | null
+          created_at?: string
+          device_id: string
+          ended_at?: string | null
+          error_flag?: boolean | null
+          error_message?: string | null
+          id?: string
+          outlet_id?: string | null
+          pairing_id?: string | null
+          poured_ml: number
+          pulse_count?: number | null
+          raw_payload?: Json | null
+          sku_id?: string | null
+          started_at?: string
+          synced_from_offline?: boolean | null
+        }
+        Update: {
+          battery?: number | null
+          bottle_id?: string | null
+          created_at?: string
+          device_id?: string
+          ended_at?: string | null
+          error_flag?: boolean | null
+          error_message?: string | null
+          id?: string
+          outlet_id?: string | null
+          pairing_id?: string | null
+          poured_ml?: number
+          pulse_count?: number | null
+          raw_payload?: Json | null
+          sku_id?: string | null
+          started_at?: string
+          synced_from_offline?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_pour_events_bottle_id_fkey"
+            columns: ["bottle_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_bottles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_pour_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_pour_events_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_pour_events_pairing_id_fkey"
+            columns: ["pairing_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_device_pairings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_pour_events_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_recipe_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_optional: boolean | null
+          ml_required: number
+          notes: string | null
+          recipe_id: string
+          sku_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_optional?: boolean | null
+          ml_required: number
+          notes?: string | null
+          recipe_id: string
+          sku_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_optional?: boolean | null
+          ml_required?: number
+          notes?: string | null
+          recipe_id?: string
+          sku_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_recipe_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_recipe_items_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_recipes: {
+        Row: {
+          active_from: string
+          active_until: string | null
+          category: string | null
+          cocktail_name: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          outlet_id: string
+          selling_price: number | null
+          updated_at: string
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          active_from?: string
+          active_until?: string | null
+          category?: string | null
+          cocktail_name: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          outlet_id: string
+          selling_price?: number | null
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          active_from?: string
+          active_until?: string | null
+          category?: string | null
+          cocktail_name?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          outlet_id?: string
+          selling_price?: number | null
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_recipes_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_shift_sessions: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_inventory_snapshot_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string | null
+          opening_inventory_snapshot_id: string | null
+          outlet_id: string
+          shift_date: string
+          shift_type: string
+          status: string
+          variance_pdf_url: string | null
+          variance_reviewed: boolean | null
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_inventory_snapshot_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          opening_inventory_snapshot_id?: string | null
+          outlet_id: string
+          shift_date?: string
+          shift_type: string
+          status?: string
+          variance_pdf_url?: string | null
+          variance_reviewed?: boolean | null
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_inventory_snapshot_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          opening_inventory_snapshot_id?: string | null
+          outlet_id?: string
+          shift_date?: string
+          shift_type?: string
+          status?: string
+          variance_pdf_url?: string | null
+          variance_reviewed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_shift_sessions_closing_inventory_snapshot_id_fkey"
+            columns: ["closing_inventory_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_inventory_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_shift_sessions_opening_inventory_snapshot_id_fkey"
+            columns: ["opening_inventory_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_inventory_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_shift_sessions_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_skus: {
+        Row: {
+          brand: string | null
+          cost_per_ml: number | null
+          created_at: string
+          default_bottle_size_ml: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          outlet_id: string | null
+          sku_code: string
+          spirit_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          cost_per_ml?: number | null
+          created_at?: string
+          default_bottle_size_ml?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          outlet_id?: string | null
+          sku_code: string
+          spirit_type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          cost_per_ml?: number | null
+          created_at?: string
+          default_bottle_size_ml?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          outlet_id?: string | null
+          sku_code?: string
+          spirit_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_skus_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_pourer_variance_logs: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          expected_ml: number
+          id: string
+          manager_id: string | null
+          measured_ml: number
+          outlet_id: string
+          reason: string | null
+          reason_notes: string | null
+          sku_id: string | null
+          variance_cost: number | null
+          variance_date: string
+          variance_ml: number
+          variance_type: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          expected_ml: number
+          id?: string
+          manager_id?: string | null
+          measured_ml: number
+          outlet_id: string
+          reason?: string | null
+          reason_notes?: string | null
+          sku_id?: string | null
+          variance_cost?: number | null
+          variance_date?: string
+          variance_ml: number
+          variance_type: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          expected_ml?: number
+          id?: string
+          manager_id?: string | null
+          measured_ml?: number
+          outlet_id?: string
+          reason?: string | null
+          reason_notes?: string | null
+          sku_id?: string | null
+          variance_cost?: number | null
+          variance_date?: string
+          variance_ml?: number
+          variance_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_pourer_variance_logs_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_pourer_variance_logs_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spot_check_items: {
         Row: {
           actual_quantity: number | null
