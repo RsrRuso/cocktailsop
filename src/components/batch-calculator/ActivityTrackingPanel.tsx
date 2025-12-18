@@ -78,7 +78,8 @@ StatCard.displayName = "StatCard";
 
 const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Record<string, string> }) => {
   const metadata = activity.metadata || {};
-  const username = profiles[activity.user_id] || 'Unknown';
+  // Use produced_by_name from metadata if available (from batch_productions), otherwise lookup profile
+  const username = metadata.produced_by_name || profiles[activity.user_id] || 'Team member';
 
   const getActivityInfo = () => {
     switch (activity.action_type) {
@@ -97,7 +98,7 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
           bg: 'bg-blue-500/20',
           text: `${username} submitted batch "${metadata.batch_name || 'Unknown'}"`,
           duration: activity.duration_seconds,
-          extra: metadata.target_serves ? `${metadata.target_serves} serves` : null
+          extra: metadata.target_serves ? `${metadata.target_serves} serves, ${metadata.target_liters || 0}L` : null
         };
       case 'qr_scan':
         return {
