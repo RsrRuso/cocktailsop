@@ -207,9 +207,56 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
           totalBatches: batchesCount || 0,
           totalTime: activities.reduce((sum, a) => sum + (a.duration_seconds || 0), 0)
         });
+      } else if (workspaceType === 'fifo') {
+        // FIFO workspace - use fifo_activity_log
+        const { data } = await supabase
+          .from('fifo_activity_log')
+          .select('*')
+          .eq('workspace_id', workspaceId)
+          .order('created_at', { ascending: false })
+          .limit(30);
+
+        if (data) {
+          activities = data.map(a => ({
+            id: a.id,
+            action_type: a.action_type,
+            user_id: a.user_id,
+            created_at: a.created_at,
+            metadata: {
+              details: a.details,
+              quantity_before: a.quantity_before,
+              quantity_after: a.quantity_after
+            }
+          }));
+        }
+
+        setStats({ totalBatches: 0, totalRecipes: 0, totalTime: 0 });
+      } else if (workspaceType === 'workspace') {
+        // Store management workspace - use inventory_activity_log
+        const { data } = await supabase
+          .from('inventory_activity_log')
+          .select('*')
+          .eq('workspace_id', workspaceId)
+          .order('created_at', { ascending: false })
+          .limit(30);
+
+        if (data) {
+          activities = data.map(a => ({
+            id: a.id,
+            action_type: a.action_type,
+            user_id: a.user_id,
+            created_at: a.created_at,
+            metadata: {
+              details: a.details,
+              quantity_before: a.quantity_before,
+              quantity_after: a.quantity_after
+            }
+          }));
+        }
+
+        setStats({ totalBatches: 0, totalRecipes: 0, totalTime: 0 });
       } else {
-        // For workspace, fifo, team, procurement - no dedicated activity table yet
-        // Show empty state
+        // For team, procurement - no dedicated activity table yet
         setStats({ totalBatches: 0, totalRecipes: 0, totalTime: 0 });
       }
 
