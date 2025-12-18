@@ -79,30 +79,24 @@ export const POFIFOSyncPanel = ({
   });
 
   // Fetch recent received records that haven't been synced yet - RQ codes only (materials, not ML market list)
-  const { data: unlinkedReceived } = useQuery({
+  const { data: unlinkedReceived, isLoading: loadingReceived } = useQuery({
     queryKey: ['po-received-unlinked', userId, workspaceId],
     queryFn: async () => {
-      // Fetch all RQ records (materials only), filtering by workspace if selected
-      let query = supabase
+      // Fetch all RQ records (materials only) - show all available regardless of workspace for flexibility
+      const { data, error } = await supabase
         .from('po_received_records')
         .select('id, document_number, supplier_name, received_date, total_items, workspace_id')
         .ilike('document_number', 'RQ%') // Only RQ codes (materials), not ML (market list)
         .order('received_date', { ascending: false })
         .limit(20);
       
-      // Only filter by workspace if one is selected
-      if (workspaceId) {
-        query = query.eq('workspace_id', workspaceId);
-      }
-      
-      const { data, error } = await query;
       if (error) throw error;
       
       // Filter out records that already have sync items
       const syncedRecordIds = syncItems?.map(s => s.po_received_record_id).filter(Boolean) || [];
       return (data || []).filter(r => !syncedRecordIds.includes(r.id));
     },
-    enabled: !!userId && !!syncItems
+    enabled: !!userId && syncItems !== undefined
   });
 
   const pendingItems = syncItems?.filter(i => i.status === 'pending') || [];
@@ -306,9 +300,13 @@ export const POFIFOSyncPanel = ({
       </CardHeader>
       <CardContent className="p-2 pt-0 space-y-2">
         {/* Import from PO Received - RQ codes only */}
-        {unlinkedReceived && unlinkedReceived.length > 0 && (
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Import RQ Materials</Label>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">Import RQ Materials</Label>
+          {loadingReceived ? (
+            <div className="flex items-center justify-center p-2">
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            </div>
+          ) : unlinkedReceived && unlinkedReceived.length > 0 ? (
             <div className="space-y-0.5 max-h-16 overflow-auto">
               {unlinkedReceived.map(record => (
                 <div 
@@ -324,8 +322,12 @@ export const POFIFOSyncPanel = ({
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-[10px] text-muted-foreground text-center py-1">
+              No RQ materials to import
+            </div>
+          )}
+        </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'synced')}>
           <TabsList className="grid w-full grid-cols-2 h-6">
