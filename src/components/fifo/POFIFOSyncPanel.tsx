@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -281,24 +281,23 @@ export const POFIFOSyncPanel = ({
   const readyToSyncCount = pendingItems.filter(i => i.expiration_date).length;
 
   return (
-    <Card className="border-primary/20 bg-card/50">
-      <CardHeader className="p-2 pb-1">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xs flex items-center gap-1.5">
-            <RefreshCw className="h-3 w-3 text-primary" />
-            PO → FIFO
-          </CardTitle>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-5 w-5"
-            onClick={() => refetch()}
-          >
-            <RefreshCw className="h-2.5 w-2.5" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-2 pt-0 space-y-2">
+    <section aria-label="PO to FIFO sync" className="space-y-2">
+      <header className="flex items-center justify-between">
+        <h3 className="text-xs font-medium flex items-center gap-1.5">
+          <RefreshCw className="h-3 w-3 text-primary" />
+          PO → FIFO
+        </h3>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5"
+          onClick={() => refetch()}
+        >
+          <RefreshCw className="h-2.5 w-2.5" />
+        </Button>
+      </header>
+
+      <div className="space-y-2">
         {/* Import from PO Received - RQ codes only */}
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground">Import RQ Materials</Label>
@@ -308,30 +307,34 @@ export const POFIFOSyncPanel = ({
             </div>
           ) : unlinkedReceived && unlinkedReceived.length > 0 ? (
             <div className="space-y-0.5 max-h-16 overflow-auto">
-              {unlinkedReceived.map(record => (
-                <div 
+              {unlinkedReceived.map((record) => (
+                <div
                   key={record.id}
                   className="flex items-center justify-between p-1 bg-primary/10 rounded text-[10px] cursor-pointer hover:bg-primary/20"
                   onClick={() => importFromReceived(record.id)}
                 >
                   <span className="font-medium truncate">{record.document_number}</span>
                   <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="h-3.5 px-1 text-[8px]">{record.total_items}</Badge>
+                    <Badge variant="outline" className="h-3.5 px-1 text-[8px]">
+                      {record.total_items}
+                    </Badge>
                     <ArrowRight className="h-2.5 w-2.5 text-primary" />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-[10px] text-muted-foreground text-center py-1">
-              No RQ materials to import
-            </div>
+            <div className="text-[10px] text-muted-foreground text-center py-1">No RQ materials to import</div>
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'synced')}>
-          <TabsList className="flex w-full h-7 p-0.5">
-            <TabsTrigger value="pending" className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "synced")}>
+          {/* No container/square behind the tabs: buttons only */}
+          <TabsList className="flex w-full h-7 p-0 bg-transparent rounded-none gap-1.5">
+            <TabsTrigger
+              value="pending"
+              className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6"
+            >
               <Clock className="h-3 w-3" />
               Pending
               {pendingItems.length > 0 && (
@@ -340,7 +343,10 @@ export const POFIFOSyncPanel = ({
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="synced" className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6">
+            <TabsTrigger
+              value="synced"
+              className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6"
+            >
               <CheckCircle className="h-3 w-3" />
               Synced
               {syncedItems.length > 0 && (
@@ -365,32 +371,34 @@ export const POFIFOSyncPanel = ({
                       <SelectValue placeholder="Select store..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {receivableStores.map(store => (
+                      {receivableStores.map((store) => (
                         <SelectItem key={store.id} value={store.id} className="text-[10px]">
                           {store.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="h-6 text-[10px] px-2"
                     onClick={syncAllPending}
                     disabled={!selectedStoreId || readyToSyncCount === 0 || isSyncing}
                   >
-                    {isSyncing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Check className="h-2.5 w-2.5" />}
+                    {isSyncing ? (
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    ) : (
+                      <Check className="h-2.5 w-2.5" />
+                    )}
                     <span className="ml-0.5">{readyToSyncCount}</span>
                   </Button>
                 </div>
 
                 <div className="space-y-1 max-h-32 overflow-auto">
-                  {pendingItems.map(item => (
-                    <div 
-                      key={item.id} 
+                  {pendingItems.map((item) => (
+                    <div
+                      key={item.id}
                       className={`p-1.5 rounded border text-[10px] ${
-                        item.expiration_date 
-                          ? 'border-green-500/50 bg-green-500/5' 
-                          : 'border-amber-500/50 bg-amber-500/5'
+                        item.expiration_date ? "border-green-500/50 bg-green-500/5" : "border-amber-500/50 bg-amber-500/5"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-0.5">
@@ -402,18 +410,18 @@ export const POFIFOSyncPanel = ({
                       <div className="flex items-center gap-1">
                         <Input
                           type="date"
-                          value={item.expiration_date || ''}
+                          value={item.expiration_date || ""}
                           onChange={(e) => updateExpiration(item.id, e.target.value)}
-                          className={`h-5 text-[10px] flex-1 ${!item.expiration_date ? 'border-amber-500' : ''}`}
+                          className={`h-5 text-[10px] flex-1 ${!item.expiration_date ? "border-amber-500" : ""}`}
                         />
                         {item.expiration_date ? (
                           <Check className="h-2.5 w-2.5 text-green-500" />
                         ) : (
                           <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />
                         )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-4 w-4 text-destructive"
                           onClick={() => rejectItem(item.id)}
                         >
@@ -435,11 +443,8 @@ export const POFIFOSyncPanel = ({
               </div>
             ) : (
               <div className="space-y-1 max-h-32 overflow-auto">
-                {syncedItems.map(item => (
-                  <div 
-                    key={item.id} 
-                    className="p-1.5 rounded border border-green-500/30 bg-green-500/5 text-[10px]"
-                  >
+                {syncedItems.map((item) => (
+                  <div key={item.id} className="p-1.5 rounded border border-green-500/30 bg-green-500/5 text-[10px]">
                     <div className="flex items-center justify-between">
                       <span className="font-medium truncate flex-1">{item.item_name}</span>
                       <div className="flex items-center gap-1">
@@ -448,7 +453,7 @@ export const POFIFOSyncPanel = ({
                       </div>
                     </div>
                     <div className="text-[8px] text-muted-foreground mt-0.5">
-                      Exp: {item.expiration_date ? format(new Date(item.expiration_date), 'PP') : '-'}
+                      Exp: {item.expiration_date ? format(new Date(item.expiration_date), "PP") : "-"}
                     </div>
                   </div>
                 ))}
@@ -456,7 +461,7 @@ export const POFIFOSyncPanel = ({
             )}
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 };
