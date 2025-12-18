@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, LogOut, Settings, Sparkles, BadgeCheck } from "lucide-react";
+import { Loader2, LogOut, Settings, Sparkles } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { getBadgeColor } from "@/lib/profileUtils";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 // Lazy load components
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
@@ -153,11 +154,7 @@ const Profile = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <h2 className="text-xl font-bold truncate">{p.full_name || p.username}</h2>
-                {isVerified && (
-                  <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0">
-                    <BadgeCheck className="w-4 h-4 text-white" fill="currentColor" strokeWidth={0} />
-                  </div>
-                )}
+                {isVerified && <VerifiedBadge size="md" />}
               </div>
               <p className="text-muted-foreground text-sm">@{p.username}</p>
               {p.professional_title && (

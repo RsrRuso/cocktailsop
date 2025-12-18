@@ -12,6 +12,7 @@ import { useFeedData } from "@/hooks/useFeedData";
 import { useEngagement } from "@/hooks/useEngagement";
 import { useStoriesData } from "@/hooks/useStoriesData";
 import { useUserStatus } from "@/hooks/useUserStatus";
+import { useVerifiedUsers } from "@/hooks/useVerifiedUsers";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
 import {
@@ -176,14 +177,31 @@ const Home = () => {
 
 
   
+  // Get all user IDs from feed for verified status
+  const feedUserIds = useMemo(() => 
+    [...posts.map(p => p.user_id), ...reels.map(r => r.user_id)].filter(Boolean)
+  , [posts, reels]);
+  
+  const { isVerified: isUserVerified } = useVerifiedUsers(feedUserIds);
+  
   // Memoize merged feed to avoid recalculation
   const feed = useMemo(() => {
     const mergedFeed: FeedItem[] = [
-      ...posts.map(post => ({ ...post, type: 'post' as const })),
-      ...reels.map(reel => ({ ...reel, type: 'reel' as const, content: reel.caption, media_urls: [reel.video_url] }))
+      ...posts.map(post => ({ 
+        ...post, 
+        type: 'post' as const,
+        profiles: post.profiles ? { ...post.profiles, is_verified: isUserVerified(post.user_id) } : null
+      })),
+      ...reels.map(reel => ({ 
+        ...reel, 
+        type: 'reel' as const, 
+        content: reel.caption, 
+        media_urls: [reel.video_url],
+        profiles: reel.profiles ? { ...reel.profiles, is_verified: isUserVerified(reel.user_id) } : null
+      }))
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return mergedFeed;
-  }, [posts, reels]);
+  }, [posts, reels, isUserVerified]);
 
   // Memoize filtered feed
   const filteredFeed = useMemo(() => {

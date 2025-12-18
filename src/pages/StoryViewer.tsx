@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain, Bookmark, Trash2, Flag, Link, Download } from "lucide-react";
+import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain, Bookmark, Trash2, Flag, Link, Download } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useEngagement } from "@/hooks/useEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -148,6 +149,7 @@ export default function StoryViewer() {
   const [isClosing, setIsClosing] = useState(false);
   const [hasShownInitialHearts, setHasShownInitialHearts] = useState(false);
   const [isHighlighted, setIsHighlighted] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -233,7 +235,17 @@ export default function StoryViewer() {
             .order("created_at", { ascending: true })
         ]);
 
-        if (profileResult.data) setProfile(profileResult.data);
+        if (profileResult.data) {
+          setProfile(profileResult.data);
+          // Check if user is verified
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userId)
+            .eq('role', 'verified')
+            .maybeSingle()
+            .then(({ data }) => setIsVerified(!!data));
+        }
 
         if (storiesResult.data && storiesResult.data.length > 0) {
           setStories(storiesResult.data);
@@ -1005,7 +1017,7 @@ export default function StoryViewer() {
                   <span className="text-white font-semibold text-xs sm:text-sm truncate drop-shadow-lg">
                     {currentUserId === userId ? "Your story" : profile.full_name || profile.username}
                   </span>
-                  <BadgeCheck className="w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary shrink-0" />
+                  {isVerified && <VerifiedBadge size="xs" />}
                   <span className="text-white/70 text-xs sm:text-sm shrink-0 drop-shadow-lg">{getTimeAgo()}</span>
                 </div>
               </div>
