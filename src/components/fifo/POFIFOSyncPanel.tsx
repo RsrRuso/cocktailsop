@@ -78,13 +78,14 @@ export const POFIFOSyncPanel = ({
     enabled: !!userId
   });
 
-  // Fetch recent received records that haven't been synced yet
+  // Fetch recent received records that haven't been synced yet - RQ codes only (materials, not ML market list)
   const { data: unlinkedReceived } = useQuery({
     queryKey: ['po-received-unlinked', userId, workspaceId],
     queryFn: async () => {
       let query = supabase
         .from('po_received_records')
         .select('id, document_number, supplier_name, received_date, total_items')
+        .ilike('document_number', 'RQ%') // Only RQ codes (materials), not ML (market list)
         .order('received_date', { ascending: false })
         .limit(20);
       
