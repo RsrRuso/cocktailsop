@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Building2, Users, Store, Edit, Trash2 } from "lucide-react";
+import { Plus, Building2, Users, Store, Edit, Trash2, Key } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkspaceMemberPinManager } from "@/components/WorkspaceMemberPinManager";
 
 interface Workspace {
   id: string;
@@ -30,6 +31,7 @@ const WorkspaceManagement = () => {
   const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [personalInventory, setPersonalInventory] = useState<{ store_count: number; member_count: number; name: string; description: string }>({ 
@@ -576,6 +578,19 @@ const WorkspaceManagement = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
+                          setSelectedWorkspace(workspace);
+                          setShowPinDialog(true);
+                        }}
+                        className="gap-2"
+                        title="Manage member PINs"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           openEditDialog(workspace);
                         }}
                         className="flex-1 gap-2"
@@ -690,6 +705,16 @@ const WorkspaceManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* PIN Management Dialog */}
+      {selectedWorkspace && (
+        <WorkspaceMemberPinManager
+          open={showPinDialog}
+          onOpenChange={setShowPinDialog}
+          workspaceId={selectedWorkspace.id}
+          workspaceName={selectedWorkspace.name}
+        />
+      )}
 
       <BottomNav />
     </div>

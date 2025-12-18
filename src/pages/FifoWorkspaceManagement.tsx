@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Edit, Trash2, Users, Package, UserPlus, ArrowLeft, QrCode, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Package, UserPlus, ArrowLeft, QrCode, Shield, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { InviteFifoMemberDialog } from "@/components/InviteFifoMemberDialog";
+import { WorkspaceMemberPinManager } from "@/components/WorkspaceMemberPinManager";
 
 interface Workspace {
   id: string;
@@ -34,6 +35,7 @@ export default function FifoWorkspaceManagement() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
 
@@ -237,7 +239,7 @@ export default function FifoWorkspaceManagement() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{workspace.name}</span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -252,7 +254,19 @@ export default function FifoWorkspaceManagement() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        onClick={() => {
+                          setSelectedWorkspace(workspace);
+                          setShowPinDialog(true);
+                        }}
+                        title="Manage member PINs"
+                      >
+                        <Key className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         onClick={() => openEditDialog(workspace)}
+                        title="Edit workspace"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -260,6 +274,7 @@ export default function FifoWorkspaceManagement() {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(workspace.id)}
+                        title="Delete workspace"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -397,6 +412,16 @@ export default function FifoWorkspaceManagement() {
           workspaceId={selectedWorkspace.id}
           workspaceName={selectedWorkspace.name}
           onSuccess={fetchWorkspaces}
+        />
+      )}
+
+      {/* PIN Management Dialog */}
+      {selectedWorkspace && (
+        <WorkspaceMemberPinManager
+          open={showPinDialog}
+          onOpenChange={setShowPinDialog}
+          workspaceId={selectedWorkspace.id}
+          workspaceName={selectedWorkspace.name}
         />
       )}
 
