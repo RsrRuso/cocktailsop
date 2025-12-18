@@ -117,8 +117,23 @@ export const POFIFOSyncPanel = ({
         return;
       }
 
-      // Create sync items for each received item
-      const syncRecords = receivedItems.map((item: any) => ({
+      // Check which items are already imported (by po_received_item_id)
+      const receivedItemIds = receivedItems.map((item: any) => item.id);
+      const { data: existingSync } = await supabase
+        .from('po_fifo_sync')
+        .select('po_received_item_id')
+        .in('po_received_item_id', receivedItemIds);
+      
+      const existingItemIds = new Set(existingSync?.map(s => s.po_received_item_id) || []);
+      const newItems = receivedItems.filter((item: any) => !existingItemIds.has(item.id));
+      
+      if (newItems.length === 0) {
+        toast.info("All items from this record are already imported");
+        return;
+      }
+
+      // Create sync items only for new items
+      const syncRecords = newItems.map((item: any) => ({
         po_received_item_id: item.id,
         po_received_record_id: recordId,
         item_name: item.item_name,
@@ -136,7 +151,7 @@ export const POFIFOSyncPanel = ({
       
       if (insertError) throw insertError;
       
-      toast.success(`${receivedItems.length} items imported for FIFO sync`);
+      toast.success(`${newItems.length} items imported for FIFO sync`);
       refetch();
       queryClient.invalidateQueries({ queryKey: ['po-received-unlinked'] });
     } catch (error: any) {
