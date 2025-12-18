@@ -236,29 +236,35 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
   }, [logActivity]);
 
   // Track batch deletion
-  const trackBatchDelete = useCallback((batchName: string, recipeName: string) => {
-    logActivity('batch_delete', 0, { 
+  const trackBatchDelete = useCallback(async (batchName: string, recipeName: string) => {
+    console.log('trackBatchDelete called:', { batchName, recipeName, userId: userIdRef.current, groupId: sessionRef.current?.groupId });
+    await logActivity('batch_delete', 0, { 
       batch_name: batchName, 
       recipe_name: recipeName,
       timestamp: new Date().toISOString() 
     });
+    console.log('trackBatchDelete completed');
   }, [logActivity]);
 
   // Track recipe edit
-  const trackRecipeEdit = useCallback((recipeName: string, changes?: string) => {
-    logActivity('recipe_edit', 0, { 
+  const trackRecipeEdit = useCallback(async (recipeName: string, changes?: string) => {
+    console.log('trackRecipeEdit called:', { recipeName, changes, userId: userIdRef.current, groupId: sessionRef.current?.groupId });
+    await logActivity('recipe_edit', 0, { 
       recipe_name: recipeName, 
       changes,
       timestamp: new Date().toISOString() 
     });
+    console.log('trackRecipeEdit completed');
   }, [logActivity]);
 
   // Track recipe deletion
-  const trackRecipeDelete = useCallback((recipeName: string) => {
-    logActivity('recipe_delete', 0, { 
+  const trackRecipeDelete = useCallback(async (recipeName: string) => {
+    console.log('trackRecipeDelete called:', { recipeName, userId: userIdRef.current, groupId: sessionRef.current?.groupId });
+    await logActivity('recipe_delete', 0, { 
       recipe_name: recipeName,
       timestamp: new Date().toISOString() 
     });
+    console.log('trackRecipeDelete completed');
   }, [logActivity]);
 
   return {

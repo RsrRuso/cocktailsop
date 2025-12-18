@@ -518,7 +518,7 @@ const BatchCalculator = () => {
         }
       });
       // Track recipe edit
-      activityTracker.trackRecipeEdit(recipeName);
+      await activityTracker.trackRecipeEdit(recipeName);
       setEditingRecipeId(null);
     } else {
       // Create new recipe with selected group
@@ -554,17 +554,20 @@ const BatchCalculator = () => {
     setActiveTab("calculator");
   };
 
-  const handleDeleteRecipe = (recipeId: string) => {
+  const handleDeleteRecipe = async (recipeId: string) => {
     const recipeToDelete = recipes.find(r => r.id === recipeId);
-    if (confirm("Are you sure you want to delete this recipe?")) {
-      deleteRecipe(recipeId);
-      // Track recipe deletion
-      if (recipeToDelete) {
-        activityTracker.trackRecipeDelete(recipeToDelete.recipe_name);
-      }
-      if (selectedRecipeId === recipeId) {
-        setSelectedRecipeId(null);
-      }
+    if (!confirm("Are you sure you want to delete this recipe?")) {
+      return;
+    }
+    
+    // Track recipe deletion BEFORE deleting
+    if (recipeToDelete) {
+      await activityTracker.trackRecipeDelete(recipeToDelete.recipe_name);
+    }
+    
+    deleteRecipe(recipeId);
+    if (selectedRecipeId === recipeId) {
+      setSelectedRecipeId(null);
     }
   };
 
@@ -743,10 +746,10 @@ const BatchCalculator = () => {
       return;
     }
 
-    // Track batch deletion before actually deleting
+    // Track batch deletion before actually deleting - await to ensure it's logged
     if (productionToDelete) {
       const recipeName = recipes.find(r => r.id === productionToDelete.recipe_id)?.recipe_name || 'Unknown';
-      activityTracker.trackBatchDelete(productionToDelete.batch_name, recipeName);
+      await activityTracker.trackBatchDelete(productionToDelete.batch_name, recipeName);
     }
     
     deleteProduction({ productionId });
