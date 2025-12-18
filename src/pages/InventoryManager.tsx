@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X, UserPlus } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X, UserPlus, Smartphone } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
@@ -1085,7 +1085,7 @@ const InventoryManager = () => {
               <p className="text-xs sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Select
               value={currentWorkspace?.id || "personal"}
               onValueChange={(value) => {
@@ -1110,6 +1110,15 @@ const InventoryManager = () => {
                   ))}
               </SelectContent>
             </Select>
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => navigate("/fifo-pin-access")}
+              title="Staff PIN Access"
+              className="shrink-0"
+            >
+              <Smartphone className="h-4 w-4" />
+            </Button>
             <Button
               size="sm"
               variant="outline"
