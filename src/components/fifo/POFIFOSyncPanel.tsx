@@ -95,8 +95,13 @@ export const POFIFOSyncPanel = ({
     enabled: !!userId
   });
 
-  // Check which records have been imported
-  const importedRecordIds = new Set(syncItems?.map(s => s.po_received_record_id).filter(Boolean) || []);
+  // Check which records have been imported (only pending or synced count as imported, not rejected)
+  const importedRecordIds = new Set(
+    syncItems
+      ?.filter(s => s.status === 'pending' || s.status === 'synced')
+      .map(s => s.po_received_record_id)
+      .filter(Boolean) || []
+  );
 
   const pendingItems = syncItems?.filter(i => i.status === 'pending') || [];
   const syncedItems = syncItems?.filter(i => i.status === 'synced') || [];
