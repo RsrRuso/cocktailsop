@@ -1768,6 +1768,7 @@ function KDSModule({ outletId }: { outletId: string }) {
 
 // ====================== MENU MODULE ======================
 function MenuModule({ outletId }: { outletId: string }) {
+  const { formatPrice } = useCurrency();
   const [categories, setCategories] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [modifiers, setModifiers] = useState<any[]>([]);
@@ -2173,7 +2174,7 @@ function MenuModule({ outletId }: { outletId: string }) {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {item.lab_ops_categories?.name || "Uncategorized"} • ${Number(item.base_price).toFixed(2)}
+                            {item.lab_ops_categories?.name || "Uncategorized"} • {formatPrice(Number(item.base_price))}
                             {item.lab_ops_categories?.type && (
                               <span className="ml-2">
                                 • {item.lab_ops_categories.type === 'drink' ? 'Bar' : 'Kitchen'}
@@ -2295,7 +2296,7 @@ function MenuModule({ outletId }: { outletId: string }) {
                     <div key={mod.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
                         <p className="font-medium">{mod.name}</p>
-                        <p className="text-sm text-primary">+${Number(mod.price || 0).toFixed(2)}</p>
+                        <p className="text-sm text-primary">+{formatPrice(Number(mod.price || 0))}</p>
                       </div>
                       <Button size="icon" variant="ghost" onClick={() => deleteModifier(mod.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -3301,6 +3302,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
 // ====================== PURCHASING MODULE ======================
 function PurchasingModule({ outletId }: { outletId: string }) {
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
@@ -3574,7 +3576,7 @@ function PurchasingModule({ outletId }: { outletId: string }) {
                     <div className="border-t pt-4">
                       <div className="flex justify-between font-semibold">
                         <span>Total</span>
-                        <span>${poItems.reduce((sum, i) => sum + (i.qty * i.price), 0).toFixed(2)}</span>
+                        <span>{formatPrice(poItems.reduce((sum, i) => sum + (i.qty * i.price), 0))}</span>
                       </div>
                     </div>
 
@@ -3602,7 +3604,7 @@ function PurchasingModule({ outletId }: { outletId: string }) {
                           }>{po.status}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {po.lab_ops_suppliers?.name} • ${Number(po.total_amount || 0).toFixed(2)}
+                          {po.lab_ops_suppliers?.name} • {formatPrice(Number(po.total_amount || 0))}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -3685,6 +3687,7 @@ function PurchasingModule({ outletId }: { outletId: string }) {
 
 // ====================== RECIPES MODULE ======================
 function RecipesModule({ outletId }: { outletId: string }) {
+  const { formatPrice } = useCurrency();
   const [recipes, setRecipes] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
@@ -4000,15 +4003,15 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       <div className="grid grid-cols-3 gap-4 mt-4">
                         <div className="text-center p-2 bg-muted/50 rounded">
                           <p className="text-xs text-muted-foreground">Cost</p>
-                          <p className="font-semibold">${cost.toFixed(2)}</p>
+                          <p className="font-semibold">{formatPrice(cost)}</p>
                         </div>
                         <div className="text-center p-2 bg-muted/50 rounded">
                           <p className="text-xs text-muted-foreground">Price</p>
-                          <p className="font-semibold">${price.toFixed(2)}</p>
+                          <p className="font-semibold">{formatPrice(price)}</p>
                         </div>
                         <div className="text-center p-2 bg-muted/50 rounded">
                           <p className="text-xs text-muted-foreground">Profit</p>
-                          <p className="font-semibold text-green-600">${profit.toFixed(2)}</p>
+                          <p className="font-semibold text-green-600">{formatPrice(profit)}</p>
                         </div>
                       </div>
 
@@ -4352,6 +4355,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
 
 // ====================== REPORTS MODULE ======================
 function ReportsModule({ outletId }: { outletId: string }) {
+  const { formatPrice } = useCurrency();
   const [dailySales, setDailySales] = useState<any>({ total: 0, orders: 0, covers: 0 });
   const [weeklySales, setWeeklySales] = useState<any[]>([]);
   const [topItems, setTopItems] = useState<any[]>([]);
@@ -4435,7 +4439,7 @@ function ReportsModule({ outletId }: { outletId: string }) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Today's Sales</p>
-                <p className="text-2xl font-bold">${dailySales.total.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatPrice(dailySales.total)}</p>
               </div>
             </div>
           </CardContent>
@@ -4478,7 +4482,7 @@ function ReportsModule({ outletId }: { outletId: string }) {
               <div>
                 <p className="text-sm text-muted-foreground">Avg Check</p>
                 <p className="text-2xl font-bold">
-                  ${dailySales.orders > 0 ? (dailySales.total / dailySales.orders).toFixed(2) : "0.00"}
+                  {formatPrice(dailySales.orders > 0 ? (dailySales.total / dailySales.orders) : 0)}
                 </p>
               </div>
             </div>
@@ -4506,7 +4510,7 @@ function ReportsModule({ outletId }: { outletId: string }) {
                       <div className="flex-1">
                         <Progress value={percent} />
                       </div>
-                      <span className="w-20 text-right text-sm font-medium">${day.total.toFixed(2)}</span>
+                      <span className="w-20 text-right text-sm font-medium">{formatPrice(day.total)}</span>
                     </div>
                   );
                 })}
