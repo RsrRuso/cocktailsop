@@ -40,6 +40,8 @@ import {
   Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin
 } from "lucide-react";
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
+import { CurrencySelector } from "@/components/lab-ops/CurrencySelector";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Outlet {
   id: string;
@@ -602,6 +604,8 @@ export default function LabOps() {
                 </Button>
               )}
               
+              <CurrencySelector compact className="h-9 text-xs" />
+              
               {selectedOutlet && (
                 <TeamPresenceIndicator
                   onlineTeam={onlineTeam}
@@ -785,6 +789,7 @@ export default function LabOps() {
 // ====================== POS MODULE ======================
 function POSModule({ outletId }: { outletId: string }) {
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const [tables, setTables] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -1295,7 +1300,7 @@ function POSModule({ outletId }: { outletId: string }) {
                     disabled={!selectedTable}
                   >
                     <span className="font-medium text-sm truncate w-full">{item.name}</span>
-                    <span className="text-xs text-primary">${Number(item.base_price).toFixed(2)}</span>
+                    <span className="text-xs text-primary">{formatPrice(Number(item.base_price))}</span>
                   </Button>
                 ))}
               </div>
@@ -1349,7 +1354,7 @@ function POSModule({ outletId }: { outletId: string }) {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">${(item.unit_price * item.qty).toFixed(2)}</p>
+                            <p className="font-medium">{formatPrice(item.unit_price * item.qty)}</p>
                             <Badge variant={
                               item.status === "pending" ? "secondary" :
                               item.status === "sent" ? "default" :
@@ -1366,17 +1371,17 @@ function POSModule({ outletId }: { outletId: string }) {
                   <div className="border-t pt-4 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatPrice(subtotal)}</span>
                     </div>
                     {discountAmount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
-                        <span>-${discountAmount.toFixed(2)}</span>
+                        <span>-{formatPrice(discountAmount)}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>{formatPrice(total)}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -1423,7 +1428,7 @@ function POSModule({ outletId }: { outletId: string }) {
             <div className="flex flex-wrap gap-2">
               {modifiers.map((mod) => (
                 <Badge key={mod.id} variant="outline" className="cursor-pointer hover:bg-primary/10">
-                  {mod.name} (+${mod.price?.toFixed(2) || "0.00"})
+                  {mod.name} (+{formatPrice(mod.price || 0)})
                 </Badge>
               ))}
             </div>
@@ -1489,17 +1494,17 @@ function POSModule({ outletId }: { outletId: string }) {
             <div className="border-t pt-4">
               <div className="flex justify-between text-sm mb-2">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-sm text-green-600 mb-2">
                   <span>Discount</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                  <span>-{formatPrice(discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-xl">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{formatPrice(total)}</span>
               </div>
             </div>
 
@@ -4696,6 +4701,27 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
               <Label className="text-muted-foreground">Address</Label>
               <p className="font-medium">{outlet.address || "Not set"}</p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Currency Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Currency Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Display Currency</Label>
+              <p className="text-sm text-muted-foreground">
+                Currency is auto-detected from your region but can be changed
+              </p>
+            </div>
+            <CurrencySelector />
           </div>
         </CardContent>
       </Card>

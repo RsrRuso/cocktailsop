@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { FifoWorkspaceProvider } from "@/hooks/useFifoWorkspace";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { RoutePreloader } from "@/components/RoutePreloader";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -398,7 +399,9 @@ const App: React.FC = () => {
             <WorkspaceProvider>
               <FifoWorkspaceProvider>
                 <CartProvider>
-                  <AppContent />
+                  <CurrencyProvider>
+                    <AppContent />
+                  </CurrencyProvider>
                 </CartProvider>
               </FifoWorkspaceProvider>
             </WorkspaceProvider>
