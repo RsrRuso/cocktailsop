@@ -822,6 +822,7 @@ function POSModule({ outletId }: { outletId: string }) {
       .from("lab_ops_tables")
       .select("*")
       .eq("outlet_id", outletId)
+      .eq("is_archived", false)
       .order("name");
     setTables(data || []);
   };
