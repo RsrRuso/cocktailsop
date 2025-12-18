@@ -1598,7 +1598,7 @@ const StoreManagement = () => {
   // Staff mode logout handler
   const handleStaffLogout = () => {
     sessionStorage.removeItem("store_management_staff_session");
-    navigate("/store-management-pin");
+    navigate("/store-management-pin-access");
   };
 
   return (
@@ -1657,7 +1657,7 @@ const StoreManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate('/store-management-pin')}
+                  onClick={() => navigate('/store-management-pin-access')}
                   className="gap-2 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
                 >
                   <Smartphone className="w-3 h-3" />
