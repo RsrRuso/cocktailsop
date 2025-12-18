@@ -330,21 +330,21 @@ export const POFIFOSyncPanel = ({
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'synced')}>
-          <TabsList className="grid w-full grid-cols-2 h-6">
-            <TabsTrigger value="pending" className="text-[10px] flex items-center gap-0.5 h-5">
-              <Clock className="h-2.5 w-2.5" />
+          <TabsList className="flex w-full h-7 p-0.5">
+            <TabsTrigger value="pending" className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6">
+              <Clock className="h-3 w-3" />
               Pending
               {pendingItems.length > 0 && (
-                <Badge variant="destructive" className="h-3 px-0.5 text-[8px] ml-0.5">
+                <Badge variant="destructive" className="h-4 px-1 text-[9px]">
                   {pendingItems.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="synced" className="text-[10px] flex items-center gap-0.5 h-5">
-              <CheckCircle className="h-2.5 w-2.5" />
+            <TabsTrigger value="synced" className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6">
+              <CheckCircle className="h-3 w-3" />
               Synced
               {syncedItems.length > 0 && (
-                <Badge variant="secondary" className="h-3 px-0.5 text-[8px] ml-0.5">
+                <Badge variant="secondary" className="h-4 px-1 text-[9px]">
                   {syncedItems.length}
                 </Badge>
               )}
