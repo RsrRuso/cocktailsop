@@ -288,7 +288,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="z-[60] bg-black/60 backdrop-blur-2xl border-0 w-48 p-1.5 shadow-none">
+            <DropdownMenuContent align="start" className="z-[60] bg-transparent border-0 w-48 p-1.5 shadow-none">
               {/* Features */}
               <Collapsible>
                 <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-white/10 rounded flex items-center justify-between">
