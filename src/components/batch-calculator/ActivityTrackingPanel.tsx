@@ -202,17 +202,17 @@ export const ActivityTrackingPanel = memo(({ groupId }: ActivityTrackingPanelPro
   // Fetch usernames for activity
   useEffect(() => {
     const fetchProfiles = async () => {
-      const userIds = [...new Set(recentActivity.map(a => a.user_id))];
+      const userIds = [...new Set(recentActivity.map(a => a.user_id).filter(Boolean))];
       if (userIds.length === 0) return;
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, full_name')
         .in('id', userIds);
 
       if (data) {
         const map: Record<string, string> = {};
-        data.forEach(p => { map[p.id] = p.username || 'Unknown'; });
+        data.forEach(p => { map[p.id] = p.full_name || p.username || 'Unknown'; });
         setProfiles(map);
       }
     };
