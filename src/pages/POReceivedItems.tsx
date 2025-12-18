@@ -1480,9 +1480,9 @@ const POReceivedItems = () => {
           />
         )}
 
-        {/* Compact Stats Row with Currency */}
+        {/* Stats Row */}
         <div className="flex items-center gap-1">
-          <div className="grid grid-cols-4 gap-1 flex-1">
+          <div className="grid grid-cols-3 gap-1 flex-1">
             <Card className="p-1.5 flex items-center gap-1">
               <FileText className="h-3 w-3 text-blue-500 shrink-0" />
               <div>
@@ -1510,13 +1510,6 @@ const POReceivedItems = () => {
                 <p className="text-sm font-bold text-amber-500 leading-tight">{poCompletionStats.pending}</p>
               </div>
             </Card>
-            <Card className="p-1.5 flex items-center gap-1">
-              <Coins className="h-3 w-3 text-green-500 shrink-0" />
-              <div>
-                <p className="text-[8px] text-muted-foreground leading-none">Value</p>
-                <p className="text-[10px] font-bold leading-tight text-green-500">{formatCurrency(calculatedTotalValue)}</p>
-              </div>
-            </Card>
           </div>
           <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
             <SelectTrigger className="w-[52px] h-7 text-[9px] px-1">
@@ -1531,6 +1524,15 @@ const POReceivedItems = () => {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Total Value - Separate Row */}
+        <Card className="p-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Coins className="h-4 w-4 text-green-500" />
+            <span className="text-xs text-muted-foreground">Total Value</span>
+          </div>
+          <span className="text-base font-bold text-green-500">{formatCurrency(calculatedTotalValue)}</span>
+        </Card>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
