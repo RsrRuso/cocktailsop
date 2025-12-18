@@ -1438,7 +1438,7 @@ export default function StoryViewer() {
               onDragEnd={(_, info: PanInfo) => {
                 if (info.offset.y > 100) setShowViewersPanel(false);
               }}
-              className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl rounded-t-3xl z-50 max-h-[70vh] overflow-hidden border-t border-white/10"
+              className="absolute bottom-0 left-0 right-0 bg-black/30 backdrop-blur-2xl rounded-t-3xl z-50 max-h-[70vh] overflow-hidden"
             >
               {/* Handle bar */}
               <div className="flex justify-center pt-3 pb-2">
@@ -1446,7 +1446,7 @@ export default function StoryViewer() {
               </div>
               
               {/* Header */}
-              <div className="px-4 pb-3 border-b border-white/10">
+              <div className="px-4 pb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Story Activity</h3>
                   <button 
