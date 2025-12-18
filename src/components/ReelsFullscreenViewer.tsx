@@ -22,6 +22,7 @@ interface Reel {
   music_url?: string | null;
   music_track_id?: string | null;
   mute_original_audio?: boolean | null;
+  is_image_reel?: boolean | null;
   profiles?: {
     username: string;
     full_name: string;
@@ -31,6 +32,7 @@ interface Reel {
   music_tracks?: {
     title: string;
     preview_url: string | null;
+    original_url: string | null;
     profiles?: {
       username: string;
     } | null;
@@ -75,36 +77,34 @@ export const ReelsFullscreenViewer = ({
   useEffect(() => {
     const currentReel = reels[currentIndex];
     if (!currentReel) return;
-    
-    // Check if reel has attached music (must have music_track_id)
-    const hasAttachedMusic = Boolean(currentReel.music_track_id && (currentReel.music_tracks?.preview_url || currentReel.music_url));
-    const musicUrl = currentReel.music_tracks?.preview_url || currentReel.music_url;
-    
+
+    const musicUrl =
+      currentReel.music_tracks?.original_url ||
+      currentReel.music_tracks?.preview_url ||
+      currentReel.music_url;
+
+    const hasAttachedMusic = Boolean(musicUrl);
+
     // Stop any current music
     if (musicAudioRef.current) {
       musicAudioRef.current.pause();
       musicAudioRef.current.src = '';
       musicAudioRef.current = null;
     }
-    
-    // Start music if reel has attached music and we're open
+
+    // Start music if reel has music and viewer is open
     if (hasAttachedMusic && musicUrl && isOpen) {
       const audio = new Audio(musicUrl);
       audio.loop = true;
       audio.muted = isMuted;
       audio.preload = 'auto';
       musicAudioRef.current = audio;
-      
-      // Play music immediately
-      audio.play().catch((err) => {
-        console.log('Music play failed, retrying:', err);
-        // Retry after short delay (user interaction might be needed)
-        setTimeout(() => {
-          audio.play().catch(() => {});
-        }, 100);
+
+      audio.play().catch(() => {
+        // Mobile browsers may require explicit user interaction before audio can play.
       });
     }
-    
+
     return () => {
       if (musicAudioRef.current) {
         musicAudioRef.current.pause();
@@ -305,10 +305,29 @@ export const ReelsFullscreenViewer = ({
           }}
         >
           {(() => {
+            const musicUrl =
+              currentReel.music_tracks?.original_url ||
+              currentReel.music_tracks?.preview_url ||
+              currentReel.music_url;
+            const hasMusic = Boolean(musicUrl);
+
+            const isImage = currentReel.is_image_reel === true;
+
             // Determine if video should be muted
-            const hasMusic = Boolean(currentReel.music_track_id && (currentReel.music_tracks?.preview_url || currentReel.music_url));
             const shouldMuteVideo = isMuted || (hasMusic && currentReel.mute_original_audio === true);
-            
+
+            if (isImage) {
+              return (
+                <img
+                  key={currentReel.id}
+                  src={currentReel.video_url}
+                  alt={currentReel.caption ? `Reel image: ${currentReel.caption}` : "Reel image"}
+                  className="w-full h-full object-cover"
+                  style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
+                />
+              );
+            }
+
             return (
               <video
                 key={currentReel.id}

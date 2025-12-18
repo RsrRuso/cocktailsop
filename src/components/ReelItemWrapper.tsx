@@ -57,21 +57,24 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
 
-  // Check if reel has attached music - prioritize music_tracks.preview_url over music_url
-  const hasAttachedMusic = Boolean(reel.music_track_id && (reel.music_tracks?.preview_url || reel.music_url));
-  const musicUrl = reel.music_tracks?.preview_url || reel.music_url;
-  
+  // Attached music (prefer track.original_url)
+  const musicUrl = reel.music_tracks?.original_url || reel.music_tracks?.preview_url || reel.music_url;
+  const hasAttachedMusic = Boolean(musicUrl);
+
+  const isImageReel = reel.is_image_reel === true;
+
   // Video should be muted if: has music AND mute_original_audio is true
   const shouldMuteVideo = hasAttachedMusic && reel.mute_original_audio === true;
-  // Audio should be muted only if user manually muted
+  // Global mute state is controlled by the user
   const isUserMuted = mutedVideos.has(reel.id);
 
-  // Preload adjacent videos aggressively
+  // Preload adjacent videos aggressively (skip for image reels)
   useEffect(() => {
+    if (isImageReel) return;
     if (videoRef.current && Math.abs(index - currentIndex) <= 2) {
       videoRef.current.load();
     }
-  }, [index, currentIndex]);
+  }, [index, currentIndex, isImageReel]);
 
   // Handle audio ready state
   useEffect(() => {
@@ -89,27 +92,33 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     };
   }, [hasAttachedMusic, musicUrl]);
 
-  // Play/pause video and audio based on visibility - CRITICAL sync logic
+  // Play/pause media based on visibility
   useEffect(() => {
     const video = videoRef.current;
     const audio = audioRef.current;
-    
-    if (index === currentIndex) {
-      // Play video
-      video?.play().catch(() => {});
-      
-      // Play attached music if available
-      if (hasAttachedMusic && audio && musicUrl) {
-        // Sync audio to video start
-        audio.currentTime = 0;
-        audio.muted = isUserMuted;
-        audio.play().catch((err) => {
-          console.log('Audio play failed, retrying:', err);
-          // Retry after short delay
-          setTimeout(() => {
-            audio.play().catch(() => {});
-          }, 100);
+
+    const isActive = index === currentIndex;
+
+    if (isActive) {
+      if (!isImageReel) {
+        // Video autoplay must be muted on mobile (handled via mutedVideos state)
+        video?.play().catch(() => {});
+      }
+
+      if (hasAttachedMusic && audio && musicUrl && !isUserMuted) {
+        // Sync audio to current video time when possible
+        const t = !isImageReel ? (video?.currentTime || 0) : 0;
+        try {
+          audio.currentTime = Number.isFinite(t) ? t : 0;
+        } catch {
+          // ignore
+        }
+        audio.muted = false;
+        audio.play().catch(() => {
+          // Mobile browsers may require explicit user interaction before audio can play.
         });
+      } else if (audio) {
+        audio.pause();
       }
     } else {
       video?.pause();
@@ -118,7 +127,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         audio.currentTime = 0;
       }
     }
-  }, [index, currentIndex, hasAttachedMusic, musicUrl, isUserMuted]);
+  }, [index, currentIndex, hasAttachedMusic, musicUrl, isUserMuted, isImageReel]);
 
   // Sync audio mute state with user preference
   useEffect(() => {
@@ -129,10 +138,11 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
 
   // Sync video mute - mute if has attached music with mute flag OR user manually muted
   useEffect(() => {
+    if (isImageReel) return;
     if (videoRef.current) {
       videoRef.current.muted = shouldMuteVideo || isUserMuted;
     }
-  }, [shouldMuteVideo, isUserMuted]);
+  }, [shouldMuteVideo, isUserMuted, isImageReel]);
 
   // Parse caption for hashtags and mentions
   const renderCaption = (text: string) => {
@@ -150,18 +160,27 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
 
   return (
     <div className="h-screen snap-start relative">
-      {/* Full Screen Video - muted when music is attached */}
-      <video
-        ref={videoRef}
-        src={reel.video_url}
-        className="absolute inset-0 w-full h-full object-cover"
-        loop
-        playsInline
-        muted={shouldMuteVideo || isUserMuted}
-        preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
-      />
-      
-      {/* Audio element for attached music - always render if music exists */}
+      {/* Full Screen Media */}
+      {isImageReel ? (
+        <img
+          src={reel.video_url}
+          alt={reel.caption ? `Reel image: ${reel.caption}` : "Reel image"}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading={Math.abs(index - currentIndex) <= 2 ? "eager" : "lazy"}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src={reel.video_url}
+          className="absolute inset-0 w-full h-full object-cover"
+          loop
+          playsInline
+          muted={shouldMuteVideo || isUserMuted}
+          preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
+        />
+      )}
+
+      {/* Audio element for attached music */}
       {hasAttachedMusic && musicUrl && (
         <audio
           ref={audioRef}
@@ -169,32 +188,41 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           loop
           muted={isUserMuted}
           preload="auto"
-          autoPlay={index === currentIndex}
         />
       )}
 
-      {/* Mute/Unmute Button - Top Right */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setMutedVideos(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(reel.id)) {
-              newSet.delete(reel.id);
-            } else {
-              newSet.add(reel.id);
-            }
-            return newSet;
-          });
-        }}
-        className="absolute top-4 right-4 z-30 flex items-center justify-center hover:scale-110 transition-all active:scale-90"
-      >
-        {mutedVideos.has(reel.id) ? (
-          <VolumeX className="w-7 h-7 text-white drop-shadow-lg" />
-        ) : (
-          <Volume2 className="w-7 h-7 text-white drop-shadow-lg" />
-        )}
-      </button>
+       {/* Mute/Unmute Button - Top Right */}
+       <button
+         onClick={(e) => {
+           e.stopPropagation();
+           setMutedVideos((prev) => {
+             const next = new Set(prev);
+             const wasMuted = next.has(reel.id);
+             if (wasMuted) next.delete(reel.id);
+             else next.add(reel.id);
+
+             // If user just unmuted the currently visible reel, try to start playback (needed on iOS)
+             if (wasMuted && index === currentIndex) {
+               const video = videoRef.current;
+               const audio = audioRef.current;
+               video?.play().catch(() => {});
+               if (audio && musicUrl) {
+                 audio.muted = false;
+                 audio.play().catch(() => {});
+               }
+             }
+
+             return next;
+           });
+         }}
+         className="absolute top-4 right-4 z-30 flex items-center justify-center hover:scale-110 transition-all active:scale-90"
+       >
+         {mutedVideos.has(reel.id) ? (
+           <VolumeX className="w-7 h-7 text-white drop-shadow-lg" />
+         ) : (
+           <Volume2 className="w-7 h-7 text-white drop-shadow-lg" />
+         )}
+       </button>
 
       {/* Right Side Action Buttons - Instagram Style */}
       <div className="absolute right-3 bottom-24 flex flex-col gap-6 z-20">
