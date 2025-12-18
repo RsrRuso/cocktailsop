@@ -1487,8 +1487,9 @@ const InventoryManager = () => {
                     <div key={log.id} className="flex items-center gap-2 p-1.5 bg-muted rounded text-xs">
                       <Badge variant="outline" className="text-xs py-0">{log.action_type}</Badge>
                       <p className="flex-1">
-                        {log.stores?.name} • {log.employees?.name}
-                        {log.quantity_after !== null && ` • Qty: ${log.quantity_after}`}
+                        {log.stores?.name} {log.employees?.name && `• ${log.employees.name}`}
+                        {log.quantity_before !== null && log.quantity_after !== null && 
+                          ` • Qty: ${log.quantity_before - log.quantity_after}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(log.created_at).toLocaleString()}
