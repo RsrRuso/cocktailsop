@@ -1824,6 +1824,8 @@ const BatchCalculator = () => {
         const batchData = batchIngredientsData.get(prod.id);
         
         if (batchData && batchData.ingredients.length > 0) {
+          const hasBottles = batchData.totalBottles > 0;
+          
           // Ingredients table header
           doc.setFont("helvetica", "bold");
           doc.setFillColor(226, 232, 240);
@@ -1831,9 +1833,11 @@ const BatchCalculator = () => {
           doc.setTextColor(...slate);
           doc.setFontSize(5.5);
           doc.text("Ingredient", 16, yPos + 1.5);
-          doc.text("ML", 105, yPos + 1.5);
-          doc.text("Bottles", 130, yPos + 1.5);
-          doc.text("Extra ML", 160, yPos + 1.5);
+          doc.text("ML", hasBottles ? 105 : 160, yPos + 1.5);
+          if (hasBottles) {
+            doc.text("Bottles", 130, yPos + 1.5);
+            doc.text("Extra ML", 160, yPos + 1.5);
+          }
           yPos += 4;
           
           doc.setFont("helvetica", "normal");
@@ -1855,15 +1859,17 @@ const BatchCalculator = () => {
             doc.text(ingDisplayName, 16, yPos + 1.5);
             
             doc.setTextColor(...deepBlue);
-            doc.text(`${ing.ml.toFixed(0)}`, 105, yPos + 1.5);
+            doc.text(`${ing.ml.toFixed(0)}`, hasBottles ? 105 : 160, yPos + 1.5);
             
-            doc.setTextColor(...emerald);
-            doc.setFont("helvetica", "bold");
-            doc.text(ing.bottles > 0 ? `${ing.bottles}` : '-', 130, yPos + 1.5);
-            doc.setFont("helvetica", "normal");
-            
-            doc.setTextColor(...amber);
-            doc.text(ing.leftoverMl > 0 ? `${ing.leftoverMl.toFixed(0)}` : '-', 160, yPos + 1.5);
+            if (hasBottles) {
+              doc.setTextColor(...emerald);
+              doc.setFont("helvetica", "bold");
+              doc.text(ing.bottles > 0 ? `${ing.bottles}` : '-', 130, yPos + 1.5);
+              doc.setFont("helvetica", "normal");
+              
+              doc.setTextColor(...amber);
+              doc.text(ing.leftoverMl > 0 ? `${ing.leftoverMl.toFixed(0)}` : '-', 160, yPos + 1.5);
+            }
             
             yPos += 3;
           });
@@ -1875,9 +1881,11 @@ const BatchCalculator = () => {
           doc.setFontSize(6);
           doc.setFont("helvetica", "bold");
           doc.text("BATCH TOTAL:", 16, yPos + 2.5);
-          doc.text(`${batchData.totalMl.toFixed(0)} ml`, 105, yPos + 2.5);
-          doc.text(`${batchData.totalBottles} btl`, 130, yPos + 2.5);
-          doc.text(`${batchData.totalLeftoverMl.toFixed(0)} ml`, 160, yPos + 2.5);
+          doc.text(`${batchData.totalMl.toFixed(0)} ml`, hasBottles ? 105 : 160, yPos + 2.5);
+          if (hasBottles) {
+            doc.text(`${batchData.totalBottles} btl`, 130, yPos + 2.5);
+            doc.text(`${batchData.totalLeftoverMl.toFixed(0)} ml`, 160, yPos + 2.5);
+          }
           yPos += 6;
         }
         
@@ -2110,6 +2118,13 @@ const BatchCalculator = () => {
       }
       
       if (ingredientConsumption.size > 0) {
+        // Check if any ingredient has bottles
+        let hasAnyBottles = false;
+        ingredientConsumption.forEach(({ totalMl, bottleSize }) => {
+          const bottles = bottleSize ? Math.floor(totalMl / bottleSize) : 0;
+          if (bottles > 0) hasAnyBottles = true;
+        });
+        
         // Table header
         doc.setFont("helvetica", "bold");
         doc.setFillColor(...deepBlue);
@@ -2117,9 +2132,11 @@ const BatchCalculator = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(6);
         doc.text("Ingredient", 14, yPos + 1.5);
-        doc.text("Total ML", 110, yPos + 1.5);
-        doc.text("Bottles", 140, yPos + 1.5);
-        doc.text("Extra ML", 165, yPos + 1.5);
+        doc.text("Total ML", hasAnyBottles ? 110 : 160, yPos + 1.5);
+        if (hasAnyBottles) {
+          doc.text("Bottles", 140, yPos + 1.5);
+          doc.text("Extra ML", 165, yPos + 1.5);
+        }
         yPos += 5;
         
         doc.setFont("helvetica", "normal");
@@ -2137,9 +2154,11 @@ const BatchCalculator = () => {
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(6);
             doc.text("Ingredient", 14, yPos + 1.5);
-            doc.text("Total ML", 110, yPos + 1.5);
-            doc.text("Bottles", 140, yPos + 1.5);
-            doc.text("Extra ML", 165, yPos + 1.5);
+            doc.text("Total ML", hasAnyBottles ? 110 : 160, yPos + 1.5);
+            if (hasAnyBottles) {
+              doc.text("Bottles", 140, yPos + 1.5);
+              doc.text("Extra ML", 165, yPos + 1.5);
+            }
             yPos += 5;
             doc.setFont("helvetica", "normal");
           }
@@ -2159,16 +2178,18 @@ const BatchCalculator = () => {
           
           doc.setTextColor(...deepBlue);
           doc.setFont("helvetica", "bold");
-          doc.text(`${totalMl.toFixed(0)} ml`, 110, yPos + 1.5);
+          doc.text(`${totalMl.toFixed(0)} ml`, hasAnyBottles ? 110 : 160, yPos + 1.5);
           doc.setFont("helvetica", "normal");
           
-          doc.setTextColor(...emerald);
-          doc.setFont("helvetica", "bold");
-          doc.text(bottles > 0 ? `${bottles}` : '-', 140, yPos + 1.5);
-          doc.setFont("helvetica", "normal");
-          
-          doc.setTextColor(...amber);
-          doc.text(leftoverMl > 0 ? `${leftoverMl.toFixed(0)} ml` : '-', 165, yPos + 1.5);
+          if (hasAnyBottles) {
+            doc.setTextColor(...emerald);
+            doc.setFont("helvetica", "bold");
+            doc.text(bottles > 0 ? `${bottles}` : '-', 140, yPos + 1.5);
+            doc.setFont("helvetica", "normal");
+            
+            doc.setTextColor(...amber);
+            doc.text(leftoverMl > 0 ? `${leftoverMl.toFixed(0)} ml` : '-', 165, yPos + 1.5);
+          }
           
           yPos += 3.5;
           ingredientIndex++;
@@ -2181,8 +2202,10 @@ const BatchCalculator = () => {
         doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
         doc.text("GRAND TOTAL:", 14, yPos + 3.5);
-        doc.text(`${grandTotalMl.toFixed(0)} ml`, 110, yPos + 3.5);
-        doc.text(`${grandTotalBottles} btl`, 140, yPos + 3.5);
+        doc.text(`${grandTotalMl.toFixed(0)} ml`, hasAnyBottles ? 110 : 160, yPos + 3.5);
+        if (hasAnyBottles) {
+          doc.text(`${grandTotalBottles} btl`, 140, yPos + 3.5);
+        }
         yPos += 8;
       }
       
