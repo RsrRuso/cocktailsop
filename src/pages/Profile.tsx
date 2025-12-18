@@ -226,7 +226,6 @@ const Profile = () => {
             <div className="flex items-center gap-1.5">
               <h2 className="text-base font-bold">{p.full_name || p.username}</h2>
               {isVerified && <VerifiedBadge size="sm" />}
-              <Sparkles className="w-4 h-4 text-primary" />
             </div>
             
             {/* Role/Title */}
