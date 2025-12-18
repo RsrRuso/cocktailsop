@@ -12,11 +12,18 @@ import { Card } from "@/components/ui/card";
 
 interface LocationState {
   preloadedMedia?: {
-    dataUrl: string;
-    type: string;
-    name: string;
+    // Data URL (preferred for in-memory handoff)
+    dataUrl?: string;
+    // Public URL (fallback)
+    url?: string;
+    type?: string;
+    name?: string;
   };
   openEditor?: boolean;
+  shareContent?: {
+    type: "post" | "reel";
+    id: string;
+  };
 }
 
 const CreateStory = () => {
@@ -34,38 +41,115 @@ const CreateStory = () => {
   const { uploadState, uploadMultiple } = usePowerfulUpload();
   const hasProcessedPreload = useRef(false);
 
-  // Handle preloaded media from share dialog - runs on mount and when location changes
+  // Handle inbound “share to story” -> open editor directly
   useEffect(() => {
-    // Prevent double processing
     if (hasProcessedPreload.current) return;
-    
-    if (locationState?.preloadedMedia && locationState?.openEditor) {
+
+    const qs = new URLSearchParams(location.search);
+    const qsVideo = qs.get("video");
+    const qsImage = qs.get("image");
+    const qsUrl = qsVideo ?? qsImage;
+
+    const startPreload = () => {
       hasProcessedPreload.current = true;
       setIsLoadingPreload(true);
       setShowSelection(false);
       setEditingIndex(0);
-      
-      const { dataUrl, type, name } = locationState.preloadedMedia;
-      
-      // Convert data URL to File
-      fetch(dataUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], name, { type });
-          setSelectedMedia([file]);
-          setPreviewUrls([dataUrl]);
-          setIsLoadingPreload(false);
-        })
-        .catch(() => {
-          // Fallback - just show the preview
-          setPreviewUrls([dataUrl]);
-          setIsLoadingPreload(false);
-        });
-      
-      // Clear the state to prevent re-triggering on back navigation
-      window.history.replaceState({}, document.title);
-    }
-  }, [locationState]);
+    };
+
+    const loadFileFromUrl = async (url: string, fallbackName: string) => {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const type = blob.type || "application/octet-stream";
+      const ext = type.includes("/") ? type.split("/")[1] : "bin";
+      const file = new File([blob], `${fallbackName}.${ext}`, { type });
+      setSelectedMedia([file]);
+      setPreviewUrls([url]);
+      setIsLoadingPreload(false);
+    };
+
+    const loadFileFromDataUrl = async (dataUrl: string, name?: string, type?: string) => {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], name || `shared-story.${(type || blob.type || "image/png").split("/")[1] || "png"}`, {
+        type: type || blob.type || "image/png",
+      });
+      setSelectedMedia([file]);
+      setPreviewUrls([dataUrl]);
+      setIsLoadingPreload(false);
+    };
+
+    const run = async () => {
+      try {
+        // 1) ShareDialog handoff
+        if (locationState?.openEditor && locationState.preloadedMedia?.dataUrl) {
+          startPreload();
+          await loadFileFromDataUrl(
+            locationState.preloadedMedia.dataUrl,
+            locationState.preloadedMedia.name,
+            locationState.preloadedMedia.type
+          );
+          window.history.replaceState({}, document.title);
+          return;
+        }
+
+        // 2) Any place that passes a public URL
+        if (locationState?.openEditor && locationState.preloadedMedia?.url) {
+          startPreload();
+          await loadFileFromUrl(locationState.preloadedMedia.url, "shared-story");
+          window.history.replaceState({}, document.title);
+          return;
+        }
+
+        // 3) Engagement dialogs (saves/reposts/likes) passing just {type,id}
+        if (locationState?.shareContent?.id) {
+          startPreload();
+
+          if (locationState.shareContent.type === "post") {
+            const { data, error } = await supabase
+              .from("posts")
+              .select("id, content, media_urls")
+              .eq("id", locationState.shareContent.id)
+              .single();
+            if (error) throw error;
+
+            const url = (data?.media_urls as string[] | null)?.[0];
+            if (!url) throw new Error("No media found for post");
+            await loadFileFromUrl(url, `shared-post-${data.id}`);
+          } else {
+            const { data, error } = await supabase
+              .from("reels")
+              .select("id, caption, video_url")
+              .eq("id", locationState.shareContent.id)
+              .single();
+            if (error) throw error;
+
+            const url = data?.video_url as string | null;
+            if (!url) throw new Error("No video found for reel");
+            await loadFileFromUrl(url, `shared-reel-${data.id}`);
+          }
+
+          window.history.replaceState({}, document.title);
+          return;
+        }
+
+        // 4) URL query share (e.g. /create/story?video=...)
+        if (qsUrl) {
+          startPreload();
+          await loadFileFromUrl(qsUrl, qsVideo ? "shared-story-video" : "shared-story-image");
+          return;
+        }
+      } catch (e) {
+        console.error("[CreateStory] Failed to preload shared media", e);
+        setIsLoadingPreload(false);
+        setShowSelection(true);
+        setEditingIndex(null);
+        toast.error("Couldn't open story editor. Please try again.");
+      }
+    };
+
+    void run();
+  }, [location.search, locationState]);
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -346,11 +430,25 @@ const CreateStory = () => {
   }
 
   if (editingIndex !== null) {
+    const media = selectedMedia[editingIndex];
+    const mediaUrl = previewUrls[editingIndex];
+
+    if (!media || !mediaUrl) {
+      return (
+        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+          <div className="text-white text-center">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p>Opening story editor...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <StoryEditor
-        media={selectedMedia[editingIndex]}
-        mediaUrl={previewUrls[editingIndex]}
-        isVideo={selectedMedia[editingIndex]?.type.startsWith('video')}
+        media={media}
+        mediaUrl={mediaUrl}
+        isVideo={media.type.startsWith('video')}
         onSave={(data) => handleSaveEdit(editingIndex, data)}
         onCancel={() => setEditingIndex(null)}
       />
