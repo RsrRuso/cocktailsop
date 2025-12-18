@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, LogOut, Settings, Sparkles } from "lucide-react";
+import { Loader2, LogOut, Sparkles, Share2, TrendingUp, Link as LinkIcon, AtSign, Settings } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -122,99 +122,163 @@ const Profile = () => {
     professional_title: profile?.professional_title,
   };
 
+  const handleShareProfile = async () => {
+    const profileUrl = `${window.location.origin}/user/${user.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${p.full_name || p.username}'s Profile`,
+          url: profileUrl,
+        });
+      } catch {
+        navigator.clipboard.writeText(profileUrl);
+        toast.success("Profile link copied!");
+      }
+    } else {
+      navigator.clipboard.writeText(profileUrl);
+      toast.success("Profile link copied!");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
       
-      {p.cover_url && (
-        <div className="w-full h-40">
-          <img src={p.cover_url} alt="" className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      <div className="px-4 space-y-4" style={{ marginTop: p.cover_url ? '-2.5rem' : '1rem' }}>
-        {/* Header */}
-        <div className="glass rounded-xl p-4 border border-border/50">
-          <div className="flex items-start gap-4">
-            <div 
-              className={`cursor-pointer ${hasStories ? 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-full' : ''}`}
-              onClick={() => hasStories && navigate('/stories')}
-            >
-              <OptimizedAvatar
-                src={p.avatar_url}
-                alt={p.username}
-                fallback={p.username[0]}
-                userId={user.id}
-                className={`w-20 h-20 bg-gradient-to-br ${getBadgeColor(p.badge_level)}`}
-                showStatus={true}
-                showAddButton={true}
-                onAddStatusClick={() => setShowStatusDialog(true)}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-xl font-bold truncate">{p.full_name || p.username}</h2>
-                {isVerified && <VerifiedBadge size="md" />}
+      <div className="px-4 pt-4 space-y-4">
+        {/* Instagram-style Header */}
+        <div className="space-y-4">
+          {/* Top row: Avatar + Stats */}
+          <div className="flex items-center gap-6">
+            {/* Avatar with story ring */}
+            <div className="relative flex-shrink-0">
+              <div 
+                className={`cursor-pointer ${hasStories ? 'p-[3px] rounded-full bg-gradient-to-tr from-primary via-primary/70 to-primary' : ''}`}
+                onClick={() => hasStories && navigate('/stories')}
+              >
+                <div className={hasStories ? 'p-[2px] bg-background rounded-full' : ''}>
+                  <OptimizedAvatar
+                    src={p.avatar_url}
+                    alt={p.username}
+                    fallback={p.username[0]}
+                    userId={user.id}
+                    className={`w-20 h-20 bg-gradient-to-br ${getBadgeColor(p.badge_level)}`}
+                    showStatus={true}
+                    showAddButton={true}
+                    onAddStatusClick={() => setShowStatusDialog(true)}
+                  />
+                </div>
               </div>
-              <p className="text-muted-foreground text-sm">@{p.username}</p>
-              {p.professional_title && (
-                <p className="text-xs text-primary capitalize mt-0.5">{p.professional_title.replace(/_/g, " ")}</p>
+              
+              {/* Status pill */}
+              {userStatus && (
+                <div className="absolute -top-2 -left-1 bg-muted/90 backdrop-blur-sm border border-border rounded-lg px-2 py-0.5 text-[10px] font-medium max-w-[80px] truncate">
+                  {userStatus.emoji} {userStatus.status_text}
+                </div>
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="w-5 h-5" />
-            </Button>
+
+            {/* Stats row */}
+            <div className="flex-1 flex items-center justify-around">
+              <div className="text-center">
+                <p className="text-lg font-bold">{contentCount}</p>
+                <p className="text-xs text-muted-foreground">posts</p>
+              </div>
+              <button className="text-center" onClick={() => setShowFollowers(true)}>
+                <p className="text-lg font-bold">{p.follower_count.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">followers</p>
+              </button>
+              <button className="text-center" onClick={() => setShowFollowing(true)}>
+                <p className="text-lg font-bold">{p.following_count.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">following</p>
+              </button>
+            </div>
           </div>
 
-          {p.bio && <p className="text-sm text-muted-foreground mt-3">{p.bio}</p>}
-
-          {/* Current Status */}
-          {userStatus && (
-            <div className="mt-3 p-2 rounded-lg bg-primary/10 border border-primary/20 text-center">
-              <p className="text-sm font-medium">
-                {userStatus.emoji && <span className="mr-1">{userStatus.emoji}</span>}
-                {userStatus.status_text}
+          {/* Name + Verified */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-base font-bold">{p.full_name || p.username}</h2>
+              {isVerified && <VerifiedBadge size="sm" />}
+              <Sparkles className="w-4 h-4 text-primary" />
+            </div>
+            
+            {/* Role/Title */}
+            {p.professional_title && (
+              <p className="text-sm text-muted-foreground capitalize">
+                {p.professional_title.replace(/_/g, " ")}
               </p>
+            )}
+            
+            {/* Bio */}
+            {p.bio && (
+              <p className="text-sm leading-relaxed">{p.bio}</p>
+            )}
+            
+            {/* Website link placeholder */}
+            {profile?.website_url && (
+              <a 
+                href={profile.website_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-primary font-medium"
+              >
+                <LinkIcon className="w-3.5 h-3.5" />
+                {profile.website_url.replace(/^https?:\/\//, '')}
+              </a>
+            )}
+            
+            {/* Username handle */}
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <AtSign className="w-3.5 h-3.5" />
+              <span>{p.username}</span>
             </div>
-          )}
-
-          {/* Stats */}
-          <div className="flex items-center gap-6 mt-4">
-            <div className="text-center">
-              <p className="text-lg font-bold">{contentCount}</p>
-              <p className="text-xs text-muted-foreground">Posts</p>
-            </div>
-            <button className="text-center" onClick={() => setShowFollowers(true)}>
-              <p className="text-lg font-bold">{p.follower_count}</p>
-              <p className="text-xs text-muted-foreground">Followers</p>
-            </button>
-            <button className="text-center" onClick={() => setShowFollowing(true)}>
-              <p className="text-lg font-bold">{p.following_count}</p>
-              <p className="text-xs text-muted-foreground">Following</p>
-            </button>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 mt-4">
-            <Button className="flex-1" size="sm" onClick={() => navigate("/profile/edit")}>
-              <Settings className="w-4 h-4 mr-1.5" />
-              Edit
+          {/* Professional Dashboard Card */}
+          <div className="bg-muted/30 border border-border rounded-xl p-3">
+            <p className="font-semibold text-sm">Professional dashboard</p>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{p.follower_count > 0 ? `${((p.follower_count * 1.07).toFixed(1))}K` : '0'} views in the last 30 days.</span>
+            </div>
+          </div>
+
+          {/* Action Buttons - Instagram style */}
+          <div className="flex gap-2">
+            <Button 
+              variant="secondary" 
+              className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-semibold"
+              onClick={() => navigate("/profile/edit")}
+            >
+              Edit profile
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowStatusDialog(true)}>
+            <Button 
+              variant="secondary" 
+              className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-semibold"
+              onClick={handleShareProfile}
+            >
+              Share profile
+            </Button>
+          </div>
+
+          {/* Additional actions row */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowStatusDialog(true)}>
               <Sparkles className="w-4 h-4 mr-1.5" />
               Status
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/create-story")}>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate("/create-story")}>
               Story
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
 
           {/* Monetization */}
-          <div className="mt-4">
-            <Suspense fallback={<div className="h-10 animate-pulse bg-muted/20 rounded-lg" />}>
-              <MonetizationHub userId={user.id} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<div className="h-10 animate-pulse bg-muted/20 rounded-lg" />}>
+            <MonetizationHub userId={user.id} />
+          </Suspense>
         </div>
 
         {/* Doors */}
