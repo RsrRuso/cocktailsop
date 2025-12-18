@@ -17,29 +17,27 @@ const DoorCard = ({ membership, index }: { membership: Membership; index: number
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={() => navigate(membership.route)}
-      className={`relative flex flex-col items-center p-3 rounded-xl bg-gradient-to-b ${membership.color} border backdrop-blur-sm hover:scale-105 transition-transform active:scale-95`}
+      className={`relative flex flex-col items-center p-3 rounded-xl bg-gradient-to-b ${membership.color} border backdrop-blur-sm hover:scale-105 transition-transform active:scale-95 min-w-[90px]`}
     >
       {/* Door frame */}
-      <div className="relative w-12 h-16 rounded-t-lg bg-gradient-to-b from-white/10 to-white/5 border border-white/20 overflow-hidden">
+      <div className="relative w-14 h-18 rounded-t-lg bg-gradient-to-b from-white/10 to-white/5 border border-white/20 overflow-hidden flex items-center justify-center">
         {/* Door knob */}
-        <div className="absolute right-1 top-1/2 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm" />
+        <div className="absolute right-1.5 top-1/2 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
         {/* Icon in door */}
-        <div className="absolute inset-0 flex items-center justify-center text-2xl">
-          {membership.icon}
-        </div>
+        <span className="text-3xl">{membership.icon}</span>
       </div>
       
-      {/* Name badge */}
-      <div className="mt-2 text-center">
-        <p className="text-[10px] font-medium text-foreground/90 line-clamp-1 max-w-[70px]">
-          {membership.name}
-        </p>
-        {membership.role && (
-          <Badge variant="outline" className="text-[8px] px-1 py-0 h-3 mt-0.5 border-white/20">
-            {membership.role}
-          </Badge>
-        )}
-      </div>
+      {/* Name */}
+      <p className="mt-2 text-xs font-medium text-foreground line-clamp-1 max-w-[80px] text-center">
+        {membership.name}
+      </p>
+      
+      {/* Role badge - more readable */}
+      {membership.role && (
+        <span className="mt-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-foreground/80">
+          {membership.role}
+        </span>
+      )}
     </motion.button>
   );
 };
