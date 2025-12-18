@@ -143,7 +143,7 @@ export const useUserMemberships = (userId: string | null) => {
                 type: 'group',
                 name: g.mixologist_groups.name,
                 role: g.role,
-                route: `/batch-calculator?group=${g.group_id}`,
+                route: `/batch-calculator-pin-access?group=${g.group_id}`,
                 icon: '🍸',
                 color: 'from-amber-500/20 to-amber-600/20 border-amber-500/30',
                 memberCount: 0,
