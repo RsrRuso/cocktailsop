@@ -192,18 +192,7 @@ export default function LabOps() {
       ];
       await supabase.from("lab_ops_menu_items").insert(menuItems);
       
-      // 3. Create Demo Tables
-      const tables = [
-        { outlet_id: outletId, name: "Table 1", capacity: 2 },
-        { outlet_id: outletId, name: "Table 2", capacity: 2 },
-        { outlet_id: outletId, name: "Table 3", capacity: 4 },
-        { outlet_id: outletId, name: "Table 4", capacity: 4 },
-        { outlet_id: outletId, name: "Table 5", capacity: 6 },
-        { outlet_id: outletId, name: "Bar Seat 1", capacity: 1 },
-        { outlet_id: outletId, name: "Bar Seat 2", capacity: 1 },
-        { outlet_id: outletId, name: "VIP Booth", capacity: 8 },
-      ];
-      await supabase.from("lab_ops_tables").insert(tables);
+      // 3. Tables are now created manually via Floor Plan - no demo tables
       
       // 4. Create Demo Inventory Items
       const invItems = [
