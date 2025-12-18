@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles, BadgeCheck, Briefcase } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
@@ -93,7 +93,12 @@ interface Reel {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile: authProfile, isLoading: authLoading } = useAuth();
+  
+  // Check if navigated from notification to open saves
+  const locationState = location.state as { openSaves?: boolean } | null;
+  const [activeTab, setActiveTab] = useState(locationState?.openSaves ? "saved" : "feed");
   
   // Use optimized hook for all data
   const { 
@@ -518,7 +523,7 @@ const Profile = () => {
         <MonetizationHub userId={user.id} />
 
         {/* Content Tabs */}
-        <Tabs defaultValue="feed" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 glass">
             <TabsTrigger value="feed">Feed</TabsTrigger>
             <TabsTrigger value="saved">Saved</TabsTrigger>

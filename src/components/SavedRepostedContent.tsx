@@ -8,6 +8,7 @@ import { useEngagement } from '@/hooks/useEngagement';
 
 interface SavedRepostedContentProps {
   userId: string;
+  defaultViewType?: 'reposts' | 'saves' | 'comments';
 }
 
 interface ContentItem {
@@ -37,8 +38,8 @@ interface ContentItem {
 
 type ViewType = 'reposts' | 'saves' | 'comments';
 
-export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
-  const [viewType, setViewType] = useState<ViewType>('reposts');
+export const SavedRepostedContent = ({ userId, defaultViewType = 'saves' }: SavedRepostedContentProps) => {
+  const [viewType, setViewType] = useState<ViewType>(defaultViewType);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
