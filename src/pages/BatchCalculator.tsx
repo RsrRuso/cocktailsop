@@ -23,7 +23,7 @@ import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { useGroupAdmin } from "@/hooks/useGroupAdmin";
 import { useBatchActivityTracker } from "@/hooks/useBatchActivityTracker";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
-import { ActivityTrackingPanel } from "@/components/batch-calculator/ActivityTrackingPanel";
+// ActivityTrackingPanel moved to separate page
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -4966,9 +4966,24 @@ const BatchCalculator = () => {
               )}
             </Card>
             
-            {/* Activity Tracking Panel */}
+            {/* Activity Tracking Link */}
             <Card className="glass p-4 sm:p-6 border-border/30">
-              <ActivityTrackingPanel groupId={selectedGroupId} />
+              <div className="flex flex-col items-center gap-4 py-6">
+                <Activity className="w-12 h-12 text-primary opacity-60" />
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-1">Activity Tracking</h3>
+                  <p className="text-sm text-muted-foreground">
+                    View production metrics, team performance, and recent activity
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate(`/batch-activity${selectedGroupId ? `?groupId=${selectedGroupId}` : ''}`)}
+                  className="gap-2"
+                >
+                  <Activity className="w-4 h-4" />
+                  View Activity Tracking
+                </Button>
+              </div>
             </Card>
           </TabsContent>
 
