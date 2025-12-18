@@ -1407,24 +1407,25 @@ const POReceivedItems = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
+      {/* Header - Mobile Friendly */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate(-1)}>
+        <div className="flex items-center justify-between p-3 sm:p-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-xl font-bold">Received Items</h1>
-              <p className="text-sm text-muted-foreground">
-                {staffMode ? `Staff: ${staffName}` : 'Compare received goods with purchase orders'}
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold truncate">Received Items</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {staffMode ? `Staff: ${staffName}` : 'Compare with purchase orders'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button 
               variant="ghost" 
               size="icon" 
+              className="h-8 w-8 sm:h-9 sm:w-9"
               onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ['po-received-records'] });
                 queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
@@ -1433,42 +1434,44 @@ const POReceivedItems = () => {
               disabled={isLoadingRecent}
               title="Refresh"
             >
-              <RefreshCw className={`w-5 h-5 text-muted-foreground ${isLoadingRecent ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground ${isLoadingRecent ? 'animate-spin' : ''}`} />
             </Button>
             {!staffMode && (
               <Button 
                 variant="ghost" 
                 size="icon" 
+                className="h-8 w-8 sm:h-9 sm:w-9 hidden sm:flex"
                 onClick={() => navigate('/procurement-pin-access')}
                 title="Staff PIN Access"
               >
-                <Smartphone className="w-5 h-5 text-muted-foreground" />
+                <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
-              <HelpCircle className="w-5 h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setShowGuide(true)}>
+              <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             </Button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.csv,.txt,.xlsx,.xls"
+              accept=".pdf,.csv,.txt,.xlsx,.xls,.png,.jpg,.jpeg"
               onChange={handleFileUpload}
               className="hidden"
             />
             <Button 
               variant="default" 
               size="sm" 
+              className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
-              <Upload className={`h-4 w-4 mr-2 ${isUploading ? 'animate-pulse' : ''}`} />
-              {isUploading ? 'Parsing...' : 'Receive'}
+              <Upload className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isUploading ? 'animate-pulse' : ''}`} />
+              <span className="ml-1 sm:ml-2">{isUploading ? 'Parsing...' : 'Receive'}</span>
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Workspace Selector - hidden in staff mode (locked to their workspace) */}
         {!staffMode && (
           <ProcurementWorkspaceSelector 
@@ -1477,41 +1480,48 @@ const POReceivedItems = () => {
           />
         )}
 
-        {/* Field Guidelines */}
-        <Card className="p-3 bg-muted/30 border-dashed">
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              Receiving Guidelines
-            </h3>
-            <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
+        {/* Field Guidelines - Collapsible on mobile */}
+        <details className="group">
+          <summary className="cursor-pointer list-none">
+            <Card className="p-3 bg-muted/30 border-dashed">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Receiving Guidelines
+                </h3>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              </div>
+            </Card>
+          </summary>
+          <Card className="mt-1 p-3 bg-muted/30 border-dashed border-t-0 rounded-t-none">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] shrink-0">ML Code</Badge>
-                <span>Unique item identifier used to match received items with purchase orders</span>
+                <span>Unique item identifier for matching</span>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] shrink-0">Qty</Badge>
-                <span>Quantity received - compared against ordered quantity to detect variances</span>
+                <span>Quantity compared against ordered</span>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] shrink-0">Price</Badge>
-                <span>Unit price at receiving - tracked for price change analysis</span>
+                <span>Unit price for change tracking</span>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] shrink-0">Status</Badge>
-                <span>Match (exact), Short (less), Over (more), Missing (not received), Extra (not ordered)</span>
+                <span>Match/Short/Over/Missing/Extra</span>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </details>
 
-        {/* Currency Selector + Summary Cards */}
-        <div className="flex items-center justify-end mb-2">
+        {/* Currency Selector */}
+        <div className="flex items-center justify-end">
           <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
-            <SelectTrigger className="w-24 h-8">
+            <SelectTrigger className="w-20 sm:w-24 h-8 text-xs sm:text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border z-50">
               <SelectItem value="USD">$ USD</SelectItem>
               <SelectItem value="EUR">€ EUR</SelectItem>
               <SelectItem value="GBP">£ GBP</SelectItem>
@@ -1521,84 +1531,84 @@ const POReceivedItems = () => {
           </Select>
         </div>
         
-        {/* PO Completion Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <FileText className="h-4 w-4 text-blue-500" />
+        {/* PO Completion Stats - Mobile Friendly */}
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+          <Card className="p-2 sm:p-3">
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+              <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total POs</p>
-                <p className="text-lg font-bold">{poCompletionStats.total}</p>
+              <div className="text-center sm:text-left">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total POs</p>
+                <p className="text-base sm:text-lg font-bold">{poCompletionStats.total}</p>
               </div>
             </div>
           </Card>
           <Card 
-            className="p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+            className="p-2 sm:p-3 cursor-pointer hover:bg-accent/50 transition-colors active:scale-95"
             onClick={() => poCompletionStats.completed > 0 && setShowCompletedPOsDialog(true)}
           >
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <CheckCircle className="h-4 w-4 text-green-500" />
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+              <div className="p-1.5 sm:p-2 bg-green-500/10 rounded-lg">
+                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Completed</p>
-                <p className="text-lg font-bold text-green-500">{poCompletionStats.completed}</p>
+              <div className="text-center sm:text-left">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Completed</p>
+                <p className="text-base sm:text-lg font-bold text-green-500">{poCompletionStats.completed}</p>
               </div>
             </div>
           </Card>
           <Card 
-            className="p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+            className="p-2 sm:p-3 cursor-pointer hover:bg-accent/50 transition-colors active:scale-95"
             onClick={() => poCompletionStats.pending > 0 && setShowPendingPOsDialog(true)}
           >
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+              <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Pending</p>
-                <p className="text-lg font-bold text-amber-500">{poCompletionStats.pending}</p>
+              <div className="text-center sm:text-left">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Pending</p>
+                <p className="text-base sm:text-lg font-bold text-amber-500">{poCompletionStats.pending}</p>
               </div>
             </div>
           </Card>
         </div>
         
-        <Card className="p-3">
+        <Card className="p-2 sm:p-3">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <Coins className="h-4 w-4 text-green-500" />
+            <div className="p-1.5 sm:p-2 bg-green-500/10 rounded-lg">
+              <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Total Value</p>
-              <p className="text-lg font-bold">{formatCurrency(calculatedTotalValue)}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Total Value</p>
+              <p className="text-base sm:text-lg font-bold">{formatCurrency(calculatedTotalValue)}</p>
             </div>
           </div>
         </Card>
 
-        {/* Tabs */}
+        {/* Tabs - Mobile Touch Friendly */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="recent" className="text-xs">
-              <History className="h-3 w-3 mr-1" />
-              Recent
+          <TabsList className="grid w-full grid-cols-4 h-10 sm:h-9">
+            <TabsTrigger value="recent" className="text-[10px] sm:text-xs px-1 sm:px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <History className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">Recent</span>
             </TabsTrigger>
-            <TabsTrigger value="summary" className="text-xs">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Summary
+            <TabsTrigger value="summary" className="text-[10px] sm:text-xs px-1 sm:px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TrendingUp className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">Summary</span>
             </TabsTrigger>
-            <TabsTrigger value="forecast" className="text-xs">
-              <BarChart3 className="h-3 w-3 mr-1" />
-              Forecast
+            <TabsTrigger value="forecast" className="text-[10px] sm:text-xs px-1 sm:px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BarChart3 className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">Forecast</span>
             </TabsTrigger>
-            <TabsTrigger value="prices" className="text-xs">
-              <TrendingDown className="h-3 w-3 mr-1" />
-              Prices
+            <TabsTrigger value="prices" className="text-[10px] sm:text-xs px-1 sm:px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TrendingDown className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">Prices</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Recent Received Tab */}
-          <TabsContent value="recent" className="mt-4 space-y-3">
+          <TabsContent value="recent" className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
             <h2 className="text-sm font-semibold text-foreground">Recent Received</h2>
             
             {isLoadingRecent ? (
@@ -1606,59 +1616,56 @@ const POReceivedItems = () => {
             ) : recentReceived && recentReceived.length > 0 ? (
               <div className="space-y-2">
                 {recentReceived.map((record) => (
-                  <Card key={record.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-primary" />
-                          <span className="font-medium text-foreground">
+                  <Card key={record.id} className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <FileText className="w-4 h-4 text-primary shrink-0" />
+                          <span className="font-medium text-foreground text-sm truncate max-w-[150px] sm:max-w-none">
                             {record.supplier_name || record.document_number || 'Unnamed Delivery'}
                           </span>
                           <Badge 
                             variant={record.status === 'received' ? 'default' : 'secondary'}
-                            className={record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}
+                            className={`text-[10px] sm:text-xs ${record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}`}
                           >
                             {record.status}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                        <div className="grid grid-cols-2 sm:flex sm:items-center gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs text-muted-foreground">
                           {record.document_number && (
                             <span className="flex items-center gap-1 font-mono text-primary/80">
-                              <FileText className="w-3 h-3" />
-                              {record.document_number}
+                              <FileText className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{record.document_number}</span>
                             </span>
                           )}
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(record.received_date), 'MMM d, yyyy')}
+                            <Calendar className="w-3 h-3 shrink-0" />
+                            {format(new Date(record.received_date), 'MMM d')}
                           </span>
-                          <span className="flex items-center gap-1 font-medium">
+                          <span className="flex items-center gap-1 font-semibold text-foreground">
                             {formatCurrency(Number(record.total_value || 0))}
                           </span>
-                          {record.created_at && (
-                            <span className="flex items-center gap-1 text-muted-foreground/70">
-                              @ {format(new Date(record.created_at), 'h:mm a')}
-                            </span>
-                          )}
                           {(record.received_by_name || record.received_by_email) && (
-                            <span className="flex items-center gap-1 text-green-500">
-                              <Package className="w-3 h-3" />
-                              Received by: {record.received_by_name || record.received_by_email}
+                            <span className="flex items-center gap-1 text-green-500 col-span-2 sm:col-span-1">
+                              <Package className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{record.received_by_name || record.received_by_email}</span>
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-0.5 sm:gap-1 shrink-0">
                         <Button 
                           variant="ghost" 
                           size="icon"
+                          className="h-8 w-8 sm:h-9 sm:w-9"
                           onClick={() => setShowRecordContent(record)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
-                          size="icon" 
+                          size="icon"
+                          className="h-8 w-8 sm:h-9 sm:w-9"
                           onClick={() => deleteReceivedRecord(record.id)}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
@@ -1670,18 +1677,21 @@ const POReceivedItems = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                No received records yet. Upload a receiving document to get started!
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No received records yet</p>
+                <p className="text-xs mt-1">Upload a receiving document to get started</p>
               </div>
             )}
           </TabsContent>
 
           {/* Summary Tab - Overall Aggregated Report */}
-          <TabsContent value="summary" className="mt-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Overall Received Report</h3>
+          <TabsContent value="summary" className="mt-3 sm:mt-4 space-y-3">
+            <div className="flex justify-between items-center gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Overall Received</h3>
               <Button 
                 size="sm" 
-                variant="outline" 
+                variant="outline"
+                className="h-8 text-xs sm:text-sm"
                 onClick={() => {
                   if (!receivedSummary || receivedSummary.length === 0) {
                     toast.info("No received data to export");
@@ -1767,8 +1777,8 @@ const POReceivedItems = () => {
                   toast.success("Report downloaded");
                 }}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
+                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Download</span>
               </Button>
             </div>
 
@@ -1778,63 +1788,98 @@ const POReceivedItems = () => {
                 placeholder="Search items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-9 sm:h-10 text-sm"
               />
             </div>
 
-            {/* Aggregated Summary Table */}
-            <Card>
+            {/* Aggregated Summary - Mobile Card List + Desktop Table */}
+            <Card className="overflow-hidden">
               {isLoadingReceived ? (
                 <div className="p-8 text-center text-muted-foreground">Loading...</div>
               ) : receivedSummary && receivedSummary.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item Name</TableHead>
-                      <TableHead className="text-right">Times</TableHead>
-                      <TableHead className="text-right">Total Qty</TableHead>
-                      <TableHead className="text-right">Avg Price</TableHead>
-                      <TableHead className="text-right">Total Value</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile Card View */}
+                  <div className="sm:hidden divide-y divide-border">
                     {receivedSummary
                       .filter((item: any) => item.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map((item: any, index: number) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium text-sm">
-                          {item.item_name}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {item.count || 1}x
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          {item.total_qty?.toFixed(0)}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {formatCurrency(item.avg_price || 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-green-600">
-                          {formatCurrency(item.total_price || 0)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {/* Totals Row */}
-                    <TableRow className="bg-muted/50 font-bold">
-                      <TableCell>TOTAL</TableCell>
-                      <TableCell className="text-right">
-                        {receivedSummary.reduce((sum: number, i: any) => sum + (i.count || 1), 0)}x
-                      </TableCell>
-                      <TableCell className="text-right text-primary">
-                        {receivedSummary.reduce((sum: number, i: any) => sum + (i.total_qty || 0), 0).toFixed(0)}
-                      </TableCell>
-                      <TableCell className="text-right">-</TableCell>
-                      <TableCell className="text-right text-green-600">
-                        {formatCurrency(receivedSummary.reduce((sum: number, i: any) => sum + (i.total_price || 0), 0))}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                        <div key={index} className="p-3 space-y-1">
+                          <p className="font-medium text-sm truncate">{item.item_name}</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Times:</span>
+                              <span>{item.count || 1}x</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Qty:</span>
+                              <span className="font-bold text-primary">{item.total_qty?.toFixed(0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Avg:</span>
+                              <span>{formatCurrency(item.avg_price || 0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Total:</span>
+                              <span className="font-semibold text-green-600">{formatCurrency(item.total_price || 0)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    {/* Mobile Totals */}
+                    <div className="p-3 bg-muted/50">
+                      <p className="font-bold text-sm mb-1">TOTAL</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Times: </span>
+                          <span className="font-bold">{receivedSummary.reduce((sum: number, i: any) => sum + (i.count || 1), 0)}x</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Qty: </span>
+                          <span className="font-bold text-primary">{receivedSummary.reduce((sum: number, i: any) => sum + (i.total_qty || 0), 0).toFixed(0)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Value: </span>
+                          <span className="font-bold text-green-600">{formatCurrency(receivedSummary.reduce((sum: number, i: any) => sum + (i.total_price || 0), 0))}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item Name</TableHead>
+                          <TableHead className="text-right">Times</TableHead>
+                          <TableHead className="text-right">Total Qty</TableHead>
+                          <TableHead className="text-right">Avg Price</TableHead>
+                          <TableHead className="text-right">Total Value</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {receivedSummary
+                          .filter((item: any) => item.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{item.count || 1}x</TableCell>
+                            <TableCell className="text-right font-bold text-primary">{item.total_qty?.toFixed(0)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{formatCurrency(item.avg_price || 0)}</TableCell>
+                            <TableCell className="text-right font-semibold text-green-600">{formatCurrency(item.total_price || 0)}</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/50 font-bold">
+                          <TableCell>TOTAL</TableCell>
+                          <TableCell className="text-right">{receivedSummary.reduce((sum: number, i: any) => sum + (i.count || 1), 0)}x</TableCell>
+                          <TableCell className="text-right text-primary">{receivedSummary.reduce((sum: number, i: any) => sum + (i.total_qty || 0), 0).toFixed(0)}</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                          <TableCell className="text-right text-green-600">{formatCurrency(receivedSummary.reduce((sum: number, i: any) => sum + (i.total_price || 0), 0))}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-8 text-center text-muted-foreground">
                   <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -1912,53 +1957,73 @@ const POReceivedItems = () => {
           </TabsContent>
 
           {/* Price Changes Tab */}
-          <TabsContent value="prices" className="mt-4 space-y-3">
+          <TabsContent value="prices" className="mt-3 sm:mt-4 space-y-3">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Price Changes</h3>
-              <Button size="sm" variant="outline" onClick={downloadPriceChangeReport}>
-                <Download className="h-4 w-4 mr-2" />
+              <h3 className="font-semibold text-sm sm:text-base">Price Changes</h3>
+              <Button size="sm" variant="outline" className="h-8 text-xs sm:text-sm" onClick={downloadPriceChangeReport}>
+                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Download
               </Button>
             </div>
 
             {priceHistory && priceHistory.length > 0 ? (
-              <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead className="text-right">Previous</TableHead>
-                      <TableHead className="text-right">Current</TableHead>
-                      <TableHead className="text-right">Change</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {priceHistory.map((item: any, idx: number) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {formatCurrency(item.previous_price || 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(item.current_price || 0)}
-                        </TableCell>
-                        <TableCell className={`text-right font-semibold ${
-                          (item.change_amount || 0) > 0 ? 'text-red-500' : 'text-green-500'
-                        }`}>
-                          {(item.change_amount || 0) > 0 ? '+' : ''}{formatCurrency(item.change_amount || 0)}
-                          <span className="text-xs ml-1">
-                            ({(item.change_pct || 0) > 0 ? '+' : ''}{(item.change_pct || 0).toFixed(1)}%)
+              <Card className="overflow-hidden">
+                {/* Mobile Card View */}
+                <div className="sm:hidden divide-y divide-border">
+                  {priceHistory.map((item: any, idx: number) => (
+                    <div key={idx} className="p-3 space-y-2">
+                      <p className="font-medium text-sm truncate">{item.item_name}</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground block">Previous</span>
+                          <span>{formatCurrency(item.previous_price || 0)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">Current</span>
+                          <span className="font-semibold">{formatCurrency(item.current_price || 0)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">Change</span>
+                          <span className={`font-semibold ${(item.change_amount || 0) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                            {(item.change_amount || 0) > 0 ? '+' : ''}{(item.change_pct || 0).toFixed(1)}%
                           </span>
-                        </TableCell>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="text-right">Previous</TableHead>
+                        <TableHead className="text-right">Current</TableHead>
+                        <TableHead className="text-right">Change</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {priceHistory.map((item: any, idx: number) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">{formatCurrency(item.previous_price || 0)}</TableCell>
+                          <TableCell className="text-right font-semibold">{formatCurrency(item.current_price || 0)}</TableCell>
+                          <TableCell className={`text-right font-semibold ${(item.change_amount || 0) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                            {(item.change_amount || 0) > 0 ? '+' : ''}{formatCurrency(item.change_amount || 0)}
+                            <span className="text-xs ml-1">({(item.change_pct || 0) > 0 ? '+' : ''}{(item.change_pct || 0).toFixed(1)}%)</span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </Card>
             ) : (
               <Card className="p-8 text-center text-muted-foreground">
                 <TrendingDown className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No price changes recorded</p>
+                <p className="text-sm">No price changes recorded</p>
                 <p className="text-xs mt-1">Price changes are tracked automatically when updating master items</p>
               </Card>
             )}
