@@ -517,6 +517,8 @@ const BatchCalculator = () => {
           }))
         }
       });
+      // Track recipe edit
+      activityTracker.trackRecipeEdit(recipeName);
       setEditingRecipeId(null);
     } else {
       // Create new recipe with selected group
@@ -553,8 +555,13 @@ const BatchCalculator = () => {
   };
 
   const handleDeleteRecipe = (recipeId: string) => {
+    const recipeToDelete = recipes.find(r => r.id === recipeId);
     if (confirm("Are you sure you want to delete this recipe?")) {
       deleteRecipe(recipeId);
+      // Track recipe deletion
+      if (recipeToDelete) {
+        activityTracker.trackRecipeDelete(recipeToDelete.recipe_name);
+      }
       if (selectedRecipeId === recipeId) {
         setSelectedRecipeId(null);
       }
@@ -731,10 +738,17 @@ const BatchCalculator = () => {
   };
 
   const handleDeleteProduction = async (productionId: string) => {
+    const productionToDelete = productions.find(p => p.id === productionId);
     if (!confirm("Are you sure you want to delete this batch production?")) {
       return;
     }
 
+    // Track batch deletion before actually deleting
+    if (productionToDelete) {
+      const recipeName = recipes.find(r => r.id === productionToDelete.recipe_id)?.recipe_name || 'Unknown';
+      activityTracker.trackBatchDelete(productionToDelete.batch_name, recipeName);
+    }
+    
     deleteProduction({ productionId });
   };
   const handleAISuggestions = async () => {

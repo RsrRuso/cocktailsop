@@ -12,7 +12,9 @@ import {
   FlaskConical,
   Target,
   Award,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  Edit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -114,6 +116,31 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
           color: 'text-amber-400',
           bg: 'bg-amber-500/20',
           text: `${username} printed ${metadata.type || 'document'}`,
+          duration: null
+        };
+      case 'batch_delete':
+        return {
+          icon: Trash2,
+          color: 'text-red-400',
+          bg: 'bg-red-500/20',
+          text: `${username} deleted batch "${metadata.batch_name || 'Unknown'}"`,
+          duration: null,
+          extra: metadata.recipe_name ? `Recipe: ${metadata.recipe_name}` : null
+        };
+      case 'recipe_edit':
+        return {
+          icon: Edit,
+          color: 'text-cyan-400',
+          bg: 'bg-cyan-500/20',
+          text: `${username} edited recipe "${metadata.recipe_name || 'Unknown'}"`,
+          duration: null
+        };
+      case 'recipe_delete':
+        return {
+          icon: Trash2,
+          color: 'text-red-400',
+          bg: 'bg-red-500/20',
+          text: `${username} deleted recipe "${metadata.recipe_name || 'Unknown'}"`,
           duration: null
         };
       default:
