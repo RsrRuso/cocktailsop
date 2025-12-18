@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AddFifoEmployeeDialog } from "@/components/AddFifoEmployeeDialog";
 import { FIFOReceivingUpload } from "@/components/fifo/FIFOReceivingUpload";
+import { POFIFOSyncPanel } from "@/components/fifo/POFIFOSyncPanel";
 
 const InventoryManager = () => {
   const { user } = useAuth();
@@ -1850,6 +1851,14 @@ const InventoryManager = () => {
                     stores={stores}
                     items={items}
                     onSuccess={fetchData}
+                  />
+                  
+                  <POFIFOSyncPanel
+                    userId={user?.id || ''}
+                    workspaceId={currentWorkspace?.id}
+                    stores={stores}
+                    items={items}
+                    onSyncComplete={fetchData}
                   />
                 </div>
                 
