@@ -135,8 +135,9 @@ export const uploadWithProgress = async (
         onStageChange("Complete!");
         resolve({ publicUrl, path });
       } else {
+        const details = xhr.responseText ? ` - ${xhr.responseText}` : "";
         console.error('Upload error:', xhr.status, xhr.responseText);
-        resolve({ publicUrl: "", path: "", error: new Error(`Upload failed: ${xhr.status}`) });
+        resolve({ publicUrl: "", path: "", error: new Error(`Upload failed: ${xhr.status}${details}`) });
       }
     });
     
