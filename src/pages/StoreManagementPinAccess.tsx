@@ -54,14 +54,40 @@ export default function StoreManagementPinAccess() {
 
   const fetchWorkspaces = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setWorkspaces([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch workspaces user owns
+      const { data: ownedWorkspaces, error: ownedError } = await supabase
         .from("workspaces")
         .select("id, name")
-        .eq("workspace_type", "store_management")
-        .order("name");
+        .eq("owner_id", user.id)
+        .eq("workspace_type", "store_management");
 
-      if (error) throw error;
-      setWorkspaces(data || []);
+      if (ownedError) throw ownedError;
+
+      // Fetch workspaces user is a member of
+      const { data: memberWorkspaces, error: memberError } = await supabase
+        .from("workspace_members")
+        .select("workspace:workspaces!inner(id, name)")
+        .eq("user_id", user.id)
+        .eq("workspaces.workspace_type", "store_management");
+
+      if (memberError) throw memberError;
+
+      // Combine and deduplicate
+      const memberWorkspacesData = memberWorkspaces?.map((m: any) => m.workspace).filter(Boolean) || [];
+      const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
+      
+      const uniqueWorkspaces = Array.from(
+        new Map(allWorkspaces.map((w) => [w.id, w])).values()
+      ).sort((a, b) => a.name.localeCompare(b.name));
+
+      setWorkspaces(uniqueWorkspaces);
     } catch (error) {
       console.error("Error fetching workspaces:", error);
     } finally {
