@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, Edit2, X, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, X, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import {
@@ -21,12 +21,20 @@ const MasterSpirits = () => {
   const { spirits, isLoading, createSpirit, updateSpirit, deleteSpirit } = useMasterSpirits();
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     brand: "",
     category: "",
     bottle_size_ml: ""
   });
+
+  // Filter spirits based on search query
+  const filteredSpirits = spirits?.filter(spirit => 
+    spirit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    spirit.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    spirit.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   const handleOpenDialog = (spirit?: any) => {
     if (spirit) {
@@ -141,6 +149,17 @@ const MasterSpirits = () => {
           </div>
         </div>
 
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search spirits by name, brand, or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 glass"
+          />
+        </div>
+
         <Card className="glass p-4 sm:p-6">
           {isLoading ? (
             <p className="text-center text-muted-foreground py-8">Loading spirits...</p>
@@ -152,9 +171,13 @@ const MasterSpirits = () => {
                 Add Your First Spirit
               </Button>
             </div>
+          ) : filteredSpirits.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No spirits matching "{searchQuery}"</p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {spirits.map((spirit) => (
+              {filteredSpirits.map((spirit) => (
                 <Card key={spirit.id} className="glass p-4 hover:bg-accent/10 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
