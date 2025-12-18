@@ -142,6 +142,7 @@ export default function TableManagement({ outletId }: { outletId: string }) {
       .from("lab_ops_tables")
       .select("*")
       .eq("outlet_id", outletId)
+      .eq("is_archived", false) // Only show active tables
       .order("table_number", { ascending: true, nullsFirst: false });
     
     if (!error && data) {
@@ -298,13 +299,21 @@ export default function TableManagement({ outletId }: { outletId: string }) {
   };
 
   const deleteTable = async (id: string) => {
+    // Try hard delete first; if FK blocks us, fall back to soft-delete (archive)
     const { error } = await supabase.from("lab_ops_tables").delete().eq("id", id);
     if (error) {
-      toast({ title: "Error deleting table", description: error.message, variant: "destructive" });
-      return;
+      // Foreign key violation – archive instead
+      const { error: archiveErr } = await supabase
+        .from("lab_ops_tables")
+        .update({ is_archived: true, archived_at: new Date().toISOString() })
+        .eq("id", id);
+      if (archiveErr) {
+        toast({ title: "Error removing table", description: archiveErr.message, variant: "destructive" });
+        return;
+      }
     }
     setTables(prev => prev.filter(t => t.id !== id));
-    toast({ title: "Table deleted" });
+    toast({ title: "Table removed" });
   };
 
   const createFloorPlan = async () => {

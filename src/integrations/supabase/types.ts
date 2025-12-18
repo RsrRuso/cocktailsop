@@ -7243,12 +7243,14 @@ export type Database = {
       lab_ops_tables: {
         Row: {
           allocation: string | null
+          archived_at: string | null
           assigned_staff_id: string | null
           capacity: number | null
           created_at: string | null
           floor_plan_id: string | null
           height: number | null
           id: string
+          is_archived: boolean
           is_reservable: boolean | null
           min_covers: number | null
           name: string
@@ -7266,12 +7268,14 @@ export type Database = {
         }
         Insert: {
           allocation?: string | null
+          archived_at?: string | null
           assigned_staff_id?: string | null
           capacity?: number | null
           created_at?: string | null
           floor_plan_id?: string | null
           height?: number | null
           id?: string
+          is_archived?: boolean
           is_reservable?: boolean | null
           min_covers?: number | null
           name: string
@@ -7289,12 +7293,14 @@ export type Database = {
         }
         Update: {
           allocation?: string | null
+          archived_at?: string | null
           assigned_staff_id?: string | null
           capacity?: number | null
           created_at?: string | null
           floor_plan_id?: string | null
           height?: number | null
           id?: string
+          is_archived?: boolean
           is_reservable?: boolean | null
           min_covers?: number | null
           name?: string

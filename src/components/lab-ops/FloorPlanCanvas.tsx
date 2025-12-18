@@ -184,13 +184,20 @@ export function FloorPlanCanvas({
               size="sm" 
               variant="destructive"
               onClick={async () => {
+                // Try hard delete first; FK violation falls back to archive
                 const { error } = await supabase.from("lab_ops_tables").delete().eq("id", editingTable.id);
                 if (error) {
-                  toast({ title: "Error deleting table", description: error.message, variant: "destructive" });
-                  return;
+                  const { error: archiveErr } = await supabase
+                    .from("lab_ops_tables")
+                    .update({ is_archived: true, archived_at: new Date().toISOString() })
+                    .eq("id", editingTable.id);
+                  if (archiveErr) {
+                    toast({ title: "Error removing table", description: archiveErr.message, variant: "destructive" });
+                    return;
+                  }
                 }
                 setTables(prev => prev.filter(t => t.id !== editingTable.id));
-                toast({ title: "Table deleted" });
+                toast({ title: "Table removed" });
                 setEditingTableId(null);
               }}
             >
