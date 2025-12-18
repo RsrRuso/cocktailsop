@@ -597,17 +597,17 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
       {/* Quick Stats */}
       {(stats.totalBatches > 0 || stats.totalRecipes > 0) && (
         <div className="grid grid-cols-3 gap-2">
-          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+          <div className="p-3 text-center">
             <FlaskConical className="w-4 h-4 mx-auto mb-1 text-blue-400" />
             <p className="text-lg font-bold">{stats.totalBatches}</p>
             <p className="text-[10px] text-muted-foreground">Batches</p>
           </div>
-          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
+          <div className="p-3 text-center">
             <ChefHat className="w-4 h-4 mx-auto mb-1 text-green-400" />
             <p className="text-lg font-bold">{stats.totalRecipes}</p>
             <p className="text-[10px] text-muted-foreground">Recipes</p>
           </div>
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+          <div className="p-3 text-center">
             <Clock className="w-4 h-4 mx-auto mb-1 text-amber-400" />
             <p className="text-lg font-bold">{formatDuration(stats.totalTime)}</p>
             <p className="text-[10px] text-muted-foreground">Time</p>
