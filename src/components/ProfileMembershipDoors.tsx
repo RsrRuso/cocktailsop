@@ -97,8 +97,10 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                   </div>
                 </div>
                 
-                {/* Name below door */}
-                <p className="mt-1.5 text-xs font-medium text-center max-w-[70px] truncate">{m.name}</p>
+                {/* Name badge below door */}
+                <div className="mt-1.5 px-2 py-0.5 bg-card border border-border rounded-full shadow-sm">
+                  <p className="text-[10px] font-semibold whitespace-nowrap">{m.name}</p>
+                </div>
               </button>
             );
           })}
