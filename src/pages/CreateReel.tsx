@@ -421,6 +421,8 @@ const CreateReel = () => {
     if (selectedItems.length === 0) return;
     
     setIsUploading(true);
+    // Hide any open tool sheets (especially Audio) while exporting/creating media
+    setActiveTool('none');
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -934,7 +936,10 @@ const CreateReel = () => {
                         return (
                           <button
                             key={tool.id}
-                            onClick={() => setActiveTool(tool.id)}
+                            onClick={() => {
+                              if (isUploading) return;
+                              setActiveTool(tool.id);
+                            }}
                             className={`flex flex-col items-center gap-1 min-w-[52px] p-2 rounded-xl transition-colors ${
                               isActive ? 'bg-white/10' : 'hover:bg-white/5'
                             }`}
@@ -953,7 +958,7 @@ const CreateReel = () => {
 
         {/* Tool Bottom Sheets */}
         <AnimatePresence>
-          {activeTool !== 'none' && (
+          {!isUploading && !uploadState.isUploading && activeTool !== 'none' && (
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
