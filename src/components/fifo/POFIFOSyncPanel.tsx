@@ -117,12 +117,13 @@ export const POFIFOSyncPanel = ({
         return;
       }
 
-      // Check which items are already imported (by po_received_item_id)
+      // Check which items are already imported (only pending/synced, not rejected)
       const receivedItemIds = receivedItems.map((item: any) => item.id);
       const { data: existingSync } = await supabase
         .from('po_fifo_sync')
         .select('po_received_item_id')
-        .in('po_received_item_id', receivedItemIds);
+        .in('po_received_item_id', receivedItemIds)
+        .in('status', ['pending', 'synced']); // Allow re-import of rejected items
       
       const existingItemIds = new Set(existingSync?.map(s => s.po_received_item_id) || []);
       const newItems = receivedItems.filter((item: any) => !existingItemIds.has(item.id));
