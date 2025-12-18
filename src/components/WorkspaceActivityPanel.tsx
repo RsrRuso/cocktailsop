@@ -54,8 +54,21 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
   const metadata = activity.metadata || {};
   const username = metadata.produced_by_name || profiles[activity.user_id] || 'Team member';
 
+  // Helper to safely extract details string
+  const getDetailsString = (details: any): string => {
+    if (!details) return '';
+    if (typeof details === 'string') return details;
+    if (typeof details === 'object') {
+      // Try to extract meaningful info from object
+      return details.item_name || details.name || details.description || 
+             details.store_name || details.batch_name || details.recipe_name ||
+             JSON.stringify(details).substring(0, 50);
+    }
+    return String(details);
+  };
+
   const getActivityInfo = () => {
-    const details = metadata.details || '';
+    const details = getDetailsString(metadata.details);
     const qtyBefore = metadata.quantity_before;
     const qtyAfter = metadata.quantity_after;
     const qtyChange = qtyBefore !== undefined && qtyAfter !== undefined 
