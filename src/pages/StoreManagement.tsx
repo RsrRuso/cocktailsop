@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import TopNav from "@/components/TopNav";
+import { BackToProfileDoor } from "@/components/BackToProfileDoor";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1595,16 +1596,19 @@ const StoreManagement = () => {
 
       <div className="px-2 sm:px-3 pt-20 pb-6 space-y-3 sm:space-y-4 max-w-[1600px] mx-auto">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              <Store className="w-5 h-5 sm:w-6 sm:h-6" />
-              Store Management
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              {currentWorkspace
-                ? `All ${currentWorkspace.name} stores and inventory`
-                : `All ${personalInventoryName} stores and inventory`}
-            </p>
+          <div className="flex items-center gap-3">
+            <BackToProfileDoor />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Store className="w-5 h-5 sm:w-6 sm:h-6" />
+                Store Management
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {currentWorkspace
+                  ? `All ${currentWorkspace.name} stores and inventory`
+                  : `All ${personalInventoryName} stores and inventory`}
+              </p>
+            </div>
           </div>
           <Badge variant="outline" className="gap-2 text-xs">
             <Bell className="w-3 h-3" />
