@@ -281,187 +281,206 @@ export const POFIFOSyncPanel = ({
   const readyToSyncCount = pendingItems.filter(i => i.expiration_date).length;
 
   return (
-    <section aria-label="PO to FIFO sync" className="space-y-2">
+    <section aria-label="PO to FIFO sync" className="space-y-3">
+      {/* Header */}
       <header className="flex items-center justify-between">
-        <h3 className="text-xs font-medium flex items-center gap-1.5">
-          <RefreshCw className="h-3 w-3 text-primary" />
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <RefreshCw className="h-4 w-4 text-primary" />
           PO → FIFO
         </h3>
         <Button
           variant="ghost"
           size="icon"
-          className="h-5 w-5"
+          className="h-8 w-8"
           onClick={() => refetch()}
         >
-          <RefreshCw className="h-2.5 w-2.5" />
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </header>
 
-      <div className="space-y-2">
-        {/* Import from PO Received - RQ codes only */}
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Import RQ Materials</Label>
-          {loadingReceived ? (
-            <div className="flex items-center justify-center p-2">
-              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-            </div>
-          ) : unlinkedReceived && unlinkedReceived.length > 0 ? (
-            <div className="space-y-0.5 max-h-16 overflow-auto">
+      {/* 3 Main Tabs: Import, Pending, Synced */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "synced")} className="w-full">
+        <TabsList className="grid grid-cols-3 w-full h-10 bg-muted/30 p-1 gap-1">
+          <Button
+            variant="ghost"
+            className={`h-8 text-xs font-medium flex items-center justify-center gap-1.5 rounded-md ${
+              unlinkedReceived && unlinkedReceived.length > 0 ? "text-primary" : "text-muted-foreground"
+            }`}
+            onClick={() => setActiveTab("pending")}
+          >
+            <ArrowRight className="h-3.5 w-3.5" />
+            Import
+            {unlinkedReceived && unlinkedReceived.length > 0 && (
+              <Badge variant="default" className="h-5 px-1.5 text-[10px] bg-primary">
+                {unlinkedReceived.length}
+              </Badge>
+            )}
+          </Button>
+          <TabsTrigger
+            value="pending"
+            className="h-8 text-xs font-medium flex items-center justify-center gap-1.5 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400"
+          >
+            <Clock className="h-3.5 w-3.5" />
+            Pending
+            {pendingItems.length > 0 && (
+              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                {pendingItems.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="synced"
+            className="h-8 text-xs font-medium flex items-center justify-center gap-1.5 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400"
+          >
+            <CheckCircle className="h-3.5 w-3.5" />
+            Synced
+            {syncedItems.length > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-green-600 text-white">
+                {syncedItems.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Import RQ Materials Section - always visible above tabs content */}
+        {unlinkedReceived && unlinkedReceived.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <Label className="text-xs text-muted-foreground font-medium">Tap to Import RQ</Label>
+            <div className="grid grid-cols-1 gap-1.5 max-h-24 overflow-auto">
               {unlinkedReceived.map((record) => (
-                <div
+                <button
                   key={record.id}
-                  className="flex items-center justify-between p-1 bg-primary/10 rounded text-[10px] cursor-pointer hover:bg-primary/20"
+                  className="flex items-center justify-between p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg text-xs active:scale-[0.98] transition-all touch-manipulation"
                   onClick={() => importFromReceived(record.id)}
                 >
                   <span className="font-medium truncate">{record.document_number}</span>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="h-3.5 px-1 text-[8px]">
-                      {record.total_items}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="h-5 px-2 text-[10px]">
+                      {record.total_items} items
                     </Badge>
-                    <ArrowRight className="h-2.5 w-2.5 text-primary" />
+                    <ArrowRight className="h-4 w-4 text-primary" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Pending Tab Content */}
+        <TabsContent value="pending" className="mt-3 space-y-3">
+          {pendingItems.length === 0 ? (
+            <div className="text-center py-6 text-xs text-muted-foreground">
+              <Package className="h-8 w-8 mx-auto mb-2 opacity-40" />
+              No pending items
+            </div>
           ) : (
-            <div className="text-[10px] text-muted-foreground text-center py-1">No RQ materials to import</div>
-          )}
-        </div>
-
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "synced")}>
-          {/* No container/square behind the tabs: buttons only */}
-          <TabsList className="flex w-full h-7 p-0 bg-transparent rounded-none gap-1.5">
-            <TabsTrigger
-              value="pending"
-              className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6"
-            >
-              <Clock className="h-3 w-3" />
-              Pending
-              {pendingItems.length > 0 && (
-                <Badge variant="destructive" className="h-4 px-1 text-[9px]">
-                  {pendingItems.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="synced"
-              className="flex-1 text-[10px] flex items-center justify-center gap-1 h-6"
-            >
-              <CheckCircle className="h-3 w-3" />
-              Synced
-              {syncedItems.length > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[9px]">
-                  {syncedItems.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending" className="mt-1.5 space-y-1.5">
-            {pendingItems.length === 0 ? (
-              <div className="text-center py-2 text-[10px] text-muted-foreground">
-                <Package className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                No pending items
+            <>
+              {/* Store selector + Sync button */}
+              <div className="flex items-center gap-2">
+                <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                  <SelectTrigger className="h-9 text-xs flex-1">
+                    <SelectValue placeholder="Select store..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {receivableStores.map((store) => (
+                      <SelectItem key={store.id} value={store.id} className="text-xs">
+                        {store.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-9 text-xs px-3 min-w-[80px]"
+                  onClick={syncAllPending}
+                  disabled={!selectedStoreId || readyToSyncCount === 0 || isSyncing}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-1" />
+                      Sync {readyToSyncCount}
+                    </>
+                  )}
+                </Button>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-1">
-                  <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                    <SelectTrigger className="h-6 text-[10px] flex-1">
-                      <SelectValue placeholder="Select store..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {receivableStores.map((store) => (
-                        <SelectItem key={store.id} value={store.id} className="text-[10px]">
-                          {store.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    size="sm"
-                    className="h-6 text-[10px] px-2"
-                    onClick={syncAllPending}
-                    disabled={!selectedStoreId || readyToSyncCount === 0 || isSyncing}
+
+              {/* Pending items list */}
+              <div className="space-y-2 max-h-48 overflow-auto">
+                {pendingItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`p-3 rounded-lg border text-xs ${
+                      item.expiration_date
+                        ? "border-green-500/40 bg-green-500/5"
+                        : "border-amber-500/40 bg-amber-500/5"
+                    }`}
                   >
-                    {isSyncing ? (
-                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                    ) : (
-                      <Check className="h-2.5 w-2.5" />
-                    )}
-                    <span className="ml-0.5">{readyToSyncCount}</span>
-                  </Button>
-                </div>
-
-                <div className="space-y-1 max-h-32 overflow-auto">
-                  {pendingItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`p-1.5 rounded border text-[10px] ${
-                        item.expiration_date ? "border-green-500/50 bg-green-500/5" : "border-amber-500/50 bg-amber-500/5"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="font-medium truncate flex-1 text-[10px]">{item.item_name}</span>
-                        <Badge variant="outline" className="text-[8px] h-3 px-1">
-                          {item.quantity}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="date"
-                          value={item.expiration_date || ""}
-                          onChange={(e) => updateExpiration(item.id, e.target.value)}
-                          className={`h-5 text-[10px] flex-1 ${!item.expiration_date ? "border-amber-500" : ""}`}
-                        />
-                        {item.expiration_date ? (
-                          <Check className="h-2.5 w-2.5 text-green-500" />
-                        ) : (
-                          <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 text-destructive"
-                          onClick={() => rejectItem(item.id)}
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="synced" className="mt-1.5">
-            {syncedItems.length === 0 ? (
-              <div className="text-center py-2 text-[10px] text-muted-foreground">
-                <CheckCircle className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                No synced items yet
-              </div>
-            ) : (
-              <div className="space-y-1 max-h-32 overflow-auto">
-                {syncedItems.map((item) => (
-                  <div key={item.id} className="p-1.5 rounded border border-green-500/30 bg-green-500/5 text-[10px]">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="font-medium truncate flex-1">{item.item_name}</span>
-                      <div className="flex items-center gap-1">
-                        <Badge className="text-[8px] h-3 px-1 bg-green-600">{item.quantity}</Badge>
-                        <CheckCircle className="h-2.5 w-2.5 text-green-500" />
-                      </div>
+                      <Badge variant="outline" className="text-[10px] h-5 px-2">
+                        {item.quantity}
+                      </Badge>
                     </div>
-                    <div className="text-[8px] text-muted-foreground mt-0.5">
-                      Exp: {item.expiration_date ? format(new Date(item.expiration_date), "PP") : "-"}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={item.expiration_date || ""}
+                        onChange={(e) => updateExpiration(item.id, e.target.value)}
+                        className={`h-8 text-xs flex-1 ${!item.expiration_date ? "border-amber-500" : ""}`}
+                      />
+                      {item.expiration_date ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => rejectItem(item.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* Synced Tab Content */}
+        <TabsContent value="synced" className="mt-3">
+          {syncedItems.length === 0 ? (
+            <div className="text-center py-6 text-xs text-muted-foreground">
+              <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
+              No synced items yet
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-auto">
+              {syncedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded-lg border border-green-500/30 bg-green-500/5 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium truncate flex-1">{item.item_name}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className="text-[10px] h-5 px-2 bg-green-600">{item.quantity}</Badge>
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">
+                    Exp: {item.expiration_date ? format(new Date(item.expiration_date), "PP") : "-"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </section>
   );
 };
