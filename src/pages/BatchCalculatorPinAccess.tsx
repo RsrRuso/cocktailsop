@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Delete, Calculator, History, LogOut, Beaker, Download, Share } from "lucide-react";
+import { Loader2, Delete, Calculator, History, LogOut, Beaker, Download, Share, ArrowLeft } from "lucide-react";
 interface GroupMember {
   id: string;
   user_id: string;
@@ -275,16 +275,27 @@ export default function BatchCalculatorPinAccess() {
   // Group Selection Screen
   if (!selectedGroup) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Beaker className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">SV Batch Calculator</CardTitle>
-            <p className="text-muted-foreground mt-2">Recipe Scaling & Production</p>
-            <p className="text-sm text-muted-foreground mt-1">Select your team to continue</p>
-          </CardHeader>
+      <div className="min-h-screen bg-background flex flex-col p-4">
+        {/* Back button */}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => navigate('/profile')}
+          className="self-start mb-4"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        
+        <div className="flex-1 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <Beaker className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">SV Batch Calculator</CardTitle>
+              <p className="text-muted-foreground mt-2">Recipe Scaling & Production</p>
+              <p className="text-sm text-muted-foreground mt-1">Select your team to continue</p>
+            </CardHeader>
           <CardContent className="space-y-4">
             {groups.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
@@ -367,6 +378,7 @@ export default function BatchCalculatorPinAccess() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
