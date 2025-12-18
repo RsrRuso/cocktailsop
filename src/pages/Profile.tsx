@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, LogOut, Sparkles, Share2, Link as LinkIcon, AtSign, Menu, DollarSign } from "lucide-react";
+import { Loader2, LogOut, Sparkles, Share2, Link as LinkIcon, AtSign, Menu, DollarSign, Phone, MessageCircle } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -241,16 +241,40 @@ const Profile = () => {
               <p className="text-sm leading-relaxed">{p.bio}</p>
             )}
             
-            {/* Website link placeholder */}
-            {profile?.website_url && (
+            {/* Website link */}
+            {profile?.show_website && profile?.website && (
               <a 
-                href={profile.website_url} 
+                href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-sm text-primary font-medium"
               >
                 <LinkIcon className="w-3.5 h-3.5" />
-                {profile.website_url.replace(/^https?:\/\//, '')}
+                {profile.website.replace(/^https?:\/\//, '')}
+              </a>
+            )}
+
+            {/* Phone number */}
+            {profile?.show_phone && profile?.phone && (
+              <a 
+                href={`tel:${profile.phone}`}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>{profile.phone}</span>
+              </a>
+            )}
+
+            {/* WhatsApp */}
+            {profile?.show_whatsapp && profile?.whatsapp && (
+              <a 
+                href={`https://wa.me/${profile.whatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-emerald-500 hover:text-emerald-400 transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>{profile.whatsapp}</span>
               </a>
             )}
             
