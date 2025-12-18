@@ -14,11 +14,15 @@ import {
   Award,
   RefreshCw,
   Trash2,
-  Edit
+  Edit,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { toast } from "sonner";
 
 interface ActivityTrackingPanelProps {
   groupId?: string | null;
@@ -220,6 +224,119 @@ export const ActivityTrackingPanel = memo(({ groupId }: ActivityTrackingPanelPro
     fetchProfiles();
   }, [recentActivity]);
 
+  const downloadActivityPDF = () => {
+    if (!stats) {
+      toast.error("No activity data to export");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Activity Tracking Report", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${format(new Date(), "PPpp")}`, pageWidth / 2, 28, { align: "center" });
+    
+    // Stats Summary
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Performance Summary", 14, 42);
+    
+    const statsData = [
+      ["Total Time Spent", formatDuration(stats.totalTimeSpent)],
+      ["Average Batch Time", formatDuration(stats.avgBatchSubmissionTime)],
+      ["Recipes Created", String(stats.totalRecipesCreated)],
+      ["Batches Submitted", String(stats.totalBatchesSubmitted)],
+      ["Fastest Batch", formatDuration(stats.fastestBatchTime)],
+      ["Slowest Batch", formatDuration(stats.slowestBatchTime)],
+      ["Total Sessions", String(stats.sessionsCount)]
+    ];
+
+    autoTable(doc, {
+      startY: 46,
+      head: [["Metric", "Value"]],
+      body: statsData,
+      theme: "striped",
+      headStyles: { fillColor: [59, 130, 246] },
+      margin: { left: 14, right: 14 }
+    });
+
+    // Recent Activity
+    const finalY = (doc as any).lastAutoTable?.finalY || 100;
+    
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Recent Activity", 14, finalY + 15);
+
+    const getActivityText = (activity: any) => {
+      const metadata = activity.metadata || {};
+      const username = metadata.produced_by_name || profiles[activity.user_id] || 'Team member';
+      
+      switch (activity.action_type) {
+        case 'recipe_complete':
+          return `${username} created recipe "${metadata.recipe_name || 'Unknown'}"`;
+        case 'batch_submit':
+          return `${username} submitted batch "${metadata.batch_name || 'Unknown'}"`;
+        case 'batch_delete':
+          return `${username} deleted batch "${metadata.batch_name || 'Unknown'}"`;
+        case 'recipe_edit':
+          return `${username} edited recipe "${metadata.recipe_name || 'Unknown'}"`;
+        case 'recipe_delete':
+          return `${username} deleted recipe "${metadata.recipe_name || 'Unknown'}"`;
+        case 'qr_scan':
+          return `${username} scanned QR code`;
+        case 'print_action':
+          return `${username} printed ${metadata.type || 'document'}`;
+        default:
+          return `${username} performed ${activity.action_type}`;
+      }
+    };
+
+    const activityData = recentActivity.slice(0, 30).map(activity => [
+      format(new Date(activity.created_at), "MMM d, HH:mm"),
+      getActivityText(activity),
+      activity.duration_seconds ? formatDuration(activity.duration_seconds) : "-"
+    ]);
+
+    if (activityData.length > 0) {
+      autoTable(doc, {
+        startY: finalY + 19,
+        head: [["Date/Time", "Activity", "Duration"]],
+        body: activityData,
+        theme: "striped",
+        headStyles: { fillColor: [59, 130, 246] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 25 }
+        }
+      });
+    }
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Page ${i} of ${pageCount} | SpecVerse Batch Calculator`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" }
+      );
+    }
+
+    doc.save(`activity-report-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    toast.success("Activity report downloaded");
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4 animate-pulse">
@@ -240,14 +357,24 @@ export const ActivityTrackingPanel = memo(({ groupId }: ActivityTrackingPanelPro
           <Activity className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-semibold">Activity Tracking</h3>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          className="h-8 px-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={downloadActivityPDF}
+            className="h-8 px-2"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            className="h-8 px-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
