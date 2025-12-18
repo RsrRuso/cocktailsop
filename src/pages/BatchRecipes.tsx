@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, Edit2, X, Copy, Users } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Edit2, X, Copy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
@@ -55,7 +55,6 @@ const BatchRecipes = () => {
   ]);
   const [currentServes, setCurrentServes] = useState("1");
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
-  const [isAILoading, setIsAILoading] = useState(false);
   const [masterList, setMasterList] = useState("");
   const [showMasterList, setShowMasterList] = useState(false);
   const [openSpiritPopover, setOpenSpiritPopover] = useState<Record<string, boolean>>({});
@@ -277,58 +276,6 @@ const BatchRecipes = () => {
     setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
   };
 
-  const handleAISuggestions = async () => {
-    if (!recipeName) {
-      toast.error("Please enter a recipe name first");
-      return;
-    }
-
-    setIsAILoading(true);
-    try {
-      const response = await supabase.functions.invoke("batch-ai-assistant", {
-        body: {
-          action: "suggest_ingredients",
-          data: { recipeName },
-        },
-      });
-
-      if (response.data?.result) {
-        try {
-          let jsonText = response.data.result;
-          const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            jsonText = jsonMatch[0];
-          }
-
-          const suggested = JSON.parse(jsonText);
-          if (Array.isArray(suggested) && suggested.length > 0) {
-            setIngredients(
-              suggested.map((ing: any, idx: number) => ({
-                id: `${Date.now()}-${idx}`,
-                name: ing.name || "",
-                amount: String(ing.amount || ""),
-                unit: ing.unit || "ml",
-              })),
-            );
-            toast.success("AI suggestions loaded!");
-          } else {
-            toast.error("No ingredients suggested");
-          }
-        } catch (e) {
-          console.error("Parse error:", e, "Response:", response.data.result);
-          toast.error("Could not parse AI suggestions");
-        }
-      } else if (response.error) {
-        toast.error(response.error.message || "Failed to get AI suggestions");
-      }
-    } catch (error) {
-      toast.error("Failed to get AI suggestions");
-      console.error(error);
-    } finally {
-      setIsAILoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
@@ -436,17 +383,6 @@ const BatchRecipes = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <Label>Ingredients *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAISuggestions}
-                  disabled={isAILoading || !recipeName}
-                  className="glass-hover"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {isAILoading ? "Getting AI..." : "AI Suggest"}
-                </Button>
               </div>
 
               {showMasterList && (

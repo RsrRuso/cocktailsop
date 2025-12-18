@@ -81,9 +81,6 @@ verify_jwt = true
 [functions.ai-message-assistant]
 verify_jwt = true
 
-[functions.batch-ai-assistant]
-verify_jwt = true
-
 [functions.career-ai-mentor]
 verify_jwt = true
 
