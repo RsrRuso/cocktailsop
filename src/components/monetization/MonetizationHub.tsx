@@ -71,28 +71,28 @@ export const MonetizationHub = ({ userId }: MonetizationHubProps) => {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="w-full justify-between border-border/50 bg-card hover:bg-accent"
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-between bg-transparent hover:bg-accent/30"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="font-medium">Monetization</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  New
+                </Badge>
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-[var(--radix-dropdown-menu-trigger-width)] bg-popover/90 backdrop-blur-xl shadow-xl z-50"
           >
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="font-medium">Monetization</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                New
-              </Badge>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </div>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          align="start" 
-          className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border z-50"
-        >
           {monetizationFeatures.map((feature, index) => (
             <div key={feature.id}>
               <DropdownMenuItem 
