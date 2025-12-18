@@ -323,7 +323,12 @@ const CreateReel = () => {
 
     const queryImage = searchParams.get('image');
     const queryVideo = searchParams.get('video');
-    const url = stateUrl || queryImage || queryVideo;
+    // Get URL - searchParams.get() already decodes, but handle potential double-encoding
+    const rawUrl = stateUrl || queryImage || queryVideo;
+    let url = rawUrl;
+    if (rawUrl && rawUrl.includes('%')) {
+      try { url = decodeURIComponent(rawUrl); } catch { url = rawUrl; }
+    }
 
     if (url) {
       const stateType = state?.preloadedMedia?.type as MediaItem['type'] | undefined;
@@ -703,8 +708,21 @@ const CreateReel = () => {
                 onClick={togglePlayback}
               />
             ) : (
-              <div className="relative w-full h-full cursor-pointer" onClick={togglePlayback}>
-                <img src={mainVideo.url} alt="" className="w-full h-full object-cover" />
+              <div className="relative w-full h-full cursor-pointer bg-black" onClick={togglePlayback}>
+                <img 
+                  src={mainVideo.url} 
+                  alt="" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    console.error('Image failed to load:', mainVideo.url);
+                    // Try to reload with decoded URL
+                    const decoded = decodeURIComponent(mainVideo.url);
+                    if (decoded !== mainVideo.url) {
+                      e.currentTarget.src = decoded;
+                    }
+                  }}
+                  onLoad={() => console.log('Image loaded successfully:', mainVideo.url)}
+                />
                 <AnimatePresence>
                   {!isPlaying && (
                     <motion.div 
