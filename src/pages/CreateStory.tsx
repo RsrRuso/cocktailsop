@@ -39,19 +39,41 @@ const CreateStory = () => {
   const [isLoadingPreload, setIsLoadingPreload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadState, uploadMultiple } = usePowerfulUpload();
-  const hasProcessedPreload = useRef(false);
+
+  // Prevent duplicate preloads for the same navigation event (React strict-mode safe)
+  const lastPreloadSignatureRef = useRef<string | null>(null);
 
   // Handle inbound “share to story” -> open editor directly
   useEffect(() => {
-    if (hasProcessedPreload.current) return;
-
     const qs = new URLSearchParams(location.search);
     const qsVideo = qs.get("video");
     const qsImage = qs.get("image");
     const qsUrl = qsVideo ?? qsImage;
 
+    const shouldAttemptPreload =
+      (!!locationState?.openEditor && !!(locationState.preloadedMedia?.dataUrl || locationState.preloadedMedia?.url)) ||
+      !!locationState?.shareContent?.id ||
+      !!qsUrl;
+
+    // If we're just visiting /create/story normally, don't run preload logic.
+    if (!shouldAttemptPreload) return;
+
+    const preloadSignature = [
+      location.key,
+      location.search,
+      locationState?.openEditor ? "open" : "closed",
+      locationState?.preloadedMedia?.dataUrl ? "data" : "",
+      locationState?.preloadedMedia?.url ? "url" : "",
+      locationState?.shareContent?.type ?? "",
+      locationState?.shareContent?.id ?? "",
+      qsUrl ?? "",
+    ].join("|");
+
+    // Prevent double-execution (React 18 strict mode) and avoid blocking future shares.
+    if (lastPreloadSignatureRef.current === preloadSignature) return;
+    lastPreloadSignatureRef.current = preloadSignature;
+
     const startPreload = () => {
-      hasProcessedPreload.current = true;
       setIsLoadingPreload(true);
       setShowSelection(false);
       setEditingIndex(0);
