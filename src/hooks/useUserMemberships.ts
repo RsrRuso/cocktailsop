@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Membership {
@@ -12,9 +12,24 @@ export interface Membership {
   memberCount: number;
 }
 
+// Cache memberships across renders
+let membershipCache: { userId: string; data: Membership[]; timestamp: number } | null = null;
+const CACHE_TIME = 120000; // 2 minutes
+
 export const useUserMemberships = (userId: string | null) => {
-  const [memberships, setMemberships] = useState<Membership[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [memberships, setMemberships] = useState<Membership[]>(() => {
+    // Initialize from cache if valid
+    if (membershipCache && membershipCache.userId === userId && 
+        Date.now() - membershipCache.timestamp < CACHE_TIME) {
+      return membershipCache.data;
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    // Not loading if we have valid cache
+    return !(membershipCache && membershipCache.userId === userId && 
+             Date.now() - membershipCache.timestamp < CACHE_TIME);
+  });
 
   useEffect(() => {
     if (!userId) {
@@ -23,54 +38,71 @@ export const useUserMemberships = (userId: string | null) => {
       return;
     }
 
+    // Skip fetch if cache is valid
+    if (membershipCache && membershipCache.userId === userId && 
+        Date.now() - membershipCache.timestamp < CACHE_TIME) {
+      setMemberships(membershipCache.data);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchMemberships = async () => {
       setIsLoading(true);
-      const allMemberships: Membership[] = [];
-
+      
       try {
-        // Fetch workspace memberships (store management)
-        const { data: workspaces } = await supabase
-          .from('workspace_members')
-          .select('id, workspace_id, role, workspaces(id, name)')
-          .eq('user_id', userId);
+        // Fetch ALL membership types in parallel for speed
+        const [workspaceRes, groupRes, teamRes, procurementRes] = await Promise.all([
+          // Store management workspaces (non-fifo)
+          supabase
+            .from('workspace_members')
+            .select('workspace_id, role, workspaces!inner(id, name, workspace_type)')
+            .eq('user_id', userId),
+          // Mixologist groups
+          supabase
+            .from('mixologist_group_members')
+            .select('group_id, role, mixologist_groups!inner(id, name)')
+            .eq('user_id', userId),
+          // Teams
+          supabase
+            .from('team_members')
+            .select('team_id, role, teams!inner(id, name)')
+            .eq('user_id', userId),
+          // Procurement workspaces
+          supabase
+            .from('procurement_workspace_members')
+            .select('workspace_id, role, procurement_workspaces!inner(id, name)')
+            .eq('user_id', userId),
+        ]);
 
-        if (workspaces) {
-          for (const w of workspaces as any[]) {
+        const allMemberships: Membership[] = [];
+
+        // Process workspaces - separate FIFO and store management
+        if (workspaceRes.data) {
+          for (const w of workspaceRes.data as any[]) {
             if (w.workspaces) {
-              // Get member count
-              const { count } = await supabase
-                .from('workspace_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('workspace_id', w.workspace_id);
-
+              const isFifo = w.workspaces.workspace_type === 'fifo';
               allMemberships.push({
                 id: w.workspace_id,
-                type: 'workspace',
+                type: isFifo ? 'fifo' : 'workspace',
                 name: w.workspaces.name,
                 role: w.role,
-                route: `/store-management?workspace=${w.workspace_id}`,
-                icon: '🏪',
-                color: 'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
-                memberCount: count || 0,
+                route: isFifo 
+                  ? `/fifo-live?workspace=${w.workspace_id}` 
+                  : `/store-management?workspace=${w.workspace_id}`,
+                icon: isFifo ? '📊' : '🏪',
+                color: isFifo 
+                  ? 'from-rose-500/20 to-rose-600/20 border-rose-500/30'
+                  : 'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
+                memberCount: 0, // Will be fetched if needed
               });
             }
           }
         }
 
-        // Fetch mixologist group memberships
-        const { data: groups } = await supabase
-          .from('mixologist_group_members')
-          .select('id, group_id, role, mixologist_groups(id, name)')
-          .eq('user_id', userId);
-
-        if (groups) {
-          for (const g of groups as any[]) {
+        // Process groups
+        if (groupRes.data) {
+          for (const g of groupRes.data as any[]) {
             if (g.mixologist_groups) {
-              const { count } = await supabase
-                .from('mixologist_group_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('group_id', g.group_id);
-
               allMemberships.push({
                 id: g.group_id,
                 type: 'group',
@@ -79,26 +111,16 @@ export const useUserMemberships = (userId: string | null) => {
                 route: `/batch-calculator?group=${g.group_id}`,
                 icon: '🍸',
                 color: 'from-amber-500/20 to-amber-600/20 border-amber-500/30',
-                memberCount: count || 0,
+                memberCount: 0,
               });
             }
           }
         }
 
-        // Fetch team memberships
-        const { data: teams } = await supabase
-          .from('team_members')
-          .select('id, team_id, role, teams(id, name)')
-          .eq('user_id', userId);
-
-        if (teams) {
-          for (const t of teams as any[]) {
+        // Process teams
+        if (teamRes.data) {
+          for (const t of teamRes.data as any[]) {
             if (t.teams) {
-              const { count } = await supabase
-                .from('team_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('team_id', t.team_id);
-
               allMemberships.push({
                 id: t.team_id,
                 type: 'team',
@@ -107,26 +129,16 @@ export const useUserMemberships = (userId: string | null) => {
                 route: `/task-manager?team=${t.team_id}`,
                 icon: '👥',
                 color: 'from-blue-500/20 to-blue-600/20 border-blue-500/30',
-                memberCount: count || 0,
+                memberCount: 0,
               });
             }
           }
         }
 
-        // Fetch procurement workspace memberships
-        const { data: procurement } = await supabase
-          .from('procurement_workspace_members')
-          .select('id, workspace_id, role, procurement_workspaces(id, name)')
-          .eq('user_id', userId);
-
-        if (procurement) {
-          for (const p of procurement as any[]) {
+        // Process procurement
+        if (procurementRes.data) {
+          for (const p of procurementRes.data as any[]) {
             if (p.procurement_workspaces) {
-              const { count } = await supabase
-                .from('procurement_workspace_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('workspace_id', p.workspace_id);
-
               allMemberships.push({
                 id: p.workspace_id,
                 type: 'procurement',
@@ -135,12 +147,14 @@ export const useUserMemberships = (userId: string | null) => {
                 route: `/purchase-orders?workspace=${p.workspace_id}`,
                 icon: '📦',
                 color: 'from-violet-500/20 to-violet-600/20 border-violet-500/30',
-                memberCount: count || 0,
+                memberCount: 0,
               });
             }
           }
         }
 
+        // Cache the results
+        membershipCache = { userId, data: allMemberships, timestamp: Date.now() };
         setMemberships(allMemberships);
       } catch (error) {
         console.error('Error fetching memberships:', error);
