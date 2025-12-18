@@ -437,18 +437,44 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
           .order('created_at', { ascending: false })
           .limit(30);
 
-        if (data) {
-          activities = data.map(a => ({
-            id: a.id,
-            action_type: a.action_type,
-            user_id: a.user_id,
-            created_at: a.created_at,
-            metadata: {
-              details: a.details,
-              quantity_before: a.quantity_before,
-              quantity_after: a.quantity_after
+        if (data && data.length > 0) {
+          // Get all unique item_ids from the details to fetch item names
+          const itemIds = data
+            .map(a => (a.details as any)?.item_id)
+            .filter(Boolean);
+          
+          let itemNames: Record<string, string> = {};
+          if (itemIds.length > 0) {
+            const { data: items } = await (supabase as any)
+              .from('glassware_items')
+              .select('id, name')
+              .in('id', itemIds);
+            
+            if (items) {
+              items.forEach((i: any) => { itemNames[i.id] = i.name; });
             }
-          }));
+          }
+
+          activities = data.map(a => {
+            const details = a.details as any;
+            // Add item_name to details if we have it
+            const enrichedDetails = {
+              ...details,
+              item_name: details?.item_name || itemNames[details?.item_id] || null
+            };
+            
+            return {
+              id: a.id,
+              action_type: a.action_type,
+              user_id: a.user_id,
+              created_at: a.created_at,
+              metadata: {
+                details: enrichedDetails,
+                quantity_before: a.quantity_before,
+                quantity_after: a.quantity_after
+              }
+            };
+          });
         }
 
         setStats({ totalBatches: 0, totalRecipes: 0, totalTime: 0 });
