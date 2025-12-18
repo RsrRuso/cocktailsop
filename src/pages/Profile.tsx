@@ -39,6 +39,7 @@ const Profile = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [userStatus, setUserStatus] = useState<any>(null);
   const [hasStories, setHasStories] = useState(false);
+  const [contentCount, setContentCount] = useState(0);
 
   // Fetch minimal data on mount
   useEffect(() => {
@@ -71,6 +72,16 @@ const Profile = () => {
       .eq('user_id', user.id)
       .gt('expires_at', new Date().toISOString())
       .then(({ count }) => setHasStories((count || 0) > 0));
+    
+    // Count posts and reels
+    Promise.all([
+      supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('reels').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+    ]).then(([postsRes, reelsRes]) => {
+      const postsCount = postsRes.count || 0;
+      const reelsCount = reelsRes.count || 0;
+      setContentCount(postsCount + reelsCount);
+    });
   }, [user?.id]);
 
   const handleSignOut = async () => {
@@ -173,7 +184,7 @@ const Profile = () => {
           {/* Stats */}
           <div className="flex items-center gap-6 mt-4">
             <div className="text-center">
-              <p className="text-lg font-bold">{p.post_count}</p>
+              <p className="text-lg font-bold">{contentCount}</p>
               <p className="text-xs text-muted-foreground">Posts</p>
             </div>
             <button className="text-center" onClick={() => setShowFollowers(true)}>
