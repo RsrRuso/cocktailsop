@@ -109,12 +109,11 @@ export const POFIFOSyncPanel = ({
   // Force re-import: delete existing and import fresh
   const forceImportFromReceived = async (recordId: string) => {
     try {
-      // Delete existing sync items for this record
+      // Delete ALL existing sync items for this record (including synced) for fresh re-import
       await supabase
         .from('po_fifo_sync')
         .delete()
-        .eq('po_received_record_id', recordId)
-        .in('status', ['pending', 'rejected']); // Only delete pending/rejected, not synced
+        .eq('po_received_record_id', recordId);
 
       // Fetch received items
       const { data: receivedItems, error } = await (supabase as any)
