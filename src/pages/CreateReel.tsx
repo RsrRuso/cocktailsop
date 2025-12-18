@@ -427,19 +427,49 @@ const CreateReel = () => {
       const firstItem = selectedItems[0];
       const isImage = firstItem.type === 'image';
 
-      const response = await fetch(firstItem.url);
-      const blob = await response.blob();
+      // Fetch media blob (supports blob: URLs and remote URLs that block CORS)
+      let blob: Blob;
+      try {
+        const response = await fetch(firstItem.url);
+        blob = await response.blob();
+      } catch (e) {
+        // iOS/Safari often fails on remote URLs due to CORS (TypeError: Load failed)
+        if (/^https?:\/\//i.test(firstItem.url)) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const proxyRes = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/media-proxy`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({ url: firstItem.url }),
+            }
+          );
+
+          if (!proxyRes.ok) {
+            const txt = await proxyRes.text().catch(() => "");
+            throw new Error(txt || `Remote media fetch failed (${proxyRes.status})`);
+          }
+
+          blob = await proxyRes.blob();
+        } else {
+          throw e;
+        }
+      }
       
       let fileToUpload: File;
       let mediaUrl: string;
 
       if (isImage) {
         // For images, upload directly as image
-        fileToUpload = new File([blob], `reel-${Date.now()}.png`, { type: 'image/png' });
+        fileToUpload = new File([blob], `reel-${Date.now()}.png`, { type: blob.type || 'image/png' });
         toast.info("Creating reel from image...");
       } else {
         // For videos, handle compression
-        fileToUpload = new File([blob], 'reel.mp4', { type: 'video/mp4' });
+        fileToUpload = new File([blob], 'reel.mp4', { type: blob.type || 'video/mp4' });
         
         if (needsCompression(fileToUpload)) {
           toast.info(`Compressing ${getFileSizeMB(fileToUpload).toFixed(1)}MB video...`);
@@ -482,7 +512,7 @@ const CreateReel = () => {
       navigate("/reels");
     } catch (error: any) {
       console.error("Error:", error);
-      toast.error("Upload failed");
+      toast.error(error?.message || "Upload failed");
     } finally {
       setIsUploading(false);
     }
