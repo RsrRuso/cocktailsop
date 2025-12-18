@@ -27,12 +27,44 @@ interface Reel {
   repost_count: number;
   save_count: number;
   created_at: string;
+  music_url?: string | null;
+  music_track_id?: string | null;
+  mute_original_audio?: boolean | null;
+  music_tracks?: {
+    title: string;
+    artist?: string | null;
+    preview_url?: string | null;
+    original_url?: string | null;
+    profiles?: { username: string } | null;
+  } | null;
   profiles: any;
 }
 
 // Cache for feed data - persisted across navigations (module-level singleton)
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
 const CACHE_TIME = 300000; // 5 minutes for instant loads
+
+const hydrateReelsMusicTracks = async (input: Reel[]) => {
+  const missingUrls = Array.from(
+    new Set(input.filter(r => !r.music_tracks && r.music_url).map(r => r.music_url))
+  ) as string[];
+
+  if (missingUrls.length === 0) return input;
+
+  const { data: tracks } = await supabase
+    .from('music_tracks')
+    .select('title, artist, preview_url, original_url, profiles:uploaded_by(username)')
+    .in('original_url', missingUrls);
+
+  const byUrl = new Map((tracks || []).map((t: any) => [t.original_url, t]));
+
+  return input.map(r => {
+    if (r.music_tracks) return r;
+    if (!r.music_url) return r;
+    const found = byUrl.get(r.music_url);
+    return found ? ({ ...r, music_tracks: found } as Reel) : r;
+  });
+};
 
 // Initialize from prefetch if available
 const initFromPrefetch = () => {
@@ -105,7 +137,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .select(`
           id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at,
           music_url, music_track_id, mute_original_audio,
-          music_tracks:music_track_id(title, preview_url, profiles:uploaded_by(username))
+          music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username))
         `)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -121,15 +153,17 @@ export const useFeedData = (selectedRegion: string | null) => {
         .in('id', userIds);
 
       // Map profiles to reels
-      const reelsWithProfiles = reelsData.map(reel => ({
+      const reelsWithProfiles: Reel[] = (reelsData as any[]).map(reel => ({
         ...reel,
         profiles: profiles?.find(p => p.id === reel.user_id) || null
       }));
 
+      const hydrated = await hydrateReelsMusicTracks(reelsWithProfiles);
+
       // Filter by region if needed
       const filteredReels = selectedRegion && selectedRegion !== "All"
-        ? reelsWithProfiles.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
-        : reelsWithProfiles;
+        ? hydrated.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
+        : hydrated;
 
       setReels(filteredReels);
       return filteredReels;
@@ -145,6 +179,18 @@ export const useFeedData = (selectedRegion: string | null) => {
       if (posts.length === 0) setPosts(feedCache!.posts);
       if (reels.length === 0) setReels(feedCache!.reels);
       setIsLoading(false);
+
+      // Hydrate cached reels music labels in background (so "Added Music" becomes the real track title)
+      void (async () => {
+        try {
+          const updated = await hydrateReelsMusicTracks(feedCache!.reels);
+          feedCache = { ...feedCache!, reels: updated };
+          setReels(updated);
+        } catch {
+          // ignore
+        }
+      })();
+
       return;
     }
 

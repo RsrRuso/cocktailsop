@@ -489,6 +489,10 @@ const CreateReel = () => {
         caption: captionText || "",
         thumbnail_url: result.publicUrl,
         music_url: selectedMusic?.preview_audio || null,
+        // Ensure music label can render (join via music_track_id)
+        music_track_id: selectedMusic?.track_id || null,
+        // When music is attached, default to muting original video audio
+        mute_original_audio: !!selectedMusic?.preview_audio,
         duration: clipDuration,
         is_image_reel: isImage,
       }).select('id').single();
