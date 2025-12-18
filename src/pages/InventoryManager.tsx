@@ -829,8 +829,10 @@ const InventoryManager = () => {
       await supabase
         .from("fifo_inventory")
         .update({
-          quantity: destInv.quantity + quantity,
-          status: "available"
+          quantity: (destInv.quantity || 0) + quantity,
+          status: "available",
+          // If a row was previously created without workspace_id, fix it on transfer
+          workspace_id: currentWorkspace?.id || (destInv as any).workspace_id || null,
         })
         .eq("id", destInv.id);
     } else {
@@ -2575,6 +2577,7 @@ const InventoryManager = () => {
                 .from("fifo_transfers")
                 .insert({
                   user_id: user.id,
+                  workspace_id: currentWorkspace?.id || null,
                   inventory_id: quickTransferItem.id,
                   from_store_id: quickTransferItem.store_id,
                   to_store_id: toStoreId,
@@ -2601,22 +2604,33 @@ const InventoryManager = () => {
                 })
                 .eq("id", quickTransferItem.id);
 
-              const { data: destInv } = await supabase
+              const { data: destInv, error: destError } = await supabase
                 .from("fifo_inventory")
                 .select("*")
                 .eq("store_id", toStoreId)
                 .eq("item_id", quickTransferItem.item_id)
                 .eq("expiration_date", quickTransferItem.expiration_date)
-                .single();
+                .maybeSingle();
+
+              if (destError) {
+                toast.error("Failed to fetch destination inventory");
+                return;
+              }
 
               if (destInv) {
                 await supabase
                   .from("fifo_inventory")
-                  .update({ quantity: destInv.quantity + quantity })
+                  .update({
+                    quantity: (destInv.quantity || 0) + quantity,
+                    status: "available",
+                    // If a row was previously created without workspace_id, fix it on transfer
+                    workspace_id: currentWorkspace?.id || (destInv as any).workspace_id || null,
+                  })
                   .eq("id", destInv.id);
               } else {
                 await supabase.from("fifo_inventory").insert({
                   user_id: user.id,
+                  workspace_id: currentWorkspace?.id || null,
                   store_id: toStoreId,
                   item_id: quickTransferItem.item_id,
                   quantity: quantity,
@@ -2629,6 +2643,7 @@ const InventoryManager = () => {
 
               await supabase.from("fifo_activity_log").insert({
                 user_id: user.id,
+                workspace_id: currentWorkspace?.id || null,
                 inventory_id: quickTransferItem.id,
                 store_id: quickTransferItem.store_id,
                 action_type: "transferred",
