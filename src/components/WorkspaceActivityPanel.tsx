@@ -191,7 +191,7 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
           activities = [...activities, ...productionActivities];
         }
 
-        // Get recipes count
+        // Get recipes count for this specific group only
         const { count: recipesCount } = await supabase
           .from('batch_recipes')
           .select('*', { count: 'exact', head: true })
@@ -207,9 +207,9 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
           totalBatches: batchesCount || 0,
           totalTime: activities.reduce((sum, a) => sum + (a.duration_seconds || 0), 0)
         });
-      } else if (workspaceType === 'workspace' || workspaceType === 'fifo') {
-        // Store management or FIFO workspace - check for inventory activities
-        // For now, we'll show a placeholder since these don't have dedicated activity tables
+      } else {
+        // For workspace, fifo, team, procurement - no dedicated activity table yet
+        // Show empty state
         setStats({ totalBatches: 0, totalRecipes: 0, totalTime: 0 });
       }
 
