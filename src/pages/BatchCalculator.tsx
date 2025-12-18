@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAuth } from "@/contexts/AuthContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -10,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy, Share2, Wifi, Circle } from "lucide-react";
 import { ShareAnalyticsDialog } from "@/components/batch/ShareAnalyticsDialog";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
@@ -117,6 +120,11 @@ const BatchCalculator = () => {
   const [showDeleteGroupDialog, setShowDeleteGroupDialog] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   
+  // Online team presence state
+  const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; username?: string; email?: string; role: string }[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<{ full_name?: string; username?: string; email?: string } | null>(null);
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
+  
   // Share analytics state and refs
   const [showShareTeamPerformance, setShowShareTeamPerformance] = useState(false);
   const [showShareLeaderboards, setShowShareLeaderboards] = useState(false);
@@ -163,6 +171,79 @@ const BatchCalculator = () => {
   const { spirits, calculateBottles } = useMasterSpirits();
   const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
   const queryClient = useQueryClient();
+
+  // Setup presence tracking for the selected group
+  useEffect(() => {
+    if (!selectedGroupId || !user) {
+      setOnlineTeam([]);
+      return;
+    }
+
+    const channelName = `batch-calculator-presence:${selectedGroupId}`;
+    
+    // Cleanup previous channel
+    if (presenceChannelRef.current) {
+      supabase.removeChannel(presenceChannelRef.current);
+    }
+
+    const channel = supabase.channel(channelName);
+    presenceChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const users: { id: string; name: string; username?: string; email?: string; role: string }[] = [];
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            const presenceUserId = presence.id || presence.user_id;
+            if (presenceUserId && presenceUserId !== user.id) {
+              users.push({
+                id: presenceUserId,
+                name: presence.name || 'Team Member',
+                username: presence.username,
+                email: presence.email,
+                role: presence.role || 'member'
+              });
+            }
+          });
+        });
+        setOnlineTeam(users);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Get user profile for full name and username
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, username')
+            .eq('id', user.id)
+            .single();
+          
+          setCurrentUserProfile({
+            full_name: profile?.full_name || '',
+            username: profile?.username || '',
+            email: user.email || ''
+          });
+          
+          // Track presence
+          await channel.track({
+            id: user.id,
+            user_id: user.id,
+            name: profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User',
+            username: profile?.username,
+            email: user.email,
+            role: staffMode ? 'staff' : 'admin',
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+
+    return () => {
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
+        presenceChannelRef.current = null;
+      }
+    };
+  }, [selectedGroupId, user, staffMode]);
 
   // Set default producer to current user
   useEffect(() => {
@@ -3411,17 +3492,100 @@ const BatchCalculator = () => {
               </p>
             </div>
           </div>
-          {!staffMode && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/batch-calculator-pin-access")}
-              className="glass-hover shrink-0"
-              title="Team PIN Access"
-            >
-              <Smartphone className="w-5 h-5" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Online Team Presence Indicator */}
+            {selectedGroupId && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20">
+                    <div className="relative">
+                      <Wifi className="w-3.5 h-3.5 text-primary" />
+                      <Circle className="w-2 h-2 fill-green-500 text-green-500 absolute -top-0.5 -right-0.5 animate-pulse" />
+                    </div>
+                    <span className="text-xs font-semibold text-primary">{onlineTeam.length + 1}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-3 border-b">
+                      <Users className="w-5 h-5 text-primary" />
+                      <span className="font-bold text-sm">Team Online Now</span>
+                      <Badge variant="secondary" className="ml-auto text-xs px-2">
+                        {groups?.find(g => g.id === selectedGroupId)?.name || 'Group'}
+                      </Badge>
+                    </div>
+                    
+                    {/* Current user */}
+                    <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/5 border border-primary/20">
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">
+                            {(currentUserProfile?.full_name || currentUserProfile?.username || user?.email || 'U')[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                        <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 absolute -bottom-0.5 -right-0.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {currentUserProfile?.username && (
+                          <p className="font-bold text-sm text-primary truncate">@{currentUserProfile.username}</p>
+                        )}
+                        <p className="font-semibold text-sm truncate">{currentUserProfile?.full_name || user?.email?.split('@')[0]}</p>
+                      </div>
+                      <Badge variant="default" className="text-xs shrink-0">You</Badge>
+                    </div>
+                    
+                    {/* Other online members */}
+                    {onlineTeam.length > 0 ? (
+                      <div className="space-y-2">
+                        {onlineTeam.map((member) => (
+                          <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className="relative">
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  {member.name[0]?.toUpperCase()}
+                                </span>
+                              </div>
+                              <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 absolute -bottom-0.5 -right-0.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {member.username && (
+                                <p className="font-bold text-sm text-primary truncate">@{member.username}</p>
+                              )}
+                              <p className="font-medium text-sm truncate">{member.name}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs capitalize shrink-0">
+                              {member.role}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-4">
+                        No other team members online
+                      </p>
+                    )}
+                    
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-muted-foreground text-center">
+                        All members see shared recipes & productions
+                      </p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            {!staffMode && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate("/batch-calculator-pin-access")}
+                className="glass-hover shrink-0"
+                title="Team PIN Access"
+              >
+                <Smartphone className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
