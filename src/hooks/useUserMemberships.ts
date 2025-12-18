@@ -87,7 +87,7 @@ export const useUserMemberships = (userId: string | null) => {
                 name: w.workspaces.name,
                 role: w.role,
                 route: isFifo 
-                  ? `/lab-ops?workspace=${w.workspace_id}` 
+                  ? `/inventory-manager?workspace=${w.workspace_id}` 
                   : `/store-management?workspace=${w.workspace_id}`,
                 icon: isFifo ? '📊' : '🏪',
                 color: isFifo 
