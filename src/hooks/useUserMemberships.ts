@@ -99,8 +99,8 @@ export const useUserMemberships = (userId: string | null) => {
                 name: w.workspaces.name,
                 role: w.role,
                 route: isFifo 
-                  ? `/inventory-manager?workspace=${w.workspace_id}` 
-                  : `/store-management?workspace=${w.workspace_id}`,
+                  ? `/fifo-pin-access?workspace=${w.workspace_id}` 
+                  : `/store-management-pin-access?workspace=${w.workspace_id}`,
                 icon: isFifo ? '📊' : '🏪',
                 color: isFifo 
                   ? 'from-rose-500/20 to-rose-600/20 border-rose-500/30'
@@ -122,8 +122,8 @@ export const useUserMemberships = (userId: string | null) => {
                 name: w.name,
                 role: 'owner',
                 route: isFifo 
-                  ? `/inventory-manager?workspace=${w.id}` 
-                  : `/store-management?workspace=${w.id}`,
+                  ? `/fifo-pin-access?workspace=${w.id}` 
+                  : `/store-management-pin-access?workspace=${w.id}`,
                 icon: isFifo ? '📊' : '🏪',
                 color: isFifo 
                   ? 'from-rose-500/20 to-rose-600/20 border-rose-500/30'
