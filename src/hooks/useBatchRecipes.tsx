@@ -162,6 +162,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
 
   const updateRecipe = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<BatchRecipe> }) => {
+      // Update the recipe template
       const { error } = await supabase
         .from('batch_recipes')
         .update({
@@ -173,12 +174,26 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
         .eq('id', id);
       
       if (error) throw error;
+
+      // Cascade update to all linked batch productions
+      if (updates.recipe_name || updates.current_serves) {
+        const cascadeUpdates: any = {};
+        if (updates.recipe_name) cascadeUpdates.batch_name = updates.recipe_name;
+        if (updates.current_serves) cascadeUpdates.target_serves = updates.current_serves;
+        
+        await supabase
+          .from('batch_productions')
+          .update(cascadeUpdates)
+          .eq('recipe_id', id);
+      }
+
       return { id, ...updates };
     },
     onSuccess: () => {
       recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
-      toast.success("Recipe updated!");
+      queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
+      toast.success("Recipe and all linked productions updated!");
     },
     onError: (error) => {
       toast.error("Failed to update recipe: " + error.message);
