@@ -14569,6 +14569,15 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      notify_batch_group_members: {
+        Args: {
+          p_content: string
+          p_group_id: string
+          p_notification_type: string
+          p_submitter_id: string
+        }
+        Returns: undefined
+      }
       notify_friends_birthday: { Args: never; Returns: undefined }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       refresh_music_popularity: { Args: never; Returns: undefined }

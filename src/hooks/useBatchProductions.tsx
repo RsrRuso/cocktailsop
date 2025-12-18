@@ -157,7 +157,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success("Batch production recorded!");
 
-      // Notify group members if part of a group
+      // Notify group members if part of a group using SECURITY DEFINER function
       if (data.group_id) {
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profile } = await supabase
@@ -166,25 +166,13 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           .eq('id', user?.id)
           .single();
 
-        // Notify ALL group members including submitter (like procurement pattern)
-        const { data: members } = await supabase
-          .from('mixologist_group_members')
-          .select('user_id')
-          .eq('group_id', data.group_id);
-
-        if (members && profile) {
-          for (const member of members) {
-            try {
-              await supabase.from('notifications').insert({
-                user_id: member.user_id,
-                type: 'batch_submission',
-                content: `${profile.username} submitted a new batch: ${data.batch_name}`,
-                read: false
-              });
-            } catch (e) {
-              // Ignore duplicate notification errors
-            }
-          }
+        if (profile) {
+          await supabase.rpc('notify_batch_group_members', {
+            p_group_id: data.group_id,
+            p_notification_type: 'batch_submission',
+            p_content: `${profile.username} submitted a new batch: ${data.batch_name}`,
+            p_submitter_id: user?.id
+          });
         }
       }
     },
@@ -267,7 +255,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success('Batch production updated!');
 
-      // Notify group members if part of a group
+      // Notify group members if part of a group using SECURITY DEFINER function
       if (data?.group_id) {
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profile } = await supabase
@@ -276,25 +264,13 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           .eq('id', user?.id)
           .single();
 
-        // Notify ALL group members including submitter (like procurement pattern)
-        const { data: members } = await supabase
-          .from('mixologist_group_members')
-          .select('user_id')
-          .eq('group_id', data.group_id);
-
-        if (members && profile) {
-          for (const member of members) {
-            try {
-              await supabase.from('notifications').insert({
-                user_id: member.user_id,
-                type: 'batch_edit',
-                content: `${profile.username} edited batch: ${data.batch_name}`,
-                read: false
-              });
-            } catch (e) {
-              // Ignore duplicate notification errors
-            }
-          }
+        if (profile) {
+          await supabase.rpc('notify_batch_group_members', {
+            p_group_id: data.group_id,
+            p_notification_type: 'batch_edit',
+            p_content: `${profile.username} edited batch: ${data.batch_name}`,
+            p_submitter_id: user?.id
+          });
         }
       }
     },
@@ -373,7 +349,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success('Batch production deleted');
 
-      // Notify group members if part of a group
+      // Notify group members if part of a group using SECURITY DEFINER function
       if (production?.group_id) {
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profile } = await supabase
@@ -382,25 +358,13 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           .eq('id', user?.id)
           .single();
 
-        // Notify ALL group members including submitter (like procurement pattern)
-        const { data: members } = await supabase
-          .from('mixologist_group_members')
-          .select('user_id')
-          .eq('group_id', production.group_id);
-
-        if (members && profile) {
-          for (const member of members) {
-            try {
-              await supabase.from('notifications').insert({
-                user_id: member.user_id,
-                type: 'batch_delete',
-                content: `${profile.username} deleted batch: ${production.batch_name}`,
-                read: false
-              });
-            } catch (e) {
-              // Ignore duplicate notification errors
-            }
-          }
+        if (profile) {
+          await supabase.rpc('notify_batch_group_members', {
+            p_group_id: production.group_id,
+            p_notification_type: 'batch_delete',
+            p_content: `${profile.username} deleted batch: ${production.batch_name}`,
+            p_submitter_id: user?.id
+          });
         }
       }
     },
