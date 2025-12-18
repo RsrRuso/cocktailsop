@@ -30,6 +30,7 @@ interface Reel {
   music_url?: string | null;
   music_track_id?: string | null;
   mute_original_audio?: boolean | null;
+  is_image_reel?: boolean | null;
   music_tracks?: {
     title: string;
     artist?: string | null;
@@ -136,7 +137,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .from("reels")
         .select(`
           id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at,
-          music_url, music_track_id, mute_original_audio,
+          music_url, music_track_id, mute_original_audio, is_image_reel,
           music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username))
         `)
         .order("created_at", { ascending: false })

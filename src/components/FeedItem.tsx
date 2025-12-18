@@ -77,6 +77,7 @@ export const FeedItem = memo(({
   const hasAttachedMusic = Boolean(item.music_track_id || item.music_url);
   const musicUrl = item.music_tracks?.preview_url || item.music_url;
   const shouldMuteVideo = hasAttachedMusic && item.mute_original_audio === true;
+  const isImageReel = item.type === 'reel' && item.is_image_reel === true;
   const videoKey = item.id + (item.video_url || item.media_urls?.[0] || '');
   const isUserMuted = mutedVideos.has(videoKey);
   
@@ -285,7 +286,7 @@ export const FeedItem = memo(({
                 <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-6">
                   <audio src={url} controls className="w-full" />
                 </div>
-              ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
+              ) : (item.type === 'reel' && !isImageReel) || url.includes('.mp4') || url.includes('video') ? (
                 <div 
                   className="relative w-full h-full cursor-pointer"
                   onClick={item.type === 'reel' ? onFullscreen : undefined}
