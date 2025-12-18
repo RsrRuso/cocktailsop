@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, LogOut, Sparkles, Share2, TrendingUp, Link as LinkIcon, AtSign, Settings } from "lucide-react";
+import { Loader2, LogOut, Sparkles, Share2, Link as LinkIcon, AtSign, Settings } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -19,6 +19,7 @@ const ProfileGrowthTab = lazy(() => import("@/components/profile/ProfileGrowthTa
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
 const ProfileMembershipDoors = lazy(() => import("@/components/ProfileMembershipDoors").then(m => ({ default: m.ProfileMembershipDoors })));
 const MonetizationHub = lazy(() => import("@/components/monetization").then(m => ({ default: m.MonetizationHub })));
+const ProfessionalDashboard = lazy(() => import("@/components/profile/ProfessionalDashboard"));
 const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 const TabLoader = () => (
@@ -235,13 +236,9 @@ const Profile = () => {
           </div>
 
           {/* Professional Dashboard Card */}
-          <div className="bg-muted/30 border border-border rounded-xl p-3">
-            <p className="font-semibold text-sm">Professional dashboard</p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{p.follower_count > 0 ? `${((p.follower_count * 1.07).toFixed(1))}K` : '0'} views in the last 30 days.</span>
-            </div>
-          </div>
+          <Suspense fallback={<div className="h-24 animate-pulse bg-muted/20 rounded-xl" />}>
+            <ProfessionalDashboard userId={user.id} />
+          </Suspense>
 
           {/* Action Buttons - Instagram style */}
           <div className="flex gap-2">
