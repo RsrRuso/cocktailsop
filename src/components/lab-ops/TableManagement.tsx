@@ -299,10 +299,12 @@ export default function TableManagement({ outletId }: { outletId: string }) {
 
   const deleteTable = async (id: string) => {
     const { error } = await supabase.from("lab_ops_tables").delete().eq("id", id);
-    if (!error) {
-      fetchTables();
-      toast({ title: "Table deleted" });
+    if (error) {
+      toast({ title: "Error deleting table", description: error.message, variant: "destructive" });
+      return;
     }
+    setTables(prev => prev.filter(t => t.id !== id));
+    toast({ title: "Table deleted" });
   };
 
   const createFloorPlan = async () => {
