@@ -1,4 +1,4 @@
-import { RefObject, useState } from "react";
+import { RefObject, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,8 +73,8 @@ export function FloorPlanCanvas({
     if (!editingTable) return null;
     
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/10 backdrop-blur-sm" onClick={() => setEditingTableId(null)}>
-        <div 
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/10 backdrop-blur-sm" onClick={() => setEditingTableId(null)}>
+        <div
           className="w-full max-w-xs bg-background/10 backdrop-blur-xl rounded-2xl p-4 space-y-3 border border-border/20"
           onClick={(e) => e.stopPropagation()}
         >
@@ -358,13 +358,12 @@ export function FloorPlanCanvas({
                   {/* Edit Button - Only shows when selected */}
                   {isSelected && !isDragging && (
                     <button
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-primary hover:text-white transition-colors"
-                      onClick={(e) => {
+                      type="button"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-background/80 backdrop-blur rounded-full shadow-lg flex items-center justify-center z-40 border border-border/30 hover:bg-background hover:text-foreground transition-colors"
+                      onPointerUp={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
-                        setEditingTableId(table.id);
-                      }}
-                      onTouchEnd={(e) => {
-                        e.stopPropagation();
+                        console.log("[FloorPlanCanvas] edit open", table.id);
                         setEditingTableId(table.id);
                       }}
                     >

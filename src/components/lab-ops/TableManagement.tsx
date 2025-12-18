@@ -589,10 +589,32 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => setEditingTable(table)}>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Edit ${table.name}`}
+                            onPointerUp={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log("[TableManagement] edit click", table.id);
+                              setEditingTable(table);
+                            }}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteTable(table.id)}>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Delete ${table.name}`}
+                            onPointerUp={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log("[TableManagement] delete click", table.id);
+                              deleteTable(table.id);
+                            }}
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
