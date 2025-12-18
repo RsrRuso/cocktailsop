@@ -115,7 +115,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
           </span>
         </div>
         
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {memberships.map((m) => {
             const onlineCount = getOnlineCount(m.type, m.id);
             const totalMembers = memberCounts[`${m.type}-${m.id}`] || m.memberCount || 0;
@@ -124,40 +124,42 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
               <button
                 key={`${m.type}-${m.id}`}
                 onClick={() => handleDoorPress(m)}
-                className="flex-shrink-0 relative flex flex-col items-center hover:scale-105 active:scale-95 transition-transform"
+                className="flex-shrink-0 flex flex-col items-center gap-1 active:opacity-70 transition-opacity"
               >
-                {/* Online badge */}
-                {onlineCount > 0 && (
-                  <div className="absolute -top-1 right-0 z-10 flex items-center gap-0.5 bg-emerald-500 rounded-full px-1.5 py-0.5 shadow-lg animate-pulse">
-                    <Wifi className="w-2.5 h-2.5 text-white" />
-                    <span className="text-[10px] font-bold text-white">{onlineCount}</span>
-                  </div>
-                )}
-                
-                {/* Door frame */}
-                <div className={`relative w-16 h-24 rounded-t-[2rem] bg-gradient-to-b ${m.color} border-2 border-border/60 shadow-lg overflow-hidden`}>
-                  {/* Door inner panel */}
-                  <div className="absolute inset-2 rounded-t-[1.5rem] bg-gradient-to-b from-white/10 to-transparent border border-white/20" />
-                  
-                  {/* Door knob */}
-                  <div className="absolute right-2.5 top-1/2 w-2 h-2 rounded-full bg-amber-400 shadow-md" />
-                  
-                  {/* Icon */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl drop-shadow-md">{m.icon}</span>
+                {/* Circle container - Instagram style */}
+                <div className="relative">
+                  {/* Online ring indicator */}
+                  <div className={`w-[68px] h-[68px] rounded-full p-[2px] ${
+                    onlineCount > 0 
+                      ? 'bg-gradient-to-tr from-foreground via-muted-foreground to-foreground' 
+                      : 'bg-border'
+                  }`}>
+                    <div className="w-full h-full rounded-full bg-background p-[2px]">
+                      <div className="w-full h-full rounded-full bg-muted/30 border border-border flex items-center justify-center">
+                        <span className="text-2xl grayscale">{m.icon}</span>
+                      </div>
+                    </div>
                   </div>
                   
-                  {/* Member count */}
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-black/50 backdrop-blur-sm rounded-full px-1.5 py-0.5">
-                    <Users className="w-2.5 h-2.5 text-white/80" />
-                    <span className="text-[9px] font-bold text-white">{totalMembers}</span>
+                  {/* Online count badge */}
+                  {onlineCount > 0 && (
+                    <div className="absolute -top-0.5 -right-0.5 flex items-center gap-0.5 bg-foreground text-background rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm">
+                      <Wifi className="w-2.5 h-2.5" />
+                      {onlineCount}
+                    </div>
+                  )}
+                  
+                  {/* Member count badge */}
+                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-muted border border-border rounded-full px-1.5 py-0.5">
+                    <Users className="w-2.5 h-2.5 text-muted-foreground" />
+                    <span className="text-[9px] font-medium text-muted-foreground">{totalMembers}</span>
                   </div>
                 </div>
                 
-                {/* Name badge below door */}
-                <div className="mt-1.5 px-2 py-0.5 bg-card border border-border rounded-full shadow-sm">
-                  <p className="text-[10px] font-semibold whitespace-nowrap">{m.name}</p>
-                </div>
+                {/* Name label */}
+                <p className="text-[11px] font-medium text-muted-foreground max-w-[70px] truncate">
+                  {m.name}
+                </p>
               </button>
             );
           })}
