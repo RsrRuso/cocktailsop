@@ -54,17 +54,51 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
   const metadata = activity.metadata || {};
   const username = metadata.produced_by_name || profiles[activity.user_id] || 'Team member';
 
-  // Helper to safely extract details string
+  // Helper to safely extract details string - improved to handle nested objects
   const getDetailsString = (details: any): string => {
     if (!details) return '';
-    if (typeof details === 'string') return details;
+    if (typeof details === 'string') {
+      // Check if it's a JSON string and try to parse it
+      if (details.startsWith('{') || details.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(details);
+          return extractReadableInfo(parsed);
+        } catch {
+          return details;
+        }
+      }
+      return details;
+    }
     if (typeof details === 'object') {
-      // Try to extract meaningful info from object
-      return details.item_name || details.name || details.description || 
-             details.store_name || details.batch_name || details.recipe_name ||
-             JSON.stringify(details).substring(0, 50);
+      return extractReadableInfo(details);
     }
     return String(details);
+  };
+
+  // Extract meaningful info from object
+  const extractReadableInfo = (obj: any): string => {
+    if (!obj || typeof obj !== 'object') return '';
+    
+    // Priority order for meaningful fields
+    const meaningfulFields = [
+      'item_name', 'name', 'product_name', 'description',
+      'store_name', 'batch_name', 'recipe_name', 'title',
+      'from_store', 'to_store', 'quantity', 'category'
+    ];
+    
+    for (const field of meaningfulFields) {
+      if (obj[field] && typeof obj[field] === 'string') {
+        return obj[field];
+      }
+    }
+    
+    // If nothing found, try to build a description
+    const parts: string[] = [];
+    if (obj.item_name || obj.name) parts.push(obj.item_name || obj.name);
+    if (obj.quantity) parts.push(`qty: ${obj.quantity}`);
+    if (obj.from_store && obj.to_store) parts.push(`${obj.from_store} → ${obj.to_store}`);
+    
+    return parts.length > 0 ? parts.join(' ') : '';
   };
 
   const getActivityInfo = () => {
