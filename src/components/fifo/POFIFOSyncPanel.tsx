@@ -82,17 +82,17 @@ export const POFIFOSyncPanel = ({
   const { data: unlinkedReceived } = useQuery({
     queryKey: ['po-received-unlinked', userId, workspaceId],
     queryFn: async () => {
+      // Fetch all RQ records (materials only), filtering by workspace if selected
       let query = supabase
         .from('po_received_records')
-        .select('id, document_number, supplier_name, received_date, total_items')
+        .select('id, document_number, supplier_name, received_date, total_items, workspace_id')
         .ilike('document_number', 'RQ%') // Only RQ codes (materials), not ML (market list)
         .order('received_date', { ascending: false })
         .limit(20);
       
+      // Only filter by workspace if one is selected
       if (workspaceId) {
         query = query.eq('workspace_id', workspaceId);
-      } else {
-        query = query.eq('user_id', userId).is('workspace_id', null);
       }
       
       const { data, error } = await query;
@@ -287,88 +287,84 @@ export const POFIFOSyncPanel = ({
   const readyToSyncCount = pendingItems.filter(i => i.expiration_date).length;
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="p-3 pb-2">
+    <Card className="border-primary/20 bg-card/50">
+      <CardHeader className="p-2 pb-1">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 text-primary" />
-            PO → FIFO Sync
+          <CardTitle className="text-xs flex items-center gap-1.5">
+            <RefreshCw className="h-3 w-3 text-primary" />
+            PO → FIFO
           </CardTitle>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-6 w-6"
+            className="h-5 w-5"
             onClick={() => refetch()}
           >
-            <RefreshCw className="h-3 w-3" />
+            <RefreshCw className="h-2.5 w-2.5" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-3 pt-0 space-y-3">
-        {/* Import from PO Received */}
+      <CardContent className="p-2 pt-0 space-y-2">
+        {/* Import from PO Received - RQ codes only */}
         {unlinkedReceived && unlinkedReceived.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Import from Received</Label>
-            <ScrollArea className="h-20 border rounded-md">
-              <div className="p-1 space-y-1">
-                {unlinkedReceived.map(record => (
-                  <div 
-                    key={record.id}
-                    className="flex items-center justify-between p-1.5 bg-muted/50 rounded text-xs cursor-pointer hover:bg-muted"
-                    onClick={() => importFromReceived(record.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-medium">{record.document_number || 'No code'}</span>
-                      <span className="text-muted-foreground">({record.total_items} items)</span>
-                    </div>
-                    <ArrowRight className="h-3 w-3 text-primary" />
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Import RQ Materials</Label>
+            <div className="space-y-0.5 max-h-16 overflow-auto">
+              {unlinkedReceived.map(record => (
+                <div 
+                  key={record.id}
+                  className="flex items-center justify-between p-1 bg-primary/10 rounded text-[10px] cursor-pointer hover:bg-primary/20"
+                  onClick={() => importFromReceived(record.id)}
+                >
+                  <span className="font-medium truncate">{record.document_number}</span>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="h-3.5 px-1 text-[8px]">{record.total_items}</Badge>
+                    <ArrowRight className="h-2.5 w-2.5 text-primary" />
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'synced')}>
-          <TabsList className="grid w-full grid-cols-2 h-8">
-            <TabsTrigger value="pending" className="text-xs flex items-center gap-1">
-              <Clock className="h-3 w-3" />
+          <TabsList className="grid w-full grid-cols-2 h-6">
+            <TabsTrigger value="pending" className="text-[10px] flex items-center gap-0.5 h-5">
+              <Clock className="h-2.5 w-2.5" />
               Pending
               {pendingItems.length > 0 && (
-                <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+                <Badge variant="destructive" className="h-3 px-0.5 text-[8px] ml-0.5">
                   {pendingItems.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="synced" className="text-xs flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
+            <TabsTrigger value="synced" className="text-[10px] flex items-center gap-0.5 h-5">
+              <CheckCircle className="h-2.5 w-2.5" />
               Synced
               {syncedItems.length > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="h-3 px-0.5 text-[8px] ml-0.5">
                   {syncedItems.length}
                 </Badge>
               )}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="mt-2 space-y-2">
+          <TabsContent value="pending" className="mt-1.5 space-y-1.5">
             {pendingItems.length === 0 ? (
-              <div className="text-center py-4 text-xs text-muted-foreground">
-                <Package className="h-6 w-6 mx-auto mb-2 opacity-50" />
+              <div className="text-center py-2 text-[10px] text-muted-foreground">
+                <Package className="h-4 w-4 mx-auto mb-1 opacity-50" />
                 No pending items
               </div>
             ) : (
               <>
-                {/* Store selection for bulk sync */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                    <SelectTrigger className="h-7 text-xs flex-1">
-                      <SelectValue placeholder="Select store for sync..." />
+                    <SelectTrigger className="h-6 text-[10px] flex-1">
+                      <SelectValue placeholder="Select store..." />
                     </SelectTrigger>
                     <SelectContent>
                       {receivableStores.map(store => (
-                        <SelectItem key={store.id} value={store.id} className="text-xs">
+                        <SelectItem key={store.id} value={store.id} className="text-[10px]">
                           {store.name}
                         </SelectItem>
                       ))}
@@ -376,98 +372,85 @@ export const POFIFOSyncPanel = ({
                   </Select>
                   <Button 
                     size="sm" 
-                    className="h-7 text-xs"
+                    className="h-6 text-[10px] px-2"
                     onClick={syncAllPending}
                     disabled={!selectedStoreId || readyToSyncCount === 0 || isSyncing}
                   >
-                    {isSyncing ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : (
-                      <Check className="h-3 w-3 mr-1" />
-                    )}
-                    Sync {readyToSyncCount} Ready
+                    {isSyncing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Check className="h-2.5 w-2.5" />}
+                    <span className="ml-0.5">{readyToSyncCount}</span>
                   </Button>
                 </div>
 
-                <ScrollArea className="h-48">
-                  <div className="space-y-1.5">
-                    {pendingItems.map(item => (
-                      <div 
-                        key={item.id} 
-                        className={`p-2 rounded-md border text-xs ${
-                          item.expiration_date 
-                            ? 'border-green-500/50 bg-green-500/5' 
-                            : 'border-amber-500/50 bg-amber-500/5'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium truncate flex-1">{item.item_name}</span>
-                          <Badge variant="outline" className="text-[10px] h-4">
-                            {item.quantity} {item.unit || 'units'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <Input
-                            type="date"
-                            value={item.expiration_date || ''}
-                            onChange={(e) => updateExpiration(item.id, e.target.value)}
-                            className={`h-6 text-xs flex-1 ${!item.expiration_date ? 'border-amber-500' : ''}`}
-                          />
-                          {item.expiration_date ? (
-                            <Check className="h-3 w-3 text-green-500 shrink-0" />
-                          ) : (
-                            <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-5 w-5 text-destructive"
-                            onClick={() => rejectItem(item.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="synced" className="mt-2">
-            {syncedItems.length === 0 ? (
-              <div className="text-center py-4 text-xs text-muted-foreground">
-                <CheckCircle className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                No synced items yet
-              </div>
-            ) : (
-              <ScrollArea className="h-56">
-                <div className="space-y-1.5">
-                  {syncedItems.map(item => (
+                <div className="space-y-1 max-h-32 overflow-auto">
+                  {pendingItems.map(item => (
                     <div 
                       key={item.id} 
-                      className="p-2 rounded-md border border-green-500/30 bg-green-500/5 text-xs"
+                      className={`p-1.5 rounded border text-[10px] ${
+                        item.expiration_date 
+                          ? 'border-green-500/50 bg-green-500/5' 
+                          : 'border-amber-500/50 bg-amber-500/5'
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium truncate flex-1">{item.item_name}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge className="text-[10px] h-4 bg-green-600">
-                            {item.quantity}
-                          </Badge>
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                        </div>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-medium truncate flex-1 text-[10px]">{item.item_name}</span>
+                        <Badge variant="outline" className="text-[8px] h-3 px-1">
+                          {item.quantity}
+                        </Badge>
                       </div>
-                      <div className="flex items-center justify-between mt-1 text-muted-foreground">
-                        <span>Expires: {item.expiration_date ? format(new Date(item.expiration_date), 'PP') : '-'}</span>
-                        <span>Synced: {item.synced_at ? format(new Date(item.synced_at), 'PP') : '-'}</span>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="date"
+                          value={item.expiration_date || ''}
+                          onChange={(e) => updateExpiration(item.id, e.target.value)}
+                          className={`h-5 text-[10px] flex-1 ${!item.expiration_date ? 'border-amber-500' : ''}`}
+                        />
+                        {item.expiration_date ? (
+                          <Check className="h-2.5 w-2.5 text-green-500" />
+                        ) : (
+                          <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-4 w-4 text-destructive"
+                          onClick={() => rejectItem(item.id)}
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="synced" className="mt-1.5">
+            {syncedItems.length === 0 ? (
+              <div className="text-center py-2 text-[10px] text-muted-foreground">
+                <CheckCircle className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                No synced items yet
+              </div>
+            ) : (
+              <div className="space-y-1 max-h-32 overflow-auto">
+                {syncedItems.map(item => (
+                  <div 
+                    key={item.id} 
+                    className="p-1.5 rounded border border-green-500/30 bg-green-500/5 text-[10px]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium truncate flex-1">{item.item_name}</span>
+                      <div className="flex items-center gap-1">
+                        <Badge className="text-[8px] h-3 px-1 bg-green-600">{item.quantity}</Badge>
+                        <CheckCircle className="h-2.5 w-2.5 text-green-500" />
+                      </div>
+                    </div>
+                    <div className="text-[8px] text-muted-foreground mt-0.5">
+                      Exp: {item.expiration_date ? format(new Date(item.expiration_date), 'PP') : '-'}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>
