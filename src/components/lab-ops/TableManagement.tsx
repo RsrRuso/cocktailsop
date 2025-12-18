@@ -135,6 +135,31 @@ export default function TableManagement({ outletId }: { outletId: string }) {
     fetchFloorPlans();
     fetchVenueCapacity();
     fetchAnalytics();
+
+    // Real-time subscriptions for tables
+    const channel = supabase
+      .channel(`table-management-${outletId}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'lab_ops_tables', 
+        filter: `outlet_id=eq.${outletId}` 
+      }, () => {
+        fetchTables();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'lab_ops_floor_plans', 
+        filter: `outlet_id=eq.${outletId}` 
+      }, () => {
+        fetchFloorPlans();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [outletId]);
 
   const fetchTables = async () => {
