@@ -13,7 +13,19 @@ import {
   Edit,
   Calendar,
   Package,
-  FileText
+  FileText,
+  ArrowRightLeft,
+  PackagePlus,
+  PackageMinus,
+  AlertTriangle,
+  Bell,
+  ScanLine,
+  Store,
+  ClipboardCheck,
+  Upload,
+  Download,
+  Plus,
+  Minus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -41,7 +53,15 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
   const username = metadata.produced_by_name || profiles[activity.user_id] || 'Team member';
 
   const getActivityInfo = () => {
+    const details = metadata.details || '';
+    const qtyBefore = metadata.quantity_before;
+    const qtyAfter = metadata.quantity_after;
+    const qtyChange = qtyBefore !== undefined && qtyAfter !== undefined 
+      ? `(${qtyBefore} → ${qtyAfter})` 
+      : '';
+
     switch (activity.action_type) {
+      // Batch Calculator actions
       case 'recipe_complete':
         return {
           icon: ChefHat,
@@ -85,26 +105,135 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
           bg: 'bg-cyan-500/20',
           text: `${username} edited recipe`,
         };
+
+      // FIFO & Inventory actions
+      case 'receiving':
+      case 'item_received':
+      case 'stock_in':
+        return {
+          icon: PackagePlus,
+          color: 'text-green-400',
+          bg: 'bg-green-500/20',
+          text: `${username} received stock ${details} ${qtyChange}`.trim(),
+        };
+      case 'transfer':
+      case 'item_transfer':
+      case 'stock_transfer':
+        return {
+          icon: ArrowRightLeft,
+          color: 'text-blue-400',
+          bg: 'bg-blue-500/20',
+          text: `${username} transferred item ${details} ${qtyChange}`.trim(),
+        };
+      case 'stock_out':
+      case 'item_sold':
+      case 'sold':
+        return {
+          icon: PackageMinus,
+          color: 'text-orange-400',
+          bg: 'bg-orange-500/20',
+          text: `${username} sold/removed stock ${details} ${qtyChange}`.trim(),
+        };
+      case 'expiry_alert':
+      case 'alert':
+        return {
+          icon: AlertTriangle,
+          color: 'text-red-400',
+          bg: 'bg-red-500/20',
+          text: `${username} flagged expiry alert ${details}`.trim(),
+        };
+      case 'low_stock_alert':
+        return {
+          icon: Bell,
+          color: 'text-amber-400',
+          bg: 'bg-amber-500/20',
+          text: `${username} flagged low stock ${details}`.trim(),
+        };
+      case 'scan':
+      case 'barcode_scan':
+        return {
+          icon: ScanLine,
+          color: 'text-purple-400',
+          bg: 'bg-purple-500/20',
+          text: `${username} scanned item ${details}`.trim(),
+        };
+      case 'store_created':
+      case 'add_store':
+        return {
+          icon: Store,
+          color: 'text-cyan-400',
+          bg: 'bg-cyan-500/20',
+          text: `${username} added store ${details}`.trim(),
+        };
       case 'inventory_update':
+      case 'stock_update':
         return {
           icon: Package,
           color: 'text-emerald-400',
           bg: 'bg-emerald-500/20',
-          text: `${username} updated inventory`,
+          text: `${username} updated inventory ${details} ${qtyChange}`.trim(),
+        };
+      case 'item_added':
+      case 'add_item':
+        return {
+          icon: Plus,
+          color: 'text-green-400',
+          bg: 'bg-green-500/20',
+          text: `${username} added item ${details}`.trim(),
+        };
+      case 'item_deleted':
+      case 'delete_item':
+        return {
+          icon: Trash2,
+          color: 'text-red-400',
+          bg: 'bg-red-500/20',
+          text: `${username} deleted item ${details}`.trim(),
+        };
+      case 'item_edited':
+      case 'edit_item':
+        return {
+          icon: Edit,
+          color: 'text-cyan-400',
+          bg: 'bg-cyan-500/20',
+          text: `${username} edited item ${details}`.trim(),
+        };
+      case 'excel_upload':
+      case 'bulk_import':
+        return {
+          icon: Upload,
+          color: 'text-indigo-400',
+          bg: 'bg-indigo-500/20',
+          text: `${username} imported data via Excel ${details}`.trim(),
+        };
+      case 'export':
+      case 'pdf_export':
+        return {
+          icon: Download,
+          color: 'text-violet-400',
+          bg: 'bg-violet-500/20',
+          text: `${username} exported report ${details}`.trim(),
+        };
+      case 'audit':
+      case 'stock_check':
+        return {
+          icon: ClipboardCheck,
+          color: 'text-teal-400',
+          bg: 'bg-teal-500/20',
+          text: `${username} completed stock audit ${details}`.trim(),
         };
       case 'task_complete':
         return {
           icon: FileText,
           color: 'text-indigo-400',
           bg: 'bg-indigo-500/20',
-          text: `${username} completed task`,
+          text: `${username} completed task ${details}`.trim(),
         };
       default:
         return {
           icon: Activity,
           color: 'text-muted-foreground',
           bg: 'bg-muted/20',
-          text: `${username} performed action`,
+          text: `${username} ${activity.action_type?.replace(/_/g, ' ') || 'performed action'} ${details}`.trim(),
         };
     }
   };
