@@ -322,7 +322,7 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-start gap-3 p-3 rounded-lg bg-card/50 border border-border/50"
+      className="flex items-start gap-3 py-2"
     >
       <div className={`p-2 rounded-lg ${info.bg} flex-shrink-0`}>
         <Icon className={`w-4 h-4 ${info.color}`} />
