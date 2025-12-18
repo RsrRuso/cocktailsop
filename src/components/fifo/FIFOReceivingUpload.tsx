@@ -292,7 +292,7 @@ export const FIFOReceivingUpload = ({ userId, workspaceId, stores, items, onSucc
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1 border rounded-md max-h-[40vh]">
+              <ScrollArea className="flex-1 min-h-0 h-[40vh] border rounded-md overscroll-contain">
                 <div className="p-2 space-y-2">
                   {parsedItems.map((item, index) => (
                     <Card key={index} className={`${item.expiration_date ? 'border-green-500/50' : 'border-amber-500/50'}`}>
