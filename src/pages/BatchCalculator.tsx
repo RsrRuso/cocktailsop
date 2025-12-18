@@ -3884,6 +3884,7 @@ const BatchCalculator = () => {
                             
                             // Start batch timing when user first inputs liters
                             if (litersValue && !batchInputStartedRef.current) {
+                              console.log('Starting batch input timer (liters):', { litersValue, recipeName, batchInputStartedRef: batchInputStartedRef.current });
                               batchInputStartedRef.current = true;
                               activityTracker.startBatchInput(recipeName || 'Unknown Recipe');
                             }
@@ -3924,6 +3925,7 @@ const BatchCalculator = () => {
                             
                             // Start batch timing when user first inputs servings
                             if (servingsValue && !batchInputStartedRef.current) {
+                              console.log('Starting batch input timer (servings):', { servingsValue, recipeName, batchInputStartedRef: batchInputStartedRef.current });
                               batchInputStartedRef.current = true;
                               activityTracker.startBatchInput(recipeName || 'Unknown Recipe');
                             }
