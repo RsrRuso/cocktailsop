@@ -1653,10 +1653,21 @@ const StoreManagement = () => {
               </>
             )}
             {!isStaffMode && (
-              <Badge variant="outline" className="gap-2 text-xs">
-                <Bell className="w-3 h-3" />
-                Live Updates
-              </Badge>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/store-management-pin')}
+                  className="gap-2 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
+                >
+                  <Smartphone className="w-3 h-3" />
+                  Staff PIN
+                </Button>
+                <Badge variant="outline" className="gap-2 text-xs">
+                  <Bell className="w-3 h-3" />
+                  Live Updates
+                </Badge>
+              </>
             )}
           </div>
         </div>
