@@ -1047,92 +1047,107 @@ const CreateReel = () => {
                     </div>
                   )}
 
-                  {/* AUDIO/MUSIC TOOL */}
+                  {/* AUDIO/MUSIC TOOL - Instagram Style */}
                   {activeTool === 'audio' && (
-                    <div className="space-y-4">
-                      {/* Volume Controls - Show when music selected */}
+                    <div className="space-y-5">
+                      {/* Selected Music Card with Volume Controls */}
                       {selectedMusic && (
-                        <div className="bg-zinc-800/50 rounded-xl p-4 space-y-4">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                              <Music className="w-5 h-5 text-white" />
+                        <div className="space-y-5">
+                          {/* Music Info Card */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 via-pink-500 to-orange-400 flex items-center justify-center shadow-lg">
+                              <Music className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-white text-sm font-medium truncate">{selectedMusic.title}</p>
-                              <p className="text-white/50 text-xs">{selectedMusic.artist}</p>
+                              <p className="text-white font-semibold truncate">{selectedMusic.title}</p>
+                              <p className="text-white/50 text-sm">{selectedMusic.artist}</p>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <button 
                               onClick={() => setSelectedMusic(null)}
-                              className="text-red-400 hover:text-red-300"
+                              className="w-10 h-10 flex items-center justify-center"
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                              <Trash2 className="w-5 h-5 text-red-500" />
+                            </button>
                           </div>
                           
+                          {/* Music Volume Slider */}
                           <div>
-                            <div className="flex justify-between text-xs text-white/60 mb-2">
-                              <span>Music Volume</span>
-                              <span>{musicVolume}%</span>
+                            <div className="flex justify-between text-sm mb-3">
+                              <span className="text-white/70">Music Volume</span>
+                              <span className="text-white font-medium">{musicVolume}%</span>
                             </div>
-                            <Slider
-                              value={[musicVolume]}
-                              onValueChange={([val]) => setMusicVolume(val)}
-                              min={0}
-                              max={100}
-                              step={1}
-                              className="w-full [&_[role=slider]]:bg-pink-500 [&_[role=slider]]:border-0"
-                            />
+                            <div className="relative">
+                              <Slider
+                                value={[musicVolume]}
+                                onValueChange={([val]) => setMusicVolume(val)}
+                                min={0}
+                                max={100}
+                                step={1}
+                                className="w-full [&_[data-orientation=horizontal]]:h-2 [&_[data-orientation=horizontal]]:bg-amber-500/30 [&_.relative]:bg-amber-500 [&_[role=slider]]:w-5 [&_[role=slider]]:h-5 [&_[role=slider]]:bg-gradient-to-br [&_[role=slider]]:from-pink-400 [&_[role=slider]]:to-pink-500 [&_[role=slider]]:border-2 [&_[role=slider]]:border-white [&_[role=slider]]:shadow-lg"
+                              />
+                            </div>
                           </div>
                           
+                          {/* Original Audio Slider */}
                           <div>
-                            <div className="flex justify-between text-xs text-white/60 mb-2">
-                              <span>Original Audio</span>
-                              <span>{originalVolume}%</span>
+                            <div className="flex justify-between text-sm mb-3">
+                              <span className="text-white/70">Original Audio</span>
+                              <span className="text-white font-medium">{originalVolume}%</span>
                             </div>
-                            <Slider
-                              value={[originalVolume]}
-                              onValueChange={([val]) => setOriginalVolume(val)}
-                              min={0}
-                              max={100}
-                              step={1}
-                              className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-0"
-                            />
+                            <div className="relative">
+                              <Slider
+                                value={[originalVolume]}
+                                onValueChange={([val]) => setOriginalVolume(val)}
+                                min={0}
+                                max={100}
+                                step={1}
+                                className="w-full [&_[data-orientation=horizontal]]:h-2 [&_[data-orientation=horizontal]]:bg-amber-500/30 [&_.relative]:bg-amber-500 [&_[role=slider]]:w-5 [&_[role=slider]]:h-5 [&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:border-white [&_[role=slider]]:shadow-lg"
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
 
+                      {/* Search and Import */}
                       <div className="flex gap-3">
                         <div className="flex-1 relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                           <Input
                             placeholder="Search audio"
                             value={musicSearch}
                             onChange={(e) => setMusicSearch(e.target.value)}
-                            className="bg-zinc-800 border-0 pl-10 text-white"
+                            className="bg-zinc-800/80 border-0 pl-11 h-11 rounded-xl text-white placeholder:text-white/40"
                           />
                         </div>
-                        <Button variant="ghost" className="bg-zinc-800 text-white gap-2">
+                        <Button variant="ghost" className="bg-zinc-800/80 text-white gap-2 h-11 px-4 rounded-xl hover:bg-zinc-700">
                           <Import className="w-4 h-4" /> Import
                         </Button>
                       </div>
 
-                      <div className="flex gap-2 overflow-x-auto pb-2">
-                        {['foryou', 'trending', 'original', 'saved'].map((tab) => (
+                      {/* Category Tabs */}
+                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                        {[
+                          { id: 'foryou', label: 'For you' },
+                          { id: 'trending', label: 'Trending' },
+                          { id: 'original', label: 'Original audio' },
+                          { id: 'saved', label: 'Saved' }
+                        ].map((tab) => (
                           <button
-                            key={tab}
-                            onClick={() => setMusicTab(tab as typeof musicTab)}
-                            className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${
-                              musicTab === tab ? 'bg-white text-black' : 'bg-zinc-800 text-white/70'
+                            key={tab.id}
+                            onClick={() => setMusicTab(tab.id as typeof musicTab)}
+                            className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                              musicTab === tab.id 
+                                ? 'bg-white text-black' 
+                                : 'bg-zinc-800/80 text-white/70 hover:bg-zinc-700'
                             }`}
                           >
-                            {tab === 'foryou' ? 'For you' : tab === 'original' ? 'Original audio' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab.label}
                           </button>
                         ))}
                       </div>
 
-                      <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                      {/* Music Tracks List */}
+                      <div className="space-y-1 max-h-[180px] overflow-y-auto scrollbar-hide">
                         {musicTracks.filter(t => 
                           !musicSearch || t.title.toLowerCase().includes(musicSearch.toLowerCase())
                         ).map((track) => (
@@ -1142,15 +1157,17 @@ const CreateReel = () => {
                               setSelectedMusic(track);
                               toast.success(`Added: ${track.title}`);
                             }}
-                            className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                              selectedMusic?.id === track.id ? 'bg-primary/20' : 'hover:bg-white/5'
+                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                              selectedMusic?.id === track.id 
+                                ? 'bg-white/10 border border-white/20' 
+                                : 'hover:bg-white/5'
                             }`}
                           >
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-800 flex-shrink-0">
                               {track.preview_url ? (
                                 <img src={track.preview_url} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center">
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-800">
                                   <Music className="w-5 h-5 text-white/40" />
                                 </div>
                               )}
@@ -1159,10 +1176,23 @@ const CreateReel = () => {
                               <h4 className="text-white font-medium text-sm truncate">{track.title}</h4>
                               <p className="text-white/50 text-xs truncate">{track.artist} · {track.reel_count}</p>
                             </div>
-                            {selectedMusic?.id === track.id && <Check className="w-5 h-5 text-primary" />}
-                            <Bookmark className="w-5 h-5 text-white/40" />
+                            {selectedMusic?.id === track.id && (
+                              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" />
+                              </div>
+                            )}
+                            <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                              <Bookmark className="w-5 h-5 text-white/40" />
+                            </button>
                           </div>
                         ))}
+                        
+                        {musicTracks.length === 0 && (
+                          <div className="text-center py-8 text-white/40">
+                            <Music className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No tracks found</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
