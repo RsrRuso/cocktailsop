@@ -23,13 +23,38 @@ export interface ActivityStats {
 export const useBatchActivityTracker = (groupId?: string | null) => {
   const sessionRef = useRef<ActivitySession | null>(null);
   const pageEnterTime = useRef<number>(Date.now());
+  const userIdRef = useRef<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Log activity function - uses ref for userId to avoid stale closures
+  const logActivity = useCallback(async (
+    actionType: string,
+    durationSeconds: number = 0,
+    metadata: Record<string, any> = {}
+  ) => {
+    const currentUserId = userIdRef.current;
+    if (!currentUserId || !sessionRef.current) return;
+
+    try {
+      await supabase.from('batch_calculator_activity').insert({
+        user_id: currentUserId,
+        group_id: sessionRef.current.groupId,
+        session_id: sessionRef.current.sessionId,
+        action_type: actionType,
+        duration_seconds: durationSeconds,
+        metadata
+      });
+    } catch (e) {
+      console.error('Failed to log activity:', e);
+    }
+  }, []);
 
   // Initialize session on mount
   useEffect(() => {
     const initSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        userIdRef.current = user.id;
         setUserId(user.id);
         sessionRef.current = {
           sessionId: crypto.randomUUID(),
@@ -47,15 +72,42 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
     initSession();
     pageEnterTime.current = Date.now();
 
-    // Track page exit
-    return () => {
+    // Track page exit - use beforeunload for reliable tracking
+    const handlePageExit = () => {
       const timeSpent = Math.round((Date.now() - pageEnterTime.current) / 1000);
-      if (userId && sessionRef.current) {
-        // Fire and forget - don't await
-        logActivity('page_exit', timeSpent, { timestamp: new Date().toISOString() });
+      if (userIdRef.current && sessionRef.current) {
+        // Use sendBeacon for reliable exit tracking
+        const payload = JSON.stringify({
+          user_id: userIdRef.current,
+          group_id: sessionRef.current.groupId,
+          session_id: sessionRef.current.sessionId,
+          action_type: 'page_exit',
+          duration_seconds: timeSpent,
+          metadata: { timestamp: new Date().toISOString() }
+        });
+        
+        // Try to log via fetch with keepalive
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/batch_calculator_activity`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Prefer': 'return=minimal'
+          },
+          body: payload,
+          keepalive: true
+        }).catch(() => {});
       }
     };
-  }, [groupId]);
+
+    window.addEventListener('beforeunload', handlePageExit);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handlePageExit);
+      handlePageExit(); // Also track when component unmounts
+    };
+  }, [groupId, logActivity]);
 
   // Update group when it changes
   useEffect(() => {
@@ -63,27 +115,6 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
       sessionRef.current.groupId = groupId || null;
     }
   }, [groupId]);
-
-  const logActivity = useCallback(async (
-    actionType: string,
-    durationSeconds: number = 0,
-    metadata: Record<string, any> = {}
-  ) => {
-    if (!userId || !sessionRef.current) return;
-
-    try {
-      await supabase.from('batch_calculator_activity').insert({
-        user_id: userId,
-        group_id: sessionRef.current.groupId,
-        session_id: sessionRef.current.sessionId,
-        action_type: actionType,
-        duration_seconds: durationSeconds,
-        metadata
-      });
-    } catch (e) {
-      console.error('Failed to log activity:', e);
-    }
-  }, [userId]);
 
   // Recipe tracking
   const startRecipeCreation = useCallback(() => {
