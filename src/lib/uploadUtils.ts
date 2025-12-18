@@ -299,8 +299,8 @@ export const smartUpload = async (
       onStageChange("Compressing image");
       onProgress(10);
 
-      // Reels bucket rejects some mimes (e.g. JPEG). Keep image reels as PNG.
-      const outputMime = bucket === "reels" ? "image/png" : undefined;
+      // Reels uploads may restrict some image MIME types. Prefer JPEG for best compatibility.
+      const outputMime = bucket === "reels" ? "image/jpeg" : undefined;
 
       try {
         fileToUpload = await compressImage(file, 1920, 1920, 0.85, outputMime);
