@@ -162,7 +162,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
 
   const updateRecipe = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<BatchRecipe> }) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('batch_recipes')
         .update({
           recipe_name: updates.recipe_name,
@@ -170,12 +170,10 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
           current_serves: updates.current_serves,
           ingredients: updates.ingredients as any,
         })
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
       
       if (error) throw error;
-      return data;
+      return { id, ...updates };
     },
     onSuccess: () => {
       recipesCache.clear();
