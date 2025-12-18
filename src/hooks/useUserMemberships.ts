@@ -51,12 +51,17 @@ export const useUserMemberships = (userId: string | null) => {
       
       try {
         // Fetch ALL membership types in parallel for speed
-        const [workspaceRes, groupRes, teamRes, procurementRes] = await Promise.all([
-          // Store management workspaces (non-fifo)
+        const [workspaceMemberRes, ownedWorkspacesRes, groupRes, teamRes, procurementRes] = await Promise.all([
+          // Workspaces user is a member of
           supabase
             .from('workspace_members')
             .select('workspace_id, role, workspaces!inner(id, name, workspace_type)')
             .eq('user_id', userId),
+          // Workspaces user owns (in case not in workspace_members)
+          supabase
+            .from('workspaces')
+            .select('id, name, workspace_type')
+            .eq('owner_id', userId),
           // Mixologist groups
           supabase
             .from('mixologist_group_members')
@@ -75,11 +80,13 @@ export const useUserMemberships = (userId: string | null) => {
         ]);
 
         const allMemberships: Membership[] = [];
+        const processedWorkspaceIds = new Set<string>();
 
-        // Process workspaces - separate FIFO and store management
-        if (workspaceRes.data) {
-          for (const w of workspaceRes.data as any[]) {
+        // Process workspaces from member table - separate FIFO and store management
+        if (workspaceMemberRes.data) {
+          for (const w of workspaceMemberRes.data as any[]) {
             if (w.workspaces) {
+              processedWorkspaceIds.add(w.workspace_id);
               const isFifo = w.workspaces.workspace_type === 'fifo';
               allMemberships.push({
                 id: w.workspace_id,
@@ -93,7 +100,30 @@ export const useUserMemberships = (userId: string | null) => {
                 color: isFifo 
                   ? 'from-rose-500/20 to-rose-600/20 border-rose-500/30'
                   : 'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
-                memberCount: 0, // Will be fetched if needed
+                memberCount: 0,
+              });
+            }
+          }
+        }
+
+        // Add owned workspaces not already in members
+        if (ownedWorkspacesRes.data) {
+          for (const w of ownedWorkspacesRes.data as any[]) {
+            if (!processedWorkspaceIds.has(w.id)) {
+              const isFifo = w.workspace_type === 'fifo';
+              allMemberships.push({
+                id: w.id,
+                type: isFifo ? 'fifo' : 'workspace',
+                name: w.name,
+                role: 'owner',
+                route: isFifo 
+                  ? `/inventory-manager?workspace=${w.id}` 
+                  : `/store-management?workspace=${w.id}`,
+                icon: isFifo ? '📊' : '🏪',
+                color: isFifo 
+                  ? 'from-rose-500/20 to-rose-600/20 border-rose-500/30'
+                  : 'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
+                memberCount: 0,
               });
             }
           }
