@@ -37,6 +37,7 @@ import BirthdayBadge from "@/components/BirthdayBadge";
 import { FeedItem } from "@/components/FeedItem";
 import { SavedRepostedContent } from "@/components/SavedRepostedContent";
 import { MonetizationHub } from "@/components/monetization";
+import { ProfileMembershipDoors } from "@/components/ProfileMembershipDoors";
 
 interface Profile {
   id: string;
@@ -518,6 +519,9 @@ const Profile = () => {
             )}
           </div>
         </div>
+
+        {/* Membership Doors - Workspaces, Groups, Teams */}
+        <ProfileMembershipDoors userId={user.id} />
 
         {/* Monetization Hub */}
         <MonetizationHub userId={user.id} />
