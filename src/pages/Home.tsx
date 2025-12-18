@@ -15,6 +15,7 @@ import { useUserStatus } from "@/hooks/useUserStatus";
 import { useVerifiedUsers } from "@/hooks/useVerifiedUsers";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
+import { Camera, MessageCircle, Music } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,8 @@ import {
 const ShareDialog = lazy(() => import("@/components/ShareDialog"));
 const LikesDialog = lazy(() => import("@/components/LikesDialog"));
 const EventsTicker = lazy(() => import("@/components/EventsTicker").then(m => ({ default: m.EventsTicker })));
+const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
+const MusicStatusDialog = lazy(() => import("@/components/MusicStatusDialog"));
 
 // Story skeleton for instant UI
 const StorySkeleton = () => (
@@ -137,6 +140,8 @@ const Home = () => {
   const [isReelLikes, setIsReelLikes] = useState(false);
   const [showTopNav, setShowTopNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showMusicDialog, setShowMusicDialog] = useState(false);
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -385,9 +390,27 @@ const Home = () => {
                     <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                   </Avatar>
                   {!userHasStory && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
-                      <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10 cursor-pointer">
+                          <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer">
+                          <Camera className="w-4 h-4 mr-2 text-orange-500" />
+                          Create Story
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer">
+                          <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
+                          Add Status
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer">
+                          <Music className="w-4 h-4 mr-2 text-green-500" />
+                          Add Music Status
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                   {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
                     <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
@@ -395,15 +418,30 @@ const Home = () => {
                 </button>
                 {/* Add more button when story exists */}
                 {userHasStory && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate("/story-options");
-                    }}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-20 active:scale-95 transition-transform"
-                  >
-                    <span className="text-primary-foreground text-base font-bold leading-none">+</span>
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-20 active:scale-95 transition-transform"
+                      >
+                        <span className="text-primary-foreground text-base font-bold leading-none">+</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-48">
+                      <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer">
+                        <Camera className="w-4 h-4 mr-2 text-orange-500" />
+                        Create Story
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer">
+                        <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
+                        Add Status
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer">
+                        <Music className="w-4 h-4 mr-2 text-green-500" />
+                        Add Music Status
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </BirthdayFireworks>
@@ -577,6 +615,25 @@ const Home = () => {
         />
       </Suspense>
 
+      {/* Status and Music Dialogs */}
+      <Suspense fallback={null}>
+        {showStatusDialog && (
+          <CreateStatusDialog
+            open={showStatusDialog}
+            onOpenChange={setShowStatusDialog}
+            userId={user?.id}
+          />
+        )}
+      </Suspense>
+
+      <Suspense fallback={null}>
+        {showMusicDialog && (
+          <MusicStatusDialog
+            open={showMusicDialog}
+            onOpenChange={setShowMusicDialog}
+          />
+        )}
+      </Suspense>
 
       <BottomNav />
     </div>
