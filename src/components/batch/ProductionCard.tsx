@@ -184,10 +184,12 @@ export const ProductionCard = ({
                 <div className="flex gap-3 text-right">
                   <span className="text-primary font-bold">{ing.ml.toFixed(0)} ml</span>
                   {ing.bottles > 0 && (
-                    <span className="text-emerald-600 font-bold">{ing.bottles} btl</span>
-                  )}
-                  {ing.leftoverMl > 0 && (
-                    <span className="text-amber-600">+{ing.leftoverMl.toFixed(0)} ml</span>
+                    <>
+                      <span className="text-emerald-600 font-bold">{ing.bottles} btl</span>
+                      {ing.leftoverMl > 0 && (
+                        <span className="text-amber-600">+{ing.leftoverMl.toFixed(0)} ml</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
