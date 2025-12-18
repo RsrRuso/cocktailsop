@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Search, TrendingUp, Users } from "lucide-react";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Input } from "@/components/ui/input";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -49,7 +50,10 @@ const ProfileItem = memo(({ profile, onClick }: { profile: any; onClick: () => v
       </div>
     )}
     <div className="flex-1 min-w-0">
-      <p className="font-medium text-sm truncate">{profile.full_name || profile.username}</p>
+      <p className="font-medium text-sm truncate flex items-center gap-1">
+        {profile.full_name || profile.username}
+        {profile.is_verified && <VerifiedBadge size="xs" />}
+      </p>
       <p className="text-xs text-muted-foreground truncate">@{profile.username}</p>
     </div>
     <div className="text-right shrink-0">

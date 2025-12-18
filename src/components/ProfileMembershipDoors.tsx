@@ -6,6 +6,7 @@ import { DoorOpen, Users, Wifi, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useCachedProfiles } from '@/hooks/useCachedProfiles';
 
 interface ProfileMembershipDoorsProps {
@@ -138,7 +139,10 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">{profile.full_name || profile.username}</p>
+                  <p className="font-medium text-sm flex items-center gap-1">
+                    {profile.full_name || profile.username}
+                    {profile.is_verified && <VerifiedBadge size="xs" />}
+                  </p>
                   <p className="text-xs text-muted-foreground">@{profile.username}</p>
                 </div>
               </div>

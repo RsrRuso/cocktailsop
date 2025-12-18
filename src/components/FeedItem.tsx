@@ -1,6 +1,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Sparkles, Repeat2, Music } from "lucide-react";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
@@ -208,8 +209,9 @@ export const FeedItem = memo(({
           </div>
           
           <div className="flex flex-col">
-            <span className="font-semibold text-sm leading-tight">
+            <span className="font-semibold text-sm leading-tight flex items-center gap-1">
               {item.profiles?.username || 'Unknown'}
+              {item.profiles?.is_verified && <VerifiedBadge size="xs" />}
             </span>
             {item.profiles?.professional_title && (
               <span className="text-xs text-muted-foreground">

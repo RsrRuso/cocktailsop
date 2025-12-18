@@ -24,6 +24,7 @@ import { useUserBirthday } from "@/hooks/useUserBirthday";
 import { FeedItem } from "@/components/FeedItem";
 import { useEngagement } from "@/hooks/useEngagement";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface Profile {
   id: string;
@@ -478,7 +479,10 @@ const UserProfile = () => {
                 />
               </AvatarClickMenu>
               <div>
-                <h2 className="text-2xl font-bold">{getAbbreviatedName(profile.full_name)}</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-2xl font-bold">{getAbbreviatedName(profile.full_name)}</h2>
+                  {userRoles.isVerified && <VerifiedBadge size="md" />}
+                </div>
                 <p className="text-muted-foreground flex items-center gap-1.5">
                   @{profile.username}
                   <OnlineStatusIndicator userId={userId!} size="md" showLabel />
