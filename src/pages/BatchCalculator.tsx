@@ -3653,7 +3653,18 @@ const BatchCalculator = () => {
           <TabsContent value="calculator" className="space-y-4 sm:space-y-6 pb-4">
             <Card className="glass p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div className="flex flex-col gap-3">
-                <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/batch-activity${selectedGroupId ? `?groupId=${selectedGroupId}` : ''}`)}
+                    className="gap-1.5 text-muted-foreground hover:text-primary"
+                  >
+                    <Activity className="w-4 h-4" />
+                    <span className="hidden sm:inline">Activity</span>
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => navigate("/batch-recipes")}
@@ -4972,25 +4983,6 @@ const BatchCalculator = () => {
               )}
             </Card>
             
-            {/* Activity Tracking Link */}
-            <Card className="glass p-4 sm:p-6 border-border/30">
-              <div className="flex flex-col items-center gap-4 py-6">
-                <Activity className="w-12 h-12 text-primary opacity-60" />
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-1">Activity Tracking</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View production metrics, team performance, and recent activity
-                  </p>
-                </div>
-                <Button
-                  onClick={() => navigate(`/batch-activity${selectedGroupId ? `?groupId=${selectedGroupId}` : ''}`)}
-                  className="gap-2"
-                >
-                  <Activity className="w-4 h-4" />
-                  View Activity Tracking
-                </Button>
-              </div>
-            </Card>
           </TabsContent>
 
           <TabsContent value="groups" className="space-y-4 pb-4">
