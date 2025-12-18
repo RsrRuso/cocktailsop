@@ -236,6 +236,18 @@ export const POFIFOSyncPanel = ({
       
       if (syncError) throw syncError;
 
+      // Log activity for sync
+      if (workspaceId) {
+        await supabase.from('fifo_activity_log').insert({
+          workspace_id: workspaceId,
+          user_id: userId,
+          action_type: 'synced',
+          details: `${item.item_name} from PO`,
+          quantity_before: 0,
+          quantity_after: item.quantity
+        });
+      }
+
       toast.success(`${item.item_name} synced to FIFO`);
       refetch();
       onSyncComplete();
