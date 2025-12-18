@@ -131,6 +131,11 @@ const StatusRing = ({
       
       <div className="relative">
         {children}
+        
+        {/* Online indicator dot - shows when user has active status */}
+        {hasStatus && (
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background z-10 animate-pulse" />
+        )}
       </div>
       
       {showAddButton && (
