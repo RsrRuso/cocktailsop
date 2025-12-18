@@ -333,6 +333,18 @@ const InventoryManager = () => {
         }
       }
 
+      // Log activity for import
+      if (successCount > 0 && currentWorkspace?.id) {
+        await supabase.from('fifo_activity_log').insert({
+          workspace_id: currentWorkspace.id,
+          user_id: user.id,
+          action_type: 'imported',
+          details: `${successCount} items from Excel`,
+          quantity_before: 0,
+          quantity_after: successCount
+        });
+      }
+
       toast.success(`Imported ${successCount} items${errorCount > 0 ? `, ${errorCount} failed` : ""}`);
       fetchData();
     };
