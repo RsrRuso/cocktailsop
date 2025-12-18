@@ -109,7 +109,7 @@ export const POFIFOSyncPanel = ({
       const { data: receivedItems, error } = await (supabase as any)
         .from('purchase_order_received_items')
         .select('*')
-        .eq('receiving_id', recordId);
+        .eq('record_id', recordId);
       
       if (error) throw error;
       if (!receivedItems?.length) {
