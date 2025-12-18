@@ -94,15 +94,22 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
     
     // If nothing found, try to build a description
     const parts: string[] = [];
-    if (obj.item_name || obj.name) parts.push(obj.item_name || obj.name);
-    if (obj.quantity) parts.push(`qty: ${obj.quantity}`);
+    const name = obj.item_name || obj.name;
+    const qty = obj.quantity ?? obj.received_quantity ?? obj.transfer_quantity;
+    if (name) parts.push(name);
+    if (qty !== undefined && qty !== null && qty !== '') parts.push(`qty: ${qty}`);
     if (obj.from_store && obj.to_store) parts.push(`${obj.from_store} → ${obj.to_store}`);
     
     return parts.length > 0 ? parts.join(' ') : '';
   };
 
   const getActivityInfo = () => {
-    const details = getDetailsString(metadata.details);
+    const detailsObj: any = metadata.details;
+    const details = getDetailsString(detailsObj);
+    const itemName = (typeof detailsObj === 'object' && detailsObj?.item_name) ? detailsObj.item_name : details;
+    const receivedQty = typeof detailsObj === 'object' ? (detailsObj?.received_quantity ?? detailsObj?.quantity) : undefined;
+    const transferQty = typeof detailsObj === 'object' ? (detailsObj?.transfer_quantity ?? detailsObj?.quantity) : undefined;
+
     const qtyBefore = metadata.quantity_before;
     const qtyAfter = metadata.quantity_after;
     const qtyChange = qtyBefore !== undefined && qtyAfter !== undefined 
@@ -159,20 +166,22 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
       case 'receiving':
       case 'item_received':
       case 'stock_in':
+      case 'received':
         return {
           icon: PackagePlus,
           color: 'text-green-400',
           bg: 'bg-green-500/20',
-          text: `${username} received stock ${details} ${qtyChange}`.trim(),
+          text: `${username} received ${receivedQty != null ? `${receivedQty}× ` : ''}${itemName || 'item'} ${qtyChange}`.trim(),
         };
       case 'transfer':
       case 'item_transfer':
       case 'stock_transfer':
+      case 'transferred':
         return {
           icon: ArrowRightLeft,
           color: 'text-blue-400',
           bg: 'bg-blue-500/20',
-          text: `${username} transferred item ${details} ${qtyChange}`.trim(),
+          text: `${username} transferred ${transferQty != null ? `${transferQty}× ` : ''}${itemName || details || 'item'} ${qtyChange}`.trim(),
         };
       case 'stock_out':
       case 'item_sold':
@@ -492,14 +501,16 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
 
         if (data && data.length > 0) {
           // Get all unique item_ids from the details to fetch item names
-          const itemIds = data
-            .map(a => (a.details as any)?.item_id)
-            .filter(Boolean);
+          const itemIds = [...new Set(
+            data
+              .map(a => (a.details as any)?.item_id)
+              .filter(Boolean)
+          )];
           
           let itemNames: Record<string, string> = {};
           if (itemIds.length > 0) {
             const { data: items } = await (supabase as any)
-              .from('glassware_items')
+              .from('items')
               .select('id, name')
               .in('id', itemIds);
             
@@ -510,10 +521,13 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
 
           activities = data.map(a => {
             const details = a.details as any;
-            // Add item_name to details if we have it
+            const qty = details?.quantity ?? details?.received_quantity ?? details?.transfer_quantity ?? null;
+
+            // Add item_name + quantity to details if we have it
             const enrichedDetails = {
               ...details,
-              item_name: details?.item_name || itemNames[details?.item_id] || null
+              item_name: details?.item_name || itemNames[details?.item_id] || null,
+              quantity: qty
             };
             
             return {
