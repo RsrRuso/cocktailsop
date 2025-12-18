@@ -117,7 +117,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
       toast.success("Recipe template saved!");
 
-      // Notify all mixologist group members
+      // Notify all mixologist group members using SECURITY DEFINER function
       const { data: { user } } = await supabase.auth.getUser();
       const { data: profile } = await supabase
         .from('profiles')
@@ -125,34 +125,14 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
         .eq('id', user?.id)
         .single();
 
-      const { data: userGroups } = await supabase
-        .from('mixologist_group_members')
-        .select('group_id')
-        .eq('user_id', user?.id || '');
-
-      if (userGroups && profile) {
-        for (const userGroup of userGroups) {
-          // Notify ALL group members including submitter (like procurement pattern)
-          const { data: members } = await supabase
-            .from('mixologist_group_members')
-            .select('user_id')
-            .eq('group_id', userGroup.group_id);
-
-          if (members) {
-            for (const member of members) {
-              try {
-                await supabase.from('notifications').insert({
-                  user_id: member.user_id,
-                  type: 'recipe_created',
-                  content: `${profile.username} created a new recipe: ${data.recipe_name}`,
-                  read: false
-                });
-              } catch (e) {
-                // Ignore duplicate notification errors
-              }
-            }
-          }
-        }
+      // If recipe has a group_id, notify that group
+      if (data.group_id && profile) {
+        await supabase.rpc('notify_batch_group_members', {
+          p_group_id: data.group_id,
+          p_notification_type: 'recipe_created',
+          p_content: `${profile.username} created a new recipe: ${data.recipe_name}`,
+          p_submitter_id: user?.id
+        });
       }
     },
     onError: (error) => {
