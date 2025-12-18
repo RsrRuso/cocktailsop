@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy, Share2, Wifi, Circle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy, Smartphone, TrendingUp, Calendar, Trophy, Share2, Wifi, Circle, Activity } from "lucide-react";
 import { ShareAnalyticsDialog } from "@/components/batch/ShareAnalyticsDialog";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
@@ -21,7 +21,9 @@ import { useBatchProductions } from "@/hooks/useBatchProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { useGroupAdmin } from "@/hooks/useGroupAdmin";
+import { useBatchActivityTracker } from "@/hooks/useBatchActivityTracker";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
+import { ActivityTrackingPanel } from "@/components/batch-calculator/ActivityTrackingPanel";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -171,6 +173,10 @@ const BatchCalculator = () => {
   const { spirits, calculateBottles } = useMasterSpirits();
   const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
   const queryClient = useQueryClient();
+  
+  // Activity tracking
+  const activityTracker = useBatchActivityTracker(selectedGroupId);
+  const batchInputStartedRef = useRef(false);
 
   // Setup presence tracking for the selected group
   useEffect(() => {
@@ -586,6 +592,10 @@ const BatchCalculator = () => {
 
     // Calculate actual servings produced based on multiplier
     const actualServings = parseFloat(currentServes) * calculation.multiplier;
+    
+    // Track batch submission completion with timing
+    activityTracker.completeBatchSubmission(recipeName, Math.round(actualServings), totalLiters);
+    batchInputStartedRef.current = false; // Reset for next batch
 
     // QR code will be generated after production creation with production ID
 
@@ -3598,7 +3608,7 @@ const BatchCalculator = () => {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); activityTracker.trackTabChange(tab); }} className="w-full">
           <TabsList className={`grid w-full ${staffMode ? 'grid-cols-2' : 'grid-cols-4'} mb-6 glass p-2 gap-2 h-auto`}>
             <TabsTrigger 
               value="calculator" 
@@ -3712,6 +3722,10 @@ const BatchCalculator = () => {
                       } else {
                         const recipe = recipes?.find(r => r.id === value);
                         if (recipe) {
+                          // Track recipe selection
+                          activityTracker.trackRecipeSelect(recipe.recipe_name);
+                          batchInputStartedRef.current = false; // Reset batch timing for new recipe
+                          
                           setRecipeName(recipe.recipe_name);
                           setBatchDescription(recipe.description || "");
                           setCurrentServes(String(recipe.current_serves));
@@ -3854,6 +3868,12 @@ const BatchCalculator = () => {
                             const litersValue = e.target.value;
                             setTargetLiters(litersValue);
                             setTargetBatchSize("");
+                            
+                            // Start batch timing when user first inputs liters
+                            if (litersValue && !batchInputStartedRef.current) {
+                              batchInputStartedRef.current = true;
+                              activityTracker.startBatchInput(recipeName || 'Unknown Recipe');
+                            }
                             
                             // Auto-calculate servings when liters is entered
                             if (litersValue && currentServes) {
@@ -4944,6 +4964,11 @@ const BatchCalculator = () => {
                   </div>
                 </div>
               )}
+            </Card>
+            
+            {/* Activity Tracking Panel */}
+            <Card className="glass p-4 sm:p-6 border-border/30">
+              <ActivityTrackingPanel groupId={selectedGroupId} />
             </Card>
           </TabsContent>
 

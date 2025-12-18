@@ -443,6 +443,47 @@ export type Database = {
           },
         ]
       }
+      batch_calculator_activity: {
+        Row: {
+          action_type: string
+          created_at: string
+          duration_seconds: number | null
+          group_id: string | null
+          id: string
+          metadata: Json | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          duration_seconds?: number | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          duration_seconds?: number | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_calculator_activity_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_inventory_sync: {
         Row: {
           amount_ml: number
