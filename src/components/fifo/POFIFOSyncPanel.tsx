@@ -361,19 +361,28 @@ export const POFIFOSyncPanel = ({
                     className={`flex items-center justify-between p-2.5 rounded-lg text-xs active:scale-[0.98] transition-all touch-manipulation ${
                       isImported 
                         ? "bg-green-500/10 hover:bg-green-500/20 border border-green-500/30" 
-                        : "bg-primary/10 hover:bg-primary/20"
+                        : "bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
                     }`}
                     onClick={() => forceImportFromReceived(record.id)}
                   >
                     <div className="flex items-center gap-2">
-                      {isImported && <Check className="h-3.5 w-3.5 text-green-500" />}
                       <span className="font-medium truncate">{record.document_number}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
                       <Badge variant="outline" className="h-5 px-2 text-[10px]">
                         {record.total_items} items
                       </Badge>
-                      <RefreshCw className={`h-4 w-4 ${isImported ? "text-green-500" : "text-primary"}`} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {isImported ? (
+                        <Badge className="h-5 px-2 text-[10px] bg-green-600 text-white">
+                          <Check className="h-3 w-3 mr-1" />
+                          Imported
+                        </Badge>
+                      ) : (
+                        <Badge className="h-5 px-2 text-[10px] bg-amber-600 text-white">
+                          New
+                        </Badge>
+                      )}
+                      <RefreshCw className={`h-4 w-4 ${isImported ? "text-green-500" : "text-amber-500"}`} />
                     </div>
                   </button>
                 );
