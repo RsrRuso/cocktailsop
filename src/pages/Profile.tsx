@@ -1,12 +1,35 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, LogOut, Sparkles, Share2, Link as LinkIcon, AtSign, Settings } from "lucide-react";
+import { Loader2, LogOut, Sparkles, Share2, Link as LinkIcon, AtSign, Menu, DollarSign } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { getBadgeColor } from "@/lib/profileUtils";
@@ -38,6 +61,9 @@ const Profile = () => {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showMonetization, setShowMonetization] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [userStatus, setUserStatus] = useState<any>(null);
   const [hasStories, setHasStories] = useState(false);
@@ -267,15 +293,28 @@ const Profile = () => {
             <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate("/create-story")}>
               Story
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Menu className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setShowMonetization(true)}>
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Monetization
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-
-          {/* Monetization */}
-          <Suspense fallback={<div className="h-10 animate-pulse bg-muted/20 rounded-lg" />}>
-            <MonetizationHub userId={user.id} />
-          </Suspense>
         </div>
 
         {/* Doors */}
@@ -353,6 +392,41 @@ const Profile = () => {
           />
         </Suspense>
       )}
+
+      {/* Logout Confirmation */}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to log out of your account?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Log out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Monetization Sheet */}
+      <Sheet open={showMonetization} onOpenChange={setShowMonetization}>
+        <SheetContent side="bottom" className="h-[80vh] rounded-t-xl">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Monetization
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 overflow-y-auto h-full pb-8">
+            <Suspense fallback={<div className="h-40 animate-pulse bg-muted/20 rounded-lg" />}>
+              <MonetizationHub userId={user.id} />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
