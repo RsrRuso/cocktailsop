@@ -109,19 +109,28 @@ export const FeedItem = memo(({
     return () => observer.disconnect();
   }, [item.media_urls]);
 
-  // Play/pause attached music based on visibility
+  // Play/pause attached music based on visibility and mute state
   useEffect(() => {
     if (audioRef.current && hasAttachedMusic && musicUrl) {
-      if (isVisible && !isUserMuted) {
+      const shouldPlay = isVisible && !isUserMuted;
+      if (shouldPlay) {
         audioRef.current.muted = false;
         audioRef.current.play().catch(() => {});
         setIsMusicPlaying(true);
       } else {
-        audioRef.current.muted = true;
         audioRef.current.pause();
+        audioRef.current.muted = true;
+        audioRef.current.currentTime = 0;
         setIsMusicPlaying(false);
       }
     }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.muted = true;
+      }
+    };
   }, [isVisible, isUserMuted, hasAttachedMusic, musicUrl]);
 
   // Track views
@@ -261,9 +270,9 @@ export const FeedItem = memo(({
                 className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
               >
                 {mutedVideos.has(videoKey) ? (
-                  <Volume2 className="w-4 h-4 text-primary" />
-                ) : (
                   <VolumeX className="w-4 h-4 text-primary" />
+                ) : (
+                  <Volume2 className="w-4 h-4 text-primary" />
                 )}
               </button>
             </div>
@@ -293,14 +302,10 @@ export const FeedItem = memo(({
                 >
                   <LazyVideo
                     src={url}
-                    muted={!isVisible || shouldMuteVideo || isUserMuted}
+                    muted={!isVisible || shouldMuteVideo || mutedVideos.has(item.id + url)}
                     className="absolute inset-0 w-full h-full object-cover"
                     onVisibilityChange={handleVisibilityChange}
                   />
-                  
-                  {hasAttachedMusic && musicUrl && (
-                    <audio ref={audioRef} src={musicUrl} loop autoPlay muted={isUserMuted} preload="auto" />
-                  )}
                   
                   {hasAttachedMusic && (
                     <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
@@ -319,9 +324,9 @@ export const FeedItem = memo(({
                     className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
                   >
                     {mutedVideos.has(item.id + url) ? (
-                      <Volume2 className="w-4 h-4 text-white" />
-                    ) : (
                       <VolumeX className="w-4 h-4 text-white" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-white" />
                     )}
                   </button>
                 </div>
@@ -347,9 +352,9 @@ export const FeedItem = memo(({
                       className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
                     >
                       {mutedVideos.has(videoKey) ? (
-                        <Volume2 className="w-4 h-4 text-white" />
-                      ) : (
                         <VolumeX className="w-4 h-4 text-white" />
+                      ) : (
+                        <Volume2 className="w-4 h-4 text-white" />
                       )}
                     </button>
                   )}
