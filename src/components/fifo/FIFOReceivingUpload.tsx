@@ -56,56 +56,34 @@ export const FIFOReceivingUpload = ({ userId, workspaceId, stores, items, onSucc
   };
 
   const parsePDFWithAI = async (file: File): Promise<ParsedItem[]> => {
-    const base64 = await new Promise<string>((resolve) => {
+    const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
     });
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Extract inventory items from this document. Return a JSON array with objects containing: name, quantity (number), brand (if available), category (if available). Only return the JSON array, nothing else. Example: [{"name": "Vodka Grey Goose", "quantity": 12, "brand": "Grey Goose", "category": "Spirits"}]`
-              },
-              {
-                type: "image_url",
-                image_url: { url: base64 }
-              }
-            ]
-          }
-        ]
-      })
+    // Call the edge function to parse the document
+    const { data, error } = await supabase.functions.invoke('parse-fifo-upload', {
+      body: { imageBase64: base64, fileName: file.name }
     });
 
-    const result = await response.json();
-    const content = result.choices?.[0]?.message?.content || '[]';
-    
-    try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return parsed.map((item: any) => ({
-          name: item.name || '',
-          quantity: parseFloat(item.quantity) || 1,
-          brand: item.brand || '',
-          category: item.category || '',
-          expiration_date: '',
-          isValid: false,
-        }));
-      }
-    } catch (e) {
-      console.error('Failed to parse AI response:', e);
+    if (error) {
+      console.error('Edge function error:', error);
+      throw new Error('Failed to parse document with AI');
     }
+
+    if (data?.items && Array.isArray(data.items)) {
+      return data.items.map((item: any) => ({
+        name: item.name || '',
+        quantity: parseFloat(item.quantity) || 1,
+        brand: item.brand || '',
+        category: item.category || '',
+        expiration_date: '',
+        isValid: false,
+      }));
+    }
+
     return [];
   };
 
