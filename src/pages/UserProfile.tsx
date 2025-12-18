@@ -23,6 +23,7 @@ import BirthdayBadge from "@/components/BirthdayBadge";
 import { useUserBirthday } from "@/hooks/useUserBirthday";
 import { FeedItem } from "@/components/FeedItem";
 import { useEngagement } from "@/hooks/useEngagement";
+import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 
 interface Profile {
   id: string;
@@ -480,6 +481,7 @@ const UserProfile = () => {
                 <h2 className="text-2xl font-bold">{getAbbreviatedName(profile.full_name)}</h2>
                 <p className="text-muted-foreground flex items-center gap-1.5">
                   @{profile.username}
+                  <OnlineStatusIndicator userId={userId!} size="md" showLabel />
                   <BirthdayBadge userId={userId} />
                 </p>
                 <p className="text-sm text-primary capitalize mt-1">

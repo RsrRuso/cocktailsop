@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { useTrackPresence } from '@/components/OnlineStatusIndicator';
 
 interface AuthContextType {
   user: User | null;
@@ -194,6 +195,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       removeAppListener?.();
     };
   }, [isPendingPasswordReset]);
+
+  // Track user presence on platform when signed in
+  useTrackPresence(user?.id ?? null);
 
   return (
     <AuthContext.Provider value={{ user, session, profile, isLoading, isPendingPasswordReset, refreshProfile }}>
