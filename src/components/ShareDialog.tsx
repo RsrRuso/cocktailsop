@@ -269,31 +269,37 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post
       // Generate story image with the content
       const storyBlob = await generateStoryImage();
       
-      // Convert blob to data URL for the editor
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        
-        // Navigate to story creation with the generated image
-        navigate('/create/story', {
-          state: {
-            preloadedMedia: {
-              dataUrl,
-              type: 'image/png',
-              name: 'shared-story.png'
-            },
-            openEditor: true
-          }
-        });
-        
-        onOpenChange(false);
-        toast.success('Opening story editor...');
-      };
-      reader.readAsDataURL(storyBlob);
+      // Convert blob to data URL using promise
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(storyBlob);
+      });
+      
+      // Close dialog first
+      onOpenChange(false);
+      
+      // Small delay to ensure dialog closes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to story creation with the generated image
+      navigate('/create/story', {
+        state: {
+          preloadedMedia: {
+            dataUrl,
+            type: 'image/png',
+            name: 'shared-story.png'
+          },
+          openEditor: true
+        },
+        replace: true
+      });
+      
+      toast.success('Opening story editor...');
     } catch (err) {
       console.error('Error creating story:', err);
       toast.error('Failed to prepare story');
-    } finally {
       setIsAddingToStory(false);
     }
   };
