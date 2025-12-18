@@ -14,9 +14,7 @@ import {
   Award,
   RefreshCw,
   Trash2,
-  Edit,
-  Layers,
-  MousePointer
+  Edit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -143,22 +141,6 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
           color: 'text-red-400',
           bg: 'bg-red-500/20',
           text: `${username} deleted recipe "${metadata.recipe_name || 'Unknown'}"`,
-          duration: null
-        };
-      case 'tab_change':
-        return {
-          icon: Layers,
-          color: 'text-slate-400',
-          bg: 'bg-slate-500/20',
-          text: `${username} switched to ${metadata.tab || 'tab'}`,
-          duration: null
-        };
-      case 'recipe_select':
-        return {
-          icon: MousePointer,
-          color: 'text-indigo-400',
-          bg: 'bg-indigo-500/20',
-          text: `${username} selected recipe "${metadata.recipe_name || 'Unknown'}"`,
           duration: null
         };
       default:

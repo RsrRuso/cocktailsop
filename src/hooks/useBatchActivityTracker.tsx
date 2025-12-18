@@ -410,7 +410,7 @@ export const useBatchActivityStats = (groupId?: string | null) => {
       );
 
       const meaningfulLogs = (activityData || []).filter(a => 
-        ['qr_scan', 'print_action', 'batch_delete', 'recipe_edit', 'recipe_delete', 'tab_change', 'recipe_select'].includes(a.action_type)
+        ['qr_scan', 'print_action', 'batch_delete', 'recipe_edit', 'recipe_delete'].includes(a.action_type)
       );
 
       // Merge and sort by date
