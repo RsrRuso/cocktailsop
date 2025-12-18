@@ -252,15 +252,15 @@ export const FeedItem = memo(({
           </p>
           
           {hasAttachedMusic && (
-            <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-muted/50">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Music className={`w-5 h-5 text-primary ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+            <div className="flex items-center gap-2 mt-2 px-2 py-1.5 rounded-md bg-secondary/30 border border-border/30">
+              <div className="w-6 h-6 rounded flex items-center justify-center bg-foreground/10">
+                <Music className={`w-3.5 h-3.5 text-foreground/70 ${isMusicPlaying ? 'animate-pulse' : ''}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
+                <p className="text-xs font-medium text-foreground/80 truncate">
                   {item.music_tracks?.title || 'Added Music'}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-[10px] text-muted-foreground truncate">
                   {item.music_tracks?.artist || 'Unknown Artist'}
                 </p>
               </div>
@@ -269,12 +269,12 @@ export const FeedItem = memo(({
                   e.stopPropagation();
                   onToggleMute(videoKey);
                 }}
-                className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-all"
+                className="w-6 h-6 rounded flex items-center justify-center bg-foreground/10 hover:bg-foreground/20 transition-all"
               >
                 {mutedVideos.has(videoKey) ? (
-                  <VolumeX className="w-4 h-4 text-primary" />
+                  <VolumeX className="w-3 h-3 text-foreground/70" />
                 ) : (
-                  <Volume2 className="w-4 h-4 text-primary" />
+                  <Volume2 className="w-3 h-3 text-foreground/70" />
                 )}
               </button>
             </div>
