@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserMemberships, Membership } from '@/hooks/useUserMemberships';
 import { useSpacePresence } from '@/hooks/useSpacePresence';
-import { DoorOpen, Users, Wifi, X, Activity } from 'lucide-react';
+import { useSpaceMembers } from '@/hooks/useSpaceMembers';
+import { DoorOpen, Users, Wifi, X, Activity, Crown, Shield, User } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
@@ -10,6 +11,7 @@ import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useCachedProfiles } from '@/hooks/useCachedProfiles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkspaceActivityPanel } from '@/components/WorkspaceActivityPanel';
+import { Badge } from '@/components/ui/badge';
 
 interface ProfileMembershipDoorsProps {
   userId: string | null;
@@ -23,12 +25,29 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     memberships.map(m => ({ id: m.id, type: m.type }))
   );
   const { getProfile, fetchProfiles } = useCachedProfiles();
+  const { members, memberCount, isLoading: membersLoading, fetchMembers, getMemberCount } = useSpaceMembers();
   
   const [selectedSpace, setSelectedSpace] = useState<Membership | null>(null);
   const [onlineProfiles, setOnlineProfiles] = useState<any[]>([]);
+  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
+
+  // Fetch member counts for all spaces on mount
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const counts: Record<string, number> = {};
+      for (const m of memberships) {
+        const count = await getMemberCount(m.id, m.type);
+        counts[`${m.type}-${m.id}`] = count;
+      }
+      setMemberCounts(counts);
+    };
+    
+    if (memberships.length > 0) {
+      fetchCounts();
+    }
+  }, [memberships, getMemberCount]);
 
   const handleDoorPress = async (membership: Membership) => {
-    // Always show the sheet with activity tracking
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
     
     if (onlineUsers.length > 0) {
@@ -39,6 +58,9 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
       setOnlineProfiles([]);
     }
     
+    // Fetch all members for this space
+    await fetchMembers(membership.id, membership.type);
+    
     setSelectedSpace(membership);
   };
 
@@ -46,6 +68,33 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     if (selectedSpace) {
       navigate(selectedSpace.route);
       setSelectedSpace(null);
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role?.toLowerCase()) {
+      case 'owner':
+      case 'admin':
+        return <Crown className="w-3 h-3 text-amber-500" />;
+      case 'manager':
+      case 'moderator':
+        return <Shield className="w-3 h-3 text-blue-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role?.toLowerCase()) {
+      case 'owner':
+        return 'bg-amber-500/20 text-amber-500 border-amber-500/30';
+      case 'admin':
+        return 'bg-red-500/20 text-red-500 border-red-500/30';
+      case 'manager':
+      case 'moderator':
+        return 'bg-blue-500/20 text-blue-500 border-blue-500/30';
+      default:
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -65,6 +114,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {memberships.map((m) => {
             const onlineCount = getOnlineCount(m.type, m.id);
+            const totalMembers = memberCounts[`${m.type}-${m.id}`] || m.memberCount || 0;
             
             return (
               <button
@@ -96,7 +146,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                   {/* Member count */}
                   <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-black/50 backdrop-blur-sm rounded-full px-1.5 py-0.5">
                     <Users className="w-2.5 h-2.5 text-white/80" />
-                    <span className="text-[9px] font-bold text-white">{m.memberCount}</span>
+                    <span className="text-[9px] font-bold text-white">{totalMembers}</span>
                   </div>
                 </div>
                 
@@ -117,26 +167,95 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
             <SheetTitle className="flex items-center gap-2">
               <span className="text-xl">{selectedSpace?.icon}</span>
               {selectedSpace?.name}
-              {onlineProfiles.length > 0 && (
-                <div className="flex items-center gap-1 ml-2 bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full text-xs font-medium">
-                  <Wifi className="w-3 h-3" />
-                  {onlineProfiles.length} online
+              <div className="flex items-center gap-2 ml-2">
+                <div className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 rounded-full text-xs">
+                  <Users className="w-3 h-3" />
+                  {memberCount} members
                 </div>
-              )}
+                {onlineProfiles.length > 0 && (
+                  <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full text-xs font-medium">
+                    <Wifi className="w-3 h-3" />
+                    {onlineProfiles.length} online
+                  </div>
+                )}
+              </div>
             </SheetTitle>
           </SheetHeader>
 
-          <Tabs defaultValue="activity" className="flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+          <Tabs defaultValue="members" className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+              <TabsTrigger value="members" className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                Members
+              </TabsTrigger>
               <TabsTrigger value="activity" className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" />
                 Activity
               </TabsTrigger>
               <TabsTrigger value="online" className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                Online ({onlineProfiles.length})
+                <Wifi className="w-3.5 h-3.5" />
+                Online
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="members" className="flex-1 overflow-y-auto mt-3">
+              {membersLoading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 animate-pulse">
+                      <div className="w-10 h-10 rounded-full bg-muted/30" />
+                      <div className="flex-1">
+                        <div className="h-4 w-24 bg-muted/30 rounded mb-1" />
+                        <div className="h-3 w-16 bg-muted/30 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : members.length > 0 ? (
+                <div className="space-y-2">
+                  {members.map((member) => {
+                    const isOnline = onlineProfiles.some(p => p.id === member.user_id);
+                    return (
+                      <div 
+                        key={member.id} 
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                        onClick={() => navigate(`/user/${member.user_id}`)}
+                      >
+                        <div className="relative">
+                          <OptimizedAvatar
+                            src={member.profile?.avatar_url}
+                            alt={member.profile?.username || 'Member'}
+                            fallback={member.profile?.username?.[0] || 'M'}
+                            className="w-10 h-10"
+                          />
+                          {isOnline && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm flex items-center gap-1.5 truncate">
+                            {member.profile?.full_name || member.profile?.username || 'Unknown'}
+                            {member.profile?.is_verified && <VerifiedBadge size="xs" />}
+                            {getRoleIcon(member.role)}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            @{member.profile?.username || 'unknown'}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className={`text-[10px] ${getRoleBadgeVariant(member.role)}`}>
+                          {member.role || 'Member'}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No members found</p>
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="activity" className="flex-1 overflow-y-auto mt-3">
               {selectedSpace && (
@@ -153,7 +272,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                   {onlineProfiles.map((profile) => (
                     <div 
                       key={profile.id} 
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
                       onClick={() => navigate(`/user/${profile.id}`)}
                     >
                       <div className="relative">
@@ -163,7 +282,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                           fallback={profile.username?.[0] || '?'}
                           className="w-10 h-10"
                         />
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background animate-pulse" />
                       </div>
                       <div>
                         <p className="font-medium text-sm flex items-center gap-1">
@@ -177,8 +296,9 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  <Wifi className="w-10 h-10 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">No one online right now</p>
+                  <p className="text-xs mt-1">Members will appear here when they're active</p>
                 </div>
               )}
             </TabsContent>
