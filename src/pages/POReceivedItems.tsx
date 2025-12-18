@@ -1436,17 +1436,15 @@ const POReceivedItems = () => {
             >
               <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground ${isLoadingRecent ? 'animate-spin' : ''}`} />
             </Button>
-            {!staffMode && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 sm:h-9 sm:w-9"
-                onClick={() => navigate('/procurement-pin-access')}
-                title="Staff PIN Access"
-              >
-                <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-              </Button>
-            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 sm:h-9 sm:w-9"
+              onClick={() => navigate('/procurement-pin-access')}
+              title="Staff PIN Access"
+            >
+              <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setShowGuide(true)}>
               <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             </Button>
