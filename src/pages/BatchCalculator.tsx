@@ -4058,59 +4058,59 @@ const BatchCalculator = () => {
                   Record some batch productions to see analytics!
                 </p>
               ) : (
-                <div className="space-y-4 sm:space-y-6">
-                  {/* Key Metrics */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-sm p-5 rounded-xl border border-primary/30 shadow-lg hover:shadow-primary/20 transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/70 font-medium mb-2">Total Batches</p>
-                      <p className="text-3xl sm:text-4xl font-black text-primary drop-shadow-lg">{productions.length}</p>
+                <div className="space-y-3">
+                  {/* Key Metrics - Compact 3 column grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-3 rounded-lg border border-primary/30">
+                      <p className="text-[10px] text-foreground/70 font-medium">Total Batches</p>
+                      <p className="text-xl font-black text-primary">{productions.length}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 backdrop-blur-sm p-5 rounded-xl border border-emerald-500/30 shadow-lg hover:shadow-emerald-500/20 transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/70 font-medium mb-2">Total Liters</p>
-                      <p className="text-3xl sm:text-4xl font-black text-emerald-400 drop-shadow-lg">
-                        {productions.reduce((sum, p) => sum + p.target_liters, 0).toFixed(1)} L
+                    <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 p-3 rounded-lg border border-emerald-500/30">
+                      <p className="text-[10px] text-foreground/70 font-medium">Total Liters</p>
+                      <p className="text-xl font-black text-emerald-400">
+                        {productions.reduce((sum, p) => sum + p.target_liters, 0).toFixed(1)}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-br from-amber-500/20 to-amber-500/5 backdrop-blur-sm p-5 rounded-xl border border-amber-500/30 shadow-lg hover:shadow-amber-500/20 transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/70 font-medium mb-2">Total Servings</p>
-                      <p className="text-3xl sm:text-4xl font-black text-amber-400 drop-shadow-lg">
+                    <div className="bg-gradient-to-br from-amber-500/20 to-amber-500/5 p-3 rounded-lg border border-amber-500/30">
+                      <p className="text-[10px] text-foreground/70 font-medium">Total Serves</p>
+                      <p className="text-xl font-black text-amber-400">
                         {productions.reduce((sum, p) => sum + (p.target_serves || 0), 0)}
                       </p>
                     </div>
                   </div>
 
-                  {/* Average & Forecast Metrics */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Avg Batch Size</p>
-                      <p className="text-xl sm:text-2xl font-bold text-primary">
+                  {/* Average & Forecast Metrics - Compact 2x2 grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-[hsl(0,0%,25%)] p-3 rounded-lg border border-border/40">
+                      <p className="text-[10px] text-foreground/60 font-medium">Avg Batch Size</p>
+                      <p className="text-lg font-bold text-primary">
                         {(productions.reduce((sum, p) => sum + p.target_liters, 0) / productions.length).toFixed(2)} L
                       </p>
                     </div>
-                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Avg Servings</p>
-                      <p className="text-xl sm:text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] p-3 rounded-lg border border-border/40">
+                      <p className="text-[10px] text-foreground/60 font-medium">Avg Servings</p>
+                      <p className="text-lg font-bold text-primary">
                         {Math.round(productions.reduce((sum, p) => sum + (p.target_serves || 0), 0) / productions.length)}
                       </p>
                     </div>
-                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Daily Average</p>
-                      <p className="text-xl sm:text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] p-3 rounded-lg border border-border/40">
+                      <p className="text-[10px] text-foreground/60 font-medium">Daily Average</p>
+                      <p className="text-lg font-bold text-primary">
                         {(productions.reduce((sum, p) => sum + p.target_liters, 0) / 7).toFixed(2)} L
                       </p>
                     </div>
-                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
-                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Forecast Par</p>
-                      <p className="text-xl sm:text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] p-3 rounded-lg border border-border/40">
+                      <p className="text-[10px] text-foreground/60 font-medium">Forecast Par</p>
+                      <p className="text-lg font-bold text-primary">
                         {Math.round(productions.reduce((sum, p) => sum + p.target_liters, 0) / 7)} L
                       </p>
                     </div>
                   </div>
 
-                  {/* Production Breakdown */}
-                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground">Production by Recipe</h4>
-                    <div className="space-y-3">
+                  {/* Production Breakdown - Compact scrollable list */}
+                  <div className="bg-[hsl(0,0%,22%)] p-3 rounded-lg border border-border/40">
+                    <h4 className="font-bold text-sm mb-2 text-foreground">Production by Recipe</h4>
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                       {Object.entries(
                         productions.reduce((acc, prod) => {
                           const key = prod.batch_name;
@@ -4125,24 +4125,23 @@ const BatchCalculator = () => {
                       )
                       .sort(([, a], [, b]) => b.count - a.count)
                       .map(([name, data]) => (
-                        <div key={name} className="p-3 bg-muted/20 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium">{name}</span>
-                            <span className="text-primary font-bold">{data.count}×</span>
+                        <div key={name} className="p-2 bg-muted/20 rounded-lg flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <span className="font-medium text-sm block truncate">{name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Total: {data.liters.toFixed(1)} L • Servings: {data.serves}
+                            </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <div>Total: {data.liters.toFixed(1)} L</div>
-                            <div>Servings: {data.serves}</div>
-                          </div>
+                          <span className="text-primary font-bold text-sm ml-2 shrink-0">{data.count}×</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Forecast Analytics by Batch Type */}
-                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground">Forecast Analytics - Suggested Par Levels</h4>
-                    <div className="space-y-4">
+                  {/* Forecast Analytics by Batch Type - Compact */}
+                  <div className="bg-[hsl(0,0%,22%)] p-3 rounded-lg border border-border/40">
+                    <h4 className="font-bold text-sm mb-2 text-foreground">Forecast Analytics - Par Levels</h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                       {Object.entries(
                         productions.reduce((acc, prod) => {
                           const key = prod.batch_name;
@@ -4167,127 +4166,57 @@ const BatchCalculator = () => {
                         return bTotal - aTotal;
                       })
                       .map(([name, data]) => {
-                        // Sort batches by date
                         const sortedBatches = [...data.batches].sort((a, b) => a.date.getTime() - b.date.getTime());
                         const totalLiters = sortedBatches.reduce((sum, b) => sum + b.liters, 0);
                         const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
                         
-                        // Submission frequency metrics
-                        const totalSubmissions = sortedBatches.length;
-                        const submissionsPerDay = totalSubmissions / daysDiff;
-                        const submissionsPerWeek = submissionsPerDay * 7;
-                        const submissionsPerBiWeek = submissionsPerDay * 14;
-                        const submissionsPerMonth = submissionsPerDay * 30;
-                        const submissionsPerQuarter = submissionsPerDay * 90;
-                        
-                        // Calculate daily averages for different time windows
                         const now = new Date();
-                        const buffer = 1.2; // 20% safety buffer
+                        const buffer = 1.2;
                         
-                        // Helper to calculate daily avg for a specific window
                         const calculateDailyAvgForWindow = (days: number) => {
                           const cutoffDate = new Date(now);
                           cutoffDate.setDate(cutoffDate.getDate() - days);
-                          
                           const batchesInWindow = sortedBatches.filter(b => b.date >= cutoffDate);
-                          if (batchesInWindow.length === 0) {
-                            // Fallback to overall average if no data in window
-                            return totalLiters / daysDiff;
-                          }
-                          
-                          const totalInWindow = batchesInWindow.reduce((sum, b) => sum + b.liters, 0);
-                          return totalInWindow / days;
+                          if (batchesInWindow.length === 0) return totalLiters / daysDiff;
+                          return batchesInWindow.reduce((sum, b) => sum + b.liters, 0) / days;
                         };
                         
-                        // Calculate daily average from last 7 days
                         const dailyAvg7Days = calculateDailyAvgForWindow(7);
-                        
-                        // Calculate trend based on 7-day vs 30-day comparison
                         const dailyAvg30Days = calculateDailyAvgForWindow(30);
                         const trendFactor = dailyAvg30Days > 0 ? dailyAvg7Days / dailyAvg30Days : 1;
                         const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
                         
-                        // Overall base daily average
-                        const baseDailyAvg = totalLiters / daysDiff;
-                        
-                        // All par levels based on 7-day daily average × period length × buffer
                         const suggestedDaily = dailyAvg7Days * buffer;
                         const suggestedWeekly = dailyAvg7Days * buffer * 7;
-                        const suggestedBiWeekly = dailyAvg7Days * buffer * 14;
                         const suggestedMonthly = dailyAvg7Days * buffer * 30;
-                        const suggestedQuarterly = dailyAvg7Days * buffer * 90;
 
                         return (
-                          <div key={name} className="p-4 bg-muted/20 rounded-lg border border-border/50">
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <span className="font-bold text-base block">{name}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {data.batches.length} batch{data.batches.length > 1 ? 'es' : ''} over {daysDiff} day{daysDiff > 1 ? 's' : ''}
+                          <div key={name} className="p-2 bg-muted/20 rounded-lg border border-border/30">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="font-semibold text-sm block truncate">{name}</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {data.batches.length}× • {daysDiff}d
                                 </span>
                               </div>
-                              <div className="text-right">
-                                <div className={`text-xs font-semibold ${trendFactor > 1.05 ? 'text-green-500' : trendFactor < 0.95 ? 'text-orange-500' : 'text-muted-foreground'}`}>
-                                  {trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→'} Trend: {parseFloat(trendPercent) > 0 ? '+' : ''}{trendPercent}%
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Base: {baseDailyAvg.toFixed(2)} Lt/day
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Submissions: {totalSubmissions}
-                                </div>
+                              <div className={`text-[10px] font-semibold shrink-0 ${trendFactor > 1.05 ? 'text-green-500' : trendFactor < 0.95 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                                {trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→'} {parseFloat(trendPercent) > 0 ? '+' : ''}{trendPercent}%
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
-                                <p className="text-xs text-muted-foreground mb-1">Daily Par</p>
-                                <p className="text-lg font-bold text-primary">
-                                  {suggestedDaily.toFixed(2)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">Lt</p>
-                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerDay.toFixed(2)} batches</p>
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                              <div className="shrink-0 bg-primary/10 px-2 py-1 rounded text-center border border-primary/20">
+                                <p className="text-[9px] text-muted-foreground">Daily</p>
+                                <p className="text-sm font-bold text-primary">{suggestedDaily.toFixed(1)}L</p>
                               </div>
-                              
-                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
-                                <p className="text-xs text-muted-foreground mb-1">Weekly Par</p>
-                                <p className="text-lg font-bold text-primary">
-                                  {suggestedWeekly.toFixed(2)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">Lt</p>
-                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerWeek.toFixed(2)} batches</p>
+                              <div className="shrink-0 bg-primary/10 px-2 py-1 rounded text-center border border-primary/20">
+                                <p className="text-[9px] text-muted-foreground">Weekly</p>
+                                <p className="text-sm font-bold text-primary">{suggestedWeekly.toFixed(1)}L</p>
                               </div>
-                              
-                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
-                                <p className="text-xs text-muted-foreground mb-1">2-Week Par</p>
-                                <p className="text-lg font-bold text-primary">
-                                  {suggestedBiWeekly.toFixed(2)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">Lt</p>
-                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerBiWeek.toFixed(2)} batches</p>
+                              <div className="shrink-0 bg-primary/10 px-2 py-1 rounded text-center border border-primary/20">
+                                <p className="text-[9px] text-muted-foreground">Monthly</p>
+                                <p className="text-sm font-bold text-primary">{suggestedMonthly.toFixed(1)}L</p>
                               </div>
-                              
-                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
-                                <p className="text-xs text-muted-foreground mb-1">Monthly Par</p>
-                                <p className="text-lg font-bold text-primary">
-                                  {suggestedMonthly.toFixed(2)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">Lt</p>
-                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerMonth.toFixed(2)} batches</p>
-                              </div>
-                              
-                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
-                                <p className="text-xs text-muted-foreground mb-1">Quarterly Par</p>
-                                <p className="text-lg font-bold text-primary">
-                                  {suggestedQuarterly.toFixed(2)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">Lt</p>
-                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerQuarter.toFixed(2)} batches</p>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-3 p-2 bg-primary/5 rounded text-xs text-muted-foreground">
-                              💡 Par levels include 20% buffer and are adjusted based on {trendFactor > 1.05 ? 'increasing' : trendFactor < 0.95 ? 'decreasing' : 'stable'} production trend
                             </div>
                           </div>
                         );
@@ -4295,35 +4224,27 @@ const BatchCalculator = () => {
                     </div>
                   </div>
 
-                  {/* Team Performance */}
-                  <div ref={teamPerformanceRef} className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
-                        <Users className="w-5 h-5 text-primary" />
+                  {/* Team Performance - Compact */}
+                  <div ref={teamPerformanceRef} className="bg-[hsl(0,0%,22%)] p-3 rounded-lg border border-border/40">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" />
                         Team Performance
                       </h4>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowShareTeamPerformance(true)}
-                        className="h-8 w-8 p-0 hover:bg-primary/20"
+                        className="h-6 w-6 p-0 hover:bg-primary/20"
                       >
-                        <Share2 className="w-4 h-4 text-primary" />
+                        <Share2 className="w-3 h-3 text-primary" />
                       </Button>
                     </div>
                     {(() => {
-                      // Group by producer
                       const producerStats = productions.reduce((acc, prod) => {
                         const name = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
                         if (!acc[name]) {
-                          acc[name] = { 
-                            count: 0, 
-                            liters: 0, 
-                            serves: 0,
-                            recipes: new Set<string>(),
-                            dates: [] as Date[],
-                            avgBatchSize: 0
-                          };
+                          acc[name] = { count: 0, liters: 0, serves: 0, recipes: new Set<string>(), dates: [] as Date[], avgBatchSize: 0 };
                         }
                         acc[name].count += 1;
                         acc[name].liters += prod.target_liters;
@@ -4333,115 +4254,67 @@ const BatchCalculator = () => {
                         return acc;
                       }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: Date[]; avgBatchSize: number }>);
                       
-                      // Calculate averages and sort by production volume
                       const sortedProducers = Object.entries(producerStats)
-                        .map(([name, stats]) => ({
-                          name,
-                          ...stats,
-                          avgBatchSize: stats.liters / stats.count,
-                          recipeCount: stats.recipes.size,
-                          consistency: stats.count > 1 
-                            ? Math.max(0, 100 - (Math.abs(stats.liters / stats.count - (stats.liters / stats.count)) / (stats.liters / stats.count) * 100))
-                            : 100
-                        }))
+                        .map(([name, stats]) => ({ name, ...stats, avgBatchSize: stats.liters / stats.count, recipeCount: stats.recipes.size }))
                         .sort((a, b) => b.liters - a.liters);
                       
                       const topProducer = sortedProducers[0];
                       const totalVolume = productions.reduce((sum, p) => sum + p.target_liters, 0);
                       
                       return (
-                        <div className="space-y-4">
-                          {/* Leaderboard Summary */}
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                           {topProducer && (
-                            <div className="p-4 bg-gradient-to-r from-amber-500/20 to-amber-500/5 rounded-lg border border-amber-500/30">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold">
-                                  🏆
-                                </div>
-                                <div>
-                                  <p className="font-bold text-amber-400">Top Producer</p>
-                                  <p className="text-sm text-foreground">{topProducer.name}</p>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                                <div className="text-center">
-                                  <p className="text-muted-foreground">Volume</p>
-                                  <p className="font-bold text-amber-400">{topProducer.liters.toFixed(1)} L</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-muted-foreground">Batches</p>
-                                  <p className="font-bold text-amber-400">{topProducer.count}</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-muted-foreground">Recipes</p>
-                                  <p className="font-bold text-amber-400">{topProducer.recipeCount}</p>
-                                </div>
+                            <div className="p-2 bg-gradient-to-r from-amber-500/20 to-amber-500/5 rounded-lg border border-amber-500/30 flex items-center gap-2">
+                              <span className="text-lg">🏆</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-amber-400 truncate">{topProducer.name}</p>
+                                <p className="text-[10px] text-muted-foreground">{topProducer.liters.toFixed(1)}L • {topProducer.count} batches</p>
                               </div>
                             </div>
                           )}
-                          
-                          {/* All Producers */}
-                          <div className="space-y-2">
-                            {sortedProducers.map((producer, index) => {
-                              const contribution = totalVolume > 0 ? (producer.liters / totalVolume) * 100 : 0;
-                              return (
-                                <div key={producer.name} className="p-3 bg-muted/20 rounded-lg">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                        index === 0 ? 'bg-amber-500 text-white' : 
-                                        index === 1 ? 'bg-slate-400 text-white' : 
-                                        index === 2 ? 'bg-amber-700 text-white' : 'bg-muted text-foreground'
-                                      }`}>
-                                        {index + 1}
-                                      </span>
-                                      <span className="font-medium">{producer.name}</span>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">{contribution.toFixed(1)}% of total</span>
-                                  </div>
-                                  <div className="w-full bg-muted/30 rounded-full h-2 mb-2">
-                                    <div 
-                                      className="bg-primary h-2 rounded-full transition-all"
-                                      style={{ width: `${contribution}%` }}
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                                    <div>{producer.liters.toFixed(1)} L</div>
-                                    <div>{producer.count} batches</div>
-                                    <div>{producer.serves} serves</div>
-                                    <div>Avg: {producer.avgBatchSize.toFixed(2)} L</div>
+                          {sortedProducers.slice(1).map((producer, index) => {
+                            const contribution = totalVolume > 0 ? (producer.liters / totalVolume) * 100 : 0;
+                            return (
+                              <div key={producer.name} className="p-2 bg-muted/20 rounded-lg flex items-center gap-2">
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                  index === 0 ? 'bg-slate-400 text-white' : index === 1 ? 'bg-amber-700 text-white' : 'bg-muted text-foreground'
+                                }`}>
+                                  {index + 2}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium truncate">{producer.name}</p>
+                                  <div className="w-full bg-muted/30 rounded-full h-1 mt-1">
+                                    <div className="bg-primary h-1 rounded-full" style={{ width: `${contribution}%` }} />
                                   </div>
                                 </div>
-                              );
-                            })}
-                          </div>
+                                <span className="text-[10px] text-muted-foreground shrink-0">{producer.liters.toFixed(1)}L</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
                   </div>
 
-                  {/* Activity Heatmap */}
-                  <div ref={heatmapRef} className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-purple-500" />
+                  {/* Activity Heatmap - Compact */}
+                  <div ref={heatmapRef} className="bg-[hsl(0,0%,22%)] p-3 rounded-lg border border-border/40">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-purple-500" />
                         Activity Heatmap
                       </h4>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowShareHeatmap(true)}
-                        className="h-8 w-8 p-0 hover:bg-purple-500/20"
+                        className="h-6 w-6 p-0 hover:bg-purple-500/20"
                       >
-                        <Share2 className="w-4 h-4 text-purple-400" />
+                        <Share2 className="w-3 h-3 text-purple-400" />
                       </Button>
                     </div>
                     {(() => {
-                      // Create heatmap data: day of week vs time of day
-                      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                      const timeSlots = ['Morning (6-12)', 'Afternoon (12-18)', 'Evening (18-24)', 'Night (0-6)'];
-                      
-                      // Initialize heatmap grid
+                      const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+                      const timeSlots = ['AM', 'PM', 'Eve', 'Ngt'];
                       const heatmapData: number[][] = Array(7).fill(null).map(() => Array(4).fill(0));
                       const dayTotals: number[] = Array(7).fill(0);
                       const timeTotals: number[] = Array(4).fill(0);
@@ -4450,12 +4323,10 @@ const BatchCalculator = () => {
                         const date = new Date(prod.created_at || prod.production_date);
                         const dayOfWeek = date.getDay();
                         const hour = date.getHours();
-                        
-                        let timeSlot = 3; // Night (0-6)
-                        if (hour >= 6 && hour < 12) timeSlot = 0; // Morning
-                        else if (hour >= 12 && hour < 18) timeSlot = 1; // Afternoon
-                        else if (hour >= 18) timeSlot = 2; // Evening
-                        
+                        let timeSlot = 3;
+                        if (hour >= 6 && hour < 12) timeSlot = 0;
+                        else if (hour >= 12 && hour < 18) timeSlot = 1;
+                        else if (hour >= 18) timeSlot = 2;
                         heatmapData[dayOfWeek][timeSlot]++;
                         dayTotals[dayOfWeek]++;
                         timeTotals[timeSlot]++;
@@ -4465,130 +4336,48 @@ const BatchCalculator = () => {
                       const peakDayIdx = dayTotals.indexOf(Math.max(...dayTotals));
                       const peakTimeIdx = timeTotals.indexOf(Math.max(...timeTotals));
                       
-                      // Calculate streaks
-                      const sortedDates = [...new Set(productions.map(p => 
-                        new Date(p.production_date).toDateString()
-                      ))].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-                      
-                      let currentStreak = 0;
-                      let maxStreak = 0;
-                      let tempStreak = 1;
-                      
-                      for (let i = 1; i < sortedDates.length; i++) {
-                        const prev = new Date(sortedDates[i - 1]);
-                        const curr = new Date(sortedDates[i]);
-                        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-                        
-                        if (diffDays === 1) {
-                          tempStreak++;
-                        } else {
-                          maxStreak = Math.max(maxStreak, tempStreak);
-                          tempStreak = 1;
-                        }
-                      }
-                      maxStreak = Math.max(maxStreak, tempStreak);
-                      
-                      // Check if last production was recent (within 2 days)
-                      if (sortedDates.length > 0) {
-                        const lastDate = new Date(sortedDates[sortedDates.length - 1]);
-                        const today = new Date();
-                        const daysSinceLastProd = Math.round((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-                        if (daysSinceLastProd <= 2) {
-                          currentStreak = tempStreak;
-                        }
-                      }
-                      
                       return (
-                        <div className="space-y-4">
-                          {/* Peak Activity Summary */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30 text-center">
-                              <p className="text-xs text-muted-foreground">Peak Day</p>
-                              <p className="text-lg font-bold text-purple-400">{dayNames[peakDayIdx]}</p>
-                              <p className="text-xs text-muted-foreground">{dayTotals[peakDayIdx]} batches</p>
+                        <div className="space-y-2">
+                          <div className="flex gap-2 text-[10px]">
+                            <div className="p-1.5 bg-purple-500/10 rounded border border-purple-500/30 text-center flex-1">
+                              <p className="text-muted-foreground">Peak</p>
+                              <p className="font-bold text-purple-400">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][peakDayIdx]}</p>
                             </div>
-                            <div className="p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/30 text-center">
-                              <p className="text-xs text-muted-foreground">Peak Time</p>
-                              <p className="text-lg font-bold text-indigo-400">{timeSlots[peakTimeIdx].split(' ')[0]}</p>
-                              <p className="text-xs text-muted-foreground">{timeTotals[peakTimeIdx]} batches</p>
-                            </div>
-                            <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30 text-center">
-                              <p className="text-xs text-muted-foreground">Current Streak</p>
-                              <p className="text-lg font-bold text-amber-400">{currentStreak} 🔥</p>
-                              <p className="text-xs text-muted-foreground">days</p>
-                            </div>
-                            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-center">
-                              <p className="text-xs text-muted-foreground">Best Streak</p>
-                              <p className="text-lg font-bold text-emerald-400">{maxStreak} 🏆</p>
-                              <p className="text-xs text-muted-foreground">days</p>
+                            <div className="p-1.5 bg-indigo-500/10 rounded border border-indigo-500/30 text-center flex-1">
+                              <p className="text-muted-foreground">Time</p>
+                              <p className="font-bold text-indigo-400">{['Morning','Afternoon','Evening','Night'][peakTimeIdx]}</p>
                             </div>
                           </div>
-                          
-                          {/* Heatmap Grid */}
                           <div className="overflow-x-auto">
-                            <div className="min-w-[400px]">
-                              <div className="grid grid-cols-5 gap-1 text-xs">
-                                <div className="p-2"></div>
-                                {timeSlots.map(slot => (
-                                  <div key={slot} className="p-2 text-center text-muted-foreground font-medium">
-                                    {slot.split(' ')[0]}
-                                  </div>
-                                ))}
-                                
-                                {dayNames.map((day, dayIdx) => (
-                                  <React.Fragment key={day}>
-                                    <div className="p-2 text-muted-foreground font-medium flex items-center">
-                                      {day}
-                                    </div>
-                                    {heatmapData[dayIdx].map((value, timeIdx) => {
-                                      const intensity = value / maxValue;
-                                      return (
-                                        <div
-                                          key={`${dayIdx}-${timeIdx}`}
-                                          className="p-2 rounded-md flex items-center justify-center text-xs font-bold transition-all hover:scale-105 cursor-default"
-                                          style={{
-                                            backgroundColor: value > 0 
-                                              ? `hsl(262, 83%, ${65 - intensity * 30}%, ${0.3 + intensity * 0.7})`
-                                              : 'hsl(0, 0%, 20%)',
-                                            color: intensity > 0.5 ? 'white' : 'hsl(0, 0%, 60%)'
-                                          }}
-                                          title={`${day} ${timeSlots[timeIdx]}: ${value} batches`}
-                                        >
-                                          {value > 0 ? value : '-'}
-                                        </div>
-                                      );
-                                    })}
-                                  </React.Fragment>
-                                ))}
-                              </div>
+                            <div className="grid grid-cols-5 gap-0.5 text-[9px] min-w-[200px]">
+                              <div></div>
+                              {timeSlots.map(slot => (
+                                <div key={slot} className="p-1 text-center text-muted-foreground">{slot}</div>
+                              ))}
+                              {dayNames.map((day, dayIdx) => (
+                                <React.Fragment key={dayIdx}>
+                                  <div className="p-1 text-muted-foreground">{day}</div>
+                                  {heatmapData[dayIdx].map((value, timeIdx) => {
+                                    const intensity = value / maxValue;
+                                    return (
+                                      <div
+                                        key={`${dayIdx}-${timeIdx}`}
+                                        className="p-1 rounded text-center font-bold"
+                                        style={{
+                                          backgroundColor: value > 0 
+                                            ? `hsl(262, 83%, ${65 - intensity * 30}%, ${0.3 + intensity * 0.7})`
+                                            : 'hsl(0, 0%, 20%)',
+                                          color: intensity > 0.5 ? 'white' : 'hsl(0, 0%, 60%)'
+                                        }}
+                                      >
+                                        {value > 0 ? value : '-'}
+                                      </div>
+                                    );
+                                  })}
+                                </React.Fragment>
+                              ))}
                             </div>
                           </div>
-                          
-                          {/* Day of Week Distribution */}
-                          <div className="space-y-2">
-                            <p className="text-xs text-muted-foreground font-medium">Weekly Distribution</p>
-                            {dayNames.map((day, idx) => {
-                              const percentage = productions.length > 0 ? (dayTotals[idx] / productions.length) * 100 : 0;
-                              return (
-                                <div key={day} className="flex items-center gap-2">
-                                  <span className="text-xs w-8 text-muted-foreground">{day}</span>
-                                  <div className="flex-1 bg-muted/30 rounded-full h-2">
-                                    <div 
-                                      className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all"
-                                      style={{ width: `${percentage}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-xs w-12 text-right text-muted-foreground">
-                                    {dayTotals[idx]} ({percentage.toFixed(0)}%)
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          
-                          <p className="text-xs text-muted-foreground p-2 bg-primary/5 rounded">
-                            💡 Heatmap shows production frequency by day and time. Darker cells = more activity.
-                          </p>
                         </div>
                       );
                     })()}
