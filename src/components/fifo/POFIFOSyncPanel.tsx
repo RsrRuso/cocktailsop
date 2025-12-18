@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   RefreshCw, Package, Calendar, Check, X, Clock, 
-  CheckCircle, AlertTriangle, Loader2, ArrowRight, FileText 
+  CheckCircle, AlertTriangle, Loader2, ArrowRight, FileText,
+  CalendarIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 interface POFIFOSyncPanelProps {
   userId: string;
@@ -453,12 +456,33 @@ export const POFIFOSyncPanel = ({
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Input
-                        type="date"
-                        value={item.expiration_date || ""}
-                        onChange={(e) => updateExpiration(item.id, e.target.value)}
-                        className={`h-8 text-xs flex-1 ${!item.expiration_date ? "border-amber-500" : ""}`}
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "h-8 text-xs flex-1 justify-start text-left font-normal",
+                              !item.expiration_date && "text-muted-foreground border-amber-500"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-3 w-3" />
+                            {item.expiration_date ? format(new Date(item.expiration_date), "PP") : "Set expiry"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={item.expiration_date ? new Date(item.expiration_date) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                updateExpiration(item.id, format(date, "yyyy-MM-dd"));
+                              }
+                            }}
+                            initialFocus
+                            className="p-3 pointer-events-auto bg-popover"
+                          />
+                        </PopoverContent>
+                      </Popover>
                       {item.expiration_date ? (
                         <Check className="h-4 w-4 text-green-500" />
                       ) : (
