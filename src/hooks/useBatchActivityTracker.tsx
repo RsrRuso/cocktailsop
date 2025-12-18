@@ -148,6 +148,8 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
   // Batch tracking - starts when user inputs liters/servings
   // Uses independent ref to avoid race conditions with session initialization
   const startBatchInput = useCallback((recipeName: string) => {
+    console.log('startBatchInput called:', { recipeName, isInitialized, hasSession: !!sessionRef.current });
+    
     // Always set the start time, regardless of session state
     batchStartTimeRef.current = Date.now();
     batchRecipeNameRef.current = recipeName;
@@ -157,21 +159,27 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
       sessionRef.current.batchStartTime = Date.now();
     }
     
-    // Log if session is ready (non-critical if it fails)
-    if (isInitialized) {
-      logActivity('batch_input_start', 0, { 
-        recipe_name: recipeName,
-        timestamp: new Date().toISOString()
-      });
-    }
+    // Always log the event (not conditional on isInitialized)
+    logActivity('batch_input_start', 0, { 
+      recipe_name: recipeName,
+      timestamp: new Date().toISOString()
+    });
   }, [logActivity, isInitialized]);
 
   const completeBatchSubmission = useCallback((batchName: string, targetServes: number, targetLiters: number) => {
     // Use the independent ref for timing (more reliable)
     const startTime = batchStartTimeRef.current || sessionRef.current?.batchStartTime;
     
+    console.log('completeBatchSubmission called:', { 
+      batchName, 
+      startTime, 
+      batchStartTimeRef: batchStartTimeRef.current,
+      sessionBatchStartTime: sessionRef.current?.batchStartTime 
+    });
+    
     if (startTime) {
       const duration = Math.round((Date.now() - startTime) / 1000);
+      console.log('Logging batch_submit with duration:', duration);
       
       logActivity('batch_submit', duration, { 
         batch_name: batchName,
@@ -187,6 +195,7 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
         sessionRef.current.batchStartTime = null;
       }
     } else {
+      console.log('No start time recorded - logging without duration');
       // No start time recorded - log without duration
       logActivity('batch_submit', 0, { 
         batch_name: batchName,
