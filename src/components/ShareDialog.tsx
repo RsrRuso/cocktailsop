@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Share2, Copy, MessageCircle, Instagram, Download, Loader2, X } from "lucide-react";
+import { Send, Share2, Copy, MessageCircle, Instagram, Download, Loader2, X, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import UserSelectionDialog from "./UserSelectionDialog";
 
@@ -17,9 +18,11 @@ interface ShareDialogProps {
 }
 
 const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post', mediaUrls = [] }: ShareDialogProps) => {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [showUserSelection, setShowUserSelection] = useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  const [isAddingToStory, setIsAddingToStory] = useState(false);
   const shareUrl = `${window.location.origin}/post/${postId}`;
 
   const handleCopyLink = () => {
@@ -258,6 +261,43 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post
     }
   };
 
+  // Share to SpecVerse Story - directly open editor
+  const handleShareToMyStory = async () => {
+    setIsAddingToStory(true);
+    
+    try {
+      // Generate story image with the content
+      const storyBlob = await generateStoryImage();
+      
+      // Convert blob to data URL for the editor
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        
+        // Navigate to story creation with the generated image
+        navigate('/create/story', {
+          state: {
+            preloadedMedia: {
+              dataUrl,
+              type: 'image/png',
+              name: 'shared-story.png'
+            },
+            openEditor: true
+          }
+        });
+        
+        onOpenChange(false);
+        toast.success('Opening story editor...');
+      };
+      reader.readAsDataURL(storyBlob);
+    } catch (err) {
+      console.error('Error creating story:', err);
+      toast.error('Failed to prepare story');
+    } finally {
+      setIsAddingToStory(false);
+    }
+  };
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -278,7 +318,7 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post
                 <Share2 className="w-6 h-6 text-white" />
               </div>
               <DialogPrimitive.Title className="text-xl font-semibold text-white">
-                Share Post
+                Share
               </DialogPrimitive.Title>
             </div>
           </div>
@@ -286,6 +326,28 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post
           {/* Content - Scrollable */}
           <ScrollArea className="flex-1">
             <div className="px-6 pb-6 space-y-6">
+              {/* Add to Your Story - Featured */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-white/80">Add to Your Story</label>
+                <Button
+                  onClick={handleShareToMyStory}
+                  disabled={isAddingToStory}
+                  className="w-full h-14 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 text-white font-medium"
+                >
+                  {isAddingToStory ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Preparing...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5 mr-2" />
+                      Add to Your Story
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Send via DM Section */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-white/80">Share in Direct Message</label>
