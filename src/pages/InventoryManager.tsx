@@ -41,6 +41,7 @@ import {
 import { AddFifoEmployeeDialog } from "@/components/AddFifoEmployeeDialog";
 import { FIFOReceivingUpload } from "@/components/fifo/FIFOReceivingUpload";
 import { POFIFOSyncPanel } from "@/components/fifo/POFIFOSyncPanel";
+import { BackToProfileDoor } from "@/components/BackToProfileDoor";
 
 const InventoryManager = () => {
   const { user } = useAuth();
@@ -1065,9 +1066,12 @@ const InventoryManager = () => {
       
       <div className="container mx-auto p-2 sm:p-4 space-y-4">
         <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">FIFO Inventory</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
+          <div className="flex items-center gap-3">
+            <BackToProfileDoor />
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">FIFO Inventory</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Select
