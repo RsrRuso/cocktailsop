@@ -17,7 +17,7 @@ const DoorCard = ({ membership, index }: { membership: Membership; index: number
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={() => navigate(membership.route)}
-      className={`relative flex flex-col items-center p-3 rounded-xl bg-gradient-to-b ${membership.color} border backdrop-blur-sm hover:scale-105 transition-transform active:scale-95 min-w-[90px]`}
+      className={`relative flex flex-col items-center p-3 rounded-xl bg-gradient-to-b ${membership.color} border backdrop-blur-sm hover:scale-105 transition-transform active:scale-95 min-w-[100px] max-w-[130px]`}
     >
       {/* Door frame */}
       <div className="relative w-14 h-18 rounded-t-lg bg-gradient-to-b from-white/10 to-white/5 border border-white/20 overflow-hidden flex items-center justify-center">
@@ -27,8 +27,8 @@ const DoorCard = ({ membership, index }: { membership: Membership; index: number
         <span className="text-3xl">{membership.icon}</span>
       </div>
       
-      {/* Name */}
-      <p className="mt-2 text-xs font-medium text-foreground line-clamp-1 max-w-[80px] text-center">
+      {/* Name - full readable */}
+      <p className="mt-2 text-xs font-semibold text-foreground text-center px-1 break-words">
         {membership.name}
       </p>
       
