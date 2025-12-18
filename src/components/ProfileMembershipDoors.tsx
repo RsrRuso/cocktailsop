@@ -59,7 +59,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
           </span>
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {memberships.map((m) => {
             const onlineCount = getOnlineCount(m.type, m.id);
             
@@ -67,24 +67,38 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
               <button
                 key={`${m.type}-${m.id}`}
                 onClick={() => handleDoorPress(m)}
-                className={`flex-shrink-0 relative flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-b ${m.color} border border-border/50 hover:scale-[1.02] active:scale-[0.98] transition-transform`}
+                className="flex-shrink-0 relative flex flex-col items-center hover:scale-105 active:scale-95 transition-transform"
               >
                 {/* Online badge */}
                 {onlineCount > 0 && (
-                  <div className="absolute -top-1 -right-1 flex items-center gap-0.5 bg-emerald-500 rounded-full px-1.5 py-0.5 shadow-lg animate-pulse">
+                  <div className="absolute -top-1 right-0 z-10 flex items-center gap-0.5 bg-emerald-500 rounded-full px-1.5 py-0.5 shadow-lg animate-pulse">
                     <Wifi className="w-2.5 h-2.5 text-white" />
                     <span className="text-[10px] font-bold text-white">{onlineCount}</span>
                   </div>
                 )}
                 
-                <span className="text-xl">{m.icon}</span>
-                <div className="text-left">
-                  <p className="text-sm font-medium truncate max-w-[100px]">{m.name}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Users className="w-3 h-3" />
-                    <span>{m.memberCount}</span>
+                {/* Door frame */}
+                <div className={`relative w-16 h-24 rounded-t-[2rem] bg-gradient-to-b ${m.color} border-2 border-border/60 shadow-lg overflow-hidden`}>
+                  {/* Door inner panel */}
+                  <div className="absolute inset-2 rounded-t-[1.5rem] bg-gradient-to-b from-white/10 to-transparent border border-white/20" />
+                  
+                  {/* Door knob */}
+                  <div className="absolute right-2.5 top-1/2 w-2 h-2 rounded-full bg-amber-400 shadow-md" />
+                  
+                  {/* Icon */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl drop-shadow-md">{m.icon}</span>
+                  </div>
+                  
+                  {/* Member count */}
+                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-black/50 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                    <Users className="w-2.5 h-2.5 text-white/80" />
+                    <span className="text-[9px] font-bold text-white">{m.memberCount}</span>
                   </div>
                 </div>
+                
+                {/* Name below door */}
+                <p className="mt-1.5 text-xs font-medium text-center max-w-[70px] truncate">{m.name}</p>
               </button>
             );
           })}
