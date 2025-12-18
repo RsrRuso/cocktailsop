@@ -464,21 +464,22 @@ const CreateReel = () => {
       let mediaUrl: string;
 
       if (isImage) {
-        // For images, upload directly as image
-        fileToUpload = new File([blob], `reel-${Date.now()}.png`, { type: blob.type || 'image/png' });
-        toast.info("Creating reel from image...");
+        // For image reels, store the image in the media bucket (the reels bucket can be video-only)
+        fileToUpload = new File([blob], `reel-${Date.now()}.png`, { type: blob.type || "image/png" });
+        toast.info("Uploading image reel...");
       } else {
         // For videos, handle compression
-        fileToUpload = new File([blob], 'reel.mp4', { type: blob.type || 'video/mp4' });
-        
+        fileToUpload = new File([blob], "reel.mp4", { type: blob.type || "video/mp4" });
+
         if (needsCompression(fileToUpload)) {
           toast.info(`Compressing ${getFileSizeMB(fileToUpload).toFixed(1)}MB video...`);
           fileToUpload = await compressVideo(fileToUpload, 45);
         }
       }
 
-      const result = await uploadSingle('reels', user.id, fileToUpload);
-      
+      const uploadBucket = isImage ? "media" : "reels";
+      const result = await uploadSingle(uploadBucket, user.id, fileToUpload);
+
       if (result.error) throw result.error;
 
       // Insert the reel
