@@ -20,7 +20,7 @@ import {
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
   ExternalLink, BarChart3, Trash2, Activity, Edit, X, Check,
-  Building2, Plus, Download
+  Building2, Plus, Download, Smartphone, ArrowLeft, LogOut
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +61,11 @@ const StoreManagement = () => {
   const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
+  // Staff PIN access mode - restricts visible features for mobile staff access
+  const isStaffMode = searchParams.get('staff') === 'true';
+  const staffSession = isStaffMode ? sessionStorage.getItem("store_management_staff_session") : null;
+  const staffInfo = staffSession ? JSON.parse(staffSession) : null;
   
   const [personalInventoryName, setPersonalInventoryName] = useState(
     localStorage.getItem('personalInventoryName') || 'Personal Inventory'
@@ -1590,192 +1595,281 @@ const StoreManagement = () => {
     }
   };
 
+  // Staff mode logout handler
+  const handleStaffLogout = () => {
+    sessionStorage.removeItem("store_management_staff_session");
+    navigate("/store-management-pin");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
-      <TopNav />
+      {!isStaffMode && <TopNav />}
 
-      <div className="px-2 sm:px-3 pt-20 pb-6 space-y-3 sm:space-y-4 max-w-[1600px] mx-auto">
+      <div className={`px-2 sm:px-3 ${isStaffMode ? 'pt-4' : 'pt-20'} pb-6 space-y-3 sm:space-y-4 max-w-[1600px] mx-auto`}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <BackToProfileDoor />
+            {isStaffMode ? (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleStaffLogout}
+                className="shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            ) : (
+              <BackToProfileDoor />
+            )}
             <div>
               <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
                 <Store className="w-5 h-5 sm:w-6 sm:h-6" />
                 Store Management
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {currentWorkspace
-                  ? `All ${currentWorkspace.name} stores and inventory`
-                  : `All ${personalInventoryName} stores and inventory`}
+                {isStaffMode && staffInfo
+                  ? `${staffInfo.workspace?.name} • ${staffInfo.name}`
+                  : currentWorkspace
+                    ? `All ${currentWorkspace.name} stores and inventory`
+                    : `All ${personalInventoryName} stores and inventory`}
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="gap-2 text-xs">
-            <Bell className="w-3 h-3" />
-            Live Updates
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isStaffMode && (
+              <>
+                <Badge variant="secondary" className="gap-2 text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                  <Smartphone className="w-3 h-3" />
+                  PIN Access
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleStaffLogout}
+                  className="text-xs gap-1"
+                >
+                  <LogOut className="w-3 h-3" />
+                  Logout
+                </Button>
+              </>
+            )}
+            {!isStaffMode && (
+              <Badge variant="outline" className="gap-2 text-xs">
+                <Bell className="w-3 h-3" />
+                Live Updates
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Workspace Selector */}
-        <Card className="p-4 border-2 border-primary/20">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <Building2 className="w-5 h-5 text-primary flex-shrink-0" />
-              <Label className="text-sm font-medium whitespace-nowrap">Workspace:</Label>
-            </div>
-            <div className="flex-1 w-full flex gap-2">
-              <Select
-                value={currentWorkspace?.id || "personal"}
-                onValueChange={(value) => {
-                  if (value === "personal") {
-                    switchWorkspace("personal");
-                  } else {
-                    switchWorkspace(value);
-                  }
-                }}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue>
-                    {currentWorkspace ? currentWorkspace.name : personalInventoryName}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="personal">
-                    <div className="flex items-center gap-2">
-                      <Store className="w-4 h-4" />
-                      {personalInventoryName}
-                    </div>
-                  </SelectItem>
-                  {workspaces.map((workspace) => (
-                    <SelectItem key={workspace.id} value={workspace.id}>
+        {/* Workspace Selector - Hidden in staff mode */}
+        {!isStaffMode && (
+          <Card className="p-4 border-2 border-primary/20">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 className="w-5 h-5 text-primary flex-shrink-0" />
+                <Label className="text-sm font-medium whitespace-nowrap">Workspace:</Label>
+              </div>
+              <div className="flex-1 w-full flex gap-2">
+                <Select
+                  value={currentWorkspace?.id || "personal"}
+                  onValueChange={(value) => {
+                    if (value === "personal") {
+                      switchWorkspace("personal");
+                    } else {
+                      switchWorkspace(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue>
+                      {currentWorkspace ? currentWorkspace.name : personalInventoryName}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal">
                       <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4" />
-                        {workspace.name}
+                        <Store className="w-4 h-4" />
+                        {personalInventoryName}
                       </div>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/workspace-management")}
-                className="whitespace-nowrap gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Manage</span>
-              </Button>
+                    {workspaces.map((workspace) => (
+                      <SelectItem key={workspace.id} value={workspace.id}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4" />
+                          {workspace.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/workspace-management")}
+                  className="whitespace-nowrap gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Manage</span>
+                </Button>
+              </div>
             </div>
+          </Card>
+        )}
+
+        {/* Quick Action Cards - Full version for non-staff, limited for staff */}
+        {!isStaffMode ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-green-500/50 animate-fade-in" onClick={() => navigate('/stores-admin')} style={{ animationDelay: '0ms' }}>
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
+              <CardContent className="p-3 sm:p-5 relative">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                    <Store className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-bold text-sm sm:text-base group-hover:text-green-600 transition-colors">Stores</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Create & manage</p>
+                  </div>
+                  <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-purple-500/50 animate-fade-in" onClick={() => navigate('/master-items')} style={{ animationDelay: '100ms' }}>
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
+              <CardContent className="p-3 sm:p-5 relative">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-bold text-sm sm:text-base group-hover:text-purple-600 transition-colors">Items</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Master list</p>
+                  </div>
+                  <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-primary/50 animate-fade-in" onClick={() => navigate('/all-inventory')} style={{ animationDelay: '200ms' }}>
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
+              <CardContent className="p-3 sm:p-5 relative">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-bold text-sm sm:text-base group-hover:text-primary transition-colors">Inventory</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Combined view</p>
+                  </div>
+                  <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-blue-500/50 animate-fade-in" onClick={() => navigate('/inventory-transactions')} style={{ animationDelay: '300ms' }}>
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
+              <CardContent className="p-3 sm:p-5 relative">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                    <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-bold text-sm sm:text-base group-hover:text-blue-600 transition-colors">Transactions</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Live updates</p>
+                  </div>
+                  <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-orange-500/50 animate-fade-in" 
+              onClick={() => {
+                const workspaceId = currentWorkspace?.id || 'personal';
+                navigate(`/low-stock-inventory/${workspaceId}`);
+              }}
+              style={{ animationDelay: '400ms' }}
+            >
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-bl-full" />
+              <CardContent className="p-3 sm:p-5 relative">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
+                    <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500 animate-pulse" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-bold text-sm sm:text-base group-hover:text-orange-600 transition-colors">Low Stock</p>
+                    <p className="text-[10px] sm:text-xs text-orange-600/80 dark:text-orange-400/80 font-medium">
+                      {Object.values(lowStockByStore).reduce((sum, count) => sum + count, 0)} items low
+                    </p>
+                  </div>
+                  <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-emerald-500/50 animate-fade-in" onClick={() => navigate('/transfer-qr')} style={{ animationDelay: '500ms' }}>
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full" />
+              <CardContent className="p-3 sm:p-5 relative">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                    <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="font-bold text-sm sm:text-base group-hover:text-emerald-600 transition-colors">Transfer QR</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Generate & scan</p>
+                  </div>
+                  <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </Card>
+        ) : (
+          /* Staff mode: Limited quick actions - Inventory, Transactions, Transfer QR only */
+          <div className="grid grid-cols-3 gap-2">
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-primary/50 animate-fade-in" onClick={() => navigate('/all-inventory')} style={{ animationDelay: '0ms' }}>
+              <CardContent className="p-3 relative">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                    <Package className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-sm group-hover:text-primary transition-colors">Inventory</p>
+                    <p className="text-[10px] text-muted-foreground">View all</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Quick Action Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-green-500/50 animate-fade-in" onClick={() => navigate('/stores-admin')} style={{ animationDelay: '0ms' }}>
-            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-3 sm:p-5 relative">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                  <Store className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-blue-500/50 animate-fade-in" onClick={() => navigate('/inventory-transactions')} style={{ animationDelay: '100ms' }}>
+              <CardContent className="p-3 relative">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-2 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                    <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-sm group-hover:text-blue-600 transition-colors">Transactions</p>
+                    <p className="text-[10px] text-muted-foreground">Live</p>
+                  </div>
                 </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-green-600 transition-colors">Stores</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Create & manage</p>
-                </div>
-                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-purple-500/50 animate-fade-in" onClick={() => navigate('/master-items')} style={{ animationDelay: '100ms' }}>
-            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-3 sm:p-5 relative">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500" />
+            <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-emerald-500/50 animate-fade-in" onClick={() => navigate('/transfer-qr')} style={{ animationDelay: '200ms' }}>
+              <CardContent className="p-3 relative">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                    <ArrowRightLeft className="h-5 w-5 text-emerald-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-sm group-hover:text-emerald-600 transition-colors">Transfer</p>
+                    <p className="text-[10px] text-muted-foreground">QR Scan</p>
+                  </div>
                 </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-purple-600 transition-colors">Items</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Master list</p>
-                </div>
-                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-primary/50 animate-fade-in" onClick={() => navigate('/all-inventory')} style={{ animationDelay: '200ms' }}>
-            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-3 sm:p-5 relative">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-primary transition-colors">Inventory</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Combined view</p>
-                </div>
-                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-blue-500/50 animate-fade-in" onClick={() => navigate('/inventory-transactions')} style={{ animationDelay: '300ms' }}>
-            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-3 sm:p-5 relative">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                  <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-blue-600 transition-colors">Transactions</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Live updates</p>
-                </div>
-                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-orange-500/50 animate-fade-in" 
-            onClick={() => {
-              const workspaceId = currentWorkspace?.id || 'personal';
-              navigate(`/low-stock-inventory/${workspaceId}`);
-            }}
-            style={{ animationDelay: '400ms' }}
-          >
-            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-3 sm:p-5 relative">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
-                  <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500 animate-pulse" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-orange-600 transition-colors">Low Stock</p>
-                  <p className="text-[10px] sm:text-xs text-orange-600/80 dark:text-orange-400/80 font-medium">
-                    {Object.values(lowStockByStore).reduce((sum, count) => sum + count, 0)} items low
-                  </p>
-                </div>
-                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-emerald-500/50 animate-fade-in" onClick={() => navigate('/transfer-qr')} style={{ animationDelay: '500ms' }}>
-            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-3 sm:p-5 relative">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
-                  <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-bold text-sm sm:text-base group-hover:text-emerald-600 transition-colors">Transfer QR</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Generate & scan</p>
-                </div>
-                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Stores List */}
         <Card className="border-none shadow-lg overflow-hidden">
@@ -3215,7 +3309,7 @@ const StoreManagement = () => {
         </>
       )}
 
-      <BottomNav />
+      {!isStaffMode && <BottomNav />}
     </div>
   );
 };
