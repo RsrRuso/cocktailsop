@@ -168,7 +168,7 @@ export function FloorPlanCanvas({
                 <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200] bg-background border border-border">
                   {ALLOCATIONS.map(a => (
                     <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
                   ))}
@@ -188,7 +188,7 @@ export function FloorPlanCanvas({
                 <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200] bg-background border border-border">
                   {SHAPES.map(s => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
