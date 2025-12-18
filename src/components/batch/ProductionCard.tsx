@@ -193,22 +193,29 @@ export const ProductionCard = ({
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-2 text-xs bg-primary/10 p-2 rounded">
-            <div className="text-center">
+          {ingredientsData.totalBottles > 0 ? (
+            <div className="grid grid-cols-3 gap-2 text-xs bg-primary/10 p-2 rounded">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-1">Total ML</p>
+                <p className="font-bold text-primary">{ingredientsData.totalMl.toFixed(0)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-muted-foreground mb-1">Bottles</p>
+                <p className="font-bold text-emerald-600">{ingredientsData.totalBottles}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-muted-foreground mb-1">Extra ML</p>
+                <p className="font-bold text-amber-600">
+                  {ingredientsData.totalLeftoverMl.toFixed(0)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs bg-primary/10 p-2 rounded text-center">
               <p className="text-muted-foreground mb-1">Total ML</p>
               <p className="font-bold text-primary">{ingredientsData.totalMl.toFixed(0)}</p>
             </div>
-            <div className="text-center">
-              <p className="text-muted-foreground mb-1">Bottles</p>
-              <p className="font-bold text-emerald-600">{ingredientsData.totalBottles}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-muted-foreground mb-1">Extra ML</p>
-              <p className="font-bold text-amber-600">
-                {ingredientsData.totalLeftoverMl.toFixed(0)}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
