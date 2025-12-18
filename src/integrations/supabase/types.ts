@@ -9307,6 +9307,105 @@ export type Database = {
         }
         Relationships: []
       }
+      po_fifo_sync: {
+        Row: {
+          created_at: string
+          expiration_date: string | null
+          fifo_inventory_id: string | null
+          fifo_store_id: string | null
+          id: string
+          item_name: string
+          notes: string | null
+          po_received_item_id: string | null
+          po_received_record_id: string | null
+          quantity: number
+          status: string
+          synced_at: string | null
+          synced_by: string | null
+          unit: string | null
+          unit_price: number | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expiration_date?: string | null
+          fifo_inventory_id?: string | null
+          fifo_store_id?: string | null
+          id?: string
+          item_name: string
+          notes?: string | null
+          po_received_item_id?: string | null
+          po_received_record_id?: string | null
+          quantity?: number
+          status?: string
+          synced_at?: string | null
+          synced_by?: string | null
+          unit?: string | null
+          unit_price?: number | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expiration_date?: string | null
+          fifo_inventory_id?: string | null
+          fifo_store_id?: string | null
+          id?: string
+          item_name?: string
+          notes?: string | null
+          po_received_item_id?: string | null
+          po_received_record_id?: string | null
+          quantity?: number
+          status?: string
+          synced_at?: string | null
+          synced_by?: string | null
+          unit?: string | null
+          unit_price?: number | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_fifo_sync_fifo_inventory_id_fkey"
+            columns: ["fifo_inventory_id"]
+            isOneToOne: false
+            referencedRelation: "fifo_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_fifo_sync_fifo_store_id_fkey"
+            columns: ["fifo_store_id"]
+            isOneToOne: false
+            referencedRelation: "fifo_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_fifo_sync_po_received_item_id_fkey"
+            columns: ["po_received_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_received_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_fifo_sync_po_received_record_id_fkey"
+            columns: ["po_received_record_id"]
+            isOneToOne: false
+            referencedRelation: "po_received_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_fifo_sync_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       po_format_templates: {
         Row: {
           column_mappings: Json
