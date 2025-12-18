@@ -288,15 +288,15 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50 w-64">
+            <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50 w-56">
               {/* Features Submenu - Matrix AI to Internal Email - closed by default */}
               <Collapsible>
-                <CollapsibleTrigger className="w-full px-3 py-2.5 text-base font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
-                  <span className="flex items-center gap-3">
-                    <Brain className="w-5 h-5 text-primary" />
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Brain className="w-4 h-4 text-primary" />
                     <span>Features</span>
                   </span>
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <DropdownMenuItem
@@ -304,9 +304,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/matrix-ai"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <Brain className="w-5 h-5 mr-3 text-primary" />
+                    <Brain className="w-4 h-4 mr-2 text-primary" />
                     Matrix AI
                   </DropdownMenuItem>
                   
@@ -315,9 +315,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/music-box"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <Music className="w-5 h-5 mr-3" />
+                    <Music className="w-4 h-4 mr-2" />
                     Music Box
                   </DropdownMenuItem>
                   
@@ -326,9 +326,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/industry-digest"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <Newspaper className="w-5 h-5 mr-3" />
+                    <Newspaper className="w-4 h-4 mr-2" />
                     Industry Digest
                   </DropdownMenuItem>
                   
@@ -337,9 +337,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/business-hub"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <Users className="w-5 h-5 mr-3" />
+                    <Users className="w-4 h-4 mr-2" />
                     Business Hub
                   </DropdownMenuItem>
                   
@@ -348,9 +348,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/shop"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <ShoppingCart className="w-5 h-5 mr-3" />
+                    <ShoppingCart className="w-4 h-4 mr-2" />
                     Shop
                   </DropdownMenuItem>
                   
@@ -359,9 +359,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/email"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <MessageCircle className="w-5 h-5 mr-3" />
+                    <MessageCircle className="w-4 h-4 mr-2" />
                     Internal Email
                   </DropdownMenuItem>
                 </CollapsibleContent>
@@ -371,12 +371,12 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               
               {/* Region Selector with Collapsible */}
               <Collapsible>
-                <CollapsibleTrigger className="w-full px-3 py-2.5 text-base font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
-                  <span className="flex items-center gap-3">
-                    <span className="text-xl">{regions.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <span className="text-base">{regions.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
                     <span>{selectedRegion || 'All'} Region</span>
                   </span>
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   {regions.map((region) => (
@@ -386,9 +386,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                         lightTap(); 
                         handleRegionChange(region.name);
                       }}
-                      className={`cursor-pointer ml-4 py-2.5 text-base ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
+                      className={`cursor-pointer ml-3 py-1.5 text-sm ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
                     >
-                      <span className="mr-3 text-xl">{region.flag}</span>
+                      <span className="mr-2 text-base">{region.flag}</span>
                       {region.name}
                     </DropdownMenuItem>
                   ))}
@@ -402,9 +402,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap();
                       setEventsDialogOpen(true);
                     }}
-                    className="cursor-pointer py-2.5 text-base"
+                    className="cursor-pointer py-1.5 text-sm"
                   >
-                    <Calendar className="w-5 h-5 mr-3" />
+                    <Calendar className="w-4 h-4 mr-2" />
                     View Events
                   </DropdownMenuItem>
                   
@@ -414,9 +414,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                         lightTap();
                         setCreateEventDialogOpen(true);
                       }}
-                      className="cursor-pointer py-2.5 text-base"
+                      className="cursor-pointer py-1.5 text-sm"
                     >
-                      <Calendar className="w-5 h-5 mr-3" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       Create Event
                     </DropdownMenuItem>
                   )}
@@ -427,12 +427,12 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               
               {/* Tools Submenu - Automation Hub to Introduction - closed by default */}
               <Collapsible>
-                <CollapsibleTrigger className="w-full px-3 py-2.5 text-base font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
-                  <span className="flex items-center gap-3">
-                    <Wrench className="w-5 h-5" />
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Wrench className="w-4 h-4" />
                     <span>Tools & Resources</span>
                   </span>
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <DropdownMenuItem 
@@ -440,9 +440,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/automations"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <Zap className="w-5 h-5 mr-3" />
+                    <Zap className="w-4 h-4 mr-2" />
                     Automation Hub
                   </DropdownMenuItem>
                   <DropdownMenuItem 
@@ -450,9 +450,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/ops-tools"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <Wrench className="w-5 h-5 mr-3" />
+                    <Wrench className="w-4 h-4 mr-2" />
                     Operations Tools
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -460,9 +460,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/exam-center"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <GraduationCap className="w-5 h-5 mr-3" />
+                    <GraduationCap className="w-4 h-4 mr-2" />
                     Exam Center
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -470,9 +470,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                       lightTap(); 
                       navigate("/introduction"); 
                     }}
-                    className="cursor-pointer ml-4 py-2.5 text-base"
+                    className="cursor-pointer ml-3 py-1.5 text-sm"
                   >
-                    <BookOpen className="w-5 h-5 mr-3" />
+                    <BookOpen className="w-4 h-4 mr-2" />
                     Introduction
                   </DropdownMenuItem>
                 </CollapsibleContent>
@@ -482,56 +482,56 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               
               {/* Theme Modes with Collapsible and Scroll */}
               <Collapsible>
-                <CollapsibleTrigger className="w-full px-3 py-2.5 text-base font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
-                  <span className="flex items-center gap-3">
-                    <Palette className="w-5 h-5" />
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
                     <span>Theme Modes</span>
                   </span>
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="max-h-[300px] overflow-y-auto scrollbar-thin">
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <Sun className="w-5 h-5 mr-3" />
+                <CollapsibleContent className="max-h-[200px] overflow-y-auto scrollbar-thin">
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <Sun className="w-4 h-4 mr-2" />
                     Light
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <Moon className="w-5 h-5 mr-3" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <Moon className="w-4 h-4 mr-2" />
                     Dark
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <Moon className="w-5 h-5 mr-3 fill-current" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <Moon className="w-4 h-4 mr-2 fill-current" />
                     Black
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('pearl'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-slate-100 to-zinc-300" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('pearl'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-slate-100 to-zinc-300" />
                     Pearl
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('silver'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-gray-400 to-slate-600" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('silver'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-gray-400 to-slate-600" />
                     Silver
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('champagne'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-amber-200 to-yellow-400" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('champagne'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-200 to-yellow-400" />
                     Champagne
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sunset'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sunset'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
                     Sunset
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('ruby'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-red-500 to-pink-700" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('ruby'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-red-500 to-pink-700" />
                     Ruby
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('mocha'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-amber-700 to-stone-800" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('mocha'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-700 to-stone-800" />
                     Mocha
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('espresso'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-stone-800 to-zinc-950" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('espresso'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-stone-800 to-zinc-950" />
                     Espresso
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('bronze'); }} className="cursor-pointer ml-4 py-2.5 text-base">
-                    <div className="w-5 h-5 mr-3 rounded-full bg-gradient-to-br from-amber-600 to-stone-700" />
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('bronze'); }} className="cursor-pointer ml-3 py-1.5 text-sm">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-600 to-stone-700" />
                     Bronze
                   </DropdownMenuItem>
                 </CollapsibleContent>
@@ -544,9 +544,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                   lightTap(); 
                   setShareSpecVerseOpen(true);
                 }}
-                className="cursor-pointer py-2.5 text-base text-primary hover:text-primary hover:bg-primary/10"
+                className="cursor-pointer py-1.5 text-sm text-primary hover:text-primary hover:bg-primary/10"
               >
-                <Share2 className="w-5 h-5 mr-3" />
+                <Share2 className="w-4 h-4 mr-2" />
                 Share SpecVerse
               </DropdownMenuItem>
               
@@ -555,9 +555,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                   lightTap(); 
                   clearAppCache();
                 }}
-                className="cursor-pointer py-2.5 text-base text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+                className="cursor-pointer py-1.5 text-sm text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
               >
-                <RefreshCw className="w-5 h-5 mr-3" />
+                <RefreshCw className="w-4 h-4 mr-2" />
                 Clear Cache & Reload
               </DropdownMenuItem>
             </DropdownMenuContent>
