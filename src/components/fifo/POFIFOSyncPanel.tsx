@@ -78,11 +78,10 @@ export const POFIFOSyncPanel = ({
     enabled: !!userId
   });
 
-  // Fetch recent received records that haven't been synced yet - RQ codes only (materials, not ML market list)
-  const { data: unlinkedReceived, isLoading: loadingReceived } = useQuery({
-    queryKey: ['po-received-unlinked', userId, workspaceId],
+  // Fetch recent received records - RQ codes only (materials, not ML market list)
+  const { data: receivedRecords, isLoading: loadingReceived } = useQuery({
+    queryKey: ['po-received-records', userId, workspaceId],
     queryFn: async () => {
-      // Fetch all RQ records (materials only) - show all available regardless of workspace for flexibility
       const { data, error } = await supabase
         .from('po_received_records')
         .select('id, document_number, supplier_name, received_date, total_items, workspace_id')
@@ -91,20 +90,27 @@ export const POFIFOSyncPanel = ({
         .limit(20);
       
       if (error) throw error;
-      
-      // Filter out records that already have sync items
-      const syncedRecordIds = syncItems?.map(s => s.po_received_record_id).filter(Boolean) || [];
-      return (data || []).filter(r => !syncedRecordIds.includes(r.id));
+      return data || [];
     },
-    enabled: !!userId && syncItems !== undefined
+    enabled: !!userId
   });
+
+  // Check which records have been imported
+  const importedRecordIds = new Set(syncItems?.map(s => s.po_received_record_id).filter(Boolean) || []);
 
   const pendingItems = syncItems?.filter(i => i.status === 'pending') || [];
   const syncedItems = syncItems?.filter(i => i.status === 'synced') || [];
 
-  // Import items from a received record
-  const importFromReceived = async (recordId: string) => {
+  // Force re-import: delete existing and import fresh
+  const forceImportFromReceived = async (recordId: string) => {
     try {
+      // Delete existing sync items for this record
+      await supabase
+        .from('po_fifo_sync')
+        .delete()
+        .eq('po_received_record_id', recordId)
+        .in('status', ['pending', 'rejected']); // Only delete pending/rejected, not synced
+
       // Fetch received items
       const { data: receivedItems, error } = await (supabase as any)
         .from('purchase_order_received_items')
@@ -117,24 +123,8 @@ export const POFIFOSyncPanel = ({
         return;
       }
 
-      // Check which items are already imported (only pending/synced, not rejected)
-      const receivedItemIds = receivedItems.map((item: any) => item.id);
-      const { data: existingSync } = await supabase
-        .from('po_fifo_sync')
-        .select('po_received_item_id')
-        .in('po_received_item_id', receivedItemIds)
-        .in('status', ['pending', 'synced']); // Allow re-import of rejected items
-      
-      const existingItemIds = new Set(existingSync?.map(s => s.po_received_item_id) || []);
-      const newItems = receivedItems.filter((item: any) => !existingItemIds.has(item.id));
-      
-      if (newItems.length === 0) {
-        toast.info("All items from this record are already imported");
-        return;
-      }
-
-      // Create sync items only for new items
-      const syncRecords = newItems.map((item: any) => ({
+      // Create sync items for all items
+      const syncRecords = receivedItems.map((item: any) => ({
         po_received_item_id: item.id,
         po_received_record_id: recordId,
         item_name: item.item_name,
@@ -152,9 +142,9 @@ export const POFIFOSyncPanel = ({
       
       if (insertError) throw insertError;
       
-      toast.success(`${newItems.length} items imported for FIFO sync`);
+      toast.success(`${receivedItems.length} items imported for FIFO sync`);
       refetch();
-      queryClient.invalidateQueries({ queryKey: ['po-received-unlinked'] });
+      queryClient.invalidateQueries({ queryKey: ['po-received-records'] });
     } catch (error: any) {
       toast.error(`Failed to import: ${error.message}`);
     }
@@ -320,15 +310,15 @@ export const POFIFOSyncPanel = ({
           <Button
             variant="ghost"
             className={`h-8 text-xs font-medium flex items-center justify-center gap-1.5 rounded-md ${
-              unlinkedReceived && unlinkedReceived.length > 0 ? "text-primary" : "text-muted-foreground"
+              receivedRecords && receivedRecords.length > 0 ? "text-primary" : "text-muted-foreground"
             }`}
             onClick={() => setActiveTab("pending")}
           >
             <ArrowRight className="h-3.5 w-3.5" />
             Import
-            {unlinkedReceived && unlinkedReceived.length > 0 && (
+            {receivedRecords && receivedRecords.length > 0 && (
               <Badge variant="default" className="h-5 px-1.5 text-[10px] bg-primary">
-                {unlinkedReceived.length}
+                {receivedRecords.length}
               </Badge>
             )}
           </Button>
@@ -359,25 +349,35 @@ export const POFIFOSyncPanel = ({
         </TabsList>
 
         {/* Import RQ Materials Section - always visible above tabs content */}
-        {unlinkedReceived && unlinkedReceived.length > 0 && (
+        {receivedRecords && receivedRecords.length > 0 && (
           <div className="mt-3 space-y-2">
-            <Label className="text-xs text-muted-foreground font-medium">Tap to Import RQ</Label>
-            <div className="grid grid-cols-1 gap-1.5 max-h-24 overflow-auto">
-              {unlinkedReceived.map((record) => (
-                <button
-                  key={record.id}
-                  className="flex items-center justify-between p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg text-xs active:scale-[0.98] transition-all touch-manipulation"
-                  onClick={() => importFromReceived(record.id)}
-                >
-                  <span className="font-medium truncate">{record.document_number}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="h-5 px-2 text-[10px]">
-                      {record.total_items} items
-                    </Badge>
-                    <ArrowRight className="h-4 w-4 text-primary" />
-                  </div>
-                </button>
-              ))}
+            <Label className="text-xs text-muted-foreground font-medium">Tap to Import / Re-import RQ</Label>
+            <div className="grid grid-cols-1 gap-1.5 max-h-32 overflow-auto">
+              {receivedRecords.map((record) => {
+                const isImported = importedRecordIds.has(record.id);
+                return (
+                  <button
+                    key={record.id}
+                    className={`flex items-center justify-between p-2.5 rounded-lg text-xs active:scale-[0.98] transition-all touch-manipulation ${
+                      isImported 
+                        ? "bg-green-500/10 hover:bg-green-500/20 border border-green-500/30" 
+                        : "bg-primary/10 hover:bg-primary/20"
+                    }`}
+                    onClick={() => forceImportFromReceived(record.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isImported && <Check className="h-3.5 w-3.5 text-green-500" />}
+                      <span className="font-medium truncate">{record.document_number}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="h-5 px-2 text-[10px]">
+                        {record.total_items} items
+                      </Badge>
+                      <RefreshCw className={`h-4 w-4 ${isImported ? "text-green-500" : "text-primary"}`} />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
