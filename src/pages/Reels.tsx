@@ -32,6 +32,7 @@ interface Reel {
   music_url: string | null;
   music_track_id: string | null;
   mute_original_audio: boolean | null;
+  is_image_reel?: boolean | null;
   profiles?: {
     username: string;
     full_name: string;
@@ -41,6 +42,7 @@ interface Reel {
   music_tracks?: {
     title: string;
     preview_url: string | null;
+    original_url: string | null;
     profiles?: {
       username: string;
     } | null;
@@ -79,14 +81,9 @@ const Reels = () => {
   // Use centralized useEngagement hook for consistent like/unlike behavior
   const reelEngagement = useEngagement('reel', user?.id, handleLikeCountChange);
 
-  // Auto-unmute current reel, mute others
-  useEffect(() => {
-    if (reels.length > 0 && currentIndex >= 0 && currentIndex < reels.length) {
-      const currentReelId = reels[currentIndex].id;
-      // Keep all reels EXCEPT current in the muted set
-      setMutedVideos(new Set(reels.map(r => r.id).filter(id => id !== currentReelId)));
-    }
-  }, [currentIndex, reels]);
+  // IMPORTANT: keep reels muted by default (mobile autoplay with sound is blocked).
+  // Users can unmute via the volume button on each reel.
+
 
   useEffect(() => {
     if (user) {
@@ -152,8 +149,8 @@ const Reels = () => {
       .from("reels")
       .select(`
         id, user_id, video_url, caption, like_count, comment_count, view_count, created_at,
-        music_url, music_track_id, mute_original_audio,
-        music_tracks:music_track_id(title, preview_url, profiles:uploaded_by(username))
+        music_url, music_track_id, mute_original_audio, is_image_reel,
+        music_tracks:music_track_id(title, preview_url, original_url, profiles:uploaded_by(username))
       `)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -174,7 +171,19 @@ const Reels = () => {
     }));
 
     setReels(reelsWithProfiles);
-  };
+
+    // Default to muted for newly loaded reels (prevents autoplay failures on mobile)
+    setMutedVideos((prev) => {
+      const next = new Set(prev);
+      reelsWithProfiles.forEach((r) => {
+        if (!next.has(r.id)) next.add(r.id);
+      });
+      // cleanup removed reels
+      Array.from(next).forEach((id) => {
+        if (!reelsWithProfiles.some((r) => r.id === id)) next.delete(id);
+      });
+      return next;
+    });
 
   // Use reelEngagement for like/unlike
   const handleLikeReel = useCallback((reelId: string) => {
