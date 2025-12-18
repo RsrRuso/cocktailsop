@@ -284,15 +284,16 @@ const Profile = () => {
               </div>
             )}
           </div>
+
+          {/* Monetization inside header */}
+          <Suspense fallback={<div className="h-12 animate-pulse bg-muted/20 rounded-lg" />}>
+            <MonetizationHub userId={user.id} />
+          </Suspense>
         </div>
 
         {/* Lazy loaded sections */}
         <Suspense fallback={<TabLoader />}>
           <ProfileMembershipDoors userId={user.id} />
-        </Suspense>
-
-        <Suspense fallback={<TabLoader />}>
-          <MonetizationHub userId={user.id} />
         </Suspense>
 
         {/* Content Tabs - Lazy loaded */}
