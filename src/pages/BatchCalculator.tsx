@@ -99,7 +99,6 @@ const BatchCalculator = () => {
   const [notes, setNotes] = useState("");
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [isAILoading, setIsAILoading] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
@@ -108,8 +107,6 @@ const BatchCalculator = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(staffGroupId);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [managingGroup, setManagingGroup] = useState<any>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
-  const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [masterList, setMasterList] = useState("");
@@ -135,33 +132,6 @@ const BatchCalculator = () => {
   const leaderboardsRef = useRef<HTMLDivElement>(null);
   const heatmapRef = useRef<HTMLDivElement>(null);
 
-  const aiAnalysisText =
-    typeof aiSuggestions === "string"
-      ? aiSuggestions
-      : aiSuggestions
-      ? JSON.stringify(aiSuggestions, null, 2)
-      : "";
-
-  const weeklyAnalysis =
-    aiAnalysisText && aiAnalysisText.includes("**WEEKLY ANALYSIS:**")
-      ? aiAnalysisText
-          .split("**MONTHLY ANALYSIS:**")[0]
-          .replace("**WEEKLY ANALYSIS:**", "")
-          .trim()
-      : aiAnalysisText;
-
-  const monthlyAnalysis =
-    aiAnalysisText && aiAnalysisText.includes("**MONTHLY ANALYSIS:**")
-      ? aiAnalysisText
-          .split("**MONTHLY ANALYSIS:**")[1]
-          ?.split("**QUARTERLY ANALYSIS:**")[0]
-          ?.trim() || ""
-      : "";
-
-  const quarterlyAnalysis =
-    aiAnalysisText && aiAnalysisText.includes("**QUARTERLY ANALYSIS:**")
-      ? aiAnalysisText.split("**QUARTERLY ANALYSIS:**")[1]?.trim() || ""
-      : "";
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId, staffMode);
   const { productions, createProduction, updateProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
@@ -754,96 +724,6 @@ const BatchCalculator = () => {
     
     deleteProduction({ productionId });
   };
-  const handleAISuggestions = async () => {
-    if (!recipeName) {
-      toast.error("Please enter a recipe name first");
-      return;
-    }
-
-    setIsAILoading(true);
-    try {
-      const response = await supabase.functions.invoke('batch-ai-assistant', {
-        body: {
-          action: 'suggest_ingredients',
-          data: { recipeName }
-        }
-      });
-
-      if (response.data?.result) {
-        try {
-          // Extract JSON from AI response (handles markdown code blocks)
-          let jsonText = response.data.result;
-          const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            jsonText = jsonMatch[0];
-          }
-          
-          const suggested = JSON.parse(jsonText);
-          if (Array.isArray(suggested) && suggested.length > 0) {
-            setIngredients(suggested.map((ing: any, idx: number) => ({
-              id: `${Date.now()}-${idx}`,
-              name: ing.name || "",
-              amount: String(ing.amount || ""),
-              unit: ing.unit || "ml"
-            })));
-            toast.success("AI suggestions loaded!");
-          } else {
-            toast.error("No ingredients suggested");
-          }
-        } catch (e) {
-          console.error("Parse error:", e, "Response:", response.data.result);
-          toast.error("Could not parse AI suggestions");
-        }
-      } else if (response.error) {
-        toast.error(response.error.message || "Failed to get AI suggestions");
-      }
-    } catch (error) {
-      toast.error("Failed to get AI suggestions");
-      console.error(error);
-    } finally {
-      setIsAILoading(false);
-    }
-  };
-
-  const fetchAiSuggestions = async () => {
-    if (!productions || productions.length === 0) return;
-    
-    setLoadingAiSuggestions(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('batch-ai-assistant', {
-        body: {
-          action: 'forecast_par',
-          data: {
-            history: productions.map(p => ({
-              batch_name: p.batch_name,
-              production_date: p.production_date,
-              target_liters: p.target_liters,
-              target_serves: p.target_serves
-            }))
-          }
-        }
-      });
-
-      if (error) throw error;
-      
-      if (data?.result) {
-        setAiSuggestions(data.result);
-        toast.success('AI analysis complete!');
-      }
-    } catch (error) {
-      console.error('Error fetching AI suggestions:', error);
-      toast.error('Failed to generate AI suggestions');
-    } finally {
-      setLoadingAiSuggestions(false);
-    }
-  };
-
-  // Auto-fetch AI suggestions when analytics tab is opened and productions exist
-  useEffect(() => {
-    if (productions && productions.length > 0 && !aiSuggestions && !loadingAiSuggestions) {
-      fetchAiSuggestions();
-    }
-  }, [productions]);
 
   const downloadBatchPDF = async (production: any) => {
     try {
