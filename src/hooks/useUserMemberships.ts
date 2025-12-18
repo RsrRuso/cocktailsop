@@ -14,7 +14,12 @@ export interface Membership {
 
 // Cache memberships across renders
 let membershipCache: { userId: string; data: Membership[]; timestamp: number } | null = null;
-const CACHE_TIME = 120000; // 2 minutes
+const CACHE_TIME = 30000; // 30 seconds - reduced for faster updates
+
+// Export function to clear cache manually
+export const clearMembershipCache = () => {
+  membershipCache = null;
+};
 
 export const useUserMemberships = (userId: string | null) => {
   const [memberships, setMemberships] = useState<Membership[]>(() => {
