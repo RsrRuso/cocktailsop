@@ -1852,15 +1852,16 @@ const InventoryManager = () => {
                     items={items}
                     onSuccess={fetchData}
                   />
-                  
-                  <POFIFOSyncPanel
-                    userId={user?.id || ''}
-                    workspaceId={currentWorkspace?.id}
-                    stores={stores}
-                    items={items}
-                    onSyncComplete={fetchData}
-                  />
                 </div>
+                
+                {/* PO → FIFO Sync - horizontal row below the add buttons */}
+                <POFIFOSyncPanel
+                  userId={user?.id || ''}
+                  workspaceId={currentWorkspace?.id}
+                  stores={stores}
+                  items={items}
+                  onSyncComplete={fetchData}
+                />
                 
                 <Card className="bg-muted/50">
                   <CardContent className="p-3 text-xs space-y-1">
