@@ -1,14 +1,12 @@
-import { RefObject } from "react";
+import { RefObject, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutGrid, Save, X } from "lucide-react";
+import { LayoutGrid, Save, X, Edit } from "lucide-react";
 
 interface Table {
   id: string;
@@ -63,115 +61,137 @@ export function FloorPlanCanvas({
   SHAPES,
 }: FloorPlanCanvasProps) {
   const isMobile = useIsMobile();
+  const [editingTableId, setEditingTableId] = useState<string | null>(null);
   
   // Mobile: smaller tables for more canvas space
   const baseSize = isMobile ? 50 : 70;
   const minTableSize = isMobile ? 35 : 50;
 
-  const selectedTable = tables.find(t => t.id === selectedTableForMove);
+  const editingTable = tables.find(t => t.id === editingTableId);
 
   const EditTablePanel = () => {
-    if (!selectedTable) return null;
+    if (!editingTable) return null;
     
     return (
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Name</Label>
-          <Input 
-            value={selectedTable.name}
-            onChange={(e) => {
-              setTables(prev => prev.map(t => 
-                t.id === selectedTable.id ? { ...t, name: e.target.value } : t
-              ));
-            }}
-            className="h-8 text-sm"
-          />
-        </div>
-        <div>
-          <Label className="text-xs">Capacity</Label>
-          <Input 
-            type="number"
-            value={selectedTable.capacity || ""}
-            onChange={(e) => {
-              setTables(prev => prev.map(t => 
-                t.id === selectedTable.id ? { ...t, capacity: parseInt(e.target.value) || 0 } : t
-              ));
-            }}
-            className="h-8 text-sm"
-          />
-        </div>
-        <div>
-          <Label className="text-xs">Allocation</Label>
-          <Select 
-            value={selectedTable.allocation || "indoor"} 
-            onValueChange={(v) => {
-              setTables(prev => prev.map(t => 
-                t.id === selectedTable.id ? { ...t, allocation: v } : t
-              ));
-            }}
-          >
-            <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {ALLOCATIONS.map(a => (
-                <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">Shape</Label>
-          <Select 
-            value={selectedTable.shape || "square"} 
-            onValueChange={(v) => {
-              setTables(prev => prev.map(t => 
-                t.id === selectedTable.id ? { ...t, shape: v } : t
-              ));
-            }}
-          >
-            <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {SHAPES.map(s => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex gap-2 pt-2">
-          <Button 
-            size="sm" 
-            className="flex-1"
-            onClick={async () => {
-              await supabase
-                .from("lab_ops_tables")
-                .update({
-                  name: selectedTable.name,
-                  capacity: selectedTable.capacity,
-                  allocation: selectedTable.allocation,
-                  shape: selectedTable.shape,
-                  position_x: selectedTable.position_x,
-                  position_y: selectedTable.position_y
-                })
-                .eq("id", selectedTable.id);
-              toast({ title: "Table saved" });
-              setSelectedTableForMove(null);
-            }}
-          >
-            <Save className="h-3 w-3 mr-1" />Save
-          </Button>
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={() => setSelectedTableForMove(null)}
-          >
-            Close
-          </Button>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setEditingTableId(null)}>
+        <div 
+          className="w-full max-w-xs bg-black/60 backdrop-blur-xl rounded-2xl p-4 space-y-3 border border-white/10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-white/90">Edit Table</span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/10"
+              onClick={() => setEditingTableId(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div>
+            <Label className="text-xs text-white/70">Name</Label>
+            <Input 
+              value={editingTable.name}
+              onChange={(e) => {
+                setTables(prev => prev.map(t => 
+                  t.id === editingTable.id ? { ...t, name: e.target.value } : t
+                ));
+              }}
+              className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/40"
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-white/70">Capacity</Label>
+            <Input 
+              type="number"
+              value={editingTable.capacity || ""}
+              onChange={(e) => {
+                setTables(prev => prev.map(t => 
+                  t.id === editingTable.id ? { ...t, capacity: parseInt(e.target.value) || 0 } : t
+                ));
+              }}
+              className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/40"
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-white/70">Allocation</Label>
+            <Select 
+              value={editingTable.allocation || "indoor"} 
+              onValueChange={(v) => {
+                setTables(prev => prev.map(t => 
+                  t.id === editingTable.id ? { ...t, allocation: v } : t
+                ));
+              }}
+            >
+              <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ALLOCATIONS.map(a => (
+                  <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs text-white/70">Shape</Label>
+            <Select 
+              value={editingTable.shape || "square"} 
+              onValueChange={(v) => {
+                setTables(prev => prev.map(t => 
+                  t.id === editingTable.id ? { ...t, shape: v } : t
+                ));
+              }}
+            >
+              <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SHAPES.map(s => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button 
+              size="sm" 
+              className="flex-1"
+              onClick={async () => {
+                await supabase
+                  .from("lab_ops_tables")
+                  .update({
+                    name: editingTable.name,
+                    capacity: editingTable.capacity,
+                    allocation: editingTable.allocation,
+                    shape: editingTable.shape,
+                    position_x: editingTable.position_x,
+                    position_y: editingTable.position_y
+                  })
+                  .eq("id", editingTable.id);
+                toast({ title: "Table saved" });
+                setEditingTableId(null);
+              }}
+            >
+              <Save className="h-3 w-3 mr-1" />Save
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white/10"
+              onClick={() => setEditingTableId(null)}
+            >
+              Close
+            </Button>
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className={`flex ${isMobile ? "flex-col" : ""}`}>
+    <div className="flex flex-col">
       {/* Canvas Area - Full Width */}
       <div className="flex-1 p-2 md:p-4">
         <div 
@@ -226,6 +246,7 @@ export function FloorPlanCanvas({
               setDraggingTable(null);
             }
           }}
+          onClick={() => setSelectedTableForMove(null)}
         >
           {/* Grid Background */}
           <div 
@@ -282,6 +303,7 @@ export function FloorPlanCanvas({
                   }}
                   onMouseDown={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const rect = e.currentTarget.getBoundingClientRect();
                     setDragOffset({
                       x: e.clientX - rect.left,
@@ -291,6 +313,7 @@ export function FloorPlanCanvas({
                     setSelectedTableForMove(table.id);
                   }}
                   onTouchStart={(e) => {
+                    e.stopPropagation();
                     const touch = e.touches[0];
                     const rect = e.currentTarget.getBoundingClientRect();
                     setDragOffset({
@@ -301,8 +324,8 @@ export function FloorPlanCanvas({
                     setSelectedTableForMove(table.id);
                   }}
                   onClick={(e) => {
+                    e.stopPropagation();
                     if (!isDragging) {
-                      e.stopPropagation();
                       setSelectedTableForMove(isSelected ? null : table.id);
                     }
                   }}
@@ -311,6 +334,23 @@ export function FloorPlanCanvas({
                     <span className={isMobile ? "text-[10px] leading-tight" : "text-sm"}>{table.name}</span>
                     <span className={`opacity-80 ${isMobile ? "text-[8px]" : "text-xs"}`}>{table.capacity}</span>
                   </div>
+                  
+                  {/* Edit Button - Only shows when selected */}
+                  {isSelected && !isDragging && (
+                    <button
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-primary hover:text-white transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTableId(table.id);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        setEditingTableId(table.id);
+                      }}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -330,7 +370,7 @@ export function FloorPlanCanvas({
         <div className={`flex items-center justify-between mt-2 md:mt-4 ${isMobile ? "flex-col gap-2" : ""}`}>
           <div className={`flex items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground ${isMobile ? "order-2" : ""}`}>
             <span className="flex items-center gap-1">
-              <span className="text-sm md:text-lg">👆</span> {isMobile ? "Tap to edit" : "Click to edit"}
+              <span className="text-sm md:text-lg">👆</span> Tap to select, <Edit className="h-3 w-3 inline" /> to edit
             </span>
           </div>
           {/* Allocation Legend - Scrollable on Mobile */}
@@ -355,36 +395,8 @@ export function FloorPlanCanvas({
         </div>
       </div>
       
-      {/* Desktop: Side Panel */}
-      {!isMobile && selectedTableForMove && (
-        <div className="w-64 shrink-0 p-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Edit Table</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EditTablePanel />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      
-      {/* Mobile: Bottom Sheet */}
-      {isMobile && (
-        <Sheet open={!!selectedTableForMove} onOpenChange={(open) => !open && setSelectedTableForMove(null)}>
-          <SheetContent side="bottom" className="h-auto max-h-[60vh] rounded-t-2xl">
-            <SheetHeader className="pb-2">
-              <SheetTitle className="text-sm flex items-center justify-between">
-                Edit Table
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedTableForMove(null)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </SheetTitle>
-            </SheetHeader>
-            <EditTablePanel />
-          </SheetContent>
-        </Sheet>
-      )}
+      {/* Transparent Edit Panel */}
+      {editingTableId && <EditTablePanel />}
     </div>
   );
 }
