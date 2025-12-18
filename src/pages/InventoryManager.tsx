@@ -6,7 +6,7 @@ import { useManagerRole } from "@/hooks/useManagerRole";
 import { usePendingAccessRequests } from "@/hooks/usePendingAccessRequests";
 import { usePendingFifoAccessRequests } from "@/hooks/usePendingFifoAccessRequests";
 import { useFifoWorkspace } from "@/hooks/useFifoWorkspace";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X, UserPlus, Smartphone } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X, UserPlus, Smartphone, ArrowLeft } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,6 +51,10 @@ const InventoryManager = () => {
   const { count: pendingFifoRequestsCount } = usePendingFifoAccessRequests();
   const { currentWorkspace, workspaces, switchWorkspace } = useFifoWorkspace();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Staff PIN access mode - restricts visible tabs
+  const isStaffMode = searchParams.get('staff') === 'true';
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -1074,7 +1078,7 @@ const InventoryManager = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
-      <TopNav />
+      {!isStaffMode && <TopNav />}
       
       <div className="container mx-auto p-2 sm:p-4 space-y-4">
         {/* Mobile-friendly header */}
@@ -1082,158 +1086,212 @@ const InventoryManager = () => {
           {/* Top row: Back button, Title, and Smartphone icon */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <BackToProfileDoor />
+              {isStaffMode ? (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => navigate("/fifo-pin-access")}
+                  className="h-8 w-8"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              ) : (
+                <BackToProfileDoor />
+              )}
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">FIFO Inventory</h1>
                 <p className="text-[10px] sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Select
-                value={currentWorkspace?.id || "personal"}
-                onValueChange={(value) => {
-                  if (value === "personal") {
-                    switchWorkspace("");
-                  } else {
-                    switchWorkspace(value);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-[100px] sm:w-[140px] h-8 text-xs">
-                  <SelectValue placeholder="Workspace" />
+            {!isStaffMode && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Select
+                  value={currentWorkspace?.id || "personal"}
+                  onValueChange={(value) => {
+                    if (value === "personal") {
+                      switchWorkspace("");
+                    } else {
+                      switchWorkspace(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[100px] sm:w-[140px] h-8 text-xs">
+                    <SelectValue placeholder="Workspace" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="bg-popover border z-[100]">
+                    <SelectItem value="personal">Personal</SelectItem>
+                    {workspaces
+                      .filter(w => w.workspace_type === 'fifo')
+                      .map((workspace) => (
+                        <SelectItem key={workspace.id} value={workspace.id}>
+                          {workspace.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => navigate("/fifo-pin-access")}
+                  title="Staff PIN Access"
+                  className="h-8 w-8"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions - Mobile-optimized grid (hidden in staff mode) */}
+        {!isStaffMode && (
+          <div className="bg-card p-2 rounded-lg border space-y-2">
+            {/* First row: Main actions */}
+            <div className="flex flex-wrap gap-1.5">
+              {isManager && (
+                <Button onClick={() => navigate("/fifo-qr-access-code")} size="sm" variant="default" className="h-7 text-xs px-2">
+                  <QRCodeSVG value="qr" className="w-3 h-3 mr-1 opacity-0" />
+                  <span className="ml-[-16px]">QR Code</span>
+                </Button>
+              )}
+              {(isManager || pendingFifoRequestsCount > 0) && (
+                <Button 
+                  onClick={() => navigate("/fifo-access-approval-page?workspace=" + currentWorkspace?.id)} 
+                  size="sm" 
+                  variant="outline"
+                  className="relative h-7 text-xs px-2"
+                >
+                  <Lock className="w-3 h-3 mr-1" />
+                  Approvals
+                  {pendingFifoRequestsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground animate-pulse">
+                      {pendingFifoRequestsCount}
+                    </span>
+                  )}
+                </Button>
+              )}
+              <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline" className="h-7 text-xs px-2">
+                <Upload className="w-3 h-3 mr-1" />
+                Excel
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleExcelUpload}
+                className="hidden"
+              />
+            </div>
+            
+            {/* Second row: Scan, Photo, Filter, Manage */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button onClick={startBarcodeScanner} size="sm" variant="outline" className="h-7 text-xs px-2">
+                <Scan className="w-3 h-3 mr-1" />
+                Scan
+              </Button>
+              <Button onClick={() => setPhotoDialogOpen(true)} size="sm" variant="outline" className="h-7 text-xs px-2">
+                <Camera className="w-3 h-3 mr-1" />
+                Photo
+              </Button>
+              <Select value={selectedStore} onValueChange={setSelectedStore}>
+                <SelectTrigger className="h-7 w-[110px] text-xs">
+                  <SelectValue placeholder="Filter Store" />
                 </SelectTrigger>
-                <SelectContent position="popper" className="bg-popover border z-[100]">
-                  <SelectItem value="personal">Personal</SelectItem>
-                  {workspaces
-                    .filter(w => w.workspace_type === 'fifo')
-                    .map((workspace) => (
-                      <SelectItem key={workspace.id} value={workspace.id}>
-                        {workspace.name}
-                      </SelectItem>
-                    ))}
+                <SelectContent>
+                  <SelectItem value="all">All Stores</SelectItem>
+                  {stores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button
-                size="icon"
+                size="sm"
                 variant="outline"
-                onClick={() => navigate("/fifo-pin-access")}
-                title="Staff PIN Access"
-                className="h-8 w-8"
+                onClick={() => navigate("/fifo-workspace-management")}
+                className="h-7 text-xs px-2 ml-auto"
               >
-                <Smartphone className="h-4 w-4" />
+                Manage
               </Button>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Quick Actions - Mobile-optimized grid */}
-        <div className="bg-card p-2 rounded-lg border space-y-2">
-          {/* First row: Main actions */}
-          <div className="flex flex-wrap gap-1.5">
-            {isManager && (
-              <Button onClick={() => navigate("/fifo-qr-access-code")} size="sm" variant="default" className="h-7 text-xs px-2">
-                <QRCodeSVG value="qr" className="w-3 h-3 mr-1 opacity-0" />
-                <span className="ml-[-16px]">QR Code</span>
-              </Button>
-            )}
-            {(isManager || pendingFifoRequestsCount > 0) && (
-              <Button 
-                onClick={() => navigate("/fifo-access-approval-page?workspace=" + currentWorkspace?.id)} 
-                size="sm" 
-                variant="outline"
-                className="relative h-7 text-xs px-2"
-              >
-                <Lock className="w-3 h-3 mr-1" />
-                Approvals
-                {pendingFifoRequestsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground animate-pulse">
-                    {pendingFifoRequestsCount}
-                  </span>
-                )}
-              </Button>
-            )}
-            <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline" className="h-7 text-xs px-2">
-              <Upload className="w-3 h-3 mr-1" />
-              Excel
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelUpload}
-              className="hidden"
-            />
+        {/* Staff mode: Simplified quick actions */}
+        {isStaffMode && (
+          <div className="bg-card p-2 rounded-lg border">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Select value={selectedStore} onValueChange={setSelectedStore}>
+                <SelectTrigger className="h-7 w-[130px] text-xs">
+                  <SelectValue placeholder="Filter Store" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stores</SelectItem>
+                  {stores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          {/* Second row: Scan, Photo, Filter, Manage */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button onClick={startBarcodeScanner} size="sm" variant="outline" className="h-7 text-xs px-2">
-              <Scan className="w-3 h-3 mr-1" />
-              Scan
-            </Button>
-            <Button onClick={() => setPhotoDialogOpen(true)} size="sm" variant="outline" className="h-7 text-xs px-2">
-              <Camera className="w-3 h-3 mr-1" />
-              Photo
-            </Button>
-            <Select value={selectedStore} onValueChange={setSelectedStore}>
-              <SelectTrigger className="h-7 w-[110px] text-xs">
-                <SelectValue placeholder="Filter Store" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stores</SelectItem>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigate("/fifo-workspace-management")}
-              className="h-7 text-xs px-2 ml-auto"
-            >
-              Manage
-            </Button>
-          </div>
-        </div>
+        )}
 
         <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 h-auto">
-            <TabsTrigger value="inventory" className="text-xs py-2">
-              <Package className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Active</span>
-            </TabsTrigger>
-            <TabsTrigger value="archive" className="text-xs py-2">
-              <Package className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Archive</span>
-            </TabsTrigger>
-            <TabsTrigger value="fifo" className="text-xs py-2">
-              <TrendingUp className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">FIFO</span>
-            </TabsTrigger>
-            <TabsTrigger value="stores" className="text-xs py-2">
-              <Store className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Stores</span>
-            </TabsTrigger>
-            <TabsTrigger value="items" className="text-xs py-2">
-              <Package className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Receive</span>
-            </TabsTrigger>
-            <TabsTrigger value="manage-items" className="text-xs py-2">
-              <Pencil className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Items</span>
-            </TabsTrigger>
-            <TabsTrigger value="staff" className="text-xs py-2">
-              <Users className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Staff</span>
-            </TabsTrigger>
-            <TabsTrigger value="transfer" className="text-xs py-2">
-              <ArrowRightLeft className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Transfer</span>
-            </TabsTrigger>
-          </TabsList>
+          {/* Staff mode: Only show 3 tabs (Inventory, FIFO, Transfer) */}
+          {isStaffMode ? (
+            <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsTrigger value="inventory" className="text-xs py-2">
+                <Package className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Active</span>
+              </TabsTrigger>
+              <TabsTrigger value="fifo" className="text-xs py-2">
+                <TrendingUp className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">FIFO</span>
+              </TabsTrigger>
+              <TabsTrigger value="transfer" className="text-xs py-2">
+                <ArrowRightLeft className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Transfer</span>
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="grid w-full grid-cols-8 h-auto">
+              <TabsTrigger value="inventory" className="text-xs py-2">
+                <Package className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Active</span>
+              </TabsTrigger>
+              <TabsTrigger value="archive" className="text-xs py-2">
+                <Package className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Archive</span>
+              </TabsTrigger>
+              <TabsTrigger value="fifo" className="text-xs py-2">
+                <TrendingUp className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">FIFO</span>
+              </TabsTrigger>
+              <TabsTrigger value="stores" className="text-xs py-2">
+                <Store className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Stores</span>
+              </TabsTrigger>
+              <TabsTrigger value="items" className="text-xs py-2">
+                <Package className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Receive</span>
+              </TabsTrigger>
+              <TabsTrigger value="manage-items" className="text-xs py-2">
+                <Pencil className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Items</span>
+              </TabsTrigger>
+              <TabsTrigger value="staff" className="text-xs py-2">
+                <Users className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Staff</span>
+              </TabsTrigger>
+              <TabsTrigger value="transfer" className="text-xs py-2">
+                <ArrowRightLeft className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Transfer</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="inventory" className="space-y-2">
             {/* Search Bar and PDF Button */}
@@ -2780,7 +2838,7 @@ const InventoryManager = () => {
         onEmployeeAdded={fetchData}
       />
 
-      <BottomNav />
+      {!isStaffMode && <BottomNav />}
     </div>
   );
 };
