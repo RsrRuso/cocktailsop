@@ -1284,8 +1284,8 @@ const BatchCalculator = () => {
           }
         });
         
-        // Only show "Leftover in Bottles" when there are full bottles used
-        if (hasSharpBottles && leftoverInBottlesItems.length > 0) {
+        // Show "Leftover in Bottles" when there's leftover ml after consumption
+        if (leftoverInBottlesItems.length > 0) {
           if (yPos > 230) {
             doc.addPage();
             yPos = 20;
@@ -1539,8 +1539,8 @@ const BatchCalculator = () => {
           }
         });
         
-        // Only show "Overall Leftover in Bottles" when there are full bottles used
-        if (hasOverallSharpBottles && overallLeftoverInBottlesItems.length > 0) {
+        // Show "Overall Leftover in Bottles" when there's leftover ml after consumption
+        if (overallLeftoverInBottlesItems.length > 0) {
           if (yPos > 230) {
             doc.addPage();
             yPos = 20;
