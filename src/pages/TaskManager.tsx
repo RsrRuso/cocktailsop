@@ -27,6 +27,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { BackToProfileDoor } from "@/components/BackToProfileDoor";
 import { BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface Task {
@@ -1097,6 +1098,11 @@ export default function TaskManager() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       <div className="container mx-auto px-4 pt-20 pb-6 max-w-7xl">
+        {/* Back to Profile Door */}
+        <div className="mb-4">
+          <BackToProfileDoor />
+        </div>
+        
         {/* Stats Dashboard */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
           <Card>

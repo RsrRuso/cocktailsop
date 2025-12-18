@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { BackToProfileDoor } from "@/components/BackToProfileDoor";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -696,6 +697,7 @@ const PurchaseOrders = () => {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {!staffMode && <BackToProfileDoor />}
             <Button variant="ghost" size="icon" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate('/ops-tools')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>

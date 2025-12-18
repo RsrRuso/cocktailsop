@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
+import { BackToProfileDoor } from "@/components/BackToProfileDoor";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAuth } from "@/contexts/AuthContext";
 import TopNav from "@/components/TopNav";
@@ -3394,6 +3395,7 @@ const BatchCalculator = () => {
       <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto mb-8 sm:mb-4">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {!staffMode && <BackToProfileDoor />}
             <Button
               variant="ghost"
               size="icon"
