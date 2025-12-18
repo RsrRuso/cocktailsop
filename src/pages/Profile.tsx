@@ -16,6 +16,7 @@ const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"))
 const ProfileStoriesTab = lazy(() => import("@/components/profile/ProfileStoriesTab"));
 const ProfileGrowthTab = lazy(() => import("@/components/profile/ProfileGrowthTab"));
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
+const ProfileMembershipDoors = lazy(() => import("@/components/ProfileMembershipDoors").then(m => ({ default: m.ProfileMembershipDoors })));
 
 const TabLoader = () => (
   <div className="flex items-center justify-center py-12">
@@ -155,6 +156,11 @@ const Profile = () => {
             </Button>
           </div>
         </div>
+
+        {/* Membership Doors */}
+        <Suspense fallback={<div className="h-20 animate-pulse bg-muted/20 rounded-xl" />}>
+          <ProfileMembershipDoors userId={user.id} />
+        </Suspense>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
