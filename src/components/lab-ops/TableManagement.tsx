@@ -16,7 +16,7 @@ import { FloorPlanCanvas } from "./FloorPlanCanvas";
 import { 
   Plus, Trash2, Edit, Save, Grid3X3, LayoutGrid, Users, 
   Circle, Square, RectangleHorizontal, Armchair, TrendingUp,
-  DollarSign, Clock, RefreshCw, MapPin
+  DollarSign, Clock, RefreshCw, MapPin, Archive, RotateCcw, ChevronDown, ChevronUp
 } from "lucide-react";
 
 interface Table {
@@ -83,10 +83,12 @@ const ALLOCATIONS = [
 
 export default function TableManagement({ outletId }: { outletId: string }) {
   const [tables, setTables] = useState<Table[]>([]);
+  const [archivedTables, setArchivedTables] = useState<Table[]>([]);
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
   const [venueCapacity, setVenueCapacity] = useState<VenueCapacity | null>(null);
   const [analytics, setAnalytics] = useState<TableAnalytics[]>([]);
   const [activeTab, setActiveTab] = useState("tables");
+  const [showArchived, setShowArchived] = useState(false);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<string | null>(null);
   
   // Dialog states
@@ -132,6 +134,7 @@ export default function TableManagement({ outletId }: { outletId: string }) {
 
   useEffect(() => {
     fetchTables();
+    fetchArchivedTables();
     fetchFloorPlans();
     fetchVenueCapacity();
     fetchAnalytics();
@@ -146,6 +149,7 @@ export default function TableManagement({ outletId }: { outletId: string }) {
         filter: `outlet_id=eq.${outletId}` 
       }, () => {
         fetchTables();
+        fetchArchivedTables();
       })
       .on('postgres_changes', { 
         event: '*', 
@@ -172,6 +176,48 @@ export default function TableManagement({ outletId }: { outletId: string }) {
     
     if (!error && data) {
       setTables(data as Table[]);
+    }
+  };
+
+  const fetchArchivedTables = async () => {
+    const { data, error } = await supabase
+      .from("lab_ops_tables")
+      .select("*")
+      .eq("outlet_id", outletId)
+      .eq("is_archived", true)
+      .order("archived_at", { ascending: false });
+    
+    if (!error && data) {
+      setArchivedTables(data as Table[]);
+    }
+  };
+
+  const restoreTable = async (tableId: string) => {
+    const { error } = await supabase
+      .from("lab_ops_tables")
+      .update({ is_archived: false, archived_at: null })
+      .eq("id", tableId);
+    
+    if (!error) {
+      toast({ title: "Table restored" });
+      fetchTables();
+      fetchArchivedTables();
+    } else {
+      toast({ title: "Failed to restore table", variant: "destructive" });
+    }
+  };
+
+  const permanentlyDeleteTable = async (tableId: string) => {
+    const { error } = await supabase
+      .from("lab_ops_tables")
+      .delete()
+      .eq("id", tableId);
+    
+    if (!error) {
+      toast({ title: "Table permanently deleted" });
+      fetchArchivedTables();
+    } else {
+      toast({ title: "Cannot delete - table has linked orders", variant: "destructive" });
     }
   };
 
@@ -691,6 +737,61 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Archived Tables Section */}
+              {archivedTables.length > 0 && (
+                <div className="mt-4">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between"
+                    onClick={() => setShowArchived(!showArchived)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Archive className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Archived Tables ({archivedTables.length})</span>
+                    </div>
+                    {showArchived ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                  
+                  {showArchived && (
+                    <div className="mt-2 space-y-2">
+                      {archivedTables.map((table) => (
+                        <div key={table.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed border-muted-foreground/30">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center opacity-50">
+                              <span className="font-bold text-muted-foreground">{table.table_number || "#"}</span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-muted-foreground">{table.name}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{table.capacity} seats</span>
+                                <Badge variant="outline" className="text-xs opacity-50">{table.shape}</Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => restoreTable(table.id)}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Restore
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => permanentlyDeleteTable(table.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
