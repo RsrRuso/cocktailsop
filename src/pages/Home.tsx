@@ -11,10 +11,9 @@ import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useEngagement } from "@/hooks/useEngagement";
 import { useStoriesData } from "@/hooks/useStoriesData";
-import { EventsTicker } from "@/components/EventsTicker";
+import { useUserStatus } from "@/hooks/useUserStatus";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
-import { useUserStatus } from "@/hooks/useUserStatus";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,9 +21,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Lazy load dialogs for faster initial render
+// Lazy load non-critical dialogs only
 const ShareDialog = lazy(() => import("@/components/ShareDialog"));
 const LikesDialog = lazy(() => import("@/components/LikesDialog"));
+const EventsTicker = lazy(() => import("@/components/EventsTicker").then(m => ({ default: m.EventsTicker })));
 
 // Story skeleton for instant UI
 const StorySkeleton = () => (
@@ -231,20 +231,8 @@ const Home = () => {
     // Note: engagement is now fetched automatically by useEngagement hook when userId changes
   }, [user?.id]);
 
-  // Realtime subscriptions
+  // Realtime subscriptions (only for stories - feed handled in useFeedData)
   useEffect(() => {
-    const postsChannel = supabase
-      .channel('posts-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => refreshFeed(true))
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, () => refreshFeed(true))
-      .subscribe();
-
-    const reelsChannel = supabase
-      .channel('reels-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reels' }, () => refreshFeed(true))
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reels' }, () => refreshFeed(true))
-      .subscribe();
-
     const storiesChannel = supabase
       .channel('stories-feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => refreshStories())
@@ -255,12 +243,10 @@ const Home = () => {
     window.addEventListener('regionChange' as any, handleRegionChange);
 
     return () => {
-      supabase.removeChannel(postsChannel);
-      supabase.removeChannel(reelsChannel);
       supabase.removeChannel(storiesChannel);
       window.removeEventListener('regionChange' as any, handleRegionChange);
     };
-  }, [refreshFeed, refreshStories]);
+  }, [refreshStories]);
 
   const getBadgeColor = (level: string) => {
     const colors = {
@@ -485,11 +471,13 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Events Ticker */}
+      {/* Events Ticker - lazy loaded */}
       {selectedRegion && (
-        <div className="px-4">
-          <EventsTicker region={selectedRegion} />
-        </div>
+        <Suspense fallback={null}>
+          <div className="px-4">
+            <EventsTicker region={selectedRegion} />
+          </div>
+        </Suspense>
       )}
 
       {/* Feed */}

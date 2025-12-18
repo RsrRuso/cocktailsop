@@ -20,7 +20,7 @@ let storiesCache: {
   userHasStory: boolean;
 } | null = null;
 
-const CACHE_TIME = 2 * 60 * 1000; // 2 minutes
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes for instant loads
 
 // Preload media for instant viewing
 const preloadStoryMedia = (stories: Story[]) => {

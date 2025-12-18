@@ -43,7 +43,8 @@ interface Reel {
 
 // Cache for feed data - persisted across navigations (module-level singleton)
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
-const CACHE_TIME = 300000; // 5 minutes for instant loads
+const CACHE_TIME = 600000; // 10 minutes for instant loads
+const INITIAL_LIMIT = 6; // Start small for instant first paint
 
 const hydrateReelsMusicTracks = async (input: Reel[]) => {
   const missingUrls = Array.from(
@@ -99,7 +100,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .from("posts")
         .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(INITIAL_LIMIT);
 
       if (error) throw error;
       if (!postsData) return;
@@ -141,7 +142,7 @@ export const useFeedData = (selectedRegion: string | null) => {
           music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username))
         `)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(INITIAL_LIMIT);
 
       if (error) throw error;
       if (!reelsData) return;
