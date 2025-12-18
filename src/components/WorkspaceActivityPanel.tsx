@@ -25,7 +25,9 @@ import {
   Upload,
   Download,
   Plus,
-  Minus
+  Minus,
+  RefreshCcw,
+  FileSpreadsheet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -227,6 +229,25 @@ const ActivityItem = memo(({ activity, profiles }: { activity: any; profiles: Re
           color: 'text-indigo-400',
           bg: 'bg-indigo-500/20',
           text: `${username} completed task ${details}`.trim(),
+        };
+      case 'imported':
+      case 'data_import':
+      case 'po_import':
+        return {
+          icon: FileSpreadsheet,
+          color: 'text-sky-400',
+          bg: 'bg-sky-500/20',
+          text: `${username} imported data ${details}`.trim(),
+        };
+      case 'synced':
+      case 'sync':
+      case 'data_sync':
+      case 'po_sync':
+        return {
+          icon: RefreshCcw,
+          color: 'text-lime-400',
+          bg: 'bg-lime-500/20',
+          text: `${username} synced data ${details}`.trim(),
         };
       default:
         return {
