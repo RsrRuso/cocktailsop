@@ -16,6 +16,7 @@ interface DoorCardProps {
 
 const DoorCard = ({ membership, index, onlineCount }: DoorCardProps) => {
   const navigate = useNavigate();
+  const isOnline = onlineCount > 0;
 
   return (
     <motion.button
@@ -23,38 +24,52 @@ const DoorCard = ({ membership, index, onlineCount }: DoorCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={() => navigate(membership.route)}
-      className={`relative flex flex-col items-center p-3 rounded-xl bg-gradient-to-b ${membership.color} border backdrop-blur-sm hover:scale-105 transition-transform active:scale-95 min-w-[100px] max-w-[130px]`}
+      className={`relative flex flex-col items-center p-3 pt-5 rounded-xl bg-gradient-to-b ${membership.color} border backdrop-blur-sm hover:scale-105 transition-transform active:scale-95 min-w-[110px] max-w-[140px]`}
     >
-      {/* Member count badge - top left */}
-      <div className="absolute -top-1.5 -left-1.5 flex items-center gap-0.5 bg-background/90 rounded-full px-1.5 py-0.5 border border-border/50 shadow-sm">
-        <Users className="w-2.5 h-2.5 text-muted-foreground" />
-        <span className="text-[10px] font-bold text-foreground">{membership.memberCount}</span>
+      {/* Top badges row */}
+      <div className="absolute top-1 left-1 right-1 flex justify-between items-center">
+        {/* Member count badge - left */}
+        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5 border border-white/10">
+          <Users className="w-3 h-3 text-primary" />
+          <span className="text-[11px] font-bold text-white">{membership.memberCount}</span>
+        </div>
+
+        {/* Online indicator - right */}
+        {isOnline && (
+          <div className="flex items-center gap-1 bg-emerald-500 rounded-full px-2 py-0.5 shadow-lg shadow-emerald-500/50">
+            <Wifi className="w-3 h-3 text-white" />
+            <span className="text-[11px] font-bold text-white">{onlineCount}</span>
+          </div>
+        )}
       </div>
 
-      {/* Online indicator - top right */}
-      {onlineCount > 0 && (
-        <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-emerald-500/90 rounded-full px-1.5 py-0.5 shadow-sm">
-          <Wifi className="w-2.5 h-2.5 text-white animate-pulse" />
-          <span className="text-[10px] font-bold text-white">{onlineCount}</span>
+      {/* Door frame with online indicator */}
+      <div className="relative mt-1">
+        <div className="relative w-16 h-20 rounded-t-lg bg-gradient-to-b from-white/15 to-white/5 border border-white/20 overflow-hidden flex items-center justify-center">
+          {/* Door knob */}
+          <div className="absolute right-2 top-1/2 w-2.5 h-2.5 rounded-full bg-amber-400 shadow-md shadow-amber-400/50" />
+          {/* Icon in door */}
+          <span className="text-4xl">{membership.icon}</span>
         </div>
-      )}
-
-      {/* Door frame */}
-      <div className="relative w-14 h-18 rounded-t-lg bg-gradient-to-b from-white/10 to-white/5 border border-white/20 overflow-hidden flex items-center justify-center">
-        {/* Door knob */}
-        <div className="absolute right-1.5 top-1/2 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
-        {/* Icon in door */}
-        <span className="text-3xl">{membership.icon}</span>
+        
+        {/* Online glow dot - lights up when logged in */}
+        <div 
+          className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full transition-all duration-300 ${
+            isOnline 
+              ? 'bg-amber-500 shadow-lg shadow-amber-500/80 animate-pulse' 
+              : 'bg-gray-600/50'
+          }`}
+        />
       </div>
       
       {/* Name - full readable */}
-      <p className="mt-2 text-xs font-semibold text-foreground text-center px-1 break-words">
+      <p className="mt-3 text-sm font-bold text-foreground text-center leading-tight">
         {membership.name}
       </p>
       
-      {/* Role badge - more readable */}
+      {/* Role badge */}
       {membership.role && (
-        <span className="mt-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-foreground/80">
+        <span className="mt-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-black/40 text-foreground/90 border border-white/10">
           {membership.role}
         </span>
       )}
@@ -74,12 +89,12 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5 px-1">
-        <DoorOpen className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="text-xs font-medium text-muted-foreground">My Spaces</span>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-1">
+        <DoorOpen className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">My Spaces</span>
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
             {memberships.length}
           </span>
         </div>
