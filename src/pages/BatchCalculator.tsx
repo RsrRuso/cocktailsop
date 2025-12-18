@@ -3690,6 +3690,9 @@ const BatchCalculator = () => {
                       setCurrentServes("1");
                       setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
                       setTargetLiters("");
+                      // Reset batch timing when group changes
+                      activityTracker.resetBatchTiming();
+                      batchInputStartedRef.current = false;
                     }}
                   >
                     <SelectTrigger className="glass bg-background/80 backdrop-blur-sm h-12">
@@ -3730,12 +3733,16 @@ const BatchCalculator = () => {
                         setCurrentServes("");
                         setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
                         setTargetLiters("");
+                        // Reset batch timing
+                        activityTracker.resetBatchTiming();
+                        batchInputStartedRef.current = false;
                       } else {
                         const recipe = recipes?.find(r => r.id === value);
                         if (recipe) {
-                          // Track recipe selection
+                          // Track recipe selection and reset batch timing
                           activityTracker.trackRecipeSelect(recipe.recipe_name);
-                          batchInputStartedRef.current = false; // Reset batch timing for new recipe
+                          activityTracker.resetBatchTiming();
+                          batchInputStartedRef.current = false; // Reset local ref for new recipe
                           
                           setRecipeName(recipe.recipe_name);
                           setBatchDescription(recipe.description || "");
