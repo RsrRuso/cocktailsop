@@ -2410,8 +2410,9 @@ const BatchCalculator = () => {
         yPos += 5;
       }
       
-      // Required ML from Partial Bottles Section
-      if (requiredMlItems.length > 0) {
+      // Required ML from Partial Bottles Section - only show when there are full bottles
+      const hasSharpBottlesItems = sharpBottlesItems.length > 0;
+      if (hasSharpBottlesItems && requiredMlItems.length > 0) {
         if (yPos > 200) {
           doc.addPage();
           yPos = 15;
@@ -3975,45 +3976,59 @@ const BatchCalculator = () => {
                             </span>
                           </div>
                           
+                          {/* Only show "Required ML (from partial bottles)" when there are full bottles */}
+                          {batchResults.scaledIngredients.some(ing => {
+                            if (!ing.bottle_size_ml) return false;
+                            const scaledMl = parseFloat(ing.scaledAmount);
+                            const wholeBottles = Math.floor(scaledMl / ing.bottle_size_ml);
+                            const partialMl = scaledMl % ing.bottle_size_ml;
+                            return wholeBottles > 0 && partialMl > 0;
+                          }) && (
+                            <div className="text-sm bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                              <div className="font-semibold mb-2 text-amber-900 dark:text-amber-100">Required ML (from partial bottles):</div>
+                              {batchResults.scaledIngredients
+                                .filter(ing => {
+                                  if (!ing.bottle_size_ml) return false;
+                                  const scaledMl = parseFloat(ing.scaledAmount);
+                                  const wholeBottles = Math.floor(scaledMl / ing.bottle_size_ml);
+                                  const partialMl = scaledMl % ing.bottle_size_ml;
+                                  return wholeBottles > 0 && partialMl > 0;
+                                })
+                                .map(ing => {
+                                  const scaledMl = parseFloat(ing.scaledAmount);
+                                  const partialMl = scaledMl % ing.bottle_size_ml!;
+                                  return (
+                                    <div key={ing.id} className="flex justify-between py-1">
+                                      <span className="text-amber-700 dark:text-amber-300">{ing.name}:</span>
+                                      <span className="text-amber-900 dark:text-amber-100 font-bold">{partialMl.toFixed(0)} ml</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
+                          
+                          {/* Always show "Leftover in Bottles" when there's partial consumption */}
                           {batchResults.scaledIngredients.some(ing => {
                             if (!ing.bottle_size_ml) return false;
                             const scaledMl = parseFloat(ing.scaledAmount);
                             return scaledMl % ing.bottle_size_ml !== 0;
                           }) && (
-                            <>
-                              <div className="text-sm bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
-                                <div className="font-semibold mb-2 text-amber-900 dark:text-amber-100">Required ML (from partial bottles):</div>
-                                {batchResults.scaledIngredients
-                                  .filter(ing => ing.bottle_size_ml && parseFloat(ing.scaledAmount) % ing.bottle_size_ml !== 0)
-                                  .map(ing => {
-                                    const scaledMl = parseFloat(ing.scaledAmount);
-                                    const partialMl = scaledMl % ing.bottle_size_ml!;
-                                    return (
-                                      <div key={ing.id} className="flex justify-between py-1">
-                                        <span className="text-amber-700 dark:text-amber-300">{ing.name}:</span>
-                                        <span className="text-amber-900 dark:text-amber-100 font-bold">{partialMl.toFixed(0)} ml</span>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-                              
-                              <div className="text-sm bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <div className="font-semibold mb-2 text-blue-900 dark:text-blue-100">Leftover in Bottles:</div>
-                                {batchResults.scaledIngredients
-                                  .filter(ing => ing.bottle_size_ml && parseFloat(ing.scaledAmount) % ing.bottle_size_ml !== 0)
-                                  .map(ing => {
-                                    const scaledMl = parseFloat(ing.scaledAmount);
-                                    const partialMl = scaledMl % ing.bottle_size_ml!;
-                                    const leftoverMl = ing.bottle_size_ml! - partialMl;
-                                    return (
-                                      <div key={ing.id} className="flex justify-between py-1">
-                                        <span className="text-blue-700 dark:text-blue-300">{ing.name}:</span>
-                                        <span className="text-blue-900 dark:text-blue-100 font-bold">{leftoverMl.toFixed(0)} ml remaining</span>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-                            </>
+                            <div className="text-sm bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="font-semibold mb-2 text-blue-900 dark:text-blue-100">Leftover in Bottles:</div>
+                              {batchResults.scaledIngredients
+                                .filter(ing => ing.bottle_size_ml && parseFloat(ing.scaledAmount) % ing.bottle_size_ml !== 0)
+                                .map(ing => {
+                                  const scaledMl = parseFloat(ing.scaledAmount);
+                                  const partialMl = scaledMl % ing.bottle_size_ml!;
+                                  const leftoverMl = ing.bottle_size_ml! - partialMl;
+                                  return (
+                                    <div key={ing.id} className="flex justify-between py-1">
+                                      <span className="text-blue-700 dark:text-blue-300">{ing.name}:</span>
+                                      <span className="text-blue-900 dark:text-blue-100 font-bold">{leftoverMl.toFixed(0)} ml remaining</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
                           )}
                         </div>
                       </div>
