@@ -402,38 +402,45 @@ const WorkspaceManagement = () => {
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Building2 className="w-8 h-8 text-primary" />
-              Workspace Management
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your workspaces and organize your stores
-            </p>
+      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Header - Mobile optimized */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary shrink-0" />
+                <span className="truncate">Workspace Management</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Manage your workspaces and stores
+              </p>
+            </div>
           </div>
 
-          <div className="flex gap-2">
+          {/* Action buttons - stacked on mobile */}
+          <div className="flex flex-wrap gap-2">
             {workspaces.length > 0 && (
               <Button 
                 onClick={handleDeleteAll} 
                 variant="destructive"
-                className="gap-2"
+                size="sm"
+                className="gap-1.5 text-xs sm:text-sm"
                 disabled={deleting}
               >
-                <Trash2 className="w-4 h-4" />
-                {deleting ? "Deleting..." : "Delete My Workspaces"}
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">{deleting ? "Deleting..." : "Delete My Workspaces"}</span>
+                <span className="xs:hidden">{deleting ? "..." : "Delete All"}</span>
               </Button>
             )}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Create Workspace
+                <Button size="sm" className="gap-1.5 text-xs sm:text-sm">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline">Create Workspace</span>
+                  <span className="xs:hidden">Create</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[95vw] sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Create New Workspace</DialogTitle>
                 </DialogHeader>
@@ -476,39 +483,39 @@ const WorkspaceManagement = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {/* Personal Inventory Card */}
               <Card
-                className="glass p-6 hover:glass-hover transition-all cursor-pointer border-2 border-primary/30"
+                className="glass p-4 sm:p-6 hover:glass-hover transition-all cursor-pointer border-2 border-primary/30"
                 onClick={() => navigate('/store-management')}
               >
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <Store className="w-5 h-5 text-primary" />
-                        {personalInventory.name}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+                        <Store className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
+                        <span className="truncate">{personalInventory.name}</span>
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                         {personalInventory.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1.5">
-                      <Store className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                    <div className="flex items-center gap-1">
+                      <Store className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="font-medium">{personalInventory.store_count}</span>
                       <span className="text-muted-foreground">stores</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="font-medium">{personalInventory.member_count}</span>
                       <span className="text-muted-foreground">member</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center gap-2 pt-1 sm:pt-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -516,9 +523,9 @@ const WorkspaceManagement = () => {
                         e.stopPropagation();
                         openEditPersonalDialog();
                       }}
-                      className="flex-1 gap-2"
+                      className="flex-1 gap-1.5 text-xs h-8"
                     >
-                      <Edit className="w-3.5 h-3.5" />
+                      <Edit className="w-3 h-3" />
                       Edit
                     </Button>
                     <Button
@@ -528,9 +535,9 @@ const WorkspaceManagement = () => {
                         e.stopPropagation();
                         handleDeletePersonal();
                       }}
-                      className="flex-1 gap-2 text-destructive hover:text-destructive"
+                      className="flex-1 gap-1.5 text-xs h-8 text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                       Delete
                     </Button>
                   </div>
@@ -541,38 +548,38 @@ const WorkspaceManagement = () => {
               {workspaces.map((workspace) => (
                 <Card
                   key={workspace.id}
-                  className="glass p-6 hover:glass-hover transition-all cursor-pointer"
+                  className="glass p-4 sm:p-6 hover:glass-hover transition-all cursor-pointer"
                   onClick={() => navigate(`/store-management?workspace=${workspace.id}`)}
                 >
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <Building2 className="w-5 h-5 text-primary" />
-                          {workspace.name}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+                          <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
+                          <span className="truncate">{workspace.name}</span>
                         </h3>
                         {workspace.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                             {workspace.description}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1.5">
-                        <Store className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                      <div className="flex items-center gap-1">
+                        <Store className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="font-medium">{workspace.store_count}</span>
                         <span className="text-muted-foreground">stores</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="font-medium">{workspace.member_count}</span>
                         <span className="text-muted-foreground">members</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 pt-1 sm:pt-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -581,10 +588,10 @@ const WorkspaceManagement = () => {
                           setSelectedWorkspace(workspace);
                           setShowPinDialog(true);
                         }}
-                        className="gap-2"
+                        className="gap-1 h-8 px-2"
                         title="Manage member PINs"
                       >
-                        <Key className="w-3.5 h-3.5" />
+                        <Key className="w-3 h-3" />
                       </Button>
                       <Button
                         variant="outline"
@@ -593,9 +600,9 @@ const WorkspaceManagement = () => {
                           e.stopPropagation();
                           openEditDialog(workspace);
                         }}
-                        className="flex-1 gap-2"
+                        className="flex-1 gap-1.5 text-xs h-8"
                       >
-                        <Edit className="w-3.5 h-3.5" />
+                        <Edit className="w-3 h-3" />
                         Edit
                       </Button>
                       <Button
@@ -605,9 +612,9 @@ const WorkspaceManagement = () => {
                           e.stopPropagation();
                           handleDelete(workspace);
                         }}
-                        className="flex-1 gap-2 text-destructive hover:text-destructive"
+                        className="flex-1 gap-1.5 text-xs h-8 text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                         Delete
                       </Button>
                     </div>
