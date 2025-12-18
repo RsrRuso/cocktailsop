@@ -1,306 +1,105 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { useRegionalRanking } from "@/hooks/useRegionalRanking";
-import { useCareerMetrics } from "@/hooks/useCareerMetrics";
-import { useEngagement } from "@/hooks/useEngagement";
+import { Loader2, LogOut, Settings, Sparkles, Phone, MessageSquare, Globe, BadgeCheck } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import MusicTicker from "@/components/MusicTicker";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles, BadgeCheck, Briefcase } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import FollowersDialog from "@/components/FollowersDialog";
-import FollowingDialog from "@/components/FollowingDialog";
-import { VenueVerification } from "@/components/VenueVerification";
-import BadgeInfoDialog from "@/components/BadgeInfoDialog";
-import CareerMetricsDialog from "@/components/CareerMetricsDialog";
-import CreateStatusDialog from "@/components/CreateStatusDialog";
-import { useUserStatus } from "@/hooks/useUserStatus";
-import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore, getAbbreviatedName } from "@/lib/profileUtils";
-import { AddExperienceDialog } from "@/components/AddExperienceDialog";
-import { AddCertificationDialog } from "@/components/AddCertificationDialog";
-import { AddRecognitionDialog } from "@/components/AddRecognitionDialog";
-import { AddCompetitionDialog } from "@/components/AddCompetitionDialog";
-import { ExperienceTimeline } from "@/components/ExperienceTimeline";
-import BirthdayConfetti from "@/components/BirthdayConfetti";
+import { getBadgeColor, getAbbreviatedName } from "@/lib/profileUtils";
 import BirthdayBadge from "@/components/BirthdayBadge";
-import { FeedItem } from "@/components/FeedItem";
-import { SavedRepostedContent } from "@/components/SavedRepostedContent";
-import { MonetizationHub } from "@/components/monetization";
-import { ProfileMembershipDoors } from "@/components/ProfileMembershipDoors";
 
-interface Profile {
-  id: string;
-  username: string;
-  full_name: string;
-  bio: string | null;
-  avatar_url: string | null;
-  cover_url: string | null;
-  professional_title: string | null;
-  badge_level: string;
-  region: string | null;
-  follower_count: number;
-  following_count: number;
-  post_count: number;
-  phone: string | null;
-  whatsapp: string | null;
-  website: string | null;
-  show_phone: boolean;
-  show_whatsapp: boolean;
-  show_website: boolean;
-}
+// Lazy load heavy components
+const FollowersDialog = lazy(() => import("@/components/FollowersDialog"));
+const FollowingDialog = lazy(() => import("@/components/FollowingDialog"));
+const BadgeInfoDialog = lazy(() => import("@/components/BadgeInfoDialog"));
+const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
+const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
+const ProfileStoriesTab = lazy(() => import("@/components/profile/ProfileStoriesTab"));
+const ProfileGrowthTab = lazy(() => import("@/components/profile/ProfileGrowthTab"));
+const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
+const ProfileMembershipDoors = lazy(() => import("@/components/ProfileMembershipDoors").then(m => ({ default: m.ProfileMembershipDoors })));
+const MonetizationHub = lazy(() => import("@/components/monetization").then(m => ({ default: m.MonetizationHub })));
 
-interface UserRoles {
-  isFounder: boolean;
-  isVerified: boolean;
-}
-
-interface Story {
-  id: string;
-  media_urls: string[];
-  media_types: string[];
-  created_at: string;
-  expires_at: string;
-}
-
-interface Post {
-  id: string;
-  content: string;
-  media_urls: string[];
-  like_count: number;
-  comment_count: number;
-  created_at: string;
-}
-
-interface Reel {
-  id: string;
-  video_url: string;
-  caption: string;
-  like_count: number;
-  comment_count: number;
-  view_count: number;
-  created_at: string;
-}
+// Simple loading fallback
+const TabLoader = () => (
+  <div className="flex items-center justify-center py-8">
+    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+  </div>
+);
 
 const Profile = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile: authProfile, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading } = useAuth();
   
-  // Check if navigated from notification to open saves
   const locationState = location.state as { openSaves?: boolean } | null;
   const [activeTab, setActiveTab] = useState(locationState?.openSaves ? "saved" : "feed");
-  
-  // Use optimized hook for all data
-  const { 
-    profile: queryProfile, 
-    posts, 
-    reels, 
-    experiences, 
-    certifications, 
-    recognitions,
-    competitions,
-    examCertificates,
-    stories, 
-    userRoles, 
-    refetchAll 
-  } = useOptimizedProfileData(user?.id || null);
-  
-  // Use query profile first (more complete), then auth profile as fallback
-  const profile = queryProfile || authProfile;
-
-  const [coverUrl, setCoverUrl] = useState<string>("");
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
-  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
-  const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [showAddExperience, setShowAddExperience] = useState(false);
-  const [showAddCertification, setShowAddCertification] = useState(false);
-  const [showAddRecognition, setShowAddRecognition] = useState(false);
-  const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || null);
-  
-  // Query client for optimistic updates
-  const queryClient = useQueryClient();
-  
-  // Unified count change handler for posts
-  const handlePostCountChange = useCallback((postId: string, type: 'like' | 'save' | 'repost', delta: number) => {
-    queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
-      old?.map(p => {
-        if (p.id !== postId) return p;
-        if (type === 'like') return { ...p, like_count: Math.max(0, (p.like_count || 0) + delta) };
-        if (type === 'save') return { ...p, save_count: Math.max(0, (p.save_count || 0) + delta) };
-        if (type === 'repost') return { ...p, repost_count: Math.max(0, (p.repost_count || 0) + delta) };
-        return p;
-      }) || []
-    );
-  }, [queryClient, user?.id]);
-  
-  // Unified count change handler for reels
-  const handleReelCountChange = useCallback((reelId: string, type: 'like' | 'save' | 'repost', delta: number) => {
-    queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
-      old?.map(r => {
-        if (r.id !== reelId) return r;
-        if (type === 'like') return { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) };
-        if (type === 'save') return { ...r, save_count: Math.max(0, (r.save_count || 0) + delta) };
-        if (type === 'repost') return { ...r, repost_count: Math.max(0, (r.repost_count || 0) + delta) };
-        return r;
-      }) || []
-    );
-  }, [queryClient, user?.id]);
-  
-  // Unified engagement hooks for posts and reels
-  const postEngagement = useEngagement('post', user?.id, handlePostCountChange);
-  const reelEngagement = useEngagement('reel', user?.id, handleReelCountChange);
-  
-  // Calculate birthday from profile data directly (no extra request)
-  const birthdayData = useMemo(() => {
-    const dob = profile?.date_of_birth || authProfile?.date_of_birth;
-    if (!dob) return { isBirthday: false };
-    const birthDate = new Date(dob);
-    const today = new Date();
-    const isBirthday = birthDate.getMonth() === today.getMonth() && 
-      Math.abs(birthDate.getDate() - today.getDate()) <= 3;
-    return { isBirthday };
-  }, [profile?.date_of_birth, authProfile?.date_of_birth]);
+  const [userStatus, setUserStatus] = useState<any>(null);
+  const [userRoles, setUserRoles] = useState({ isFounder: false, isVerified: false });
+  const [stories, setStories] = useState<any[]>([]);
+  const [postCount, setPostCount] = useState(0);
 
-  // Use the live career metrics hook with realtime updates
-  const { metrics: liveCareerMetrics, refetch: refetchCareerMetrics } = useCareerMetrics(user?.id || null);
-
-  // Fetch regional ranking with caching and deduplication
-  const { data: regionalData } = useRegionalRanking(
-    profile?.region || null,
-    liveCareerMetrics.rawScore
-  );
-  
-  // Subscribe to realtime updates for posts and reels
+  // Fetch minimal data needed for header on mount
   useEffect(() => {
     if (!user?.id) return;
     
-    postEngagement.fetchEngagement();
-    reelEngagement.fetchEngagement();
-    
-    // Subscribe to posts changes
-    const postsChannel = supabase
-      .channel('profile-posts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `user_id=eq.${user.id}` }, () => refetchAll())
-      .subscribe();
-    
-    // Subscribe to reels changes  
-    const reelsChannel = supabase
-      .channel('profile-reels')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels', filter: `user_id=eq.${user.id}` }, () => refetchAll())
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(postsChannel);
-      supabase.removeChannel(reelsChannel);
-    };
-  }, [user?.id, postEngagement.fetchEngagement, reelEngagement.fetchEngagement, refetchAll]);
-
-  const handleDeletePost = useCallback(async (postId: string) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
-    try {
-      const { error } = await supabase.from("posts").delete().eq("id", postId);
-      if (error) throw error;
-      toast.success("Post deleted");
-      refetchAll();
-    } catch (error) {
-      toast.error("Failed to delete post");
-    }
-  }, [refetchAll]);
-
-  const handleDeleteReel = useCallback(async (reelId: string) => {
-    if (!window.confirm("Are you sure you want to delete this reel?")) return;
-    try {
-      const { error } = await supabase.from("reels").delete().eq("id", reelId);
-      if (error) throw error;
-      toast.success("Reel deleted");
-      refetchAll();
-    } catch (error) {
-      toast.error("Failed to delete reel");
-    }
-  }, [refetchAll]);
-
-  const handleToggleMute = useCallback((videoId: string) => {
-    setMutedVideos(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(videoId)) {
-        newSet.delete(videoId);
-      } else {
-        newSet.add(videoId);
+    const fetchMinimalData = async () => {
+      // Fetch user roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      if (rolesData) {
+        setUserRoles({
+          isFounder: rolesData.some(r => r.role === 'founder'),
+          isVerified: rolesData.some(r => r.role === 'verified')
+        });
       }
-      return newSet;
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (profile?.cover_url) {
-      setCoverUrl(profile.cover_url);
-    }
-  }, [profile]);
-
-  const fetchStories = async () => {
-    if (!user?.id) return;
-    refetchAll();
-  };
-
-  const handleDeleteStory = async (storyId: string) => {
-    try {
-      // Get the story first to delete media from storage
-      const { data: story } = await supabase
-        .from("stories")
-        .select("media_urls")
-        .eq("id", storyId)
+      
+      // Fetch status using RPC or direct query with cast
+      const { data: statusData } = await (supabase as any)
+        .from('user_statuses')
+        .select('*')
+        .eq('user_id', user.id)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
-
-      // Delete from database
-      const { error } = await supabase
-        .from("stories")
-        .delete()
-        .eq("id", storyId);
-
-      if (error) throw error;
-
-      // Delete media files from storage
-      if (story?.media_urls) {
-        const filePaths = story.media_urls.map((url: string) => {
-          const urlParts = url.split('/stories/');
-          return urlParts[1];
-        }).filter(Boolean);
-
-        if (filePaths.length > 0) {
-          await supabase.storage
-            .from('stories')
-            .remove(filePaths);
-        }
-      }
-
-      toast.success("Story deleted");
-      fetchStories();
-    } catch (error) {
-      console.error('Error deleting story:', error);
-      toast.error("Failed to delete story");
-    }
-  };
+      
+      if (statusData) setUserStatus(statusData);
+      
+      // Fetch stories count
+      const { data: storiesData } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('user_id', user.id)
+        .gt('expires_at', new Date().toISOString());
+      
+      setStories(storiesData || []);
+      
+      // Fetch post count
+      const { count } = await supabase
+        .from('posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      setPostCount(count || 0);
+    };
+    
+    fetchMinimalData();
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -308,9 +107,14 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  // Show loading only during initial auth check when NO cached profile exists
-  // If we have cached profile data, show it immediately while auth refreshes
-  if (authLoading && !profile && !authProfile) {
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
+
+  // Show loading only if no cached profile
+  if (authLoading && !profile) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />
@@ -322,10 +126,7 @@ const Profile = () => {
     );
   }
 
-  // Redirect to auth if no user
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   // Safe profile with defaults
   const safeProfile = {
@@ -340,7 +141,7 @@ const Profile = () => {
     region: profile?.region || null,
     follower_count: profile?.follower_count || 0,
     following_count: profile?.following_count || 0,
-    post_count: profile?.post_count || 0,
+    post_count: profile?.post_count || postCount,
     phone: profile?.phone || null,
     whatsapp: profile?.whatsapp || null,
     website: profile?.website || null,
@@ -351,19 +152,17 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
-      <BirthdayConfetti isActive={birthdayData?.isBirthday || false} />
       <TopNav />
-      <MusicTicker />
       
       {/* Cover Photo */}
-      {coverUrl && (
+      {safeProfile.cover_url && (
         <div className="w-full h-48 cover-3d">
-          <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+          <img src={safeProfile.cover_url} alt="Cover" className="w-full h-full object-cover" />
         </div>
       )}
 
-      <div className="px-4 space-y-6" style={{ marginTop: coverUrl ? '-3rem' : '1.5rem' }}>
-        {/* Profile Header */}
+      <div className="px-4 space-y-6" style={{ marginTop: safeProfile.cover_url ? '-3rem' : '1.5rem' }}>
+        {/* Profile Header - Always visible instantly */}
         <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
@@ -387,7 +186,6 @@ const Profile = () => {
               <div>
                 <div className="flex items-center gap-1.5">
                   <h2 className="text-2xl font-bold">{getAbbreviatedName(safeProfile.full_name) || safeProfile.username}</h2>
-                  {/* Verification badge */}
                   {(userRoles.isFounder || userRoles.isVerified) && (
                     <div 
                       className="cursor-pointer flex-shrink-0"
@@ -395,7 +193,7 @@ const Profile = () => {
                     >
                       {userRoles.isFounder ? (
                         <div className="relative group">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-[2px] opacity-75 group-hover:opacity-100 transition-opacity" />
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-[2px] opacity-75" />
                           <div className="relative w-5 h-5 bg-gradient-to-br from-cyan-200 via-blue-400 to-purple-500 transform rotate-45 rounded-[2px] shadow-md flex items-center justify-center">
                             <div className="w-1 h-1 bg-white rounded-full" />
                           </div>
@@ -417,49 +215,30 @@ const Profile = () => {
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              className="glass-hover"
-            >
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="glass-hover">
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
 
-          {safeProfile.bio && (
-            <p className="text-sm text-muted-foreground">{safeProfile.bio}</p>
-          )}
+          {safeProfile.bio && <p className="text-sm text-muted-foreground">{safeProfile.bio}</p>}
 
           {/* Contact Links */}
           {(safeProfile.show_phone && safeProfile.phone) || (safeProfile.show_whatsapp && safeProfile.whatsapp) || (safeProfile.show_website && safeProfile.website) ? (
             <div className="flex flex-wrap gap-2">
               {safeProfile.show_phone && safeProfile.phone && (
-                <a
-                  href={`tel:${safeProfile.phone}`}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
-                >
+                <a href={`tel:${safeProfile.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors">
                   <Phone className="w-4 h-4 text-primary" />
                   <span>{safeProfile.phone}</span>
                 </a>
               )}
               {safeProfile.show_whatsapp && safeProfile.whatsapp && (
-                <a
-                  href={`https://wa.me/${safeProfile.whatsapp.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
-                >
+                <a href={`https://wa.me/${safeProfile.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors">
                   <MessageSquare className="w-4 h-4 text-green-500" />
                   <span>WhatsApp</span>
                 </a>
               )}
               {safeProfile.show_website && safeProfile.website && (
-                <a
-                  href={safeProfile.website.startsWith('http') ? safeProfile.website : `https://${safeProfile.website}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
-                >
+                <a href={safeProfile.website.startsWith('http') ? safeProfile.website : `https://${safeProfile.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors">
                   <Globe className="w-4 h-4 text-blue-500" />
                   <span>Website</span>
                 </a>
@@ -469,39 +248,26 @@ const Profile = () => {
 
           <div className="flex items-center gap-8">
             <div className="text-center">
-              <p className="text-2xl font-bold">{posts.length}</p>
+              <p className="text-2xl font-bold">{safeProfile.post_count}</p>
               <p className="text-sm text-muted-foreground">Posts</p>
             </div>
-            <button 
-              className="text-center hover:opacity-70 transition-opacity"
-              onClick={() => setShowFollowers(true)}
-            >
+            <button className="text-center hover:opacity-70 transition-opacity" onClick={() => setShowFollowers(true)}>
               <p className="text-2xl font-bold">{safeProfile.follower_count}</p>
               <p className="text-sm text-muted-foreground">Followers</p>
             </button>
-            <button 
-              className="text-center hover:opacity-70 transition-opacity"
-              onClick={() => setShowFollowing(true)}
-            >
+            <button className="text-center hover:opacity-70 transition-opacity" onClick={() => setShowFollowing(true)}>
               <p className="text-2xl font-bold">{safeProfile.following_count}</p>
               <p className="text-sm text-muted-foreground">Following</p>
             </button>
           </div>
 
           <div className="space-y-2">
-            <Button 
-              className="w-full glow-primary"
-              onClick={() => navigate("/profile/edit")}
-            >
+            <Button className="w-full glow-primary" onClick={() => navigate("/profile/edit")}>
               <Settings className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
             
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setShowStatusDialog(true)}
-            >
+            <Button variant="outline" className="w-full" onClick={() => setShowStatusDialog(true)}>
               <Sparkles className="w-4 h-4 mr-2" />
               {userStatus ? "Update Status" : "Share Status"}
             </Button>
@@ -520,13 +286,16 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Membership Doors - Workspaces, Groups, Teams */}
-        <ProfileMembershipDoors userId={user.id} />
+        {/* Lazy loaded sections */}
+        <Suspense fallback={<TabLoader />}>
+          <ProfileMembershipDoors userId={user.id} />
+        </Suspense>
 
-        {/* Monetization Hub */}
-        <MonetizationHub userId={user.id} />
+        <Suspense fallback={<TabLoader />}>
+          <MonetizationHub userId={user.id} />
+        </Suspense>
 
-        {/* Content Tabs */}
+        {/* Content Tabs - Lazy loaded */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 glass">
             <TabsTrigger value="feed">Feed</TabsTrigger>
@@ -536,487 +305,74 @@ const Profile = () => {
           </TabsList>
 
           <TabsContent value="feed" className="mt-4">
-            {[...posts.map(p => ({ ...p, type: 'post' as const, profiles: { ...safeProfile } })), 
-              ...reels.map(r => ({ ...r, type: 'reel' as const, content: r.caption, media_urls: [r.video_url], profiles: { ...safeProfile } }))]
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-              .length === 0 ? (
-              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-                <p>No posts or reels yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {[...posts.map(p => ({ ...p, type: 'post' as const, profiles: { ...safeProfile } })), 
-                  ...reels.map(r => ({ ...r, type: 'reel' as const, content: r.caption, media_urls: [r.video_url], profiles: { ...safeProfile } }))]
-                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                  .map((item: any) => (
-                    <FeedItem
-                      key={`${item.type}-${item.id}`}
-                      item={item}
-                      currentUserId={user?.id}
-                      isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
-                      isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
-                      isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
-                      mutedVideos={mutedVideos}
-                      onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
-                      onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
-                      onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
-                      onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
-                      onEdit={() => navigate(item.type === 'post' ? `/post/${item.id}/edit` : `/reel/${item.id}/edit`)}
-                      onComment={() => refetchAll()}
-                      onShare={() => {}}
-                      onToggleMute={handleToggleMute}
-                      onFullscreen={() => navigate('/reels', { state: { scrollToReelId: item.id } })}
-                      getBadgeColor={getBadgeColor}
-                    />
-                  ))}
-              </div>
-            )}
+            <Suspense fallback={<TabLoader />}>
+              <ProfileFeedTab userId={user.id} profile={safeProfile} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="saved" className="mt-4">
-            <SavedRepostedContent userId={user.id} />
+            <Suspense fallback={<TabLoader />}>
+              <ProfileSavedTab userId={user.id} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="stories" className="mt-4">
-            {stories.length === 0 ? (
-              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-                <p>No active stories</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {stories.map((story) => (
-                  <div key={story.id} className="relative glass rounded-xl overflow-hidden group">
-                    <img 
-                      src={story.media_urls[0]} 
-                      alt="Story" 
-                      className="w-full h-48 object-cover cursor-pointer"
-                      onClick={() => navigate(`/story/${user?.id}`)}
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteStory(story.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {story.media_urls.length > 1 && (
-                      <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                        {story.media_urls.length} items
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <Suspense fallback={<TabLoader />}>
+              <ProfileStoriesTab userId={user.id} />
+            </Suspense>
           </TabsContent>
 
-          <TabsContent value="growth" className="mt-4 space-y-4">
-            {/* Professional Growth Guidelines */}
-            <div className="glass rounded-xl p-4 space-y-4 border border-border/50 bg-gradient-to-br from-green-500/10 to-emerald-500/10">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                <h3 className="font-bold text-lg">Professional Growth Guidelines</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium text-sm">Verify Your Work Experience</p>
-                    <p className="text-xs text-muted-foreground">Add venues where you've worked to build credibility</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Target className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium text-sm">Build Your Network</p>
-                    <p className="text-xs text-muted-foreground">Connect with industry professionals to increase your reach</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Award className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium text-sm">Showcase Your Skills</p>
-                    <p className="text-xs text-muted-foreground">Share posts and reels demonstrating your expertise</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Professional Badge with 3D Green Effect */}
-            <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
-              <div>
-                <h3 className="font-bold text-2xl mb-2">Professional Badge</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your badge evolves with verified experience and achievements
-                </p>
-              </div>
-
-              {safeProfile.professional_title && (() => {
-                const badge = getProfessionalBadge(safeProfile.professional_title);
-                const BadgeIcon = badge.icon;
-                return (
-                  <div className="relative">
-                    <div className="relative rounded-3xl p-8 bg-gradient-to-br from-green-600 via-emerald-500 to-green-400 overflow-hidden group cursor-pointer transition-all duration-500 hover:scale-105 hover:shadow-2xl"
-                         style={{
-                           boxShadow: '0 20px 60px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                           transform: 'perspective(1000px) rotateX(2deg)',
-                         }}>
-                      {/* 3D Effect Layers */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
-                      <div className="absolute -inset-4 bg-gradient-to-r from-green-400/30 via-emerald-400/30 to-green-500/30 blur-xl group-hover:blur-2xl transition-all duration-500" 
-                           style={{ zIndex: -1 }} />
-                      
-                      {/* Stars */}
-                      <div className="absolute top-4 right-4 flex gap-2">
-                        {badge.score >= 90 && (
-                          <>
-                            <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg"
-                                 style={{ boxShadow: '0 4px 12px rgba(250, 204, 21, 0.6)' }}>
-                              <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg"
-                                 style={{ boxShadow: '0 4px 12px rgba(250, 204, 21, 0.6)' }}>
-                              <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
-                            </div>
-                          </>
-                        )}
-                        {badge.score >= 85 && badge.score < 90 && (
-                          <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg"
-                               style={{ boxShadow: '0 4px 12px rgba(250, 204, 21, 0.6)' }}>
-                            <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col items-center relative">
-                        {/* Icon Container with 3D Effect */}
-                        <div className="w-32 h-32 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center mb-4 relative"
-                             style={{
-                               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.5)',
-                               transform: 'translateZ(20px)',
-                             }}>
-                          <BadgeIcon className="w-16 h-16 text-white drop-shadow-lg" strokeWidth={1.5} />
-                        </div>
-                        
-                        {/* Score Badge with 3D Green Effect */}
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center relative group-hover:scale-110 transition-transform duration-300"
-                             style={{
-                               boxShadow: '0 10px 25px rgba(34, 197, 94, 0.5), inset 0 -2px 4px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3)',
-                               transform: 'translateZ(30px)',
-                             }}>
-                          <span className="text-3xl font-bold text-white drop-shadow-lg">{badge.score}</span>
-                        </div>
-                        
-                        <h4 className="text-2xl font-bold text-white mt-4 capitalize drop-shadow-lg">
-                          {safeProfile.professional_title?.replace(/_/g, " ")}
-                        </h4>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="space-y-4">
-                <h4 className="font-semibold text-lg">Career Metrics</h4>
-                <div className="space-y-3">
-                  <div 
-                    className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => setBadgeDialogOpen(true)}
-                  >
-                    <span className="text-sm text-muted-foreground">Badge Status</span>
-                    <div className="flex items-center gap-2">
-                      {userRoles.isFounder && (
-                        <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                          Founder
-                        </span>
-                      )}
-                      {userRoles.isVerified && !userRoles.isFounder && (
-                        <span className="text-xs font-semibold text-primary">
-                          Verified
-                        </span>
-                      )}
-                      <Badge className={`bg-gradient-to-r ${getBadgeColor(safeProfile.badge_level)} border-0 text-white capitalize group-hover:scale-105 transition-transform`}>
-                        {safeProfile.badge_level}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div 
-                    className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => setMetricsDialogOpen(true)}
-                  >
-                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
-                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{calculateNetworkReach(safeProfile, posts, reels).toLocaleString()}</span>
-                  </div>
-                  <div 
-                    className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => setMetricsDialogOpen(true)}
-                  >
-                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
-                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{calculateProfessionalScore(safeProfile, userRoles, posts, reels, stories)}/100</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Career KPIs Summary */}
-            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-lg">Career Development Score</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMetricsDialogOpen(true)}
-                  className="text-xs"
-                >
-                  View Details
-                </Button>
-              </div>
-              
-              {(() => {
-                const metrics = liveCareerMetrics;
-                return (
-                  <>
-                    {/* Score and Badge */}
-                    <div className="text-center p-4 glass rounded-lg border border-border/50">
-                      <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent mb-2">
-                        {metrics.score}
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        {metrics.regionalRank} {safeProfile.region && safeProfile.region !== 'All' ? `in ${safeProfile.region}` : 'globally'}
-                      </div>
-                      <Badge className={`${metrics.badge.color} text-sm px-3 py-1`}>
-                        {metrics.badge.level} - {metrics.badge.description}
-                      </Badge>
-                    </div>
-
-                    {/* KPIs Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="glass rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Briefcase className="w-4 h-4 text-blue-500" />
-                          <span className="text-xs text-muted-foreground">Working Places</span>
-                        </div>
-                        <div className="text-2xl font-bold">{metrics.workingPlaces}</div>
-                      </div>
-                      
-                      <div className="glass rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="w-4 h-4 text-green-500" />
-                          <span className="text-xs text-muted-foreground">Years Experience</span>
-                        </div>
-                        <div className="text-2xl font-bold">{metrics.totalYears}</div>
-                      </div>
-                      
-                      <div className="glass rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Target className="w-4 h-4 text-purple-500" />
-                          <span className="text-xs text-muted-foreground">Projects</span>
-                        </div>
-                        <div className="text-2xl font-bold">{metrics.projectsCompleted}</div>
-                      </div>
-                      
-                      <div className="glass rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="w-4 h-4 text-yellow-500" />
-                          <span className="text-xs text-muted-foreground">Diplomas</span>
-                        </div>
-                        <div className="text-2xl font-bold">{metrics.diplomas}</div>
-                      </div>
-                      
-                      <div className="glass rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="w-4 h-4 text-orange-500" />
-                          <span className="text-xs text-muted-foreground">Certificates</span>
-                        </div>
-                        <div className="text-2xl font-bold">{metrics.certificates}</div>
-                      </div>
-                      
-                      <div className="glass rounded-lg p-3 border border-border/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Star className="w-4 h-4 text-pink-500" />
-                          <span className="text-xs text-muted-foreground">Recognitions</span>
-                        </div>
-                        <div className="text-2xl font-bold">{metrics.recognitions}</div>
-                      </div>
-                    </div>
-
-                    {/* Add Actions */}
-                    <div className="space-y-2">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => setShowAddCertification(true)}
-                      >
-                        <Award className="w-4 h-4 mr-2" />
-                        Add Certification/Diploma
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => setShowAddRecognition(true)}
-                      >
-                        <Star className="w-4 h-4 mr-2" />
-                        Add Recognition
-                      </Button>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Exam Certificates & Achievements */}
-            {examCertificates.length > 0 && (
-              <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-lg flex items-center gap-2">
-                    <Award className="w-5 h-5 text-amber-500" />
-                    Exam Certificates
-                  </h4>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => navigate('/exam-center')}
-                    className="text-xs"
-                  >
-                    Take Exam
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {examCertificates.map((cert: any) => {
-                    const getBadgeColor = (level: string) => {
-                      const colors: Record<string, string> = {
-                        'Bronze': 'bg-amber-700 text-white',
-                        'Silver': 'bg-slate-400 text-white',
-                        'Gold': 'bg-yellow-500 text-black',
-                        'Platinum': 'bg-gradient-to-r from-slate-300 to-slate-500 text-white',
-                        'Diamond': 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
-                      };
-                      return colors[level] || 'bg-muted';
-                    };
-                    
-                    return (
-                      <div 
-                        key={cert.id}
-                        className="flex items-center gap-3 p-3 rounded-lg glass border border-border/50 hover:border-primary/50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/certificate/${cert.id}`)}
-                      >
-                        <div className={`p-2 rounded-full shrink-0 ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
-                          <Award className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium truncate">{cert.exam_categories?.name}</span>
-                            <Badge className={`text-[10px] ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
-                              {cert.exam_badge_levels?.name}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Score: {cert.score}% • {new Date(cert.issued_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Work Experience Timeline */}
-            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
-              <h4 className="font-semibold text-lg flex items-center gap-2">
-                <Briefcase className="w-5 h-5" />
-                Work Experience & Projects
-              </h4>
-              <ExperienceTimeline
-                experiences={experiences}
-                userId={user?.id || ""}
-                onUpdate={() => refetchAll()}
-                isOwnProfile={true}
-              />
-            </div>
-
-            {/* Venue Verification */}
-            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
-              <VenueVerification userId={user?.id || ""} />
-            </div>
+          <TabsContent value="growth" className="mt-4">
+            <Suspense fallback={<TabLoader />}>
+              <ProfileGrowthTab userId={user.id} profile={safeProfile} userRoles={userRoles} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>
 
       <BottomNav />
 
-      <FollowersDialog
-        open={showFollowers}
-        onOpenChange={setShowFollowers}
-        userId={user?.id || ""}
-      />
-
-      <FollowingDialog
-        open={showFollowing}
-        onOpenChange={setShowFollowing}
-        userId={user?.id || ""}
-      />
-
-      <BadgeInfoDialog
-        open={badgeDialogOpen}
-        onOpenChange={setBadgeDialogOpen}
-        isFounder={userRoles.isFounder}
-        isVerified={userRoles.isVerified}
-        badgeLevel={safeProfile.badge_level as any}
-        username={safeProfile.username}
-        isOwnProfile={true}
-        professionalScore={profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : undefined}
-      />
-
-      <CareerMetricsDialog
-        open={metricsDialogOpen}
-        onOpenChange={setMetricsDialogOpen}
-        metrics={liveCareerMetrics}
-      />
-
-      <AddExperienceDialog
-        open={showAddExperience}
-        onOpenChange={setShowAddExperience}
-        userId={user?.id || ""}
-        onSuccess={() => {
-          refetchAll();
-          refetchCareerMetrics();
-        }}
-      />
-
-      <AddCertificationDialog
-        open={showAddCertification}
-        onOpenChange={setShowAddCertification}
-        userId={user?.id || ""}
-        onSuccess={() => {
-          refetchAll();
-          refetchCareerMetrics();
-        }}
-      />
-
-      <AddRecognitionDialog
-        open={showAddRecognition}
-        onOpenChange={setShowAddRecognition}
-        userId={user?.id || ""}
-        onSuccess={() => {
-          refetchAll();
-          refetchCareerMetrics();
-        }}
-      />
-
-      <CreateStatusDialog
-        open={showStatusDialog}
-        onOpenChange={(open) => {
-          setShowStatusDialog(open);
-          if (!open) refetchStatus();
-        }}
-        userId={user?.id || ""}
-      />
+      {/* Lazy loaded dialogs */}
+      <Suspense fallback={null}>
+        {showFollowers && (
+          <FollowersDialog open={showFollowers} onOpenChange={setShowFollowers} userId={user.id} />
+        )}
+        {showFollowing && (
+          <FollowingDialog open={showFollowing} onOpenChange={setShowFollowing} userId={user.id} />
+        )}
+        {badgeDialogOpen && (
+          <BadgeInfoDialog
+            open={badgeDialogOpen}
+            onOpenChange={setBadgeDialogOpen}
+            isFounder={userRoles.isFounder}
+            isVerified={userRoles.isVerified}
+            badgeLevel={safeProfile.badge_level as any}
+            username={safeProfile.username}
+            isOwnProfile={true}
+          />
+        )}
+        {showStatusDialog && (
+          <CreateStatusDialog
+            open={showStatusDialog}
+            onOpenChange={(open) => {
+              setShowStatusDialog(open);
+              if (!open) {
+                // Refetch status
+                (supabase as any)
+                  .from('user_statuses')
+                  .select('*')
+                  .eq('user_id', user.id)
+                  .gt('expires_at', new Date().toISOString())
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single()
+                  .then(({ data }: any) => setUserStatus(data));
+              }
+            }}
+            userId={user.id}
+          />
+        )}
+      </Suspense>
 
       {/* Avatar Photo Dialog */}
       <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
