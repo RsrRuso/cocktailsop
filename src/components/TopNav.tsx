@@ -443,7 +443,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 lightTap();
                 navigate("/notifications");
               }}
-              className="flex items-center justify-center w-12 h-12 transition-all text-muted-foreground hover:text-foreground relative"
+              className="flex items-center justify-center w-12 h-12 transition-all text-white hover:text-primary relative"
             >
               <Bell className="w-7 h-7" />
               {unreadNotificationsCount > 0 && (
@@ -459,7 +459,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 lightTap();
                 navigate("/messages");
               }}
-              className="flex items-center justify-center w-12 h-12 transition-all text-muted-foreground hover:text-foreground relative"
+              className="flex items-center justify-center w-12 h-12 transition-all text-white hover:text-primary relative"
               title="Neuron"
             >
               <Send className="w-7 h-7" />
