@@ -73,6 +73,11 @@ export function FloorPlanCanvas({
 }: FloorPlanCanvasProps) {
   const isMobile = useIsMobile();
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
+  const [dragCandidate, setDragCandidate] = useState<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+  } | null>(null);
   
   // Base sizes - larger for better visibility
   const baseSize = isMobile ? 80 : 100;
@@ -390,55 +395,78 @@ export function FloorPlanCanvas({
             draggingTable ? "border-primary/50 ring-2 ring-primary/30" : "border-muted-foreground/30"
           }`}
           onMouseMove={(e) => {
-            if (!draggingTable || !canvasRef.current) return;
+            if (!canvasRef.current) return;
+
+            const candidate = dragCandidate;
+            let activeId = draggingTable ?? candidate?.id;
+            if (!activeId) return;
+
+            if (!draggingTable && candidate) {
+              const dx = e.clientX - candidate.startClientX;
+              const dy = e.clientY - candidate.startClientY;
+              if (Math.abs(dx) + Math.abs(dy) < 6) return;
+              activeId = candidate.id;
+              setDraggingTable(candidate.id);
+            }
+
             const rect = canvasRef.current.getBoundingClientRect();
             const scrollLeft = canvasRef.current.scrollLeft;
             const scrollTop = canvasRef.current.scrollTop;
             const x = e.clientX - rect.left + scrollLeft - dragOffset.x;
             const y = e.clientY - rect.top + scrollTop - dragOffset.y;
-            const clampedX = Math.max(0, x);
-            const clampedY = Math.max(0, y);
-            handleTableDrag(draggingTable, clampedX, clampedY);
+            handleTableDrag(activeId, Math.max(0, x), Math.max(0, y));
           }}
           onMouseUp={() => {
-            if (draggingTable) {
-              const table = tables.find(t => t.id === draggingTable);
-              if (table) {
-                saveTablePosition(table);
-              }
+            const activeId = draggingTable;
+            if (activeId) {
+              const table = tables.find(t => t.id === activeId);
+              if (table) saveTablePosition(table);
               setDraggingTable(null);
             }
+            setDragCandidate(null);
           }}
           onMouseLeave={() => {
-            if (draggingTable) {
-              const table = tables.find(t => t.id === draggingTable);
-              if (table) {
-                saveTablePosition(table);
-              }
+            const activeId = draggingTable;
+            if (activeId) {
+              const table = tables.find(t => t.id === activeId);
+              if (table) saveTablePosition(table);
               setDraggingTable(null);
             }
+            setDragCandidate(null);
           }}
           onTouchMove={(e) => {
-            if (!draggingTable || !canvasRef.current) return;
-            e.preventDefault();
+            if (!canvasRef.current) return;
             const touch = e.touches[0];
+            if (!touch) return;
+
+            const candidate = dragCandidate;
+            let activeId = draggingTable ?? candidate?.id;
+            if (!activeId) return;
+
+            if (!draggingTable && candidate) {
+              const dx = touch.clientX - candidate.startClientX;
+              const dy = touch.clientY - candidate.startClientY;
+              if (Math.abs(dx) + Math.abs(dy) < 6) return;
+              activeId = candidate.id;
+              setDraggingTable(candidate.id);
+            }
+
+            e.preventDefault();
             const rect = canvasRef.current.getBoundingClientRect();
             const scrollLeft = canvasRef.current.scrollLeft;
             const scrollTop = canvasRef.current.scrollTop;
             const x = touch.clientX - rect.left + scrollLeft - dragOffset.x;
             const y = touch.clientY - rect.top + scrollTop - dragOffset.y;
-            const clampedX = Math.max(0, x);
-            const clampedY = Math.max(0, y);
-            handleTableDrag(draggingTable, clampedX, clampedY);
+            handleTableDrag(activeId, Math.max(0, x), Math.max(0, y));
           }}
           onTouchEnd={() => {
-            if (draggingTable) {
-              const table = tables.find(t => t.id === draggingTable);
-              if (table) {
-                saveTablePosition(table);
-              }
+            const activeId = draggingTable;
+            if (activeId) {
+              const table = tables.find(t => t.id === activeId);
+              if (table) saveTablePosition(table);
               setDraggingTable(null);
             }
+            setDragCandidate(null);
           }}
           onClick={() => setSelectedTableForMove(null)}
         >
@@ -505,30 +533,37 @@ export function FloorPlanCanvas({
                       x: e.clientX - rect.left,
                       y: e.clientY - rect.top
                     });
-                    setDraggingTable(table.id);
+                    setDragCandidate({
+                      id: table.id,
+                      startClientX: e.clientX,
+                      startClientY: e.clientY
+                    });
                     setSelectedTableForMove(table.id);
                   }}
                   onTouchStart={(e) => {
                     e.stopPropagation();
                     const touch = e.touches[0];
+                    if (!touch) return;
                     const rect = e.currentTarget.getBoundingClientRect();
                     setDragOffset({
                       x: touch.clientX - rect.left,
                       y: touch.clientY - rect.top
                     });
-                    setDraggingTable(table.id);
+                    setDragCandidate({
+                      id: table.id,
+                      startClientX: touch.clientX,
+                      startClientY: touch.clientY
+                    });
                     setSelectedTableForMove(table.id);
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!isDragging) {
-                      setSelectedTableForMove(isSelected ? null : table.id);
-                    }
+                    setSelectedTableForMove(table.id);
                   }}
                 >
                   {/* Table Number Badge - TOP, Large & Prominent */}
                   {table.table_number && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black font-bold text-sm px-2.5 py-0.5 rounded-full shadow-lg z-10 min-w-[32px] text-center border-2 border-black/10">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-background text-foreground font-bold text-sm px-2.5 py-0.5 rounded-full shadow-lg z-10 min-w-[32px] text-center border-2 border-border/40">
                       #{table.table_number}
                     </div>
                   )}
@@ -571,6 +606,32 @@ export function FloorPlanCanvas({
             </div>
           )}
         </div>
+
+        {/* Selected Table Quick Actions (mobile-friendly, always visible) */}
+        {selectedTableForMove && !editingTableId && (
+          <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-10 z-[95]">
+            <div className="flex items-center gap-2 rounded-full bg-background/70 backdrop-blur-xl border border-border/30 shadow-lg px-2 py-2">
+              <div className="px-2 text-xs text-muted-foreground max-w-[180px] truncate">
+                {floorPlanTables.find(t => t.id === selectedTableForMove)?.name || "Selected table"}
+              </div>
+              <Button
+                size="sm"
+                className="h-9 rounded-full"
+                onClick={() => setEditingTableId(selectedTableForMove)}
+              >
+                <Edit className="h-4 w-4 mr-1" />Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 rounded-full"
+                onClick={() => setSelectedTableForMove(null)}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
         
         {/* Footer - Compact on Mobile */}
         <div className={`flex items-center justify-between mt-2 md:mt-4 ${isMobile ? "flex-col gap-2" : ""}`}>
