@@ -3909,6 +3909,12 @@ const BatchCalculator = () => {
                             setTargetServings(servingsValue);
                             setTargetBatchSize("");
                             
+                            // Start batch timing when user first inputs servings
+                            if (servingsValue && !batchInputStartedRef.current) {
+                              batchInputStartedRef.current = true;
+                              activityTracker.startBatchInput(recipeName || 'Unknown Recipe');
+                            }
+                            
                             // Auto-calculate liters when servings is entered
                             if (servingsValue && currentServes) {
                               const recipe = recipes?.find(r => r.id === selectedRecipeId);
