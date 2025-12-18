@@ -185,7 +185,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
           </Tabs>
 
           <div className="flex gap-2 pt-4 flex-shrink-0">
-            <Button variant="outline" className="flex-1" onClick={() => setSelectedSpace(null)}>
+            <Button variant="ghost" className="flex-1" onClick={() => setSelectedSpace(null)}>
               <X className="w-4 h-4 mr-1.5" />
               Close
             </Button>
