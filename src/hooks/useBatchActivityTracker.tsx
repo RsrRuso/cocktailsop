@@ -25,6 +25,11 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
   const pageEnterTime = useRef<number>(Date.now());
   const userIdRef = useRef<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Store batch start time independently to avoid race conditions
+  const batchStartTimeRef = useRef<number | null>(null);
+  const batchRecipeNameRef = useRef<string>('');
 
   // Log activity function - uses ref for userId to avoid stale closures
   const logActivity = useCallback(async (
@@ -33,10 +38,13 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
     metadata: Record<string, any> = {}
   ) => {
     const currentUserId = userIdRef.current;
-    if (!currentUserId || !sessionRef.current) return;
+    if (!currentUserId || !sessionRef.current) {
+      console.log('Cannot log activity - session not initialized', { actionType, currentUserId, session: sessionRef.current });
+      return;
+    }
 
     try {
-      await supabase.from('batch_calculator_activity').insert({
+      const { error } = await supabase.from('batch_calculator_activity').insert({
         user_id: currentUserId,
         group_id: sessionRef.current.groupId,
         session_id: sessionRef.current.sessionId,
@@ -44,6 +52,10 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
         duration_seconds: durationSeconds,
         metadata
       });
+      
+      if (error) {
+        console.error('Failed to log activity:', error);
+      }
     } catch (e) {
       console.error('Failed to log activity:', e);
     }
@@ -63,6 +75,7 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
           batchStartTime: null,
           groupId: groupId || null
         };
+        setIsInitialized(true);
 
         // Track page entry
         await logActivity('page_enter', 0, { timestamp: new Date().toISOString() });
@@ -133,28 +146,65 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
   }, [logActivity]);
 
   // Batch tracking - starts when user inputs liters/servings
+  // Uses independent ref to avoid race conditions with session initialization
   const startBatchInput = useCallback((recipeName: string) => {
+    // Always set the start time, regardless of session state
+    batchStartTimeRef.current = Date.now();
+    batchRecipeNameRef.current = recipeName;
+    
+    // Also update session if available
     if (sessionRef.current) {
       sessionRef.current.batchStartTime = Date.now();
+    }
+    
+    // Log if session is ready (non-critical if it fails)
+    if (isInitialized) {
       logActivity('batch_input_start', 0, { 
         recipe_name: recipeName,
         timestamp: new Date().toISOString()
       });
     }
-  }, [logActivity]);
+  }, [logActivity, isInitialized]);
 
   const completeBatchSubmission = useCallback((batchName: string, targetServes: number, targetLiters: number) => {
-    if (sessionRef.current?.batchStartTime) {
-      const duration = Math.round((Date.now() - sessionRef.current.batchStartTime) / 1000);
+    // Use the independent ref for timing (more reliable)
+    const startTime = batchStartTimeRef.current || sessionRef.current?.batchStartTime;
+    
+    if (startTime) {
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      
       logActivity('batch_submit', duration, { 
         batch_name: batchName,
         target_serves: targetServes,
         target_liters: targetLiters,
         mixing_time_seconds: duration
       });
-      sessionRef.current.batchStartTime = null;
+      
+      // Reset timing refs
+      batchStartTimeRef.current = null;
+      batchRecipeNameRef.current = '';
+      if (sessionRef.current) {
+        sessionRef.current.batchStartTime = null;
+      }
+    } else {
+      // No start time recorded - log without duration
+      logActivity('batch_submit', 0, { 
+        batch_name: batchName,
+        target_serves: targetServes,
+        target_liters: targetLiters,
+        note: 'No start time recorded'
+      });
     }
   }, [logActivity]);
+
+  // Reset batch timing (when recipe changes)
+  const resetBatchTiming = useCallback(() => {
+    batchStartTimeRef.current = null;
+    batchRecipeNameRef.current = '';
+    if (sessionRef.current) {
+      sessionRef.current.batchStartTime = null;
+    }
+  }, []);
 
   // Track recipe selection
   const trackRecipeSelect = useCallback((recipeName: string) => {
@@ -181,12 +231,14 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
     completeRecipeCreation,
     startBatchInput,
     completeBatchSubmission,
+    resetBatchTiming,
     trackRecipeSelect,
     trackTabChange,
     trackQrScan,
     trackPrint,
     logActivity,
-    sessionId: sessionRef.current?.sessionId
+    sessionId: sessionRef.current?.sessionId,
+    isInitialized
   };
 };
 
@@ -256,7 +308,11 @@ export const useBatchActivityStats = (groupId?: string | null) => {
         ? Math.round(recipeCompletes.reduce((sum, a) => sum + (a.duration_seconds || 0), 0) / recipeCompletes.length)
         : 0;
 
-      const batchSubmits = (activityData || []).filter(a => a.action_type === 'batch_submit');
+      // Get batch submit events with actual duration > 0
+      const batchSubmits = (activityData || []).filter(a => 
+        a.action_type === 'batch_submit' && (a.duration_seconds || 0) > 0
+      );
+      
       const avgBatchTime = batchSubmits.length > 0
         ? Math.round(batchSubmits.reduce((sum, a) => sum + (a.duration_seconds || 0), 0) / batchSubmits.length)
         : 0;
@@ -310,12 +366,17 @@ export const useBatchActivityStats = (groupId?: string | null) => {
         is_recipe: true
       }));
 
+      // Include batch_submit with duration for activity display
+      const batchSubmitLogs = (activityData || []).filter(a => 
+        a.action_type === 'batch_submit' && (a.duration_seconds || 0) > 0
+      );
+
       const meaningfulLogs = (activityData || []).filter(a => 
         ['qr_scan', 'print_action'].includes(a.action_type)
       );
 
       // Merge and sort by date
-      const allActivity = [...productionActivities, ...recipeActivities, ...meaningfulLogs]
+      const allActivity = [...productionActivities, ...recipeActivities, ...batchSubmitLogs, ...meaningfulLogs]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 30);
 
