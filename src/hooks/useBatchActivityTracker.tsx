@@ -235,6 +235,32 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
     logActivity('print_action', 0, { type, item_name: itemName });
   }, [logActivity]);
 
+  // Track batch deletion
+  const trackBatchDelete = useCallback((batchName: string, recipeName: string) => {
+    logActivity('batch_delete', 0, { 
+      batch_name: batchName, 
+      recipe_name: recipeName,
+      timestamp: new Date().toISOString() 
+    });
+  }, [logActivity]);
+
+  // Track recipe edit
+  const trackRecipeEdit = useCallback((recipeName: string, changes?: string) => {
+    logActivity('recipe_edit', 0, { 
+      recipe_name: recipeName, 
+      changes,
+      timestamp: new Date().toISOString() 
+    });
+  }, [logActivity]);
+
+  // Track recipe deletion
+  const trackRecipeDelete = useCallback((recipeName: string) => {
+    logActivity('recipe_delete', 0, { 
+      recipe_name: recipeName,
+      timestamp: new Date().toISOString() 
+    });
+  }, [logActivity]);
+
   return {
     startRecipeCreation,
     completeRecipeCreation,
@@ -245,6 +271,9 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
     trackTabChange,
     trackQrScan,
     trackPrint,
+    trackBatchDelete,
+    trackRecipeEdit,
+    trackRecipeDelete,
     logActivity,
     sessionId: sessionRef.current?.sessionId,
     isInitialized
@@ -381,7 +410,7 @@ export const useBatchActivityStats = (groupId?: string | null) => {
       );
 
       const meaningfulLogs = (activityData || []).filter(a => 
-        ['qr_scan', 'print_action'].includes(a.action_type)
+        ['qr_scan', 'print_action', 'batch_delete', 'recipe_edit', 'recipe_delete'].includes(a.action_type)
       );
 
       // Merge and sort by date
