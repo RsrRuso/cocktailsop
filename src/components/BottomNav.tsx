@@ -97,9 +97,7 @@ const BottomNav = () => {
             onClick={() => navigate("/create/reel")}
             className="flex items-center justify-center -mt-3"
           >
-            <div className="w-14 h-14 rounded-2xl border-2 border-white/80 hover:border-primary transition-all flex items-center justify-center">
-              <PlusSquare className="w-8 h-8 text-white" />
-            </div>
+            <PlusSquare className="w-10 h-10 text-white hover:text-primary transition-all" />
           </button>
 
           <button
