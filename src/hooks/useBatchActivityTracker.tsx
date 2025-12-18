@@ -159,7 +159,7 @@ export const useBatchActivityTracker = (groupId?: string | null) => {
   };
 };
 
-// Hook to fetch activity stats
+// Hook to fetch activity stats - includes both activity log AND batch_productions
 export const useBatchActivityStats = (groupId?: string | null) => {
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -171,58 +171,124 @@ export const useBatchActivityStats = (groupId?: string | null) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      let query = supabase
+      // Fetch activity log data
+      let activityQuery = supabase
         .from('batch_calculator_activity')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (groupId) {
-        query = query.eq('group_id', groupId);
+        activityQuery = activityQuery.eq('group_id', groupId);
       } else {
-        query = query.eq('user_id', user.id);
+        activityQuery = activityQuery.eq('user_id', user.id);
       }
 
-      const { data, error } = await query.limit(500);
-      if (error) throw error;
+      const { data: activityData, error: activityError } = await activityQuery.limit(500);
+      if (activityError) throw activityError;
 
-      if (data) {
-        // Calculate stats
-        const pageExits = data.filter(a => a.action_type === 'page_exit');
-        const totalTimeSpent = pageExits.reduce((sum, a) => sum + (a.duration_seconds || 0), 0);
+      // Fetch batch_productions for historical data (actual submissions)
+      let productionsQuery = supabase
+        .from('batch_productions')
+        .select('id, batch_name, recipe_id, target_serves, target_liters, produced_by_name, produced_by_email, produced_by_user_id, created_at, group_id')
+        .order('created_at', { ascending: false });
 
-        const recipeCompletes = data.filter(a => a.action_type === 'recipe_complete');
-        const avgRecipeTime = recipeCompletes.length > 0
-          ? Math.round(recipeCompletes.reduce((sum, a) => sum + (a.duration_seconds || 0), 0) / recipeCompletes.length)
-          : 0;
-
-        const batchSubmits = data.filter(a => a.action_type === 'batch_submit');
-        const avgBatchTime = batchSubmits.length > 0
-          ? Math.round(batchSubmits.reduce((sum, a) => sum + (a.duration_seconds || 0), 0) / batchSubmits.length)
-          : 0;
-
-        const batchTimes = batchSubmits.map(a => a.duration_seconds || 0).filter(t => t > 0);
-        const fastestBatch = batchTimes.length > 0 ? Math.min(...batchTimes) : 0;
-        const slowestBatch = batchTimes.length > 0 ? Math.max(...batchTimes) : 0;
-
-        const uniqueSessions = new Set(data.map(a => a.session_id)).size;
-
-        setStats({
-          totalTimeSpent,
-          avgRecipeCreationTime: avgRecipeTime,
-          avgBatchSubmissionTime: avgBatchTime,
-          totalRecipesCreated: recipeCompletes.length,
-          totalBatchesSubmitted: batchSubmits.length,
-          sessionsCount: uniqueSessions,
-          fastestBatchTime: fastestBatch,
-          slowestBatchTime: slowestBatch
-        });
-
-        // Recent activity (last 20 meaningful actions)
-        const meaningful = data.filter(a => 
-          ['recipe_complete', 'batch_submit', 'qr_scan', 'print_action'].includes(a.action_type)
-        ).slice(0, 20);
-        setRecentActivity(meaningful);
+      if (groupId) {
+        productionsQuery = productionsQuery.eq('group_id', groupId);
+      } else {
+        productionsQuery = productionsQuery.eq('user_id', user.id);
       }
+
+      const { data: productionsData, error: productionsError } = await productionsQuery.limit(100);
+      if (productionsError) throw productionsError;
+
+      // Fetch batch_recipes for recipe creation count
+      let recipesQuery = supabase
+        .from('batch_recipes')
+        .select('id, recipe_name, created_at, user_id')
+        .order('created_at', { ascending: false });
+
+      if (groupId) {
+        recipesQuery = recipesQuery.eq('group_id', groupId);
+      } else {
+        recipesQuery = recipesQuery.eq('user_id', user.id);
+      }
+
+      const { data: recipesData, error: recipesError } = await recipesQuery.limit(100);
+      if (recipesError) throw recipesError;
+
+      // Calculate stats from activity data
+      const pageExits = (activityData || []).filter(a => a.action_type === 'page_exit');
+      const totalTimeSpent = pageExits.reduce((sum, a) => sum + (a.duration_seconds || 0), 0);
+
+      const recipeCompletes = (activityData || []).filter(a => a.action_type === 'recipe_complete');
+      const avgRecipeTime = recipeCompletes.length > 0
+        ? Math.round(recipeCompletes.reduce((sum, a) => sum + (a.duration_seconds || 0), 0) / recipeCompletes.length)
+        : 0;
+
+      const batchSubmits = (activityData || []).filter(a => a.action_type === 'batch_submit');
+      const avgBatchTime = batchSubmits.length > 0
+        ? Math.round(batchSubmits.reduce((sum, a) => sum + (a.duration_seconds || 0), 0) / batchSubmits.length)
+        : 0;
+
+      const batchTimes = batchSubmits.map(a => a.duration_seconds || 0).filter(t => t > 0);
+      const fastestBatch = batchTimes.length > 0 ? Math.min(...batchTimes) : 0;
+      const slowestBatch = batchTimes.length > 0 ? Math.max(...batchTimes) : 0;
+
+      const uniqueSessions = new Set((activityData || []).map(a => a.session_id)).size;
+
+      // Use ACTUAL production counts from batch_productions table
+      const totalBatchesSubmitted = productionsData?.length || 0;
+      const totalRecipesCreated = recipesData?.length || 0;
+
+      setStats({
+        totalTimeSpent,
+        avgRecipeCreationTime: avgRecipeTime,
+        avgBatchSubmissionTime: avgBatchTime,
+        totalRecipesCreated,
+        totalBatchesSubmitted,
+        sessionsCount: uniqueSessions || 1,
+        fastestBatchTime: fastestBatch,
+        slowestBatchTime: slowestBatch
+      });
+
+      // Combine recent activity: batch_productions as "submissions" + activity log meaningful actions
+      const productionActivities = (productionsData || []).map(p => ({
+        id: p.id,
+        action_type: 'batch_submit',
+        created_at: p.created_at,
+        user_id: p.produced_by_user_id,
+        duration_seconds: null,
+        metadata: {
+          batch_name: p.batch_name,
+          target_serves: p.target_serves,
+          target_liters: p.target_liters,
+          produced_by_name: p.produced_by_name
+        },
+        is_production: true
+      }));
+
+      const recipeActivities = (recipesData || []).map(r => ({
+        id: r.id,
+        action_type: 'recipe_complete',
+        created_at: r.created_at,
+        user_id: r.user_id,
+        duration_seconds: null,
+        metadata: {
+          recipe_name: r.recipe_name
+        },
+        is_recipe: true
+      }));
+
+      const meaningfulLogs = (activityData || []).filter(a => 
+        ['qr_scan', 'print_action'].includes(a.action_type)
+      );
+
+      // Merge and sort by date
+      const allActivity = [...productionActivities, ...recipeActivities, ...meaningfulLogs]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 30);
+
+      setRecentActivity(allActivity);
     } catch (e) {
       console.error('Failed to fetch activity stats:', e);
     } finally {
