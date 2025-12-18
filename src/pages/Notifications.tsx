@@ -221,8 +221,11 @@ const Notifications = () => {
       refreshNotifications();
     }
 
-    // Navigation logic (same as before)
-    if (notification.type === 'like' || notification.type === 'comment') {
+    // Navigation logic
+    if (notification.type === 'reel_tag') {
+      // Navigate to saves page for tagged reels
+      navigate('/profile', { state: { openSaves: true, filterType: 'reels' } });
+    } else if (notification.type === 'like' || notification.type === 'comment') {
       if (notification.reel_id) navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
       else if (notification.post_id) navigate(`/post/${notification.post_id}`);
       else if (notification.story_id && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);

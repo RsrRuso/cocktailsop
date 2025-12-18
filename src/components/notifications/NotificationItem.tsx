@@ -101,6 +101,7 @@ const getNotificationConfig = (type: string) => {
     message: { icon: Send, bg: "bg-cyan-500/20", color: "text-cyan-500" },
     new_post: { icon: Image, bg: "bg-blue-400/20", color: "text-blue-400" },
     new_reel: { icon: Video, bg: "bg-pink-500/20", color: "text-pink-500" },
+    reel_tag: { icon: UserPlus, bg: "bg-pink-500/20", color: "text-pink-500" },
     new_music: { icon: Music, bg: "bg-green-400/20", color: "text-green-400" },
     new_story: { icon: MessageSquare, bg: "bg-yellow-500/20", color: "text-yellow-500" },
     new_event: { icon: Calendar, bg: "bg-purple-500/20", color: "text-purple-500" },
