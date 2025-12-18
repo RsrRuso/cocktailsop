@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useUserMemberships, Membership } from '@/hooks/useUserMemberships';
-import { useSpacePresence } from '@/hooks/useSpacePresence';
+import { useSpacePresence, usePlatformPresence } from '@/hooks/useSpacePresence';
 import { motion } from 'framer-motion';
 import { DoorOpen, Users, Wifi } from 'lucide-react';
 
@@ -12,11 +12,12 @@ interface DoorCardProps {
   membership: Membership;
   index: number;
   onlineCount: number;
+  isCurrentUserOnline: boolean;
 }
 
-const DoorCard = ({ membership, index, onlineCount }: DoorCardProps) => {
+const DoorCard = ({ membership, index, onlineCount, isCurrentUserOnline }: DoorCardProps) => {
   const navigate = useNavigate();
-  const isOnline = onlineCount > 0;
+  const hasOnlineMembers = onlineCount > 0;
 
   return (
     <motion.button
@@ -34,9 +35,9 @@ const DoorCard = ({ membership, index, onlineCount }: DoorCardProps) => {
           <span className="text-[11px] font-bold text-white">{membership.memberCount}</span>
         </div>
 
-        {/* Online indicator - right */}
-        {isOnline && (
-          <div className="flex items-center gap-1 bg-emerald-500 rounded-full px-2 py-0.5 shadow-lg shadow-emerald-500/50">
+        {/* Online indicator - right (shows members currently on platform) */}
+        {hasOnlineMembers && (
+          <div className="flex items-center gap-1 bg-emerald-500 rounded-full px-2 py-0.5 shadow-lg shadow-emerald-500/50 animate-pulse">
             <Wifi className="w-3 h-3 text-white" />
             <span className="text-[11px] font-bold text-white">{onlineCount}</span>
           </div>
@@ -52,14 +53,18 @@ const DoorCard = ({ membership, index, onlineCount }: DoorCardProps) => {
           <span className="text-4xl">{membership.icon}</span>
         </div>
         
-        {/* Online glow dot - lights up when logged in */}
+        {/* User's online status dot - shows if CURRENT user is signed in */}
         <div 
-          className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full transition-all duration-300 ${
-            isOnline 
-              ? 'bg-amber-500 shadow-lg shadow-amber-500/80 animate-pulse' 
+          className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-background transition-all duration-300 ${
+            isCurrentUserOnline 
+              ? 'bg-emerald-500 shadow-lg shadow-emerald-500/80' 
               : 'bg-gray-600/50'
           }`}
-        />
+        >
+          {isCurrentUserOnline && (
+            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+          )}
+        </div>
       </div>
       
       {/* Name - full readable */}
@@ -83,6 +88,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     userId,
     memberships.map(m => ({ id: m.id, type: m.type }))
   );
+  const { isOnline } = usePlatformPresence(userId);
 
   if (isLoading || memberships.length === 0) {
     return null;
@@ -93,6 +99,21 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
       <div className="flex items-center gap-2 px-1">
         <DoorOpen className="w-4 h-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">My Spaces</span>
+        
+        {/* User's platform status indicator */}
+        <div className="flex items-center gap-1.5 ml-2">
+          <div 
+            className={`w-2 h-2 rounded-full ${
+              isOnline 
+                ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' 
+                : 'bg-gray-500'
+            }`}
+          />
+          <span className={`text-[10px] font-medium ${isOnline ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+            {isOnline ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
             {memberships.length}
@@ -107,6 +128,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
             membership={membership} 
             index={index}
             onlineCount={getOnlineCount(membership.type, membership.id)}
+            isCurrentUserOnline={isOnline}
           />
         ))}
       </div>
