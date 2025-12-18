@@ -23,7 +23,7 @@ import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { useGroupAdmin } from "@/hooks/useGroupAdmin";
 import { useBatchActivityTracker } from "@/hooks/useBatchActivityTracker";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
-// ActivityTrackingPanel moved to separate page
+import { ActivityTrackingPanel } from "@/components/batch-calculator/ActivityTrackingPanel";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -3609,20 +3609,20 @@ const BatchCalculator = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); activityTracker.trackTabChange(tab); }} className="w-full">
-          <TabsList className={`grid w-full ${staffMode ? 'grid-cols-2' : 'grid-cols-4'} mb-6 glass p-2 gap-2 h-auto`}>
+          <TabsList className={`grid w-full ${staffMode ? 'grid-cols-2' : 'grid-cols-5'} mb-6 glass p-2 gap-1 sm:gap-2 h-auto`}>
             <TabsTrigger 
               value="calculator" 
-              className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
+              className="text-[10px] sm:text-sm py-2 sm:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
             >
               Calculator
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
-              className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold relative"
+              className="text-[10px] sm:text-sm py-2 sm:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold relative"
             >
               History
               {productions && productions.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold">
                   {productions.length}
                 </span>
               )}
@@ -3630,18 +3630,24 @@ const BatchCalculator = () => {
             {!staffMode && (
               <>
                 <TabsTrigger 
+                  value="activity" 
+                  className="text-[10px] sm:text-sm py-2 sm:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
+                >
+                  Activity
+                </TabsTrigger>
+                <TabsTrigger 
                   value="analytics" 
-                  className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
+                  className="text-[10px] sm:text-sm py-2 sm:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
                 >
                   Analytics
                 </TabsTrigger>
                 <TabsTrigger 
                   value="groups" 
-                  className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold relative"
+                  className="text-[10px] sm:text-sm py-2 sm:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold relative"
                 >
                   Groups
                   {groups && groups.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold">
                       {groups.length}
                     </span>
                   )}
@@ -3653,18 +3659,7 @@ const BatchCalculator = () => {
           <TabsContent value="calculator" className="space-y-4 sm:space-y-6 pb-4">
             <Card className="glass p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/batch-activity${selectedGroupId ? `?groupId=${selectedGroupId}` : ''}`)}
-                    className="gap-1.5 text-muted-foreground hover:text-primary"
-                  >
-                    <Activity className="w-4 h-4" />
-                    <span className="hidden sm:inline">Activity</span>
-                  </Button>
-                </div>
+                <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
                 <Button
                   variant="outline"
                   onClick={() => navigate("/batch-recipes")}
@@ -4220,6 +4215,10 @@ const BatchCalculator = () => {
                 </div>
               )}
             </Card>
+          </TabsContent>
+
+          <TabsContent value="activity" className="space-y-4 pb-4">
+            <ActivityTrackingPanel groupId={selectedGroupId} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4 pb-4">
