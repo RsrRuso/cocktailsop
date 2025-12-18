@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -10,8 +10,20 @@ import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 import { StoryEditor } from "@/components/StoryEditor";
 import { Card } from "@/components/ui/card";
 
+interface LocationState {
+  preloadedMedia?: {
+    dataUrl: string;
+    type: string;
+    name: string;
+  };
+  openEditor?: boolean;
+}
+
 const CreateStory = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState | null;
+  
   const [showSelection, setShowSelection] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -19,6 +31,27 @@ const CreateStory = () => {
   const [editedData, setEditedData] = useState<Record<number, any>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadState, uploadMultiple } = usePowerfulUpload();
+
+  // Handle preloaded media from share dialog
+  useEffect(() => {
+    if (locationState?.preloadedMedia && locationState?.openEditor) {
+      const { dataUrl, type, name } = locationState.preloadedMedia;
+      
+      // Convert data URL to File
+      fetch(dataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], name, { type });
+          setSelectedMedia([file]);
+          setPreviewUrls([dataUrl]);
+          setShowSelection(false);
+          setEditingIndex(0); // Open editor directly
+        });
+      
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, document.title);
+    }
+  }, [locationState]);
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
