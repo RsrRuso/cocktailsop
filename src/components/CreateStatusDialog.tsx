@@ -10,8 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Smile, Sparkles, Wand2, RefreshCw, Clock, 
   Heart, Star, Zap, Coffee, Music, Camera,
-  Palette, Send, Loader2, TrendingUp
+  Palette, Send, Loader2, TrendingUp, X
 } from "lucide-react";
+import MusicStatusDialog from "./MusicStatusDialog";
 
 interface CreateStatusDialogProps {
   open: boolean;
@@ -60,6 +61,12 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
   const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState("recent");
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [musicDialogOpen, setMusicDialogOpen] = useState(false);
+  const [currentMusic, setCurrentMusic] = useState<{
+    name: string;
+    artist: string;
+    albumArt?: string;
+  } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,6 +75,23 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
       const { data: { session } } = await supabase.auth.getSession();
       setCurrentUserId(session?.user?.id || null);
       setAuthChecked(true);
+      
+      // Fetch existing music if any
+      if (session?.user?.id) {
+        const { data: statusData } = await supabase
+          .from('user_status')
+          .select('music_track_name, music_artist, music_album_art')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (statusData?.music_track_name) {
+          setCurrentMusic({
+            name: statusData.music_track_name,
+            artist: statusData.music_artist || '',
+            albumArt: statusData.music_album_art || undefined,
+          });
+        }
+      }
     };
     if (open) {
       fetchCurrentUser();
@@ -380,6 +404,50 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
             </AnimatePresence>
           </div>
 
+          {/* Add Music Section */}
+          <div>
+            <label className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Music className="w-4 h-4 text-green-500" />
+              Add Music
+            </label>
+            {currentMusic ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20"
+              >
+                {currentMusic.albumArt && (
+                  <img 
+                    src={currentMusic.albumArt} 
+                    alt="Album" 
+                    className="w-12 h-12 rounded-lg object-cover"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{currentMusic.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{currentMusic.artist}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMusicDialogOpen(true)}
+                  className="shrink-0"
+                >
+                  Change
+                </Button>
+              </motion.div>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setMusicDialogOpen(true)}
+                className="w-full justify-start gap-2 h-12"
+              >
+                <Music className="w-4 h-4" />
+                Add a song to your status
+              </Button>
+            )}
+          </div>
+
           {/* Emoji Picker */}
           <div>
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
@@ -446,6 +514,31 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
           </Button>
         </div>
       </DialogContent>
+      
+      {/* Music Selection Dialog */}
+      <MusicStatusDialog 
+        open={musicDialogOpen} 
+        onOpenChange={(isOpen) => {
+          setMusicDialogOpen(isOpen);
+          // Refetch music when dialog closes
+          if (!isOpen && currentUserId) {
+            supabase
+              .from('user_status')
+              .select('music_track_name, music_artist, music_album_art')
+              .eq('user_id', currentUserId)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data?.music_track_name) {
+                  setCurrentMusic({
+                    name: data.music_track_name,
+                    artist: data.music_artist || '',
+                    albumArt: data.music_album_art || undefined,
+                  });
+                }
+              });
+          }
+        }} 
+      />
     </Dialog>
   );
 };
