@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, PlusSquare, Search, Video, MapPin, User } from "lucide-react";
+import { Home, Plus, Search, Video, MapPin, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,7 +97,7 @@ const BottomNav = () => {
             onClick={() => navigate("/create/reel")}
             className="flex items-center justify-center -mt-3"
           >
-            <PlusSquare className="w-10 h-10 text-white hover:text-primary transition-all" />
+            <Plus className="w-8 h-8 text-white hover:text-primary transition-all stroke-[2.5]" />
           </button>
 
           <button
