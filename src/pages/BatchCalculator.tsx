@@ -1235,7 +1235,8 @@ const BatchCalculator = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("Required ML (from partial bottles):", 15, yPos + 4.5);
+        const hasSharpBottles = sharpBottles.length > 0;
+        doc.text(hasSharpBottles ? "Required ML (from partial bottles):" : "Required ML:", 15, yPos + 4.5);
         yPos += 8;
         
         if (requiredMlItems.length > 0) {
@@ -1283,7 +1284,8 @@ const BatchCalculator = () => {
           }
         });
         
-        if (leftoverInBottlesItems.length > 0) {
+        // Only show "Leftover in Bottles" when there are full bottles used
+        if (hasSharpBottles && leftoverInBottlesItems.length > 0) {
           if (yPos > 230) {
             doc.addPage();
             yPos = 20;
@@ -1487,7 +1489,8 @@ const BatchCalculator = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("Overall Required ML (from partial bottles):", 15, yPos + 4.5);
+        const hasOverallSharpBottles = overallSharpBottles.length > 0;
+        doc.text(hasOverallSharpBottles ? "Overall Required ML (from partial bottles):" : "Overall Required ML:", 15, yPos + 4.5);
         yPos += 8;
         
         if (overallRequiredMlItems.length > 0) {
@@ -1536,7 +1539,8 @@ const BatchCalculator = () => {
           }
         });
         
-        if (overallLeftoverInBottlesItems.length > 0) {
+        // Only show "Overall Leftover in Bottles" when there are full bottles used
+        if (hasOverallSharpBottles && overallLeftoverInBottlesItems.length > 0) {
           if (yPos > 230) {
             doc.addPage();
             yPos = 20;
