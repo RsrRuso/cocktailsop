@@ -1223,23 +1223,23 @@ const BatchCalculator = () => {
         
         yPos += 6;
         
-        // ALWAYS show Required ML section
-        const reqEstimatedHeight = 20 + (requiredMlItems.length * 5.5);
-        if (yPos + reqEstimatedHeight > 270) {
-          doc.addPage();
-          yPos = 20;
-        }
-        
-        doc.setFillColor(...amber);
-        doc.rect(12, yPos, 186, 7, 'F');
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
+        // Only show Required ML section when there are full bottles used (extra ml beyond bottles)
         const hasSharpBottles = sharpBottles.length > 0;
-        doc.text(hasSharpBottles ? "Required ML (from partial bottles):" : "Required ML:", 15, yPos + 4.5);
-        yPos += 8;
-        
-        if (requiredMlItems.length > 0) {
+        if (hasSharpBottles && requiredMlItems.length > 0) {
+          const reqEstimatedHeight = 20 + (requiredMlItems.length * 5.5);
+          if (yPos + reqEstimatedHeight > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFillColor(...amber);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Required ML (from partial bottles):", 15, yPos + 4.5);
+          yPos += 8;
+          
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7);
           
@@ -1260,17 +1260,9 @@ const BatchCalculator = () => {
             
             yPos += 5.5;
           });
-        } else {
-          doc.setFillColor(249, 250, 251);
-          doc.rect(12, yPos, 186, 8, 'F');
-          doc.setFontSize(7);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 116, 139);
-          doc.text("No additional ML required for this batch", 105, yPos + 5, { align: 'center' });
-          yPos += 8;
+          
+          yPos += 6;
         }
-        
-        yPos += 6;
         
         // Calculate and show leftover in bottles for individual batch
         const leftoverInBottlesItems: { name: string; mlLeftover: number }[] = [];
@@ -1475,25 +1467,24 @@ const BatchCalculator = () => {
           yPos += 10;
         }
         
-        yPos += 6;
         
-        // ALWAYS show Overall Required ML section
-        const estimatedHeight = 20 + (overallRequiredMlItems.length * 6);
-        if (yPos + estimatedHeight > 270) {
-          doc.addPage();
-          yPos = 20;
-        }
-        
-        doc.setFillColor(...amber);
-        doc.rect(12, yPos, 186, 7, 'F');
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
+        // Only show Overall Required ML section when there are full bottles used
         const hasOverallSharpBottles = overallSharpBottles.length > 0;
-        doc.text(hasOverallSharpBottles ? "Overall Required ML (from partial bottles):" : "Overall Required ML:", 15, yPos + 4.5);
-        yPos += 8;
-        
-        if (overallRequiredMlItems.length > 0) {
+        if (hasOverallSharpBottles && overallRequiredMlItems.length > 0) {
+          const estimatedHeight = 20 + (overallRequiredMlItems.length * 6);
+          if (yPos + estimatedHeight > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFillColor(...amber);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Overall Required ML (from partial bottles):", 15, yPos + 4.5);
+          yPos += 8;
+          
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7);
           
@@ -1514,18 +1505,9 @@ const BatchCalculator = () => {
             
             yPos += 6;
           });
-        } else {
-          // Show message if no required ML
-          doc.setFillColor(249, 250, 251);
-          doc.rect(12, yPos, 186, 10, 'F');
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 116, 139);
-          doc.text("No additional ML required for this recipe production", 105, yPos + 6, { align: 'center' });
-          yPos += 10;
+          
+          yPos += 6;
         }
-        
-        yPos += 6;
         
         // Calculate and show overall leftover in bottles
         const overallLeftoverInBottlesItems: { name: string; mlLeftover: number }[] = [];
