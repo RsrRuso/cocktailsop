@@ -1440,7 +1440,7 @@ const POReceivedItems = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 sm:h-9 sm:w-9 hidden sm:flex"
+                className="h-8 w-8 sm:h-9 sm:w-9"
                 onClick={() => navigate('/procurement-pin-access')}
                 title="Staff PIN Access"
               >
@@ -1481,53 +1481,53 @@ const POReceivedItems = () => {
         )}
 
         {/* Compact Stats Row with Currency */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex-1 grid grid-cols-4 gap-1">
-            <Card className="p-1.5 flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          <div className="grid grid-cols-4 gap-1 flex-1">
+            <Card className="p-1.5 flex items-center gap-1">
               <FileText className="h-3 w-3 text-blue-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[9px] text-muted-foreground leading-none">POs</p>
+              <div>
+                <p className="text-[8px] text-muted-foreground leading-none">POs</p>
                 <p className="text-sm font-bold leading-tight">{poCompletionStats.total}</p>
               </div>
             </Card>
             <Card 
-              className="p-1.5 flex items-center gap-1.5 cursor-pointer hover:bg-accent/50 active:scale-95"
+              className="p-1.5 flex items-center gap-1 cursor-pointer hover:bg-accent/50 active:scale-95"
               onClick={() => poCompletionStats.completed > 0 && setShowCompletedPOsDialog(true)}
             >
               <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[9px] text-muted-foreground leading-none">Done</p>
+              <div>
+                <p className="text-[8px] text-muted-foreground leading-none">Done</p>
                 <p className="text-sm font-bold text-green-500 leading-tight">{poCompletionStats.completed}</p>
               </div>
             </Card>
             <Card 
-              className="p-1.5 flex items-center gap-1.5 cursor-pointer hover:bg-accent/50 active:scale-95"
+              className="p-1.5 flex items-center gap-1 cursor-pointer hover:bg-accent/50 active:scale-95"
               onClick={() => poCompletionStats.pending > 0 && setShowPendingPOsDialog(true)}
             >
               <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[9px] text-muted-foreground leading-none">Pending</p>
+              <div>
+                <p className="text-[8px] text-muted-foreground leading-none">Pending</p>
                 <p className="text-sm font-bold text-amber-500 leading-tight">{poCompletionStats.pending}</p>
               </div>
             </Card>
-            <Card className="p-1.5 flex items-center gap-1.5">
+            <Card className="p-1.5 flex items-center gap-1">
               <Coins className="h-3 w-3 text-green-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[9px] text-muted-foreground leading-none">Value</p>
-                <p className="text-xs font-bold leading-tight truncate">{formatCurrency(calculatedTotalValue)}</p>
+              <div>
+                <p className="text-[8px] text-muted-foreground leading-none">Value</p>
+                <p className="text-[10px] font-bold leading-tight text-green-500">{formatCurrency(calculatedTotalValue)}</p>
               </div>
             </Card>
           </div>
           <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
-            <SelectTrigger className="w-16 h-7 text-[10px] px-1.5">
+            <SelectTrigger className="w-[52px] h-7 text-[9px] px-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-background border z-50">
-              <SelectItem value="USD">$ USD</SelectItem>
-              <SelectItem value="EUR">€ EUR</SelectItem>
-              <SelectItem value="GBP">£ GBP</SelectItem>
-              <SelectItem value="AED">د.إ AED</SelectItem>
-              <SelectItem value="AUD">A$ AUD</SelectItem>
+              <SelectItem value="USD">$</SelectItem>
+              <SelectItem value="EUR">€</SelectItem>
+              <SelectItem value="GBP">£</SelectItem>
+              <SelectItem value="AED">د.إ</SelectItem>
+              <SelectItem value="AUD">A$</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1554,40 +1554,39 @@ const POReceivedItems = () => {
           </TabsList>
 
           {/* Recent Received Tab */}
-          <TabsContent value="recent" className="mt-2 space-y-1.5">
-            
+          <TabsContent value="recent" className="mt-2 space-y-2">
             {isLoadingRecent ? (
               <div className="text-center py-4 text-muted-foreground text-xs">Loading...</div>
             ) : recentReceived && recentReceived.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {recentReceived.map((record) => (
-                  <Card key={record.id} className="p-2">
+                  <Card key={record.id} className="p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="w-3 h-3 text-primary shrink-0" />
-                          <span className="font-medium text-xs truncate">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-primary shrink-0" />
+                          <span className="font-medium text-sm truncate">
                             {record.supplier_name || record.document_number || 'Delivery'}
                           </span>
                           <Badge 
                             variant="outline"
-                            className={`text-[8px] h-4 px-1 ${record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}`}
+                            className={`text-[10px] h-5 px-1.5 ${record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}`}
                           >
                             {record.status}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[9px] text-muted-foreground">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{format(new Date(record.received_date), 'MMM d')}</span>
                           <span className="font-semibold text-foreground">{formatCurrency(Number(record.total_value || 0))}</span>
-                          {record.received_by_name && <span className="text-green-500 truncate max-w-[80px]">{record.received_by_name}</span>}
+                          {record.received_by_name && <span className="text-green-500 truncate max-w-[100px]">{record.received_by_name}</span>}
                         </div>
                       </div>
-                      <div className="flex gap-0.5 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRecordContent(record)}>
-                          <Eye className="w-3.5 h-3.5" />
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowRecordContent(record)}>
+                          <Eye className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteReceivedRecord(record.id)}>
-                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => deleteReceivedRecord(record.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
@@ -1595,9 +1594,9 @@ const POReceivedItems = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                <Package className="h-6 w-6 mx-auto mb-1 opacity-50" />
-                <p className="text-xs">No received records yet</p>
+              <div className="text-center py-6 text-muted-foreground">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No received records yet</p>
               </div>
             )}
           </TabsContent>
@@ -1713,33 +1712,20 @@ const POReceivedItems = () => {
             {/* Aggregated Summary - Mobile Card List + Desktop Table */}
             <Card className="overflow-hidden">
               {isLoadingReceived ? (
-                <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                <div className="p-4 text-center text-muted-foreground text-xs">Loading...</div>
               ) : receivedSummary && receivedSummary.length > 0 ? (
                 <>
-                  {/* Mobile Card View */}
-                  <div className="sm:hidden divide-y divide-border">
+                  {/* Mobile Card View - Compact with scroll */}
+                  <div className="sm:hidden max-h-[50vh] overflow-y-auto divide-y divide-border">
                     {receivedSummary
                       .filter((item: any) => item.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map((item: any, index: number) => (
-                        <div key={index} className="p-3 space-y-1">
-                          <p className="font-medium text-sm truncate">{item.item_name}</p>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Times:</span>
-                              <span>{item.count || 1}x</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Qty:</span>
-                              <span className="font-bold text-primary">{item.total_qty?.toFixed(0)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Avg:</span>
-                              <span>{formatCurrency(item.avg_price || 0)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Total:</span>
-                              <span className="font-semibold text-green-600">{formatCurrency(item.total_price || 0)}</span>
-                            </div>
+                        <div key={index} className="px-2 py-1.5">
+                          <p className="font-medium text-xs truncate">{item.item_name}</p>
+                          <div className="flex justify-between items-center text-[10px] mt-0.5">
+                            <span className="text-muted-foreground">Times: <span className="text-foreground">{item.count || 1}x</span></span>
+                            <span className="text-muted-foreground">Qty: <span className="font-bold text-primary">{item.total_qty?.toFixed(0)}</span></span>
+                            <span className="text-muted-foreground">Total: <span className="font-semibold text-green-500">{formatCurrency(item.total_price || 0)}</span></span>
                           </div>
                         </div>
                       ))}
