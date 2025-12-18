@@ -354,23 +354,28 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
       
       // Fetch based on workspace type
       if (workspaceType === 'group') {
-        // Mixologist group - use batch_calculator_activity
+        // Mixologist group - fetch meaningful activities only
         const { data } = await supabase
           .from('batch_calculator_activity')
           .select('*')
           .eq('group_id', workspaceId)
+          .in('action_type', ['recipe_complete', 'batch_submit', 'recipe_edit', 'recipe_delete', 'qr_scan', 'print_action'])
           .order('created_at', { ascending: false })
           .limit(20);
         
-        activities = data || [];
+        // Filter out generic page_enter/tab_change activities and transform
+        activities = (data || []).map(a => ({
+          ...a,
+          metadata: a.metadata || {}
+        }));
 
-        // Also get batch productions for this group
+        // Get batch productions for this group
         const { data: productions } = await supabase
           .from('batch_productions')
           .select('*')
           .eq('group_id', workspaceId)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(15);
 
         // Convert productions to activity format
         if (productions) {
@@ -379,16 +384,56 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
             action_type: 'batch_submit',
             user_id: p.produced_by_user_id || p.user_id,
             created_at: p.created_at,
+            duration_seconds: 0,
             metadata: {
               batch_name: p.batch_name,
               target_serves: p.target_serves,
+              target_liters: p.target_liters,
               produced_by_name: p.produced_by_name
             }
           }));
           activities = [...activities, ...productionActivities];
         }
 
-        // Get recipes count for this specific group only
+        // Get recipes with user info for created/updated activities
+        const { data: recipes } = await supabase
+          .from('batch_recipes')
+          .select('id, recipe_name, user_id, created_at, updated_at')
+          .eq('group_id', workspaceId)
+          .order('created_at', { ascending: false })
+          .limit(15);
+
+        if (recipes) {
+          // Get profile names for recipe creators
+          const recipeUserIds = [...new Set(recipes.map(r => r.user_id).filter(Boolean))];
+          let recipeProfiles: Record<string, string> = {};
+          
+          if (recipeUserIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from('profiles')
+              .select('id, username, full_name')
+              .in('id', recipeUserIds);
+            
+            if (profilesData) {
+              profilesData.forEach(p => { recipeProfiles[p.id] = p.full_name || p.username || 'Unknown'; });
+            }
+          }
+
+          const recipeActivities = recipes.map(r => ({
+            id: `recipe-${r.id}`,
+            action_type: 'recipe_complete',
+            user_id: r.user_id,
+            created_at: r.created_at,
+            duration_seconds: 0,
+            metadata: {
+              recipe_name: r.recipe_name,
+              produced_by_name: recipeProfiles[r.user_id]
+            }
+          }));
+          activities = [...activities, ...recipeActivities];
+        }
+
+        // Get stats
         const { count: recipesCount } = await supabase
           .from('batch_recipes')
           .select('*', { count: 'exact', head: true })
@@ -399,10 +444,18 @@ export const WorkspaceActivityPanel = memo(({ workspaceId, workspaceType }: Work
           .select('*', { count: 'exact', head: true })
           .eq('group_id', workspaceId);
 
+        // Calculate total time spent from activity durations
+        const { data: timeData } = await supabase
+          .from('batch_calculator_activity')
+          .select('duration_seconds')
+          .eq('group_id', workspaceId);
+
+        const totalTime = (timeData || []).reduce((sum, a) => sum + (a.duration_seconds || 0), 0);
+
         setStats({
           totalRecipes: recipesCount || 0,
           totalBatches: batchesCount || 0,
-          totalTime: activities.reduce((sum, a) => sum + (a.duration_seconds || 0), 0)
+          totalTime
         });
       } else if (workspaceType === 'fifo') {
         // FIFO workspace - use fifo_activity_log
