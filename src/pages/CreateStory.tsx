@@ -24,11 +24,15 @@ const CreateStory = () => {
   const location = useLocation();
   const locationState = location.state as LocationState | null;
   
-  const [showSelection, setShowSelection] = useState(true);
+  // Check if we have preloaded media - if so, skip selection screen immediately
+  const hasPreloadedMedia = !!(locationState?.preloadedMedia && locationState?.openEditor);
+  
+  const [showSelection, setShowSelection] = useState(!hasPreloadedMedia);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(hasPreloadedMedia ? 0 : null);
   const [editedData, setEditedData] = useState<Record<number, any>>({});
+  const [isLoadingPreload, setIsLoadingPreload] = useState(hasPreloadedMedia);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadState, uploadMultiple } = usePowerfulUpload();
 
@@ -44,14 +48,18 @@ const CreateStory = () => {
           const file = new File([blob], name, { type });
           setSelectedMedia([file]);
           setPreviewUrls([dataUrl]);
-          setShowSelection(false);
-          setEditingIndex(0); // Open editor directly
+          setIsLoadingPreload(false);
+        })
+        .catch(() => {
+          // Fallback - just show the preview
+          setPreviewUrls([dataUrl]);
+          setIsLoadingPreload(false);
         });
       
       // Clear the state to prevent re-triggering
       window.history.replaceState({}, document.title);
     }
-  }, [locationState]);
+  }, []);
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -318,6 +326,18 @@ const CreateStory = () => {
       toast.error("Failed to create story. Please try again.");
     }
   };
+
+  // Show loading while preloaded media is being processed
+  if (isLoadingPreload) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Opening story editor...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (editingIndex !== null) {
     return (
