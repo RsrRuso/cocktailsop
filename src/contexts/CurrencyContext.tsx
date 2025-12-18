@@ -123,8 +123,8 @@ const detectUserCurrency = (): CurrencyInfo => {
     console.log('Currency detection error:', error);
   }
   
-  // Default to USD
-  return CURRENCIES.find(c => c.code === 'USD')!;
+  // Default to AED (UAE Dirham) for LAB Ops
+  return CURRENCIES.find(c => c.code === 'AED')!;
 };
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
