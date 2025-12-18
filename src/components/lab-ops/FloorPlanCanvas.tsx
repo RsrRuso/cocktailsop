@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutGrid, Save, X, Edit } from "lucide-react";
+import { LayoutGrid, Save, X, Edit, Trash2 } from "lucide-react";
 
 interface Table {
   id: string;
@@ -159,17 +159,21 @@ export function FloorPlanCanvas({
               size="sm" 
               className="flex-1"
               onClick={async () => {
-                await supabase
+                const { error } = await supabase
                   .from("lab_ops_tables")
                   .update({
                     name: editingTable.name,
                     capacity: editingTable.capacity,
                     allocation: editingTable.allocation,
                     shape: editingTable.shape,
-                    position_x: editingTable.position_x,
-                    position_y: editingTable.position_y
+                    position_x: Math.round(editingTable.position_x || 0),
+                    position_y: Math.round(editingTable.position_y || 0)
                   })
                   .eq("id", editingTable.id);
+                if (error) {
+                  toast({ title: "Error updating table", description: error.message, variant: "destructive" });
+                  return;
+                }
                 toast({ title: "Table saved" });
                 setEditingTableId(null);
               }}
@@ -178,13 +182,29 @@ export function FloorPlanCanvas({
             </Button>
             <Button 
               size="sm" 
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
-              onClick={() => setEditingTableId(null)}
+              variant="destructive"
+              onClick={async () => {
+                const { error } = await supabase.from("lab_ops_tables").delete().eq("id", editingTable.id);
+                if (error) {
+                  toast({ title: "Error deleting table", description: error.message, variant: "destructive" });
+                  return;
+                }
+                setTables(prev => prev.filter(t => t.id !== editingTable.id));
+                toast({ title: "Table deleted" });
+                setEditingTableId(null);
+              }}
             >
-              Close
+              <Trash2 className="h-3 w-3 mr-1" />Delete
             </Button>
           </div>
+          <Button 
+            size="sm" 
+            variant="outline"
+            className="w-full mt-2 border-white/20 text-white hover:bg-white/10"
+            onClick={() => setEditingTableId(null)}
+          >
+            Close
+          </Button>
         </div>
       </div>
     );

@@ -280,8 +280,8 @@ export default function TableManagement({ outletId }: { outletId: string }) {
         min_covers: editingTable.min_covers,
         is_reservable: editingTable.is_reservable,
         notes: editingTable.notes,
-        position_x: editingTable.position_x,
-        position_y: editingTable.position_y,
+        position_x: Math.round(editingTable.position_x || 0),
+        position_y: Math.round(editingTable.position_y || 0),
         width: editingTable.width,
         height: editingTable.height
       })
@@ -364,7 +364,10 @@ export default function TableManagement({ outletId }: { outletId: string }) {
   const saveTablePosition = async (table: Table) => {
     await supabase
       .from("lab_ops_tables")
-      .update({ position_x: table.position_x, position_y: table.position_y })
+      .update({ 
+        position_x: Math.round(table.position_x || 0), 
+        position_y: Math.round(table.position_y || 0) 
+      })
       .eq("id", table.id);
   };
 
