@@ -51,6 +51,7 @@ export const useSpaceMembers = () => {
 
   const fetchMembers = useCallback(
     async (spaceId: string, spaceType: SpaceType) => {
+      console.log('[useSpaceMembers] fetchMembers called:', spaceId, spaceType);
       setIsLoading(true);
       try {
         let rows: MemberRow[] = [];
@@ -58,12 +59,14 @@ export const useSpaceMembers = () => {
         switch (spaceType) {
           case 'workspace':
           case 'fifo': {
+            console.log('[useSpaceMembers] Fetching workspace_members for workspace_id:', spaceId);
             const { data, error } = await supabase
               .from('workspace_members')
               .select('id, user_id, role, joined_at')
               .eq('workspace_id', spaceId)
               .order('joined_at', { ascending: true });
 
+            console.log('[useSpaceMembers] workspace_members result:', { data, error });
             if (error) throw error;
             rows = (data || []) as MemberRow[];
             break;
