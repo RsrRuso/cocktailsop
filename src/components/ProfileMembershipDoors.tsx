@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserMemberships, Membership } from '@/hooks/useUserMemberships';
 import { useSpacePresence } from '@/hooks/useSpacePresence';
-import { DoorOpen, Users, Wifi, X } from 'lucide-react';
+import { DoorOpen, Users, Wifi, X, Activity } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useCachedProfiles } from '@/hooks/useCachedProfiles';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { WorkspaceActivityPanel } from '@/components/WorkspaceActivityPanel';
 
 interface ProfileMembershipDoorsProps {
   userId: string | null;
@@ -26,18 +28,18 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   const [onlineProfiles, setOnlineProfiles] = useState<any[]>([]);
 
   const handleDoorPress = async (membership: Membership) => {
+    // Always show the sheet with activity tracking
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
     
     if (onlineUsers.length > 0) {
-      // Fetch profiles for online users
       await fetchProfiles(onlineUsers.map(u => u.user_id));
       const profiles = onlineUsers.map(u => getProfile(u.user_id)).filter(Boolean);
       setOnlineProfiles(profiles);
-      setSelectedSpace(membership);
     } else {
-      // No one online, navigate directly
-      navigate(membership.route);
+      setOnlineProfiles([]);
     }
+    
+    setSelectedSpace(membership);
   };
 
   const handleGoToSpace = () => {
@@ -108,48 +110,81 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
         </div>
       </div>
 
-      {/* Online members sheet */}
+      {/* Space details sheet with activity */}
       <Sheet open={!!selectedSpace} onOpenChange={(open) => !open && setSelectedSpace(null)}>
-        <SheetContent side="bottom" className="rounded-t-xl">
-          <SheetHeader className="pb-4">
+        <SheetContent side="bottom" className="rounded-t-xl h-[70vh] flex flex-col">
+          <SheetHeader className="pb-2 flex-shrink-0">
             <SheetTitle className="flex items-center gap-2">
               <span className="text-xl">{selectedSpace?.icon}</span>
               {selectedSpace?.name}
-              <div className="flex items-center gap-1 ml-2 bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full text-xs font-medium">
-                <Wifi className="w-3 h-3" />
-                {onlineProfiles.length} online
-              </div>
+              {onlineProfiles.length > 0 && (
+                <div className="flex items-center gap-1 ml-2 bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <Wifi className="w-3 h-3" />
+                  {onlineProfiles.length} online
+                </div>
+              )}
             </SheetTitle>
           </SheetHeader>
 
-          <div className="space-y-3 max-h-60 overflow-y-auto">
-            {onlineProfiles.map((profile) => (
-              <div 
-                key={profile.id} 
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
-                onClick={() => navigate(`/user/${profile.id}`)}
-              >
-                <div className="relative">
-                  <OptimizedAvatar
-                    src={profile.avatar_url}
-                    alt={profile.username}
-                    fallback={profile.username?.[0] || '?'}
-                    className="w-10 h-10"
-                  />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm flex items-center gap-1">
-                    {profile.full_name || profile.username}
-                    {profile.is_verified && <VerifiedBadge size="xs" />}
-                  </p>
-                  <p className="text-xs text-muted-foreground">@{profile.username}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Tabs defaultValue="activity" className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+              <TabsTrigger value="activity" className="flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5" />
+                Activity
+              </TabsTrigger>
+              <TabsTrigger value="online" className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                Online ({onlineProfiles.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="flex gap-2 mt-4 pt-4 border-t">
+            <TabsContent value="activity" className="flex-1 overflow-y-auto mt-3">
+              {selectedSpace && (
+                <WorkspaceActivityPanel 
+                  workspaceId={selectedSpace.id} 
+                  workspaceType={selectedSpace.type}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="online" className="flex-1 overflow-y-auto mt-3">
+              {onlineProfiles.length > 0 ? (
+                <div className="space-y-2">
+                  {onlineProfiles.map((profile) => (
+                    <div 
+                      key={profile.id} 
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => navigate(`/user/${profile.id}`)}
+                    >
+                      <div className="relative">
+                        <OptimizedAvatar
+                          src={profile.avatar_url}
+                          alt={profile.username}
+                          fallback={profile.username?.[0] || '?'}
+                          className="w-10 h-10"
+                        />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm flex items-center gap-1">
+                          {profile.full_name || profile.username}
+                          {profile.is_verified && <VerifiedBadge size="xs" />}
+                        </p>
+                        <p className="text-xs text-muted-foreground">@{profile.username}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No one online right now</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex gap-2 pt-4 border-t flex-shrink-0">
             <Button variant="outline" className="flex-1" onClick={() => setSelectedSpace(null)}>
               <X className="w-4 h-4 mr-1.5" />
               Close
