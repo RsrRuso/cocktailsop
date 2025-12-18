@@ -596,239 +596,210 @@ const OpsTools = () => {
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
-
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-3 py-3 space-y-3">
         {/* Performance Monitor */}
         <PerformanceMonitor />
         
-        {/* Header with Stats */}
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-2">
-              Professional Operations Suite
+        {/* Compact Header */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent truncate">
+              Ops Suite
             </h1>
-            <p className="text-muted-foreground">
-              Comprehensive tools for beverage industry professionals
+            <p className="text-xs text-muted-foreground truncate">
+              Pro tools for beverage industry
             </p>
           </div>
-
-          {/* Quick Stats Dashboard */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center">
-                  <FileBarChart className="w-4 h-4 text-white" />
-                </div>
-                <p className="text-xs text-muted-foreground">Reports</p>
-              </div>
-              <p className="text-2xl font-bold">{tools.reports.length}</p>
+          
+          {/* Compact Stats Row */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/10">
+              <FileBarChart className="w-3 h-3 text-green-500" />
+              <span className="text-xs font-bold">{tools.reports.length}</span>
             </div>
-
-            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
-                  <Beaker className="w-4 h-4 text-white" />
-                </div>
-                <p className="text-xs text-muted-foreground">Mixing</p>
-              </div>
-              <p className="text-2xl font-bold">{tools.mixing.length}</p>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10">
+              <Beaker className="w-3 h-3 text-purple-500" />
+              <span className="text-xs font-bold">{tools.mixing.length}</span>
             </div>
-
-            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-600 to-amber-700 flex items-center justify-center">
-                  <Package className="w-4 h-4 text-white" />
-                </div>
-                <p className="text-xs text-muted-foreground">Inventory</p>
-              </div>
-              <p className="text-2xl font-bold">{tools.inventory.length}</p>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-500/10">
+              <Package className="w-3 h-3 text-orange-500" />
+              <span className="text-xs font-bold">{tools.inventory.length}</span>
             </div>
-
-            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-500 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <p className="text-xs text-muted-foreground">Management</p>
-              </div>
-              <p className="text-2xl font-bold">{tools.management.length}</p>
+            <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-500/10">
+              <TrendingUp className="w-3 h-3 text-indigo-500" />
+              <span className="text-xs font-bold">{tools.management.length}</span>
             </div>
           </div>
         </div>
 
         {/* Category Tabs */}
         <Tabs defaultValue="reports" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 glass h-auto p-1">
+          <TabsList className="grid w-full grid-cols-4 glass h-9 p-0.5">
             <TabsTrigger 
               value="reports"
-              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-xl py-3"
+              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-lg py-1.5 text-xs"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Reports
+              <Download className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
             <TabsTrigger 
               value="mixing"
-              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-xl py-3"
+              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-lg py-1.5 text-xs"
             >
-              <Beaker className="w-4 h-4 mr-2" />
-              Mixing
+              <Beaker className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Mixing</span>
             </TabsTrigger>
             <TabsTrigger 
               value="inventory"
-              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-xl py-3"
+              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-lg py-1.5 text-xs"
             >
-              <Package className="w-4 h-4 mr-2" />
-              Inventory
+              <Package className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Inventory</span>
             </TabsTrigger>
             <TabsTrigger 
               value="management"
-              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-xl py-3"
+              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-lg py-1.5 text-xs"
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Management
+              <TrendingUp className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Manage</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="reports" className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tools.reports.map((tool) => {
-                const Icon = tool.icon;
-                return (
-                  <button
-                    key={tool.name}
-                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
-                    className="glass-hover rounded-2xl p-6 text-left space-y-3 relative overflow-hidden group transition-all duration-300 hover:scale-[1.02]"
-                  >
-                    {tool.premium && (
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-xs font-bold text-white shadow-lg">
-                        PRO
+          <TabsContent value="reports" className="mt-3">
+            <div className="max-h-[calc(100vh-220px)] overflow-y-auto space-y-2 pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {tools.reports.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <button
+                      key={tool.name}
+                      onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                      className="glass-hover rounded-xl p-3 text-left relative overflow-hidden group transition-all"
+                    >
+                      {tool.premium && (
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-[9px] font-bold text-white">
+                          PRO
+                        </div>
+                      )}
+                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow mb-2`}>
+                        <Icon className="w-4 h-4 text-white" strokeWidth={1.5} />
                       </div>
-                    )}
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg mb-1">{tool.name}</h3>
-                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
-                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
-                    </div>
-                  </button>
-                );
-              })}
+                      <h3 className="font-semibold text-xs mb-0.5 truncate">{tool.name}</h3>
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">{tool.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="mixing" className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tools.mixing.map((tool) => {
-                const Icon = tool.icon;
-                return (
-                  <button
-                    key={tool.name}
-                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
-                    className="glass-hover rounded-2xl p-6 text-left space-y-3 relative overflow-hidden group transition-all duration-300 hover:scale-[1.02]"
-                  >
-                    {tool.premium && (
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-xs font-bold text-white shadow-lg">
-                        PRO
+          <TabsContent value="mixing" className="mt-3">
+            <div className="max-h-[calc(100vh-220px)] overflow-y-auto space-y-2 pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {tools.mixing.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <button
+                      key={tool.name}
+                      onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                      className="glass-hover rounded-xl p-3 text-left relative overflow-hidden group transition-all"
+                    >
+                      {tool.premium && (
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-[9px] font-bold text-white">
+                          PRO
+                        </div>
+                      )}
+                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow mb-2`}>
+                        <Icon className="w-4 h-4 text-white" strokeWidth={1.5} />
                       </div>
-                    )}
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg mb-1">{tool.name}</h3>
-                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
-                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
-                    </div>
-                  </button>
-                );
-              })}
+                      <h3 className="font-semibold text-xs mb-0.5 truncate">{tool.name}</h3>
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">{tool.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="inventory" className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tools.inventory.map((tool) => {
-                const Icon = tool.icon;
-                return (
-                  <button
-                    key={tool.name}
-                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
-                    className="glass-hover rounded-2xl p-6 text-left space-y-3 relative overflow-hidden group transition-all duration-300 hover:scale-[1.02]"
-                  >
-                    {tool.premium && (
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-xs font-bold text-white shadow-lg">
-                        PRO
+          <TabsContent value="inventory" className="mt-3">
+            <div className="max-h-[calc(100vh-220px)] overflow-y-auto space-y-2 pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {tools.inventory.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <button
+                      key={tool.name}
+                      onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                      className="glass-hover rounded-xl p-3 text-left relative overflow-hidden group transition-all"
+                    >
+                      {tool.premium && (
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-[9px] font-bold text-white">
+                          PRO
+                        </div>
+                      )}
+                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow mb-2`}>
+                        <Icon className="w-4 h-4 text-white" strokeWidth={1.5} />
                       </div>
-                    )}
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg mb-1">{tool.name}</h3>
-                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
-                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
-                    </div>
-                  </button>
-                );
-              })}
+                      <h3 className="font-semibold text-xs mb-0.5 truncate">{tool.name}</h3>
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">{tool.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="management" className="mt-6 space-y-4">
-            {/* Featured LAB Ops Card */}
-            {tools.management.filter((t: any) => t.featured).map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <button
-                  key={tool.name}
-                  onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
-                  className="w-full glass-hover rounded-2xl p-6 text-left space-y-4 relative overflow-hidden group transition-all duration-300 hover:scale-[1.01] border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-red-500/10"
-                >
-                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-red-600 text-xs font-bold text-white shadow-lg animate-pulse">
-                    FEATURED
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-xl mb-1">{tool.name}</h3>
-                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
-                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-            
-            {/* Regular Management Tools */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tools.management.filter((t: any) => !t.featured).map((tool) => {
+          <TabsContent value="management" className="mt-3">
+            <div className="max-h-[calc(100vh-220px)] overflow-y-auto space-y-2 pr-1">
+              {/* Featured LAB Ops Card - Compact */}
+              {tools.management.filter((t: any) => t.featured).map((tool) => {
                 const Icon = tool.icon;
                 return (
                   <button
                     key={tool.name}
                     onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
-                    className="glass-hover rounded-2xl p-6 text-left space-y-3 relative overflow-hidden group transition-all duration-300 hover:scale-[1.02]"
+                    className="w-full glass-hover rounded-xl p-3 text-left relative overflow-hidden border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-red-500/10"
                   >
-                    {tool.premium && (
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-xs font-bold text-white shadow-lg">
-                        PRO
-                      </div>
-                    )}
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
+                    <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-red-600 text-[9px] font-bold text-white">
+                      FEATURED
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg mb-1">{tool.name}</h3>
-                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
-                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow shrink-0`}>
+                        <Icon className="w-5 h-5 text-white" strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-sm">{tool.name}</h3>
+                        <p className="text-[10px] text-muted-foreground truncate">{tool.description}</p>
+                      </div>
                     </div>
                   </button>
                 );
               })}
+              
+              {/* Regular Management Tools */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {tools.management.filter((t: any) => !t.featured).map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <button
+                      key={tool.name}
+                      onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                      className="glass-hover rounded-xl p-3 text-left relative overflow-hidden group transition-all"
+                    >
+                      {tool.premium && (
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-[9px] font-bold text-white">
+                          PRO
+                        </div>
+                      )}
+                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow mb-2`}>
+                        <Icon className="w-4 h-4 text-white" strokeWidth={1.5} />
+                      </div>
+                      <h3 className="font-semibold text-xs mb-0.5 truncate">{tool.name}</h3>
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">{tool.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
