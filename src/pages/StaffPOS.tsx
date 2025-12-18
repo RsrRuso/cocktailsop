@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,7 @@ interface MenuItem {
 
 export default function StaffPOS() {
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -644,7 +646,7 @@ export default function StaffPOS() {
         }
       }
 
-      toast({ title: "Order closed!", description: `$${subtotal.toFixed(2)} recorded in sales` });
+      toast({ title: "Order closed!", description: `${formatPrice(subtotal)} recorded in sales` });
       setSelectedOrder(null);
       fetchOpenOrders(outlet.id);
       fetchTables(outlet.id);
@@ -1168,7 +1170,7 @@ export default function StaffPOS() {
                   {selectedOrder.lab_ops_order_items?.map((item: any) => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span>{item.qty}x {item.lab_ops_menu_items?.name || "Item"}</span>
-                      <span className="font-medium">${(item.unit_price * item.qty).toFixed(2)}</span>
+                      <span className="font-medium">{formatPrice(item.unit_price * item.qty)}</span>
                     </div>
                   ))}
                 </div>
@@ -1176,7 +1178,7 @@ export default function StaffPOS() {
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total</span>
-                    <span>${selectedOrder.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}</span>
+                    <span>{formatPrice(selectedOrder.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0) || 0)}</span>
                   </div>
                 </div>
 
@@ -1275,7 +1277,7 @@ export default function StaffPOS() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-lg">
-                                ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
+                                {formatPrice(order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0) || 0)}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {sentTime}
@@ -1356,11 +1358,11 @@ export default function StaffPOS() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-card rounded-lg p-2 text-center">
                           <p className="text-xs text-muted-foreground">Avg Order</p>
-                          <p className="text-lg font-bold text-primary">${avgOrderValue.toFixed(2)}</p>
+                          <p className="text-lg font-bold text-primary">{formatPrice(avgOrderValue)}</p>
                         </div>
                         <div className="bg-card rounded-lg p-2 text-center">
                           <p className="text-xs text-muted-foreground">Per Cover</p>
-                          <p className="text-lg font-bold text-green-500">${avgPerCover.toFixed(2)}</p>
+                          <p className="text-lg font-bold text-green-500">{formatPrice(avgPerCover)}</p>
                         </div>
                         <div className="bg-card rounded-lg p-2 text-center">
                           <p className="text-xs text-muted-foreground">Total Covers</p>
@@ -1379,7 +1381,7 @@ export default function StaffPOS() {
                           <div className="flex-1 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <DollarSign className="w-3 h-3 text-green-500" />
-                              <span className="text-sm font-semibold">${cashTotal.toFixed(0)}</span>
+                              <span className="text-sm font-semibold">{formatPrice(cashTotal)}</span>
                             </div>
                             <p className="text-[10px] text-muted-foreground">{cashOrders.length} cash</p>
                           </div>
@@ -1387,7 +1389,7 @@ export default function StaffPOS() {
                           <div className="flex-1 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <CreditCard className="w-3 h-3 text-blue-500" />
-                              <span className="text-sm font-semibold">${cardTotal.toFixed(0)}</span>
+                              <span className="text-sm font-semibold">{formatPrice(cardTotal)}</span>
                             </div>
                             <p className="text-[10px] text-muted-foreground">{cardOrders.length} card</p>
                           </div>
@@ -1406,7 +1408,7 @@ export default function StaffPOS() {
                               <p className="text-sm font-semibold">{topTable[0]}</p>
                             </div>
                           </div>
-                          <p className="text-sm font-bold text-primary">${topTable[1].toFixed(2)}</p>
+                          <p className="text-sm font-bold text-primary">{formatPrice(topTable[1])}</p>
                         </div>
                       )}
                     </div>
@@ -1465,7 +1467,7 @@ export default function StaffPOS() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-lg">${(order.total_amount || 0).toFixed(2)}</p>
+                                <p className="font-bold text-lg">{formatPrice(order.total_amount || 0)}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {new Date(order.closed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                                 </p>
@@ -1796,7 +1798,7 @@ export default function StaffPOS() {
               Bill ({orderItems.length})
               {orderItems.length > 0 && (
                 <span className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
-                  ${orderTotal.toFixed(0)}
+                  {formatPrice(orderTotal)}
                 </span>
               )}
             </button>
@@ -1866,7 +1868,7 @@ export default function StaffPOS() {
                         </span>
                         <div className="flex items-center justify-between w-full">
                           <span className={`text-xs font-semibold ${isInOrder ? 'text-amber-800' : 'text-primary'}`}>
-                            ${item.base_price.toFixed(2)}
+                            {formatPrice(item.base_price)}
                           </span>
                           {hasStock && (
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
@@ -1918,7 +1920,7 @@ export default function StaffPOS() {
                         <div className="flex items-center gap-2">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">${(item.price * item.qty).toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">{formatPrice(item.price * item.qty)}</p>
                           </div>
                           <div className="flex items-center gap-1">
                             <Button 
@@ -1964,7 +1966,7 @@ export default function StaffPOS() {
               <div className="p-2 border-t space-y-2">
                 <div className="flex justify-between text-base font-semibold">
                   <span>Total</span>
-                  <span>${orderTotal.toFixed(2)}</span>
+                  <span>{formatPrice(orderTotal)}</span>
                 </div>
                 <Button 
                   className="w-full h-11"

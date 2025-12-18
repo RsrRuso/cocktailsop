@@ -129,8 +129,8 @@ const detectUserCurrency = (): CurrencyInfo => {
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [currency, setCurrencyState] = useState<CurrencyInfo>(() => {
-    // Try to load from localStorage first
-    const saved = localStorage.getItem('labops-currency');
+    // Try to load from localStorage first (v2 key for new default)
+    const saved = localStorage.getItem('labops-currency-v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -138,13 +138,13 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
         if (found) return found;
       } catch {}
     }
-    // Detect from user region
+    // Detect from user region or default to AED
     return detectUserCurrency();
   });
 
   const setCurrency = (newCurrency: CurrencyInfo) => {
     setCurrencyState(newCurrency);
-    localStorage.setItem('labops-currency', JSON.stringify(newCurrency));
+    localStorage.setItem('labops-currency-v2', JSON.stringify(newCurrency));
   };
 
   const formatPrice = (amount: number): string => {
