@@ -1,12 +1,13 @@
-import { RefObject, useRef, useState } from "react";
+import { RefObject, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutGrid, Save, X, Edit, Trash2 } from "lucide-react";
+import { LayoutGrid, Save, X, Edit, Trash2, Minus, Plus } from "lucide-react";
 
 interface Table {
   id: string;
@@ -44,6 +45,16 @@ interface FloorPlanCanvasProps {
   SHAPES: { value: string; label: string }[];
 }
 
+// Size presets for quick sizing
+const SIZE_PRESETS = [
+  { label: "Small", width: 60, height: 60 },
+  { label: "Medium", width: 90, height: 90 },
+  { label: "Large", width: 120, height: 120 },
+  { label: "Wide", width: 160, height: 80 },
+  { label: "Long", width: 80, height: 160 },
+  { label: "Bar", width: 45, height: 130 },
+];
+
 export function FloorPlanCanvas({
   canvasRef,
   floorPlanTables,
@@ -63,19 +74,22 @@ export function FloorPlanCanvas({
   const isMobile = useIsMobile();
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
   
-  // Mobile: smaller tables for more canvas space
-  const baseSize = isMobile ? 50 : 70;
-  const minTableSize = isMobile ? 35 : 50;
+  // Base sizes - larger for better visibility
+  const baseSize = isMobile ? 80 : 100;
+  const minTableSize = isMobile ? 45 : 50;
 
   const editingTable = tables.find(t => t.id === editingTableId);
 
   const EditTablePanel = () => {
     if (!editingTable) return null;
     
+    const currentWidth = editingTable.width || baseSize;
+    const currentHeight = editingTable.height || baseSize;
+    
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/10 backdrop-blur-sm" onClick={() => setEditingTableId(null)}>
         <div
-          className="w-full max-w-xs bg-background/10 backdrop-blur-xl rounded-2xl p-4 space-y-3 border border-border/20"
+          className="w-full max-w-sm bg-background/10 backdrop-blur-xl rounded-2xl p-4 space-y-4 border border-border/20 max-h-[85vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-2">
@@ -89,18 +103,37 @@ export function FloorPlanCanvas({
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <div>
-            <Label className="text-xs text-white/70">Name</Label>
-            <Input 
-              value={editingTable.name}
-              onChange={(e) => {
-                setTables(prev => prev.map(t => 
-                  t.id === editingTable.id ? { ...t, name: e.target.value } : t
-                ));
-              }}
-              className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/40"
-            />
+          
+          {/* Name & Table Number */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-white/70">Name</Label>
+              <Input 
+                value={editingTable.name}
+                onChange={(e) => {
+                  setTables(prev => prev.map(t => 
+                    t.id === editingTable.id ? { ...t, name: e.target.value } : t
+                  ));
+                }}
+                className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-white/70">Table #</Label>
+              <Input 
+                type="number"
+                value={editingTable.table_number || ""}
+                onChange={(e) => {
+                  setTables(prev => prev.map(t => 
+                    t.id === editingTable.id ? { ...t, table_number: parseInt(e.target.value) || null } : t
+                  ));
+                }}
+                className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              />
+            </div>
           </div>
+          
+          {/* Capacity */}
           <div>
             <Label className="text-xs text-white/70">Capacity</Label>
             <Input 
@@ -114,46 +147,182 @@ export function FloorPlanCanvas({
               className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/40"
             />
           </div>
+          
+          {/* Allocation & Shape */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-white/70">Allocation</Label>
+              <Select 
+                value={editingTable.allocation || "indoor"} 
+                onValueChange={(v) => {
+                  setTables(prev => prev.map(t => 
+                    t.id === editingTable.id ? { ...t, allocation: v } : t
+                  ));
+                }}
+              >
+                <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALLOCATIONS.map(a => (
+                    <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-white/70">Shape</Label>
+              <Select 
+                value={editingTable.shape || "square"} 
+                onValueChange={(v) => {
+                  setTables(prev => prev.map(t => 
+                    t.id === editingTable.id ? { ...t, shape: v } : t
+                  ));
+                }}
+              >
+                <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SHAPES.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Size Presets */}
           <div>
-            <Label className="text-xs text-white/70">Allocation</Label>
-            <Select 
-              value={editingTable.allocation || "indoor"} 
-              onValueChange={(v) => {
+            <Label className="text-xs text-white/70 mb-2 block">Quick Size</Label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {SIZE_PRESETS.map((preset) => (
+                <Button
+                  key={preset.label}
+                  variant="outline"
+                  size="sm"
+                  className={`h-7 text-xs border-white/20 ${
+                    currentWidth === preset.width && currentHeight === preset.height
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-white/5 text-white/80 hover:bg-white/10"
+                  }`}
+                  onClick={() => {
+                    setTables(prev => prev.map(t => 
+                      t.id === editingTable.id ? { ...t, width: preset.width, height: preset.height } : t
+                    ));
+                  }}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Custom Width */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-white/70">Width: {currentWidth}px</Label>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/10"
+                  onClick={() => {
+                    setTables(prev => prev.map(t => 
+                      t.id === editingTable.id ? { ...t, width: Math.max(40, currentWidth - 10) } : t
+                    ));
+                  }}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/10"
+                  onClick={() => {
+                    setTables(prev => prev.map(t => 
+                      t.id === editingTable.id ? { ...t, width: Math.min(200, currentWidth + 10) } : t
+                    ));
+                  }}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <Slider
+              value={[currentWidth]}
+              min={40}
+              max={200}
+              step={5}
+              onValueChange={([val]) => {
                 setTables(prev => prev.map(t => 
-                  t.id === editingTable.id ? { ...t, allocation: v } : t
+                  t.id === editingTable.id ? { ...t, width: val } : t
                 ));
               }}
-            >
-              <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ALLOCATIONS.map(a => (
-                  <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="w-full"
+            />
           </div>
+          
+          {/* Custom Height */}
           <div>
-            <Label className="text-xs text-white/70">Shape</Label>
-            <Select 
-              value={editingTable.shape || "square"} 
-              onValueChange={(v) => {
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-white/70">Height: {currentHeight}px</Label>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/10"
+                  onClick={() => {
+                    setTables(prev => prev.map(t => 
+                      t.id === editingTable.id ? { ...t, height: Math.max(40, currentHeight - 10) } : t
+                    ));
+                  }}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/10"
+                  onClick={() => {
+                    setTables(prev => prev.map(t => 
+                      t.id === editingTable.id ? { ...t, height: Math.min(200, currentHeight + 10) } : t
+                    ));
+                  }}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <Slider
+              value={[currentHeight]}
+              min={40}
+              max={200}
+              step={5}
+              onValueChange={([val]) => {
                 setTables(prev => prev.map(t => 
-                  t.id === editingTable.id ? { ...t, shape: v } : t
+                  t.id === editingTable.id ? { ...t, height: val } : t
                 ));
               }}
-            >
-              <SelectTrigger className="h-8 text-sm bg-white/10 border-white/20 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SHAPES.map(s => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="w-full"
+            />
           </div>
+          
+          {/* Preview */}
+          <div className="flex justify-center py-2">
+            <div 
+              className="bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium"
+              style={{
+                width: Math.min(currentWidth, 100),
+                height: Math.min(currentHeight, 100),
+                borderRadius: editingTable.shape === "round" ? "50%" : editingTable.shape === "booth" ? "12px" : "6px",
+              }}
+            >
+              Preview
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
           <div className="flex gap-2 pt-2">
             <Button 
               size="sm" 
@@ -163,9 +332,12 @@ export function FloorPlanCanvas({
                   .from("lab_ops_tables")
                   .update({
                     name: editingTable.name,
+                    table_number: editingTable.table_number,
                     capacity: editingTable.capacity,
                     allocation: editingTable.allocation,
                     shape: editingTable.shape,
+                    width: editingTable.width,
+                    height: editingTable.height,
                     position_x: Math.round(editingTable.position_x || 0),
                     position_y: Math.round(editingTable.position_y || 0)
                   })
@@ -184,7 +356,6 @@ export function FloorPlanCanvas({
               size="sm" 
               variant="destructive"
               onClick={async () => {
-                // Try hard delete first; FK violation falls back to archive
                 const { error } = await supabase.from("lab_ops_tables").delete().eq("id", editingTable.id);
                 if (error) {
                   const { error: archiveErr } = await supabase
@@ -204,14 +375,6 @@ export function FloorPlanCanvas({
               <Trash2 className="h-3 w-3 mr-1" />Delete
             </Button>
           </div>
-          <Button 
-            size="sm" 
-            variant="outline"
-            className="w-full mt-2 border-white/20 text-white hover:bg-white/10"
-            onClick={() => setEditingTableId(null)}
-          >
-            Close
-          </Button>
         </div>
       </div>
     );
@@ -219,20 +382,22 @@ export function FloorPlanCanvas({
 
   return (
     <div className="flex flex-col">
-      {/* Canvas Area - Full Width */}
+      {/* Canvas Area - Larger Drawing Space */}
       <div className="flex-1 p-2 md:p-4">
         <div 
           ref={canvasRef}
-          className={`relative w-full ${isMobile ? "h-[75vh] min-h-[450px]" : "h-[70vh] min-h-[600px]"} bg-gradient-to-br from-muted/20 to-muted/40 rounded-xl border-2 overflow-hidden shadow-inner transition-all duration-150 ${
+          className={`relative w-full ${isMobile ? "h-[85vh] min-h-[550px]" : "h-[80vh] min-h-[700px]"} bg-gradient-to-br from-muted/20 to-muted/40 rounded-xl border-2 overflow-auto shadow-inner transition-all duration-150 ${
             draggingTable ? "border-primary/50 ring-2 ring-primary/30" : "border-muted-foreground/30"
           }`}
           onMouseMove={(e) => {
             if (!draggingTable || !canvasRef.current) return;
             const rect = canvasRef.current.getBoundingClientRect();
-            const x = e.clientX - rect.left - dragOffset.x;
-            const y = e.clientY - rect.top - dragOffset.y;
-            const clampedX = Math.max(0, Math.min(x, rect.width - minTableSize));
-            const clampedY = Math.max(0, Math.min(y, rect.height - minTableSize));
+            const scrollLeft = canvasRef.current.scrollLeft;
+            const scrollTop = canvasRef.current.scrollTop;
+            const x = e.clientX - rect.left + scrollLeft - dragOffset.x;
+            const y = e.clientY - rect.top + scrollTop - dragOffset.y;
+            const clampedX = Math.max(0, x);
+            const clampedY = Math.max(0, y);
             handleTableDrag(draggingTable, clampedX, clampedY);
           }}
           onMouseUp={() => {
@@ -258,10 +423,12 @@ export function FloorPlanCanvas({
             e.preventDefault();
             const touch = e.touches[0];
             const rect = canvasRef.current.getBoundingClientRect();
-            const x = touch.clientX - rect.left - dragOffset.x;
-            const y = touch.clientY - rect.top - dragOffset.y;
-            const clampedX = Math.max(0, Math.min(x, rect.width - minTableSize));
-            const clampedY = Math.max(0, Math.min(y, rect.height - minTableSize));
+            const scrollLeft = canvasRef.current.scrollLeft;
+            const scrollTop = canvasRef.current.scrollTop;
+            const x = touch.clientX - rect.left + scrollLeft - dragOffset.x;
+            const y = touch.clientY - rect.top + scrollTop - dragOffset.y;
+            const clampedX = Math.max(0, x);
+            const clampedY = Math.max(0, y);
             handleTableDrag(draggingTable, clampedX, clampedY);
           }}
           onTouchEnd={() => {
@@ -275,10 +442,12 @@ export function FloorPlanCanvas({
           }}
           onClick={() => setSelectedTableForMove(null)}
         >
-          {/* Grid Background */}
+          {/* Grid Background - Larger scrollable area */}
           <div 
-            className="absolute inset-0 select-none" 
+            className="absolute select-none" 
             style={{ 
+              width: isMobile ? '1200px' : '1800px',
+              height: isMobile ? '900px' : '1200px',
               backgroundImage: `
                 linear-gradient(to right, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px),
                 linear-gradient(to bottom, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)
@@ -290,8 +459,8 @@ export function FloorPlanCanvas({
             {floorPlanTables.map((table) => {
               const x = table.position_x ?? (50 + Math.random() * 200);
               const y = table.position_y ?? (50 + Math.random() * 200);
-              const width = table.width || (table.shape === "rectangle" ? baseSize * 1.4 : table.shape === "bar" ? baseSize * 0.5 : baseSize);
-              const height = table.height || (table.shape === "rectangle" ? baseSize * 0.7 : table.shape === "bar" ? baseSize * 1.2 : baseSize);
+              const width = table.width || baseSize;
+              const height = table.height || baseSize;
               
               const allocationColors: Record<string, string> = {
                 indoor: "from-blue-500 to-blue-600",
@@ -310,17 +479,17 @@ export function FloorPlanCanvas({
                   key={table.id}
                   className={`absolute select-none touch-none bg-gradient-to-br ${gradientColor} ${
                     isDragging 
-                      ? "cursor-grabbing scale-110 z-30 shadow-2xl ring-4 ring-white/80" 
+                      ? "cursor-grabbing scale-105 z-30 shadow-2xl ring-4 ring-white/80" 
                       : isSelected 
-                        ? "cursor-grab ring-4 ring-white ring-offset-2 ring-offset-background scale-105 z-20 shadow-2xl" 
-                        : "cursor-grab hover:scale-105 hover:shadow-xl z-10"
+                        ? "cursor-grab ring-4 ring-white ring-offset-2 ring-offset-background scale-[1.02] z-20 shadow-2xl" 
+                        : "cursor-grab hover:scale-[1.02] hover:shadow-xl z-10"
                   } ${table.status === "seated" ? "opacity-70" : ""}`}
                   style={{
                     left: x,
                     top: y,
                     width,
                     height,
-                    borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "12px" : "6px",
+                    borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "16px" : "8px",
                     boxShadow: isDragging 
                       ? "0 25px 50px rgba(0,0,0,0.4)" 
                       : isSelected 
@@ -357,24 +526,35 @@ export function FloorPlanCanvas({
                     }
                   }}
                 >
-                  <div className={`absolute inset-0 flex flex-col items-center justify-center text-white font-bold drop-shadow-md pointer-events-none ${isMobile ? "text-[10px]" : "text-sm"}`}>
-                    <span className={isMobile ? "text-[10px] leading-tight" : "text-sm"}>{table.name}</span>
-                    <span className={`opacity-80 ${isMobile ? "text-[8px]" : "text-xs"}`}>{table.capacity}</span>
+                  {/* Table Number Badge - TOP, Large & Prominent */}
+                  {table.table_number && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black font-bold text-sm px-2.5 py-0.5 rounded-full shadow-lg z-10 min-w-[32px] text-center border-2 border-black/10">
+                      #{table.table_number}
+                    </div>
+                  )}
+                  
+                  {/* Table Content */}
+                  <div className={`absolute inset-0 flex flex-col items-center justify-center text-white font-bold drop-shadow-md pointer-events-none ${
+                    width < 70 ? "text-[9px]" : width < 100 ? "text-xs" : "text-sm"
+                  }`}>
+                    <span className="leading-tight text-center px-1 truncate max-w-full">{table.name}</span>
+                    <span className={`opacity-80 ${width < 70 ? "text-[8px]" : "text-xs"}`}>
+                      {table.capacity} pax
+                    </span>
                   </div>
                   
                   {/* Edit Button - Only shows when selected */}
                   {isSelected && !isDragging && (
                     <button
                       type="button"
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-background/80 backdrop-blur rounded-full shadow-lg flex items-center justify-center z-40 border border-border/30 hover:bg-background hover:text-foreground transition-colors"
+                      className="absolute -top-2 -right-2 w-7 h-7 bg-background/90 backdrop-blur rounded-full shadow-lg flex items-center justify-center z-40 border border-border/30 hover:bg-background hover:text-foreground transition-colors"
                       onPointerUp={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("[FloorPlanCanvas] edit open", table.id);
                         setEditingTableId(table.id);
                       }}
                     >
-                      <Edit className="h-3 w-3" />
+                      <Edit className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
@@ -411,9 +591,9 @@ export function FloorPlanCanvas({
                 private: "bg-pink-500"
               };
               return (
-                <div key={alloc.value} className="flex items-center gap-1 shrink-0">
-                  <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${colors[alloc.value] || "bg-gray-500"}`} />
-                  <span className="text-[10px] md:text-xs text-muted-foreground">{alloc.label}</span>
+                <div key={alloc.value} className="flex items-center gap-1 text-xs whitespace-nowrap">
+                  <span className={`w-2.5 h-2.5 rounded-full ${colors[alloc.value] || "bg-primary"}`}></span>
+                  <span className="text-muted-foreground">{alloc.label}</span>
                 </div>
               );
             })}
@@ -421,8 +601,8 @@ export function FloorPlanCanvas({
         </div>
       </div>
       
-      {/* Transparent Edit Panel */}
-      {editingTableId && <EditTablePanel />}
+      {/* Edit Panel */}
+      <EditTablePanel />
     </div>
   );
 }
