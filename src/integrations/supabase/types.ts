@@ -14271,6 +14271,7 @@ export type Database = {
           invited_by: string | null
           joined_at: string | null
           permissions: Json | null
+          pin_code: string | null
           role: string
           user_id: string
           workspace_id: string
@@ -14280,6 +14281,7 @@ export type Database = {
           invited_by?: string | null
           joined_at?: string | null
           permissions?: Json | null
+          pin_code?: string | null
           role?: string
           user_id: string
           workspace_id: string
@@ -14289,6 +14291,7 @@ export type Database = {
           invited_by?: string | null
           joined_at?: string | null
           permissions?: Json | null
+          pin_code?: string | null
           role?: string
           user_id?: string
           workspace_id?: string
@@ -14655,6 +14658,18 @@ export type Database = {
           member_name: string
           role: string
           user_id: string
+        }[]
+      }
+      verify_workspace_member_pin: {
+        Args: { p_pin_code: string; p_workspace_id: string }
+        Returns: {
+          id: string
+          member_name: string
+          role: string
+          user_id: string
+          workspace_id: string
+          workspace_name: string
+          workspace_type: string
         }[]
       }
     }
