@@ -14548,6 +14548,10 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      is_mixologist_group_owner: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_procurement_workspace_member: {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: boolean
