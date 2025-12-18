@@ -170,17 +170,43 @@ const Reels = () => {
       profiles: profiles?.find(p => p.id === reel.user_id) || null
     }));
 
-    setReels(reelsWithProfiles);
+    // Hydrate missing music_tracks by matching music_url -> music_tracks.original_url
+    let finalReels: any[] = reelsWithProfiles;
+    const missingMusicUrls = Array.from(
+      new Set(
+        reelsWithProfiles
+          .filter(r => !r.music_tracks && r.music_url)
+          .map(r => r.music_url)
+      )
+    ) as string[];
+
+    if (missingMusicUrls.length > 0) {
+      const { data: tracks } = await supabase
+        .from('music_tracks')
+        .select('title, artist, preview_url, original_url, profiles:uploaded_by(username)')
+        .in('original_url', missingMusicUrls);
+
+      const byUrl = new Map((tracks || []).map((t: any) => [t.original_url, t]));
+
+      finalReels = reelsWithProfiles.map((r: any) => {
+        if (r.music_tracks) return r;
+        if (!r.music_url) return r;
+        const found = byUrl.get(r.music_url);
+        return found ? { ...r, music_tracks: found } : r;
+      });
+    }
+
+    setReels(finalReels as any);
 
     // Default to muted for newly loaded reels (prevents autoplay failures on mobile)
     setMutedVideos((prev) => {
       const next = new Set(prev);
-      reelsWithProfiles.forEach((r) => {
+      finalReels.forEach((r: any) => {
         if (!next.has(r.id)) next.add(r.id);
       });
       // cleanup removed reels
       Array.from(next).forEach((id) => {
-        if (!reelsWithProfiles.some((r) => r.id === id)) next.delete(id);
+        if (!finalReels.some((r: any) => r.id === id)) next.delete(id);
       });
       return next;
     });
