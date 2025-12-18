@@ -34,22 +34,26 @@ export const useSpacePresence = (
       channel
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
-          const users: OnlineUser[] = [];
+          const userMap = new Map<string, OnlineUser>();
           
+          // Deduplicate by user_id - keep the most recent online_at
           Object.values(state).forEach((presences: any) => {
             presences.forEach((presence: any) => {
               if (presence.user_id) {
-                users.push({
-                  user_id: presence.user_id,
-                  online_at: presence.online_at,
-                });
+                const existing = userMap.get(presence.user_id);
+                if (!existing || new Date(presence.online_at) > new Date(existing.online_at)) {
+                  userMap.set(presence.user_id, {
+                    user_id: presence.user_id,
+                    online_at: presence.online_at,
+                  });
+                }
               }
             });
           });
 
           setOnlineUsers(prev => ({
             ...prev,
-            [`${space.type}-${space.id}`]: users,
+            [`${space.type}-${space.id}`]: Array.from(userMap.values()),
           }));
         })
         .subscribe(async (status) => {
@@ -111,21 +115,26 @@ export const usePlatformPresence = (userId: string | null) => {
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
-        const users: OnlineUser[] = [];
+        const userMap = new Map<string, OnlineUser>();
         
+        // Deduplicate by user_id - keep the most recent online_at
         Object.values(state).forEach((presences: any) => {
           presences.forEach((presence: any) => {
             if (presence.user_id) {
-              users.push({
-                user_id: presence.user_id,
-                online_at: presence.online_at,
-              });
+              const existing = userMap.get(presence.user_id);
+              if (!existing || new Date(presence.online_at) > new Date(existing.online_at)) {
+                userMap.set(presence.user_id, {
+                  user_id: presence.user_id,
+                  online_at: presence.online_at,
+                });
+              }
             }
           });
         });
 
-        setOnlineUsers(users);
-        setIsOnline(users.some(u => u.user_id === userId));
+        const uniqueUsers = Array.from(userMap.values());
+        setOnlineUsers(uniqueUsers);
+        setIsOnline(uniqueUsers.some(u => u.user_id === userId));
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
