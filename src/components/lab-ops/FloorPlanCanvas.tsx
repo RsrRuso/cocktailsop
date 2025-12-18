@@ -73,9 +73,9 @@ export function FloorPlanCanvas({
     if (!editingTable) return null;
     
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setEditingTableId(null)}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/10 backdrop-blur-sm" onClick={() => setEditingTableId(null)}>
         <div 
-          className="w-full max-w-xs bg-black/60 backdrop-blur-xl rounded-2xl p-4 space-y-3 border border-white/10"
+          className="w-full max-w-xs bg-background/10 backdrop-blur-xl rounded-2xl p-4 space-y-3 border border-border/20"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-2">
