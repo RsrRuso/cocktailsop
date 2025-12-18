@@ -9,6 +9,7 @@ export interface Membership {
   route: string;
   icon: string;
   color: string;
+  memberCount: number;
 }
 
 export const useUserMemberships = (userId: string | null) => {
@@ -34,8 +35,14 @@ export const useUserMemberships = (userId: string | null) => {
           .eq('user_id', userId);
 
         if (workspaces) {
-          workspaces.forEach((w: any) => {
+          for (const w of workspaces as any[]) {
             if (w.workspaces) {
+              // Get member count
+              const { count } = await supabase
+                .from('workspace_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('workspace_id', w.workspace_id);
+
               allMemberships.push({
                 id: w.workspace_id,
                 type: 'workspace',
@@ -44,9 +51,10 @@ export const useUserMemberships = (userId: string | null) => {
                 route: '/store-management',
                 icon: '🏪',
                 color: 'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
+                memberCount: count || 0,
               });
             }
-          });
+          }
         }
 
         // Fetch mixologist group memberships
@@ -56,8 +64,13 @@ export const useUserMemberships = (userId: string | null) => {
           .eq('user_id', userId);
 
         if (groups) {
-          groups.forEach((g: any) => {
+          for (const g of groups as any[]) {
             if (g.mixologist_groups) {
+              const { count } = await supabase
+                .from('mixologist_group_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('group_id', g.group_id);
+
               allMemberships.push({
                 id: g.group_id,
                 type: 'group',
@@ -66,9 +79,10 @@ export const useUserMemberships = (userId: string | null) => {
                 route: '/batch-calculator',
                 icon: '🍸',
                 color: 'from-amber-500/20 to-amber-600/20 border-amber-500/30',
+                memberCount: count || 0,
               });
             }
-          });
+          }
         }
 
         // Fetch team memberships
@@ -78,8 +92,13 @@ export const useUserMemberships = (userId: string | null) => {
           .eq('user_id', userId);
 
         if (teams) {
-          teams.forEach((t: any) => {
+          for (const t of teams as any[]) {
             if (t.teams) {
+              const { count } = await supabase
+                .from('team_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('team_id', t.team_id);
+
               allMemberships.push({
                 id: t.team_id,
                 type: 'team',
@@ -88,9 +107,10 @@ export const useUserMemberships = (userId: string | null) => {
                 route: '/task-manager',
                 icon: '👥',
                 color: 'from-blue-500/20 to-blue-600/20 border-blue-500/30',
+                memberCount: count || 0,
               });
             }
-          });
+          }
         }
 
         // Fetch procurement workspace memberships
@@ -100,8 +120,13 @@ export const useUserMemberships = (userId: string | null) => {
           .eq('user_id', userId);
 
         if (procurement) {
-          procurement.forEach((p: any) => {
+          for (const p of procurement as any[]) {
             if (p.procurement_workspaces) {
+              const { count } = await supabase
+                .from('procurement_workspace_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('workspace_id', p.workspace_id);
+
               allMemberships.push({
                 id: p.workspace_id,
                 type: 'procurement',
@@ -110,9 +135,10 @@ export const useUserMemberships = (userId: string | null) => {
                 route: '/purchase-orders',
                 icon: '📦',
                 color: 'from-violet-500/20 to-violet-600/20 border-violet-500/30',
+                memberCount: count || 0,
               });
             }
-          });
+          }
         }
 
         setMemberships(allMemberships);
