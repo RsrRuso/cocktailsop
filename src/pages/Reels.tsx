@@ -184,6 +184,7 @@ const Reels = () => {
       });
       return next;
     });
+  };
 
   // Use reelEngagement for like/unlike
   const handleLikeReel = useCallback((reelId: string) => {
