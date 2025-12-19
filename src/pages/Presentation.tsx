@@ -27,15 +27,15 @@ const Presentation = () => {
     {
       id: 0,
       title: "My Spaces",
-      subtitle: "The Collaboration Hub for Hospitality Teams",
+      subtitle: "Work Together, Win Together",
       icon: <div className="text-6xl">🚪</div>,
       content: (
         <div className="text-center space-y-6">
           <p className="text-lg font-medium text-foreground">
-            Stop working in silos. Start working together.
+            Your team. Your data. All in one place.
           </p>
           <p className="text-sm text-muted-foreground">
-            One unified platform where teams share inventory, recipes, orders, and compliance data in real-time.
+            Share stock, recipes, orders, and food safety logs with your whole team — no more spreadsheets, no more confusion.
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-8">
             {[
@@ -61,251 +61,251 @@ const Presentation = () => {
         </div>
       )
     },
-    // Store Management - Value Proposition
+    // Store Management
     {
       id: 1,
       title: "Store Management",
-      subtitle: "Shared Inventory Control",
+      subtitle: "Everyone Sees the Stock",
       icon: <Store className="w-12 h-12 text-emerald-500" />,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
             <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4" /> The Problem
+              <AlertTriangle className="w-4 h-4" /> Without This
             </h3>
             <p className="mt-2 text-xs text-muted-foreground">
-              When one person owns the inventory data, the whole team is blind. Staff can't check stock, managers can't see what's happening, and when that person leaves—all the data goes with them.
+              Only one person knows what's in stock. Nobody else can check. When they're busy or leave, you're stuck.
             </p>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
             <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <Lightbulb className="w-4 h-4" /> Our Solution
+              <Lightbulb className="w-4 h-4" /> With My Spaces
             </h3>
             <p className="mt-2 text-xs">
-              <strong>Team-owned inventory.</strong> Everyone who needs access gets it—with the right permissions. Bartenders see bar stock, managers see costs, owners see everything. Real-time sync means no more "I didn't know we were out."
+              <strong>Everyone on the team can see stock levels.</strong> Give each person the right access — bartenders see bar items, managers see costs. Updates happen live.
             </p>
           </Card>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { stat: "100%", label: "Team visibility" },
-              { stat: "Zero", label: "Data loss risk" },
-              { stat: "Real-time", label: "Stock updates" },
-              { stat: "Role-based", label: "Access control" },
+              { icon: "👥", label: "Whole team can see" },
+              { icon: "🔐", label: "Safe with PIN codes" },
+              { icon: "⚡", label: "Updates instantly" },
+              { icon: "📱", label: "Works on any phone" },
+              { icon: "📊", label: "Track who did what" },
+              { icon: "💾", label: "Data never lost" },
             ].map((item, i) => (
-              <div key={i} className="text-center p-2 rounded-lg bg-muted/50">
-                <div className="text-lg font-bold text-primary">{item.stat}</div>
-                <div className="text-[10px] text-muted-foreground">{item.label}</div>
+              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-[10px] text-muted-foreground">{item.label}</span>
               </div>
             ))}
           </div>
         </div>
       )
     },
-    // Mixologist Groups - Value Proposition
+    // Mixologist Groups
     {
       id: 2,
       title: "Mixologist Groups",
-      subtitle: "Collaborative Recipe Development",
+      subtitle: "Keep Your Recipes Safe",
       icon: <div className="text-5xl">🍸</div>,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
             <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4" /> The Problem
+              <AlertTriangle className="w-4 h-4" /> Without This
             </h3>
             <p className="mt-2 text-xs text-muted-foreground">
-              Your best recipes live in someone's head—or worse, their personal notebook. When they leave, those recipes walk out the door. Batch scaling errors cost money, and there's no way to ensure consistency across locations.
+              Recipes are in people's heads or personal notes. Staff leaves = recipes gone. Batches come out different every time.
             </p>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
             <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <Lightbulb className="w-4 h-4" /> Our Solution
+              <Lightbulb className="w-4 h-4" /> With My Spaces
             </h3>
             <p className="mt-2 text-xs">
-              <strong>One recipe library. One source of truth.</strong> Every batch recipe is stored, scaled, and shared with the team. Production runs are logged with QR codes. New staff get it right on day one. Your IP stays with you.
+              <strong>All recipes in one shared library.</strong> Scale any recipe to any batch size with one tap. Print QR labels for each batch. New staff can follow the recipe perfectly.
             </p>
           </Card>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { stat: "Instant", label: "Recipe scaling" },
-              { stat: "Tracked", label: "Production runs" },
-              { stat: "QR", label: "Batch labels" },
-              { stat: "Protected", label: "Recipe IP" },
+              { icon: "📚", label: "One recipe library" },
+              { icon: "🔢", label: "Auto batch scaling" },
+              { icon: "🏷️", label: "QR code labels" },
+              { icon: "📝", label: "Log every batch" },
+              { icon: "👨‍🍳", label: "Train new staff fast" },
+              { icon: "🔒", label: "Recipes stay yours" },
             ].map((item, i) => (
-              <div key={i} className="text-center p-2 rounded-lg bg-muted/50">
-                <div className="text-lg font-bold text-primary">{item.stat}</div>
-                <div className="text-[10px] text-muted-foreground">{item.label}</div>
+              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-[10px] text-muted-foreground">{item.label}</span>
               </div>
             ))}
           </div>
         </div>
       )
     },
-    // Procurement - Value Proposition
+    // Procurement
     {
       id: 3,
       title: "Procurement",
-      subtitle: "Team Purchasing & Receiving",
+      subtitle: "Order Together, Save Together",
       icon: <Package className="w-12 h-12 text-violet-500" />,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
             <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4" /> The Problem
+              <AlertTriangle className="w-4 h-4" /> Without This
             </h3>
             <p className="mt-2 text-xs text-muted-foreground">
-              One person handles all orders. Nobody else knows what's been ordered, what's arriving, or what's been received. Invoices pile up, costs spiral, and suppliers play favorites because there's no shared vendor management.
+              One person does all the ordering. Nobody knows what's coming or when. Orders get missed. Money gets wasted.
             </p>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
             <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <Lightbulb className="w-4 h-4" /> Our Solution
+              <Lightbulb className="w-4 h-4" /> With My Spaces
             </h3>
             <p className="mt-2 text-xs">
-              <strong>Transparent purchasing for the whole team.</strong> Anyone can create POs with approval workflows. Scan-based receiving updates inventory instantly. Cost tracking shows exactly where money goes. No more purchasing bottlenecks.
+              <strong>Everyone can see orders and create them.</strong> Scan items when they arrive — stock updates automatically. Know exactly what you're spending on what.
             </p>
           </Card>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { stat: "Full", label: "Order visibility" },
-              { stat: "Scan", label: "To receive" },
-              { stat: "Auto", label: "Inventory sync" },
-              { stat: "Clear", label: "Spend tracking" },
+              { icon: "👀", label: "See all orders" },
+              { icon: "📲", label: "Scan to receive" },
+              { icon: "✅", label: "Approval workflow" },
+              { icon: "💰", label: "Track spending" },
+              { icon: "🔄", label: "Auto stock update" },
+              { icon: "📋", label: "Shared supplier list" },
             ].map((item, i) => (
-              <div key={i} className="text-center p-2 rounded-lg bg-muted/50">
-                <div className="text-lg font-bold text-primary">{item.stat}</div>
-                <div className="text-[10px] text-muted-foreground">{item.label}</div>
+              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-[10px] text-muted-foreground">{item.label}</span>
               </div>
             ))}
           </div>
         </div>
       )
     },
-    // FIFO - Value Proposition
+    // FIFO
     {
       id: 4,
       title: "FIFO Workspaces",
-      subtitle: "Expiry & Compliance Tracking",
+      subtitle: "Never Miss an Expiry Date",
       icon: <BarChart3 className="w-12 h-12 text-rose-500" />,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
             <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4" /> The Problem
+              <AlertTriangle className="w-4 h-4" /> Without This
             </h3>
             <p className="mt-2 text-xs text-muted-foreground">
-              FIFO tracking is a mess. Each shift does it differently (or not at all). Expired products slip through. Waste isn't measured. When the health inspector asks for records, it's a scramble to find anything.
+              Every shift tracks things differently. Expired food slips through. No records when inspectors come. Waste adds up.
             </p>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
             <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <Lightbulb className="w-4 h-4" /> Our Solution
+              <Lightbulb className="w-4 h-4" /> With My Spaces
             </h3>
             <p className="mt-2 text-xs">
-              <strong>One FIFO system for every shift.</strong> Expiration alerts go to everyone. Waste is logged and analyzed. Temperature checks are timestamped. When compliance matters, you have the data—automatically.
+              <strong>One system for all shifts.</strong> Get alerts before things expire. Log waste and see where money is lost. Ready for any inspection.
             </p>
           </Card>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { stat: "Shared", label: "Expiry tracking" },
-              { stat: "Smart", label: "Waste analytics" },
-              { stat: "Logged", label: "Temp checks" },
-              { stat: "Ready", label: "Compliance data" },
+              { icon: "🔔", label: "Expiry alerts" },
+              { icon: "📊", label: "Waste reports" },
+              { icon: "🌡️", label: "Temp logging" },
+              { icon: "✅", label: "Inspection ready" },
+              { icon: "👥", label: "Team wide access" },
+              { icon: "📈", label: "Reduce waste" },
             ].map((item, i) => (
-              <div key={i} className="text-center p-2 rounded-lg bg-muted/50">
-                <div className="text-lg font-bold text-primary">{item.stat}</div>
-                <div className="text-[10px] text-muted-foreground">{item.label}</div>
+              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-[10px] text-muted-foreground">{item.label}</span>
               </div>
             ))}
           </div>
         </div>
       )
     },
-    // Why My Spaces - Selling point
+    // Why Choose Us - More reasons
     {
       id: 5,
-      title: "Why My Spaces?",
-      subtitle: "The Competitive Edge",
+      title: "Why Choose My Spaces?",
+      subtitle: "Built for Real Teams",
       icon: <Target className="w-12 h-12 text-primary" />,
       content: (
-        <div className="space-y-4">
-          <div className="text-center mb-4">
-            <p className="text-sm text-muted-foreground">
-              Every tool in My Spaces solves one core problem:
-            </p>
-            <p className="text-lg font-bold text-primary mt-2">
-              "Silos kill efficiency."
-            </p>
-          </div>
-          <div className="space-y-3">
-            {[
-              { title: "No More Knowledge Silos", desc: "When someone leaves, the data stays" },
-              { title: "No More Bottlenecks", desc: "Everyone who needs access has it" },
-              { title: "No More Guesswork", desc: "Real-time data, real-time decisions" },
-              { title: "No More Compliance Panic", desc: "Automatic audit trails" },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ x: -10, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-              >
-                <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">{item.title}</div>
-                  <div className="text-xs text-muted-foreground">{item.desc}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+        <div className="space-y-3">
+          {[
+            { icon: "🚀", title: "Easy to Start", desc: "Set up in minutes, not days" },
+            { icon: "💪", title: "Built for Teams", desc: "From 2 people to 200 people" },
+            { icon: "📱", title: "Works Anywhere", desc: "Phone, tablet, or computer" },
+            { icon: "🔐", title: "Safe & Secure", desc: "Your data is protected" },
+            { icon: "💾", title: "Nothing Gets Lost", desc: "Staff leaves, data stays" },
+            { icon: "⚡", title: "Real-Time Updates", desc: "Everyone sees changes instantly" },
+            { icon: "🎯", title: "Simple to Use", desc: "No training needed" },
+            { icon: "💰", title: "Save Money", desc: "Less waste, better control" },
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: i * 0.05 }}
+              className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+            >
+              <span className="text-xl">{item.icon}</span>
+              <div className="flex-1">
+                <div className="text-xs font-medium">{item.title}</div>
+                <div className="text-[10px] text-muted-foreground">{item.desc}</div>
+              </div>
+            </motion.div>
+          ))}
         </div>
       )
     },
     // Summary - Call to Action
     {
       id: 6,
-      title: "Ready to Transform?",
-      subtitle: "Start Collaborating Today",
+      title: "Get Started Today",
+      subtitle: "Your Team Deserves Better Tools",
       icon: <Sparkles className="w-12 h-12 text-primary" />,
       content: (
-        <div className="space-y-6">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Four powerful workspaces. One unified platform.
-            </p>
-          </div>
+        <div className="space-y-5">
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: <Store className="w-5 h-5" />, name: "Stores", color: "text-emerald-500" },
-              { icon: <div className="text-lg">🍸</div>, name: "Recipes", color: "text-amber-500" },
-              { icon: <Package className="w-5 h-5" />, name: "Orders", color: "text-violet-500" },
-              { icon: <BarChart3 className="w-5 h-5" />, name: "FIFO", color: "text-rose-500" },
+              { icon: "🏪", name: "Stores", desc: "Share inventory" },
+              { icon: "🍸", name: "Recipes", desc: "Save your recipes" },
+              { icon: "📦", name: "Orders", desc: "Order together" },
+              { icon: "📊", name: "FIFO", desc: "Track expiry" },
             ].map((tool, i) => (
               <motion.div
                 key={i}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: i * 0.1 }}
-                className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20"
+                className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-center"
               >
-                <div className={tool.color}>{tool.icon}</div>
-                <span className="text-sm font-medium">{tool.name}</span>
+                <div className="text-2xl mb-1">{tool.icon}</div>
+                <div className="text-sm font-medium">{tool.name}</div>
+                <div className="text-[10px] text-muted-foreground">{tool.desc}</div>
               </motion.div>
             ))}
           </div>
-          <Card className="p-4 bg-primary/5 border-primary/30 text-center">
-            <p className="text-sm font-medium">
-              Break down the silos. Empower your team.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              My Spaces — Where hospitality teams work better together.
-            </p>
+          <Card className="p-4 bg-primary/5 border-primary/30">
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium">
+                Stop losing data. Stop wasting time.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Give your team the tools they deserve.
+              </p>
+            </div>
           </Card>
           <div className="flex justify-center">
-            <Badge className="text-sm px-4 py-2">
+            <Badge className="text-sm px-4 py-2 bg-primary text-primary-foreground">
               <Zap className="w-4 h-4 mr-2" />
-              Get Started Now
+              Try My Spaces Free
             </Badge>
           </div>
         </div>
