@@ -16,33 +16,6 @@ export interface Membership {
 let membershipCache: { userId: string; data: Membership[]; timestamp: number } | null = null;
 const CACHE_TIME = 30000; // 30 seconds - reduced for faster updates
 
-const STORAGE_PREFIX = 'user_memberships_cache_v1';
-const LOCAL_CACHE_MAX_AGE = 1000 * 60 * 60 * 12; // 12h (usable for instant UI)
-
-const readLocalCache = (userId: string | null): { data: Membership[]; timestamp: number } | null => {
-  if (!userId) return null;
-  try {
-    const raw = localStorage.getItem(`${STORAGE_PREFIX}:${userId}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { data?: Membership[]; timestamp?: number };
-    if (!parsed?.data || !Array.isArray(parsed.data) || !parsed.timestamp) return null;
-    return { data: parsed.data, timestamp: parsed.timestamp };
-  } catch {
-    return null;
-  }
-};
-
-const writeLocalCache = (userId: string, data: Membership[]) => {
-  try {
-    localStorage.setItem(
-      `${STORAGE_PREFIX}:${userId}`,
-      JSON.stringify({ data, timestamp: Date.now() })
-    );
-  } catch {
-    // ignore
-  }
-};
-
 // Export function to clear cache manually
 export const clearMembershipCache = () => {
   membershipCache = null;
@@ -50,29 +23,17 @@ export const clearMembershipCache = () => {
 
 export const useUserMemberships = (userId: string | null) => {
   const [memberships, setMemberships] = useState<Membership[]>(() => {
-    // Initialize from memory cache
-    if (
-      membershipCache &&
-      membershipCache.userId === userId &&
-      Date.now() - membershipCache.timestamp < CACHE_TIME
-    ) {
+    // Initialize from cache if valid
+    if (membershipCache && membershipCache.userId === userId && 
+        Date.now() - membershipCache.timestamp < CACHE_TIME) {
       return membershipCache.data;
-    }
-    // Fallback to local cache for instant UI
-    const local = readLocalCache(userId);
-    if (local && local.data?.length) {
-      return local.data;
     }
     return [];
   });
   const [isLoading, setIsLoading] = useState(() => {
-    // Not loading if we have any cache
-    const hasMemory =
-      membershipCache &&
-      membershipCache.userId === userId &&
-      Date.now() - membershipCache.timestamp < CACHE_TIME;
-    const hasLocal = !!readLocalCache(userId)?.data?.length;
-    return !(hasMemory || hasLocal);
+    // Not loading if we have valid cache
+    return !(membershipCache && membershipCache.userId === userId && 
+             Date.now() - membershipCache.timestamp < CACHE_TIME);
   });
 
   useEffect(() => {
@@ -82,38 +43,17 @@ export const useUserMemberships = (userId: string | null) => {
       return;
     }
 
-    const hasFreshMemoryCache =
-      !!(
-        membershipCache &&
-        membershipCache.userId === userId &&
-        Date.now() - membershipCache.timestamp < CACHE_TIME
-      );
-
-    const localCache = readLocalCache(userId);
-    const hasUsableLocalCache =
-      !!(
-        localCache &&
-        localCache.data?.length &&
-        Date.now() - localCache.timestamp < LOCAL_CACHE_MAX_AGE
-      );
-
-    // Hydrate instantly from local cache when available
-    if (!hasFreshMemoryCache && hasUsableLocalCache) {
-      setMemberships(localCache!.data);
-      setIsLoading(false);
-    }
-
-    // Skip fetch if memory cache is fresh
-    if (hasFreshMemoryCache) {
-      setMemberships(membershipCache!.data);
+    // Skip fetch if cache is valid
+    if (membershipCache && membershipCache.userId === userId && 
+        Date.now() - membershipCache.timestamp < CACHE_TIME) {
+      setMemberships(membershipCache.data);
       setIsLoading(false);
       return;
     }
 
     const fetchMemberships = async () => {
-      // Only show loading when we have nothing to show
-      if (!hasUsableLocalCache) setIsLoading(true);
-
+      setIsLoading(true);
+      
       try {
         // Fetch ALL membership types in parallel for speed
         const [workspaceMemberRes, ownedWorkspacesRes, groupRes, teamRes, procurementRes] = await Promise.all([
@@ -250,7 +190,6 @@ export const useUserMemberships = (userId: string | null) => {
 
         // Cache the results
         membershipCache = { userId, data: allMemberships, timestamp: Date.now() };
-        writeLocalCache(userId, allMemberships);
         setMemberships(allMemberships);
       } catch (error) {
         console.error('Error fetching memberships:', error);

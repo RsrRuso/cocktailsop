@@ -100,10 +100,7 @@ const Profile = () => {
         
         {/* Header overlay */}
         <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-12">
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-base font-semibold text-white drop-shadow-lg">{p.username}</h1>
-            {isVerified && <VerifiedBadge size="xs" />}
-          </div>
+          <h1 className="text-base font-semibold text-white drop-shadow-lg">{p.username}</h1>
           
           {/* Menu Dropdown */}
           <DropdownMenu>
@@ -174,6 +171,10 @@ const Profile = () => {
 
         {/* Name & Bio */}
         <div className="mb-4">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-white">{p.full_name || p.username}</span>
+            {isVerified && <VerifiedBadge size="sm" />}
+          </div>
           
           {/* Professional title */}
           {profile?.professional_title && (
@@ -228,7 +229,7 @@ const Profile = () => {
         </div>
 
         {/* Membership Doors - No lazy load for instant display */}
-        <div className="mt-2 mb-4">
+        <div className="mb-4">
           <ProfileMembershipDoors userId={user.id} />
         </div>
         {/* Tab Icons */}
