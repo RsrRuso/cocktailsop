@@ -51,21 +51,15 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
       >
         <div className="relative group">
           {/* Dark bubble */}
-          <div className="relative bg-black text-white rounded-full shadow-lg px-2.5 py-1.5 overflow-hidden min-w-[70px] max-w-[140px]">
+          <div className="relative bg-zinc-800 text-white rounded-full shadow-lg px-2.5 py-1.5 overflow-hidden min-w-[70px] max-w-[140px]">
             {/* Shimmer effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
             
             <div className="relative flex items-center gap-1.5">
               {/* Album Art if music */}
-              {hasMusic && (
+              {hasMusic && status.music_album_art && (
                 <div className="w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 ring-1 ring-white/20">
-                  {status.music_album_art ? (
-                    <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                      <span className="text-[8px]">🎵</span>
-                    </div>
-                  )}
+                  <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
               
@@ -111,8 +105,8 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
           </div>
           
           {/* Connector dots */}
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black rounded-full shadow-md" />
-          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-black rounded-full shadow-sm" />
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-800 rounded-full shadow-md" />
+          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-zinc-800 rounded-full shadow-sm" />
         </div>
       </div>
       <StatusViewerDialog
