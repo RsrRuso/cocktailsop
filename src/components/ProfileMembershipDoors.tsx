@@ -37,13 +37,11 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   );
 
   const { getProfile, fetchProfiles } = useCachedProfiles();
-  const { members, memberCount, isLoading: membersLoading, fetchMembers, getMemberCount } = useSpaceMembers();
+  const { members, memberCount, isLoading: membersLoading, fetchMembers, getMemberCount, getCachedMembers } = useSpaceMembers();
   
   const [selectedSpace, setSelectedSpace] = useState<Membership | null>(null);
   const [onlineProfiles, setOnlineProfiles] = useState<any[]>([]);
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
-  const [openingSpaceKey, setOpeningSpaceKey] = useState<string | null>(null);
-  const [onlineProfilesLoading, setOnlineProfilesLoading] = useState(false);
 
   // Fetch member counts for all spaces (parallel)
   useEffect(() => {
@@ -70,42 +68,21 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   }, [memberships, getMemberCount]);
 
   const handleDoorPress = (membership: Membership) => {
-    const spaceKey = `${membership.type}-${membership.id}`;
-
-    // Open instantly
+    // Open instantly - sheet appears immediately
     setSelectedSpace(membership);
-    setOpeningSpaceKey(spaceKey);
-
-    // Reset stale state immediately
     setOnlineProfiles([]);
 
+    // Trigger fetch (will show cached data instantly if available, refresh in background)
+    fetchMembers(membership.id, membership.type);
+
+    // Fetch online profiles
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
-
-    const tasks: Promise<unknown>[] = [];
-
-    // Fetch members (drives skeleton state in the sheet)
-    tasks.push(fetchMembers(membership.id, membership.type));
-
-    // Fetch online profiles for the Online tab
     if (onlineUsers.length > 0) {
-      setOnlineProfilesLoading(true);
-      tasks.push(
-        fetchProfiles(onlineUsers.map((u) => u.user_id))
-          .then(() => {
-            const profiles = onlineUsers.map((u) => getProfile(u.user_id)).filter(Boolean);
-            setOnlineProfiles(profiles);
-          })
-          .finally(() => setOnlineProfilesLoading(false))
-      );
-    } else {
-      setOnlineProfilesLoading(false);
-    }
-
-    Promise.all(tasks)
-      .catch(() => {})
-      .finally(() => {
-        setOpeningSpaceKey((cur) => (cur === spaceKey ? null : cur));
+      fetchProfiles(onlineUsers.map((u) => u.user_id)).then(() => {
+        const profiles = onlineUsers.map((u) => getProfile(u.user_id)).filter(Boolean);
+        setOnlineProfiles(profiles);
       });
+    }
   };
 
   const handleGoToSpace = () => {
@@ -113,8 +90,6 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
       navigate(selectedSpace.route);
       setSelectedSpace(null);
       setOnlineProfiles([]);
-      setOpeningSpaceKey(null);
-      setOnlineProfilesLoading(false);
     }
   };
 
