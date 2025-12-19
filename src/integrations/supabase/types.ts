@@ -3685,6 +3685,30 @@ export type Database = {
           },
         ]
       }
+      hidden_user_spaces: {
+        Row: {
+          hidden_at: string
+          id: string
+          space_id: string
+          space_type: string
+          user_id: string
+        }
+        Insert: {
+          hidden_at?: string
+          id?: string
+          space_id: string
+          space_type: string
+          user_id: string
+        }
+        Update: {
+          hidden_at?: string
+          id?: string
+          space_id?: string
+          space_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       history_events: {
         Row: {
           created_at: string

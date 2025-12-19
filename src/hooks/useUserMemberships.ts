@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { preloadUserSpaces } from './useSpaceMembers';
 
@@ -13,14 +13,23 @@ export interface Membership {
   memberCount: number;
 }
 
+export interface HiddenSpace {
+  id: string;
+  space_id: string;
+  space_type: string;
+  hidden_at: string;
+}
+
 // Cache memberships across renders - long TTL, refresh in background
 let membershipCache: { userId: string; data: Membership[]; timestamp: number } | null = null;
+let hiddenSpacesCache: { userId: string; data: HiddenSpace[]; timestamp: number } | null = null;
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes - show cached, refresh in background
 const STALE_TIME = 30 * 1000; // 30 seconds - trigger background refresh
 
 // Export function to clear cache manually
 export const clearMembershipCache = () => {
   membershipCache = null;
+  hiddenSpacesCache = null;
 };
 
 export const useUserMemberships = (userId: string | null) => {
@@ -32,15 +41,111 @@ export const useUserMemberships = (userId: string | null) => {
     }
     return [];
   });
+  const [hiddenSpaces, setHiddenSpaces] = useState<HiddenSpace[]>(() => {
+    if (hiddenSpacesCache && hiddenSpacesCache.userId === userId &&
+        Date.now() - hiddenSpacesCache.timestamp < CACHE_TIME) {
+      return hiddenSpacesCache.data;
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(() => {
     // Not loading if we have valid cache
     return !(membershipCache && membershipCache.userId === userId && 
              Date.now() - membershipCache.timestamp < CACHE_TIME);
   });
 
+  const fetchHiddenSpaces = useCallback(async () => {
+    if (!userId) return [];
+    
+    const { data, error } = await supabase
+      .from('hidden_user_spaces')
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error fetching hidden spaces:', error);
+      return [];
+    }
+    
+    const spaces = data || [];
+    hiddenSpacesCache = { userId, data: spaces, timestamp: Date.now() };
+    setHiddenSpaces(spaces);
+    return spaces;
+  }, [userId]);
+
+  const hideSpace = useCallback(async (spaceId: string, spaceType: string) => {
+    if (!userId) return false;
+    
+    const { error } = await supabase
+      .from('hidden_user_spaces')
+      .insert({
+        user_id: userId,
+        space_id: spaceId,
+        space_type: spaceType,
+      });
+    
+    if (error) {
+      console.error('Error hiding space:', error);
+      return false;
+    }
+    
+    // Update local state
+    const newHidden: HiddenSpace = {
+      id: crypto.randomUUID(),
+      space_id: spaceId,
+      space_type: spaceType,
+      hidden_at: new Date().toISOString(),
+    };
+    setHiddenSpaces(prev => [...prev, newHidden]);
+    hiddenSpacesCache = { userId, data: [...(hiddenSpacesCache?.data || []), newHidden], timestamp: Date.now() };
+    return true;
+  }, [userId]);
+
+  const restoreSpace = useCallback(async (spaceId: string, spaceType: string) => {
+    if (!userId) return false;
+    
+    const { error } = await supabase
+      .from('hidden_user_spaces')
+      .delete()
+      .eq('user_id', userId)
+      .eq('space_id', spaceId)
+      .eq('space_type', spaceType);
+    
+    if (error) {
+      console.error('Error restoring space:', error);
+      return false;
+    }
+    
+    // Update local state
+    setHiddenSpaces(prev => prev.filter(h => !(h.space_id === spaceId && h.space_type === spaceType)));
+    if (hiddenSpacesCache) {
+      hiddenSpacesCache.data = hiddenSpacesCache.data.filter(h => !(h.space_id === spaceId && h.space_type === spaceType));
+    }
+    return true;
+  }, [userId]);
+
+  const restoreAllSpaces = useCallback(async () => {
+    if (!userId) return false;
+    
+    const { error } = await supabase
+      .from('hidden_user_spaces')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error restoring all spaces:', error);
+      return false;
+    }
+    
+    setHiddenSpaces([]);
+    hiddenSpacesCache = { userId, data: [], timestamp: Date.now() };
+    return true;
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) {
       setMemberships([]);
+      setHiddenSpaces([]);
       setIsLoading(false);
       return;
     }
@@ -49,6 +154,9 @@ export const useUserMemberships = (userId: string | null) => {
     const now = Date.now();
     const isFresh = cached && now - membershipCache!.timestamp < STALE_TIME;
     const isValid = cached && now - membershipCache!.timestamp < CACHE_TIME;
+
+    // Fetch hidden spaces first
+    fetchHiddenSpaces();
 
     // Show cached data instantly
     if (cached) {
@@ -277,7 +385,26 @@ export const useUserMemberships = (userId: string | null) => {
     };
 
     fetchMemberships();
-  }, [userId]);
+  }, [userId, fetchHiddenSpaces]);
 
-  return { memberships, isLoading };
+  // Filter out hidden spaces for the visible memberships
+  const visibleMemberships = memberships.filter(
+    m => !hiddenSpaces.some(h => h.space_id === m.id && h.space_type === m.type)
+  );
+
+  // Get hidden memberships for restore dialog
+  const hiddenMemberships = memberships.filter(
+    m => hiddenSpaces.some(h => h.space_id === m.id && h.space_type === m.type)
+  );
+
+  return { 
+    memberships: visibleMemberships, 
+    allMemberships: memberships,
+    hiddenMemberships,
+    hiddenSpaces,
+    isLoading,
+    hideSpace,
+    restoreSpace,
+    restoreAllSpaces,
+  };
 };
