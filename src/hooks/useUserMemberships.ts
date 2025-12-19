@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { preloadUserSpaces } from './useSpaceMembers';
 
 export interface Membership {
   id: string;
@@ -12,9 +13,10 @@ export interface Membership {
   memberCount: number;
 }
 
-// Cache memberships across renders
+// Cache memberships across renders - long TTL, refresh in background
 let membershipCache: { userId: string; data: Membership[]; timestamp: number } | null = null;
-const CACHE_TIME = 30000; // 30 seconds - reduced for faster updates
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes - show cached, refresh in background
+const STALE_TIME = 30 * 1000; // 30 seconds - trigger background refresh
 
 // Export function to clear cache manually
 export const clearMembershipCache = () => {
@@ -43,12 +45,27 @@ export const useUserMemberships = (userId: string | null) => {
       return;
     }
 
-    // Skip fetch if cache is valid
-    if (membershipCache && membershipCache.userId === userId && 
-        Date.now() - membershipCache.timestamp < CACHE_TIME) {
-      setMemberships(membershipCache.data);
+    const cached = membershipCache && membershipCache.userId === userId;
+    const now = Date.now();
+    const isFresh = cached && now - membershipCache!.timestamp < STALE_TIME;
+    const isValid = cached && now - membershipCache!.timestamp < CACHE_TIME;
+
+    // Show cached data instantly
+    if (cached) {
+      setMemberships(membershipCache!.data);
+      // Preload space members in background
+      preloadUserSpaces(membershipCache!.data.map(m => ({ id: m.id, type: m.type })));
+    }
+
+    // If cache is fresh, skip fetch entirely
+    if (isFresh) {
       setIsLoading(false);
       return;
+    }
+
+    // If cache is valid but stale, refresh in background (no loading state)
+    if (isValid) {
+      setIsLoading(false);
     }
 
     const fetchMemberships = async () => {
@@ -191,6 +208,9 @@ export const useUserMemberships = (userId: string | null) => {
         // Cache the results
         membershipCache = { userId, data: allMemberships, timestamp: Date.now() };
         setMemberships(allMemberships);
+        
+        // Preload space members for all memberships
+        preloadUserSpaces(allMemberships.map(m => ({ id: m.id, type: m.type })));
       } catch (error) {
         console.error('Error fetching memberships:', error);
       } finally {
