@@ -35,36 +35,38 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   useEffect(() => {
     const fetchCounts = async () => {
       const counts: Record<string, number> = {};
-      for (const m of memberships) {
-        const count = await getMemberCount(m.id, m.type);
-        counts[`${m.type}-${m.id}`] = count;
-      }
+
+      await Promise.all(
+        memberships.map(async (m) => {
+          const count = await getMemberCount(m.id, m.type);
+          counts[`${m.type}-${m.id}`] = count;
+        })
+      );
+
       setMemberCounts(counts);
     };
-    
+
     if (memberships.length > 0) {
       fetchCounts();
     }
   }, [memberships, getMemberCount]);
 
   const handleDoorPress = async (membership: Membership) => {
-    console.log('[ProfileMembershipDoors] Door pressed:', membership.name, 'Type:', membership.type, 'ID:', membership.id);
-    
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
-    
+
     if (onlineUsers.length > 0) {
-      await fetchProfiles(onlineUsers.map(u => u.user_id));
-      const profiles = onlineUsers.map(u => getProfile(u.user_id)).filter(Boolean);
+      await fetchProfiles(onlineUsers.map((u) => u.user_id));
+      const profiles = onlineUsers
+        .map((u) => getProfile(u.user_id))
+        .filter(Boolean);
       setOnlineProfiles(profiles);
     } else {
       setOnlineProfiles([]);
     }
-    
+
     // Fetch all members for this space
-    console.log('[ProfileMembershipDoors] Fetching members for:', membership.id, membership.type);
     await fetchMembers(membership.id, membership.type);
-    console.log('[ProfileMembershipDoors] Members fetched, count:', members.length);
-    
+
     setSelectedSpace(membership);
   };
 
@@ -102,7 +104,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     }
   };
 
-  if (isLoading || memberships.length === 0) return null;
+  if (memberships.length === 0) return null;
 
   return (
     <>
@@ -110,7 +112,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
         <div className="flex items-center gap-2 px-1">
           <DoorOpen className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">My Spaces</span>
-          <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium ml-auto">
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted/70 text-muted-foreground border border-border/60 font-medium ml-auto">
             {memberships.length}
           </span>
         </div>
