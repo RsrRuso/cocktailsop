@@ -251,17 +251,18 @@ const Profile = () => {
             <Bookmark className="w-5 h-5" />
           </button>
         </div>
+      </div>
 
-        <div className="mt-1">
-          <Suspense fallback={
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 animate-spin text-white/30" />
-            </div>
-          }>
-            {(activeTab === 'posts' || activeTab === 'reels') && <ProfileFeedTab userId={user.id} profile={profile} />}
-            {activeTab === 'saved' && <ProfileSavedTab userId={user.id} />}
-          </Suspense>
-        </div>
+      {/* Feed - Full width outside padded container */}
+      <div className="mt-1">
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-white/30" />
+          </div>
+        }>
+          {(activeTab === 'posts' || activeTab === 'reels') && <ProfileFeedTab userId={user.id} profile={profile} />}
+          {activeTab === 'saved' && <ProfileSavedTab userId={user.id} />}
+        </Suspense>
       </div>
 
       <BottomNav />
