@@ -108,18 +108,21 @@ export function WorkspaceMemberPinManager({
 
       if (error) throw error;
 
-      // Send notification to member when PIN is granted/updated
+      // Send email notification to member when PIN is granted/updated
       if (newPin && editingMember.user_id) {
-        const notificationContent = `🔐 You've been granted access PIN: **${newPin}** for workspace "${workspaceName}". Keep this PIN secure for mobile access.`;
-        
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: editingMember.user_id,
-            type: "pin_granted",
-            content: notificationContent,
-            read: false
+        try {
+          await supabase.functions.invoke('send-pin-notification', {
+            body: {
+              userId: editingMember.user_id,
+              pin: newPin,
+              workspaceName: workspaceName,
+              workspaceType: 'fifo'
+            }
           });
+        } catch (emailError) {
+          console.error("Error sending PIN email:", emailError);
+          // Don't fail the whole operation if email fails
+        }
       }
 
       toast.success(newPin ? "PIN updated successfully" : "PIN removed");

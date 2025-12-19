@@ -184,19 +184,21 @@ export function MixologistGroupMembersDialog({
       
       if (error) throw error;
 
-      // Send notification to member when PIN is granted/updated
+      // Send email notification to member when PIN is granted/updated
       const member = members.find(m => m.id === memberId);
       if (pinValue && member?.user_id) {
-        const notificationContent = `🔐 You've been granted access PIN: **${pinValue}** for mixologist group "${groupName}". Keep this PIN secure for mobile access.`;
-        
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: member.user_id,
-            type: "pin_granted",
-            content: notificationContent,
-            read: false
+        try {
+          await supabase.functions.invoke('send-pin-notification', {
+            body: {
+              userId: member.user_id,
+              pin: pinValue,
+              workspaceName: groupName,
+              workspaceType: 'mixologist'
+            }
           });
+        } catch (emailError) {
+          console.error("Error sending PIN email:", emailError);
+        }
       }
       
       toast.success(pinValue ? "PIN saved!" : "PIN removed!");
