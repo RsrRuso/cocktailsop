@@ -42,77 +42,38 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
   
   if (!hasMusic && !hasText) return null;
 
-  // Combined music + status text bubble
+  // Minimal B&W status bubble
   return (
     <>
       <div 
-        className={`absolute -top-8 left-1/2 -translate-x-1/4 z-20 pointer-events-auto cursor-pointer animate-fade-in ${className}`}
+        className={`absolute -top-6 left-1/2 -translate-x-1/4 z-20 pointer-events-auto cursor-pointer ${className}`}
         onClick={handleStatusClick}
       >
-        <div className="relative group">
-          {/* Compact black bubble with shimmer */}
-          <div className="relative bg-gray-800 text-white rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.25)] px-2.5 py-1.5 overflow-hidden min-w-[70px] max-w-[140px]">
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            
-            <div className="relative flex items-center gap-1.5">
-              {/* Album Art if music */}
-              {hasMusic && (
-                <div className="w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 ring-1 ring-white/20">
-                  {status.music_album_art ? (
-                    <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                      <span className="text-[8px]">🎵</span>
-                    </div>
-                  )}
-                </div>
-              )}
+        <div className="relative">
+          {/* Minimal pill */}
+          <div className="bg-black/70 text-white/90 rounded-full px-2 py-0.5 max-w-[100px]">
+            <div className="flex items-center gap-1">
+              {/* Small icon */}
+              {hasMusic ? (
+                <span className="text-[8px]">♪</span>
+              ) : status.emoji ? (
+                <span className="text-[10px]">{status.emoji}</span>
+              ) : null}
               
-              {/* Emoji if no music */}
-              {!hasMusic && status.emoji && (
-                <span className="text-sm flex-shrink-0">{status.emoji}</span>
-              )}
-
-              {/* Combined text - music + status */}
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="whitespace-nowrap text-[9px] font-semibold text-white tracking-wide">
-                  <div className="animate-marquee inline-block">
-                    {hasMusic && hasText ? (
-                      <>
-                        {status.music_track_name} {status.emoji && <span>{status.emoji}</span>} {status.status_text}
-                        <span className="ml-6">{status.music_track_name} {status.emoji && <span>{status.emoji}</span>} {status.status_text}</span>
-                      </>
-                    ) : hasMusic ? (
-                      <>
-                        {status.music_track_name}
-                        {status.music_track_name!.length > 10 && <span className="ml-6">{status.music_track_name}</span>}
-                      </>
-                    ) : hasText ? (
-                      <>
-                        {status.status_text}
-                        {status.status_text!.length > 10 && <span className="ml-6">{status.status_text}</span>}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* Play Button if music */}
+              {/* Text */}
+              <span className="text-[8px] font-medium truncate">
+                {hasMusic ? status.music_track_name : status.status_text}
+              </span>
+              
+              {/* Play if music */}
               {hasMusic && (
-                <button
-                  onClick={handleStatusClick}
-                  className="w-4 h-4 rounded-full bg-white flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform"
-                >
-                  <Play className="w-2 h-2 text-black ml-px" />
-                </button>
+                <Play className="w-2 h-2 text-white/70 flex-shrink-0" />
               )}
             </div>
           </div>
           
-          {/* Connector dots */}
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rounded-full shadow-md" />
-          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-gray-800 rounded-full shadow-sm" />
+          {/* Small connector */}
+          <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-black/70 rounded-full" />
         </div>
       </div>
       <StatusViewerDialog

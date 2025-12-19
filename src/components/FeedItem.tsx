@@ -366,41 +366,41 @@ export const FeedItem = memo(({
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="px-3 pt-3">
+      {/* Action Buttons - Lightweight */}
+      <div className="px-3 pt-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onLike();
               }}
-              className="active:scale-75 transition-transform duration-100"
+              className="active:scale-90 transition-transform"
             >
-              <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} strokeWidth={1.5} />
+              <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white/80'}`} strokeWidth={1.5} />
             </button>
 
-            <button onClick={() => setShowComments(true)} className="active:scale-75 transition-transform duration-100">
-              <MessageCircle className="w-7 h-7 text-foreground" strokeWidth={1.5} />
+            <button onClick={() => setShowComments(true)} className="active:scale-90 transition-transform">
+              <MessageCircle className="w-6 h-6 text-white/80" strokeWidth={1.5} />
             </button>
 
-            <button onClick={onShare} className="active:scale-75 transition-transform duration-100">
-              <Send className="w-7 h-7 text-foreground -rotate-12" strokeWidth={1.5} />
+            <button onClick={onShare} className="active:scale-90 transition-transform">
+              <Send className="w-6 h-6 text-white/80 -rotate-12" strokeWidth={1.5} />
             </button>
 
-            <button onClick={() => onRepost?.()} className="active:scale-75 transition-transform duration-100">
-              <Repeat2 className={`w-7 h-7 ${isReposted ? 'text-green-500' : 'text-foreground'}`} strokeWidth={1.5} />
+            <button onClick={() => onRepost?.()} className="active:scale-90 transition-transform">
+              <Repeat2 className={`w-6 h-6 ${isReposted ? 'text-green-500' : 'text-white/80'}`} strokeWidth={1.5} />
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowInsights(true)} className="active:scale-75 transition-transform duration-100">
-              <Sparkles className="w-6 h-6 text-pink-400" />
+          <div className="flex items-center gap-4">
+            <button onClick={() => setShowInsights(true)} className="active:scale-90 transition-transform">
+              <Eye className="w-5 h-5 text-white/50" strokeWidth={1.5} />
             </button>
 
-            <button onClick={() => onSave?.()} className="active:scale-75 transition-transform duration-100">
-              <Bookmark className={`w-7 h-7 ${isSaved ? 'fill-foreground text-foreground' : 'text-foreground'}`} strokeWidth={1.5} />
+            <button onClick={() => onSave?.()} className="active:scale-90 transition-transform">
+              <Bookmark className={`w-6 h-6 ${isSaved ? 'fill-white text-white' : 'text-white/80'}`} strokeWidth={1.5} />
             </button>
           </div>
         </div>
