@@ -78,23 +78,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        await supabase.auth.refreshSession();
-      } catch {
-        // Ignore refresh errors
-      }
+        // Try to refresh the session - this will use the refresh token from localStorage
+        const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+        
+        if (error) {
+          console.log('Session refresh failed, checking existing session:', error.message);
+        }
+        
+        // Get the current session (either refreshed or existing)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!isMounted) return;
-
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
-      } else {
-        setProfile(null);
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
+        }
+        // Don't clear session/user if refresh fails - let the auth state listener handle that
+      } catch (err) {
+        console.error('Session sync error:', err);
+        // Don't clear session on error - preserve existing state
       }
     };
 
