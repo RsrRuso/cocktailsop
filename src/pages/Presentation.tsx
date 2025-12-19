@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Download, ChevronLeft, ChevronRight, Store, Utensils, Package, BarChart3, CheckCircle, XCircle, ArrowRight, Calculator, Thermometer, ClipboardCheck, FileText, Boxes, TrendingUp, Users, Calendar, MessageSquare, Receipt, Truck, AlertTriangle, Sparkles, Zap, Target, Award, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
-
+import { toPng } from 'html-to-image';
 interface Slide {
   id: number;
   title: string;
@@ -20,6 +20,7 @@ interface Slide {
 const Presentation = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const slideRef = useRef<HTMLDivElement>(null);
 
   const slides: Slide[] = [
     {
@@ -558,247 +559,52 @@ const Presentation = () => {
   ];
 
   const generatePDF = async () => {
+    if (!slideRef.current) return;
+    
     setIsGenerating(true);
+    toast.info('Generating PDF with all slides... This may take a moment.');
+    
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
+      const originalSlide = currentSlide;
       
-      // Title page
-      pdf.setFontSize(32);
-      pdf.setTextColor(99, 102, 241);
-      pdf.text('Tools Overview', pageWidth / 2, 60, { align: 'center' });
-      
-      pdf.setFontSize(18);
-      pdf.setTextColor(100);
-      pdf.text('Your Complete Toolkit', pageWidth / 2, 75, { align: 'center' });
-      
-      pdf.setFontSize(14);
-      pdf.setTextColor(150);
-      pdf.text('Hospitality Operations Guide', pageWidth / 2, 90, { align: 'center' });
-      
-      pdf.setFontSize(10);
-      pdf.text('December 2024', pageWidth / 2, pageHeight - 30, { align: 'center' });
-
-      // Content pages
-      const sections = [
-        {
-          title: 'Batch Calculator',
-          problem: [
-            'Manual scaling of cocktail recipes is error-prone',
-            'Converting single serve to batch requires complex math',
-            'Inconsistent batches lead to flavor inconsistency',
-            'No way to save and share scaled recipes',
-            'Time wasted recalculating every prep session'
-          ],
-          solution: 'Intelligent batch scaling tool that automatically converts single-serve recipes to any batch size. Input your base recipe, select target serves or liters, and get precise measurements instantly.',
-          benefits: ['Precision Scaling', 'Time Savings', 'Consistency', 'Recipe Library', 'Team Sharing', 'QR Labels']
-        },
-        {
-          title: 'Temperature Monitoring',
-          problem: [
-            'Paper logs are easy to falsify or forget',
-            'No alerts for out-of-range temperatures',
-            'Compliance audits require digging through records',
-            'Equipment failures go unnoticed until spoilage',
-            'Multiple fridges/freezers hard to track'
-          ],
-          solution: 'Digital temperature logging system for all refrigeration equipment. Log readings with timestamps, set target temperatures, receive deviation alerts, and generate compliance reports.',
-          benefits: ['HACCP Compliant', 'Instant Alerts', 'Audit Ready', 'Multi-Unit', 'History Logs', 'Trend Analysis']
-        },
-        {
-          title: 'Prep Checklists',
-          problem: [
-            'Prep tasks forgotten during busy shifts',
-            'No accountability for who completed what',
-            'New staff don\'t know the prep routine',
-            'Opening/closing procedures inconsistent',
-            'Manager has no visibility into prep status'
-          ],
-          solution: 'Customizable digital checklists for opening, closing, and prep routines. Assign tasks to team members, track completion times, and ensure nothing is missed.',
-          benefits: ['Accountability', 'Consistency', 'Training Tool', 'Time Stamps', 'Photo Proof', 'Templates']
-        },
-        {
-          title: 'Cocktail SOP Builder',
-          problem: [
-            'Recipes only exist in bartenders\' heads',
-            'Drinks taste different depending on who makes them',
-            'No costing or profit margin visibility',
-            'Training new staff is time-consuming',
-            'Menu changes cause confusion'
-          ],
-          solution: 'Professional cocktail documentation with precise measurements, techniques, glassware, garnishes, and photos. Auto-calculate costs, ABV, and nutrition.',
-          benefits: ['Cost Analysis', 'Consistency', 'Training', 'Versioning', 'ABV Calc', 'Photo SOPs']
-        },
-        {
-          title: 'Inventory Management',
-          problem: [
-            'Counting stock is tedious and inaccurate',
-            'No visibility into what\'s running low',
-            'Variance between actual and theoretical unknown',
-            'Dead stock ties up capital',
-            'Theft and over-pouring undetected'
-          ],
-          solution: 'Comprehensive stock tracking with barcode scanning, par levels, and automated reorder suggestions. Count inventory by weight or units, track variance.',
-          benefits: ['Par Levels', 'Variance Track', 'Barcode Scan', 'Multi-Store', 'Reorder Alerts', 'Cost Control']
-        },
-        {
-          title: 'FIFO & Expiry Tracking',
-          problem: [
-            'Products expire before being used',
-            'FIFO rotation is not followed properly',
-            'Wastage costs unknown and uncontrolled',
-            'Health inspector concerns about date management',
-            'No systematic approach to shelf life'
-          ],
-          solution: 'First-In-First-Out inventory system with expiration date tracking. Color-coded alerts for approaching dates, automatic rotation reminders, and waste logging.',
-          benefits: ['Expiry Alerts', 'Waste Reduction', 'Compliance', 'Date Labels', 'Rotation Guide', 'Waste Reports']
-        },
-        {
-          title: 'Purchase Orders',
-          problem: [
-            'Orders placed via text/phone with no record',
-            'No approval workflow for large purchases',
-            'Deliveries not checked against orders',
-            'Spend tracking across vendors is manual',
-            'Invoice reconciliation is a nightmare'
-          ],
-          solution: 'Digital purchase order system with supplier catalogs, approval workflows, and receiving verification. Create POs from par level suggestions.',
-          benefits: ['Order History', 'Approvals', 'Receiving', 'Vendor Track', 'Spend Reports', 'Auto-PO']
-        },
-        {
-          title: 'Cost Analysis',
-          problem: [
-            'True pour cost unknown for most drinks',
-            'Menu pricing based on guesswork',
-            'Ingredient price changes not reflected',
-            'Profit margins vary wildly across menu',
-            'No visibility into cost trends over time'
-          ],
-          solution: 'Real-time cost calculation engine that tracks ingredient prices, calculates pour costs, and suggests optimal pricing.',
-          benefits: ['Pour Cost', 'Margin Calc', 'Price Updates', 'Menu Analysis', 'Trend Reports', 'Profit Insights']
-        },
-        {
-          title: 'Team Scheduling',
-          problem: [
-            'Schedule changes communicated via group chat',
-            'Staff availability tracked on paper or memory',
-            'Shift swaps cause confusion',
-            'Overtime not tracked properly',
-            'No visibility into labor costs per shift'
-          ],
-          solution: 'Team calendar with shift scheduling, availability management, and swap requests. Staff get push notifications for schedule updates.',
-          benefits: ['Shift Plans', 'Availability', 'Swap Requests', 'Labor Cost', 'Notifications', 'Time Track']
-        },
-        {
-          title: 'Team Chat',
-          problem: [
-            'Work communication mixed with personal chats',
-            'Important updates get lost in group messages',
-            'No searchable history of decisions',
-            'File sharing scattered across platforms',
-            'New hires can\'t access past discussions'
-          ],
-          solution: 'Built-in team messaging with channels for different topics. Share files, photos, and voice notes. Pin important messages and search history.',
-          benefits: ['Channels', 'File Share', 'Search', 'Mentions', 'Pin Messages', 'History']
-        },
-        {
-          title: 'Supplier Management',
-          problem: [
-            'Vendor contacts in personal phones',
-            'Price lists outdated or missing',
-            'No comparison between suppliers',
-            'Delivery performance not tracked',
-            'Contract terms forgotten or lost'
-          ],
-          solution: 'Centralized supplier database with contacts, price lists, delivery schedules, and performance ratings. Compare prices across vendors.',
-          benefits: ['Contact Hub', 'Price Lists', 'Compare', 'Ratings', 'Contracts', 'Preferred']
+      // Capture each slide as an image
+      for (let i = 0; i < slides.length; i++) {
+        setCurrentSlide(i);
+        
+        // Wait for slide to render
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        if (slideRef.current) {
+          const dataUrl = await toPng(slideRef.current, {
+            quality: 1,
+            pixelRatio: 2,
+            backgroundColor: '#1a1a2e'
+          });
+          
+          // Calculate dimensions to fit A4
+          const imgWidth = pageWidth - 20;
+          const imgHeight = (slideRef.current.offsetHeight * imgWidth) / slideRef.current.offsetWidth;
+          
+          if (i > 0) {
+            pdf.addPage();
+          }
+          
+          // Add slide number
+          pdf.setFontSize(10);
+          pdf.setTextColor(150);
+          pdf.text(`Slide ${i + 1} of ${slides.length}`, pageWidth / 2, 10, { align: 'center' });
+          
+          // Add the image
+          pdf.addImage(dataUrl, 'PNG', 10, 15, imgWidth, Math.min(imgHeight, pageHeight - 25));
         }
-      ];
-
-      sections.forEach((section, index) => {
-        pdf.addPage();
-        let yPos = margin;
-        
-        // Title
-        pdf.setFontSize(20);
-        pdf.setTextColor(99, 102, 241);
-        pdf.text(section.title, margin, yPos);
-        yPos += 15;
-        
-        // Problem section
-        pdf.setFontSize(12);
-        pdf.setTextColor(220, 38, 38);
-        pdf.text('❌ Problem', margin, yPos);
-        yPos += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setTextColor(80);
-        section.problem.forEach(item => {
-          const lines = pdf.splitTextToSize(`• ${item}`, pageWidth - (margin * 2));
-          pdf.text(lines, margin, yPos);
-          yPos += lines.length * 5;
-        });
-        yPos += 8;
-        
-        // Solution section
-        pdf.setFontSize(12);
-        pdf.setTextColor(34, 197, 94);
-        pdf.text('✅ Solution', margin, yPos);
-        yPos += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setTextColor(80);
-        const solutionLines = pdf.splitTextToSize(section.solution, pageWidth - (margin * 2));
-        pdf.text(solutionLines, margin, yPos);
-        yPos += solutionLines.length * 5 + 8;
-        
-        // Benefits section
-        pdf.setFontSize(12);
-        pdf.setTextColor(59, 130, 246);
-        pdf.text('🏆 Benefits', margin, yPos);
-        yPos += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setTextColor(80);
-        pdf.text(section.benefits.join(' • '), margin, yPos);
-      });
-
-      // Summary page
-      pdf.addPage();
-      pdf.setFontSize(24);
-      pdf.setTextColor(99, 102, 241);
-      pdf.text('Complete Toolkit Summary', pageWidth / 2, 30, { align: 'center' });
+      }
       
-      pdf.setFontSize(12);
-      pdf.setTextColor(100);
-      let summaryY = 50;
+      // Restore original slide
+      setCurrentSlide(originalSlide);
       
-      const allTools = [
-        'Batch Calculator - Precision recipe scaling',
-        'Temperature Monitoring - HACCP compliance',
-        'Prep Checklists - Consistent operations',
-        'Cocktail SOP Builder - Recipe documentation',
-        'Inventory Management - Stock control',
-        'FIFO Tracking - Waste reduction',
-        'Purchase Orders - Procurement workflow',
-        'Cost Analysis - Profit optimization',
-        'Team Scheduling - Labor management',
-        'Team Chat - Communication hub',
-        'Supplier Management - Vendor database',
-        'My Spaces - Collaboration hub'
-      ];
-      
-      allTools.forEach(tool => {
-        pdf.text(`✓ ${tool}`, margin, summaryY);
-        summaryY += 8;
-      });
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(150);
-      pdf.text('All tools work together seamlessly to streamline your operations', pageWidth / 2, pageHeight - 30, { align: 'center' });
-
       pdf.save('Tools_Overview_Presentation.pdf');
       toast.success('PDF downloaded successfully!');
     } catch (error) {
@@ -855,7 +661,7 @@ const Presentation = () => {
         </div>
 
         {/* Slide content */}
-        <Card className="p-6 min-h-[500px]">
+        <Card ref={slideRef} className="p-6 min-h-[500px]">
           <motion.div
             key={currentSlide}
             initial={{ opacity: 0, x: 20 }}
