@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign, Link as LinkIcon } from "lucide-react";
+import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign, Link as LinkIcon, BookOpen } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useNavigate } from "react-router-dom";
@@ -122,6 +122,10 @@ const Profile = () => {
                 Add Story
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => navigate("/presentation")} className="text-white/90">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Resources
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/monetization")} className="text-white/90">
                 <DollarSign className="w-4 h-4 mr-2" />
                 Monetization
