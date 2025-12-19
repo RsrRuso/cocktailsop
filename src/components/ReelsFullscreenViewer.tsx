@@ -331,8 +331,8 @@ export const ReelsFullscreenViewer = ({
 
             const isImage = currentReel.is_image_reel === true;
 
-            // Determine if video should be muted
-            const shouldMuteVideo = isMuted || (hasMusic && currentReel.mute_original_audio === true);
+            // Determine if video should be muted - ALWAYS mute video when music is attached
+            const shouldMuteVideo = isMuted || hasMusic;
 
             if (isImage) {
               return (
