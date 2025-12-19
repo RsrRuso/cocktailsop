@@ -15,9 +15,9 @@ export const useUserOnlineStatus = (userId: string | null | undefined) => {
       return;
     }
 
-    // Subscribe to global presence channel (only once)
+    // Subscribe to global presence channel (same channel as useTrackPresence uses)
     if (!globalChannel) {
-      globalChannel = supabase.channel('specverse-platform-presence');
+      globalChannel = supabase.channel('specverse-global-presence');
       
       globalChannel
         .on('presence', { event: 'sync' }, () => {
