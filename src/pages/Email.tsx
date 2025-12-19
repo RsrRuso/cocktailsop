@@ -320,130 +320,112 @@ const Email = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 relative">
+    <div className="min-h-screen bg-background">
       <TopNav isVisible={true} />
-      <div className="container max-w-4xl mx-auto px-3 pt-16 sm:pt-20 pb-20 sm:pb-24 relative z-10">
-        {/* Header - Simplified for speed */}
-        <div className="mb-6 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+      <div className="container max-w-4xl mx-auto px-3 pt-16 sm:pt-20 pb-20 sm:pb-24">
+        {/* Header - Instagram style clean */}
+        <div className="mb-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
               Neuron Email
             </h1>
             <Button 
               onClick={() => setShowCompose(true)} 
+              variant="ghost"
               size="sm"
-              className="gap-2 text-xs sm:text-sm h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity rounded-full"
+              className="gap-2 h-9 px-3"
             >
-              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline font-semibold">Compose</span>
-              <span className="sm:hidden font-semibold">New</span>
+              <Send className="w-5 h-5" strokeWidth={1.5} />
             </Button>
           </div>
           
           {currentUser && (
-            <div className="glass backdrop-blur-xl p-4 rounded-2xl border border-primary/30 shadow-lg">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="py-3 border-b border-border/50">
+              <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-muted-foreground/80 mb-1">Your IE Account</p>
-                  <p className="text-sm sm:text-base font-mono font-bold text-primary truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
                   </p>
-                </div>
-                <div className="flex items-center gap-4 text-xs font-medium">
-                  <span className="glass px-3 py-1.5 rounded-full whitespace-nowrap">{profiles.length - 1} contacts</span>
-                  <span className="glass px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 whitespace-nowrap flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    Unique
-                  </span>
+                  <p className="text-xs text-muted-foreground">{profiles.length - 1} contacts</p>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Filters - Enhanced Design */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
-          <Button
-            variant={filter === "inbox" ? "default" : "outline"}
+        {/* Filters - Instagram style tabs */}
+        <div className="flex border-b border-border/50 mb-4 -mx-3 px-3 overflow-x-auto scrollbar-hide">
+          <button
             onClick={() => setFilter("inbox")}
-            size="sm"
-            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               filter === "inbox" 
-                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
-                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+                ? "border-foreground text-foreground" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Inbox className="w-4 h-4" />
-            <span className="hidden sm:inline font-semibold">Inbox</span>
-          </Button>
-          <Button
-            variant={filter === "sent" ? "default" : "outline"}
+            <Inbox className="w-5 h-5" strokeWidth={1.5} />
+            <span className="hidden sm:inline">Inbox</span>
+          </button>
+          <button
             onClick={() => setFilter("sent")}
-            size="sm"
-            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               filter === "sent" 
-                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
-                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+                ? "border-foreground text-foreground" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Send className="w-4 h-4" />
-            <span className="hidden sm:inline font-semibold">Sent</span>
-          </Button>
-          <Button
-            variant={filter === "starred" ? "default" : "outline"}
+            <Send className="w-5 h-5" strokeWidth={1.5} />
+            <span className="hidden sm:inline">Sent</span>
+          </button>
+          <button
             onClick={() => setFilter("starred")}
-            size="sm"
-            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               filter === "starred" 
-                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
-                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+                ? "border-foreground text-foreground" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Star className="w-4 h-4" />
-            <span className="hidden sm:inline font-semibold">Starred</span>
-          </Button>
-          <Button
-            variant={filter === "archived" ? "default" : "outline"}
+            <Star className="w-5 h-5" strokeWidth={1.5} />
+            <span className="hidden sm:inline">Starred</span>
+          </button>
+          <button
             onClick={() => setFilter("archived")}
-            size="sm"
-            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               filter === "archived" 
-                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
-                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+                ? "border-foreground text-foreground" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Archive className="w-4 h-4" />
-            <span className="hidden sm:inline font-semibold">Archived</span>
-          </Button>
-          <Button
-            variant={filter === "drafts" ? "default" : "outline"}
+            <Archive className="w-5 h-5" strokeWidth={1.5} />
+            <span className="hidden sm:inline">Archived</span>
+          </button>
+          <button
             onClick={() => setFilter("drafts")}
-            size="sm"
-            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               filter === "drafts" 
-                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
-                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+                ? "border-foreground text-foreground" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline font-semibold">Drafts</span>
-          </Button>
+            <FileText className="w-5 h-5" strokeWidth={1.5} />
+            <span className="hidden sm:inline">Drafts</span>
+          </button>
         </div>
 
-        {/* Email List - Enhanced Design */}
-        <div className="space-y-3">
+        {/* Email List - Instagram style clean */}
+        <div>
           {isLoading ? (
-            // Loading skeletons for instant perceived load
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="glass backdrop-blur-xl p-4 rounded-2xl border border-border/20">
-                <div className="flex items-start gap-2.5">
-                  <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
+            // Loading skeletons - clean style
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="p-3 border-b border-border/30">
+                <div className="flex items-start gap-3">
+                  <Skeleton className="w-11 h-11 rounded-full" />
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-3 w-12" />
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-10" />
                     </div>
-                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3.5 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
                   </div>
                 </div>
@@ -459,221 +441,196 @@ const Email = () => {
                     markAsRead(email.id);
                   }
                 }}
-                className={`glass backdrop-blur-xl p-4 rounded-2xl cursor-pointer hover:bg-primary/5 transition-all duration-200 active:scale-[0.98] shadow-lg relative overflow-hidden ${
-                  !email.read && email.recipient_id === currentUser?.id ? "border-2 border-primary shadow-primary/20" : "border border-border/20"
+                className={`p-3 cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors border-b border-border/30 ${
+                  !email.read && email.recipient_id === currentUser?.id ? "bg-muted/30" : ""
                 }`}
               >
-                {!email.read && email.recipient_id === currentUser?.id && (
-                  <div className="absolute inset-0 bg-primary/5" />
-                )}
-                <div className="flex items-start gap-2.5 relative z-10">
+                <div className="flex items-start gap-3">
                   <OptimizedAvatar
                     src={filter === "sent" ? email.recipient?.avatar_url : email.sender?.avatar_url}
                     alt={filter === "sent" ? email.recipient?.username : email.sender?.username}
                     fallback={(filter === "sent" ? email.recipient?.username?.[0] : email.sender?.username?.[0]) || "U"}
                     userId={filter === "sent" ? email.recipient?.id : email.sender?.id}
-                    className="w-10 h-10 sm:w-12 sm:h-12"
+                    className="w-11 h-11 rounded-full"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-sm sm:text-base font-semibold truncate">
+                        <p className={`text-sm truncate ${!email.read && email.recipient_id === currentUser?.id ? "font-semibold" : "font-medium"}`}>
                           {filter === "sent" ? email.recipient?.full_name : email.sender?.full_name}
                         </p>
-                        {email.starred && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />}
+                        {email.starred && <Star className="w-4 h-4 fill-foreground text-foreground flex-shrink-0" strokeWidth={1.5} />}
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(email.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm font-medium truncate mb-0.5">{email.subject}</p>
-                    <p className="text-xs text-muted-foreground truncate">{email.body.replace(/<[^>]*>/g, '').slice(0, 100)}</p>
+                    <p className={`text-sm truncate ${!email.read && email.recipient_id === currentUser?.id ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                      {email.subject}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {email.body.replace(/<[^>]*>/g, '').slice(0, 80)}
+                    </p>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <Mail className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No emails found</p>
+            <div className="text-center py-16 text-muted-foreground">
+              <Mail className="w-12 h-12 mx-auto mb-3" strokeWidth={1} />
+              <p className="text-sm">No emails</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Compose Dialog - Mobile Optimized */}
+      {/* Compose Dialog - Instagram style clean */}
       <Dialog open={showCompose} onOpenChange={setShowCompose}>
-        <DialogContent className="glass max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-border bg-background">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-              Compose Email
-            </DialogTitle>
+            <DialogTitle className="text-base font-semibold">New Message</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4">
             <div>
-              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Recipient</label>
+              <label className="text-sm font-medium mb-2 block">To</label>
               <Select value={recipient} onValueChange={setRecipient}>
-                <SelectTrigger className="h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder="Select follower" />
+                <SelectTrigger className="h-10 text-sm border-border">
+                  <SelectValue placeholder="Select recipient" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   {profiles.filter(p => p.id !== currentUser?.id).map((profile) => (
                     <SelectItem key={profile.id} value={profile.id} className="text-sm">
-                      <div className="flex flex-col py-1">
-                        <span className="font-medium">{profile.full_name}</span>
-                        <span className="text-xs font-mono text-muted-foreground">
-                          {profile.internal_email}
-                        </span>
-                      </div>
+                      <span className="font-medium">{profile.full_name}</span>
                     </SelectItem>
                   ))}
-                  {profiles.filter(p => p.id !== currentUser?.id).length === 0 && (
-                    <div className="p-3 text-xs text-muted-foreground text-center">
-                      No followers available
-                    </div>
-                  )}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Subject</label>
+              <label className="text-sm font-medium mb-2 block">Subject</label>
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="Email subject"
-                className="h-9 sm:h-10 text-sm"
+                placeholder="Subject"
+                className="h-10 text-sm border-border"
               />
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Message</label>
+              <label className="text-sm font-medium mb-2 block">Message</label>
               <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="Write your email..."
-                rows={6}
-                className="text-sm resize-none"
+                placeholder="Write a message..."
+                rows={5}
+                className="text-sm resize-none border-border"
               />
             </div>
             
             {/* AI Suggestion */}
-            <Button
-              variant="outline"
+            <button
               onClick={generateAiSuggestion}
               disabled={isGenerating}
-              size="sm"
-              className="w-full gap-1.5 sm:gap-2 h-9 text-xs sm:text-sm"
+              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Sparkles className="w-4 h-4" strokeWidth={1.5} />
               {isGenerating ? "Generating..." : "AI Suggestion"}
-            </Button>
+            </button>
             
             {aiSuggestion && (
-              <div className="glass p-3 rounded-xl border border-primary/20">
-                <p className="text-xs font-medium mb-2 text-primary">AI Suggestion:</p>
-                <p className="text-xs leading-relaxed select-text whitespace-pre-wrap break-words">
-                  {aiSuggestion}
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
+              <div className="p-3 rounded-lg border border-border bg-muted/30">
+                <p className="text-xs text-muted-foreground mb-2">AI Suggestion:</p>
+                <p className="text-sm leading-relaxed">{aiSuggestion}</p>
+                <div className="flex gap-2 mt-3">
+                  <button
                     onClick={() => setBody(aiSuggestion)}
-                    className="h-8 text-xs flex-1"
+                    className="text-sm font-medium text-foreground"
                   >
-                    Use This
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                    Use
+                  </button>
+                  <button
                     onClick={() => copyToClipboard(aiSuggestion)}
-                    className="h-8 text-xs flex items-center gap-1"
+                    className="text-sm text-muted-foreground flex items-center gap-1"
                   >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Copy</span>
-                  </Button>
+                    <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    Copy
+                  </button>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2 pt-2">
-              <Button onClick={sendEmail} className="flex-1 gap-1.5 h-9 sm:h-10 text-sm">
-                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <div className="flex gap-2">
+                <button
+                  onClick={saveDraft}
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Save className="w-5 h-5" strokeWidth={1.5} />
+                </button>
+              </div>
+              <Button 
+                onClick={sendEmail} 
+                className="h-9 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90"
+              >
                 Send
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={saveDraft}
-                className="gap-1.5 h-9 sm:h-10 text-sm"
-              >
-                <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Draft</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCompose(false)}
-                className="h-9 sm:h-10 text-sm px-3"
-              >
-                Cancel
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* View Email Dialog - Mobile Optimized */}
+      {/* View Email Dialog - Instagram style clean */}
       <Dialog open={!!selectedEmail} onOpenChange={() => setSelectedEmail(null)}>
-        <DialogContent className="glass max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border-border bg-background">
           {selectedEmail && (
             <>
               <DialogHeader>
-                <div className="flex items-start gap-2.5">
+                <div className="flex items-start gap-3">
                   <OptimizedAvatar
                     src={filter === "sent" ? selectedEmail.recipient?.avatar_url : selectedEmail.sender?.avatar_url}
                     alt={filter === "sent" ? selectedEmail.recipient?.username : selectedEmail.sender?.username}
                     fallback={(filter === "sent" ? selectedEmail.recipient?.username?.[0] : selectedEmail.sender?.username?.[0]) || "U"}
                     userId={filter === "sent" ? selectedEmail.recipient?.id : selectedEmail.sender?.id}
-                    className="w-9 h-9 sm:w-10 sm:h-10"
+                    className="w-10 h-10 rounded-full"
                   />
                   <div className="flex-1 min-w-0">
-                    <DialogTitle className="text-sm sm:text-base leading-tight">{selectedEmail.subject}</DialogTitle>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                      From: {selectedEmail.sender?.full_name}
+                    <DialogTitle className="text-base font-semibold leading-tight">{selectedEmail.subject}</DialogTitle>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {selectedEmail.sender?.full_name}
                     </p>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => toggleStar(selectedEmail.id, selectedEmail.starred)}
-                      className="h-8 w-8"
-                    >
-                      <Star className={`w-3.5 h-3.5 ${selectedEmail.starred ? "fill-yellow-500 text-yellow-500" : ""}`} />
-                    </Button>
-                    {filter === "inbox" && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => toggleArchive(selectedEmail.id, selectedEmail.archived)}
-                        className="h-8 w-8"
-                      >
-                        <Archive className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => deleteEmail(selectedEmail.id)}
-                      className="h-8 w-8"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
                   </div>
                 </div>
               </DialogHeader>
-              <div className="mt-3 sm:mt-4">
-                <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">{selectedEmail.body}</p>
-                <p className="text-xs text-muted-foreground mt-3 sm:mt-4">
+              
+              {/* Actions - Instagram style */}
+              <div className="flex items-center gap-4 py-3 border-b border-border">
+                <button
+                  onClick={() => toggleStar(selectedEmail.id, selectedEmail.starred)}
+                  className="text-foreground"
+                >
+                  <Star className={`w-6 h-6 ${selectedEmail.starred ? "fill-foreground" : ""}`} strokeWidth={1.5} />
+                </button>
+                {filter === "inbox" && (
+                  <button
+                    onClick={() => toggleArchive(selectedEmail.id, selectedEmail.archived)}
+                    className="text-foreground"
+                  >
+                    <Archive className="w-6 h-6" strokeWidth={1.5} />
+                  </button>
+                )}
+                <button
+                  onClick={() => deleteEmail(selectedEmail.id)}
+                  className="text-foreground"
+                >
+                  <Trash2 className="w-6 h-6" strokeWidth={1.5} />
+                </button>
+              </div>
+              
+              <div className="py-4">
+                <div 
+                  className="text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                />
+                <p className="text-xs text-muted-foreground mt-4">
                   {new Date(selectedEmail.created_at).toLocaleString()}
                 </p>
               </div>
