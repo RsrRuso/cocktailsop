@@ -28,6 +28,7 @@ interface StatusRingProps {
   username?: string;
   avatarUrl?: string;
   userId?: string | null;
+  showOnlineIndicator?: boolean;
 }
 
 const StatusRing = ({ 
@@ -40,7 +41,8 @@ const StatusRing = ({
   className = "",
   username,
   avatarUrl,
-  userId
+  userId,
+  showOnlineIndicator = true
 }: StatusRingProps) => {
   const [showViewer, setShowViewer] = useState(false);
   const isOnline = useUserOnlineStatus(userId);
@@ -137,7 +139,7 @@ const StatusRing = ({
         {children}
         
         {/* Online indicator dot - shows when user is online on the platform */}
-        {isOnline && (
+        {showOnlineIndicator && isOnline && (
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background z-10 animate-pulse" />
         )}
       </div>
