@@ -47,13 +47,8 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     }
   }, [memberships, getMemberCount]);
 
-  const handleDoorPress = (membership: Membership) => {
-    // Navigate instantly to the space
-    navigate(membership.route);
-  };
-  
-  const handleDoorLongPress = async (membership: Membership) => {
-    console.log('[ProfileMembershipDoors] Door long pressed:', membership.name, 'Type:', membership.type, 'ID:', membership.id);
+  const handleDoorPress = async (membership: Membership) => {
+    console.log('[ProfileMembershipDoors] Door pressed:', membership.name, 'Type:', membership.type, 'ID:', membership.id);
     
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
     
