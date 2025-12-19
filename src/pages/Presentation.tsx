@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, ChevronLeft, ChevronRight, Store, Package, BarChart3, CheckCircle, XCircle, Play, Pause, RotateCcw, Sparkles, Zap, Target, AlertTriangle, Lightbulb, Award, Image, FileText } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Store, Package, BarChart3, CheckCircle, XCircle, Play, Pause, RotateCcw, Sparkles, Zap, Target, AlertTriangle, Lightbulb, Award, Image, FileText, Wand2, Copy, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,10 +27,44 @@ const Presentation = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isPdfMode, setIsPdfMode] = useState(false);
+  const [caption, setCaption] = useState('');
+  const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
+  const [copiedCaption, setCopiedCaption] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const SLIDE_DURATION = 8000; // 8 seconds per slide
+
+  const generateCaption = async () => {
+    setIsGeneratingCaption(true);
+    try {
+      const currentSlideData = slides[currentSlide];
+      const context = `presentation slide about ${currentSlideData.title}: ${currentSlideData.subtitle || ''}`;
+      
+      const { data, error } = await supabase.functions.invoke('ai-caption-generator', {
+        body: { context }
+      });
+
+      if (error) throw error;
+      
+      if (data?.caption) {
+        setCaption(data.caption);
+        toast.success('Caption generated!');
+      }
+    } catch (error) {
+      console.error('Error generating caption:', error);
+      toast.error('Failed to generate caption');
+    } finally {
+      setIsGeneratingCaption(false);
+    }
+  };
+
+  const copyCaption = () => {
+    navigator.clipboard.writeText(caption);
+    setCopiedCaption(true);
+    toast.success('Caption copied!');
+    setTimeout(() => setCopiedCaption(false), 2000);
+  };
 
   const slides: Slide[] = [
     // Opening slide
@@ -795,6 +830,40 @@ const Presentation = () => {
           <span className="text-xs text-muted-foreground w-12 text-right">
             {currentSlide + 1}/{slides.length}
           </span>
+        </div>
+
+        {/* AI Caption Generator */}
+        <div className="mb-3 p-3 rounded-lg bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20">
+          <div className="flex items-center gap-2 mb-2">
+            <Wand2 className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">AI Caption</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={generateCaption}
+              disabled={isGeneratingCaption}
+              className="ml-auto h-7 px-2 text-xs"
+            >
+              {isGeneratingCaption ? (
+                <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'Generate'
+              )}
+            </Button>
+          </div>
+          {caption && (
+            <div className="flex items-start gap-2 mt-2">
+              <p className="text-sm text-muted-foreground flex-1 leading-relaxed">{caption}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyCaption}
+                className="h-7 w-7 p-0 flex-shrink-0"
+              >
+                {copiedCaption ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Slide indicators */}
