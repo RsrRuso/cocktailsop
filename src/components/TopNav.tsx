@@ -436,35 +436,34 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
           </DropdownMenu>
 
           {/* Right section - Only Notifications and Messages */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {/* Notifications */}
             <button
               onClick={() => {
                 lightTap();
                 navigate("/notifications");
               }}
-              className="flex items-center justify-center w-12 h-12 transition-all text-white hover:text-primary relative"
+              className="flex items-center justify-center w-10 h-10 transition-all text-white/80 relative"
             >
-              <Bell className="w-7 h-7" />
+              <Bell className="w-6 h-6" />
               {unreadNotificationsCount > 0 && (
-                <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-medium text-white">
                   {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                 </div>
               )}
             </button>
 
-            {/* Messages / Neuron */}
+            {/* Messages */}
             <button
               onClick={() => {
                 lightTap();
                 navigate("/messages");
               }}
-              className="flex items-center justify-center w-12 h-12 transition-all text-white hover:text-primary relative"
-              title="Neuron"
+              className="flex items-center justify-center w-10 h-10 transition-all text-white/80 relative"
             >
-              <Send className="w-7 h-7" />
+              <Send className="w-6 h-6" />
               {unreadMessagesCount > 0 && (
-                <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-medium text-white">
                   {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                 </div>
               )}

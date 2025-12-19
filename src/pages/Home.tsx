@@ -396,18 +396,18 @@ const Home = () => {
                           <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
                         </div>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer">
-                          <Camera className="w-4 h-4 mr-2 text-orange-500" />
-                          Create Story
+                      <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
+                        <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
+                          <Camera className="w-4 h-4 mr-2 opacity-70" />
+                          Story
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer">
-                          <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
-                          Add Status
+                        <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer text-white/90">
+                          <MessageCircle className="w-4 h-4 mr-2 opacity-70" />
+                          Status
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer">
-                          <Music className="w-4 h-4 mr-2 text-green-500" />
-                          Add Music Status
+                        <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer text-white/90">
+                          <Music className="w-4 h-4 mr-2 opacity-70" />
+                          Music
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -427,18 +427,18 @@ const Home = () => {
                         <span className="text-primary-foreground text-base font-bold leading-none">+</span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-48">
-                      <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer">
-                        <Camera className="w-4 h-4 mr-2 text-orange-500" />
-                        Create Story
+                    <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
+                      <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
+                        <Camera className="w-4 h-4 mr-2 opacity-70" />
+                        Story
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer">
-                        <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
-                        Add Status
+                      <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer text-white/90">
+                        <MessageCircle className="w-4 h-4 mr-2 opacity-70" />
+                        Status
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer">
-                        <Music className="w-4 h-4 mr-2 text-green-500" />
-                        Add Music Status
+                      <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer text-white/90">
+                        <Music className="w-4 h-4 mr-2 opacity-70" />
+                        Music
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
