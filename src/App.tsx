@@ -1,9 +1,8 @@
-// Cache bust: v2025.06.19.1
+// Cache bust: v2025.06.19.2
 import React, { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
 import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -19,6 +18,10 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
 import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt";
+import { initFastLoad } from "@/lib/fastLoad";
+
+// Initialize fast loading optimizations
+initFastLoad();
 
 // Eager load critical routes for instant display
 import Index from "./pages/Index";
@@ -185,13 +188,10 @@ const Presentation = lazy(() => import("./pages/Presentation"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// Ultra-lightweight page loader for instant feedback
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="space-y-4 w-full max-w-md px-4">
-      <Skeleton className="h-12 w-full" />
-      <Skeleton className="h-64 w-full" />
-      <Skeleton className="h-12 w-full" />
-    </div>
+    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
