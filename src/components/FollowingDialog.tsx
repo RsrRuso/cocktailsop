@@ -70,7 +70,7 @@ const FollowingDialog = ({ open, onOpenChange, userId }: FollowingDialogProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass max-w-md">
+      <DialogContent className="bg-transparent border-none shadow-none max-w-md">
         <DialogHeader>
           <DialogTitle>Following</DialogTitle>
         </DialogHeader>
