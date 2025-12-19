@@ -62,7 +62,7 @@ const BottomNav = () => {
       }`}
     >
       {/* Transparent nav with bright elements */}
-      <div className="flex items-center justify-around px-2 py-3 max-w-2xl mx-auto">
+      <div className="flex items-center justify-around px-4 py-4 max-w-sm mx-auto">
           <button
             onClick={() => {
               if (isActive("/home")) {
@@ -71,37 +71,34 @@ const BottomNav = () => {
                 navigate("/home");
               }
             }}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
+            className={`p-2 transition-all ${
               isActive("/home") ? "text-white" : "text-white/60"
             }`}
           >
             <Home className={`w-6 h-6 ${isActive("/home") ? "fill-current" : ""}`} />
-            <span className="text-[9px] mt-0.5">Home</span>
           </button>
 
           <button
             onClick={() => navigate("/explore")}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
+            className={`p-2 transition-all ${
               isActive("/explore") ? "text-white" : "text-white/60"
             }`}
           >
             <Search className={`w-6 h-6 ${isActive("/explore") ? "stroke-[2.5]" : ""}`} />
-            <span className="text-[9px] mt-0.5">Explore</span>
           </button>
 
           <button
             onClick={() => navigate("/map")}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
+            className={`p-2 transition-all ${
               isActive("/map") ? "text-white" : "text-white/60"
             }`}
           >
             <MapPin className={`w-6 h-6 ${isActive("/map") ? "fill-current" : ""}`} />
-            <span className="text-[9px] mt-0.5">Map</span>
           </button>
 
           <button
             onClick={() => navigate("/profile")}
-            className="flex flex-col items-center justify-center w-14 h-12 transition-all"
+            className="p-2 transition-all"
           >
             <OptimizedAvatar
               src={avatarUrl}
@@ -112,7 +109,6 @@ const BottomNav = () => {
               showStatus={false}
               showAddButton={false}
             />
-            <span className={`text-[9px] mt-0.5 ${isActive("/profile") ? "text-white" : "text-white/60"}`}>Profile</span>
           </button>
         </div>
     </div>
