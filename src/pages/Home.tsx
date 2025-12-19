@@ -530,7 +530,7 @@ const Home = () => {
       {/* Events Ticker - lazy loaded */}
       {selectedRegion && (
         <Suspense fallback={null}>
-          <div className="px-4">
+          <div className="px-4 mt-6">
             <EventsTicker region={selectedRegion} />
           </div>
         </Suspense>
