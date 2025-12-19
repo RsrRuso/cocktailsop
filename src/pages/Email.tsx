@@ -46,23 +46,49 @@ const decodeHtml = (html: string): string => {
 
 const stripHtml = (html: string): string => decodeHtml(html).replace(/<[^>]*>/g, '').trim();
 
-// Super lightweight email item
-const EmailItem = memo(({ email, isSent, isUnread, onClick }: { email: EmailType; isSent: boolean; isUnread: boolean; onClick: () => void }) => (
-  <div onClick={onClick} className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 border-b border-border/20 ${isUnread ? "bg-muted/30" : ""}`}>
-    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium shrink-0">
-      {(isSent ? email.recipient_name?.[0] : email.sender_name?.[0]) || "?"}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-sm truncate ${isUnread ? "font-semibold" : ""}`}>{isSent ? email.recipient_name : email.sender_name}</span>
-        <span className="text-xs text-muted-foreground shrink-0">{new Date(email.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+// Super lightweight email item with swipe delete
+const EmailItem = memo(({ email, isSent, isUnread, onClick, onDelete }: { email: EmailType; isSent: boolean; isUnread: boolean; onClick: () => void; onDelete: (id: string) => void }) => {
+  const [showDelete, setShowDelete] = useState(false);
+  
+  return (
+    <div className="relative group">
+      <div 
+        onClick={onClick} 
+        onContextMenu={(e) => { e.preventDefault(); setShowDelete(true); }}
+        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 border-b border-border/20 ${isUnread ? "bg-muted/30" : ""}`}
+      >
+        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium shrink-0">
+          {(isSent ? email.recipient_name?.[0] : email.sender_name?.[0]) || "?"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className={`text-sm truncate ${isUnread ? "font-semibold" : ""}`}>{isSent ? email.recipient_name : email.sender_name}</span>
+            <span className="text-xs text-muted-foreground shrink-0">{new Date(email.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+          </div>
+          <p className={`text-sm truncate ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>{email.subject}</p>
+          <p className="text-xs text-muted-foreground truncate">{stripHtml(email.body).slice(0, 50)}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          {email.starred && <Star className="w-4 h-4 fill-foreground shrink-0" strokeWidth={1.5} />}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
+            className="p-1 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        </div>
       </div>
-      <p className={`text-sm truncate ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>{email.subject}</p>
-      <p className="text-xs text-muted-foreground truncate">{stripHtml(email.body).slice(0, 50)}</p>
+      {showDelete && (
+        <div className="absolute inset-0 bg-destructive/10 backdrop-blur-sm flex items-center justify-center gap-2 z-10">
+          <button onClick={() => { onDelete(email.id); setShowDelete(false); }} className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium flex items-center gap-1">
+            <Trash2 className="w-4 h-4" />Delete
+          </button>
+          <button onClick={() => setShowDelete(false)} className="px-3 py-1.5 bg-muted text-foreground rounded-lg text-sm font-medium">Cancel</button>
+        </div>
+      )}
     </div>
-    {email.starred && <Star className="w-4 h-4 fill-foreground shrink-0" strokeWidth={1.5} />}
-  </div>
-));
+  );
+});
 EmailItem.displayName = "EmailItem";
 
 // Profile cache
@@ -218,7 +244,7 @@ const Email = () => {
 
         <div>
           {emails.length > 0 ? emails.map(email => (
-            <EmailItem key={email.id} email={email} isSent={filter === "sent"} isUnread={!email.read && email.recipient_id === uid} onClick={() => { setSelectedEmail(email); if (!email.read && email.recipient_id === uid) markRead(email.id); }} />
+            <EmailItem key={email.id} email={email} isSent={filter === "sent"} isUnread={!email.read && email.recipient_id === uid} onClick={() => { setSelectedEmail(email); if (!email.read && email.recipient_id === uid) markRead(email.id); }} onDelete={deleteEmail} />
           )) : (
             <div className="text-center py-16 text-muted-foreground">
               <Mail className="w-10 h-10 mx-auto mb-2 opacity-50" strokeWidth={1} />
