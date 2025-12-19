@@ -627,7 +627,8 @@ const Presentation = () => {
     
     setIsPlaying(false);
     setIsGenerating(true);
-    toast.info('Generating PDF...');
+    setDownloadProgress(0);
+    toast.info('Generating premium PDF...');
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -637,27 +638,63 @@ const Presentation = () => {
       
       for (let i = 0; i < slides.length; i++) {
         setCurrentSlide(i);
-        await new Promise(resolve => setTimeout(resolve, 400));
+        setDownloadProgress(((i + 1) / slides.length) * 100);
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         if (slideRef.current) {
           const dataUrl = await toPng(slideRef.current, {
             quality: 1,
-            pixelRatio: 2,
+            pixelRatio: 3,
+            backgroundColor: '#0a0a0a'
           });
-          
-          const imgWidth = pageWidth - 20;
-          const imgHeight = (slideRef.current.offsetHeight * imgWidth) / slideRef.current.offsetWidth;
           
           if (i > 0) pdf.addPage();
           
-          pdf.setFillColor(42, 42, 42);
+          // Deep black background
+          pdf.setFillColor(10, 10, 10);
           pdf.rect(0, 0, pageWidth, pageHeight, 'F');
           
-          pdf.setFontSize(10);
-          pdf.setTextColor(150);
-          pdf.text(`${i + 1} / ${slides.length}`, pageWidth / 2, 10, { align: 'center' });
+          // Subtle accent line at top
+          pdf.setFillColor(59, 130, 246);
+          pdf.rect(0, 0, pageWidth, 1.5, 'F');
           
-          pdf.addImage(dataUrl, 'PNG', 10, 15, imgWidth, Math.min(imgHeight, pageHeight - 25));
+          // Header with branding
+          pdf.setFontSize(8);
+          pdf.setTextColor(100, 100, 100);
+          pdf.text('MY SPACES', 10, 8);
+          
+          // Page number on right
+          pdf.setFontSize(9);
+          pdf.setTextColor(120, 120, 120);
+          pdf.text(`${i + 1} / ${slides.length}`, pageWidth - 10, 8, { align: 'right' });
+          
+          // Calculate image dimensions to fit nicely
+          const marginX = 8;
+          const marginTop = 12;
+          const marginBottom = 15;
+          const imgWidth = pageWidth - (marginX * 2);
+          const availableHeight = pageHeight - marginTop - marginBottom;
+          const imgHeight = (slideRef.current.offsetHeight * imgWidth) / slideRef.current.offsetWidth;
+          const finalHeight = Math.min(imgHeight, availableHeight);
+          
+          // Center image vertically if smaller than available space
+          const yOffset = marginTop + (availableHeight - finalHeight) / 2;
+          
+          // Add subtle shadow effect (dark rectangle behind)
+          pdf.setFillColor(5, 5, 5);
+          pdf.roundedRect(marginX + 1, yOffset + 1, imgWidth, finalHeight, 2, 2, 'F');
+          
+          // Add the slide image
+          pdf.addImage(dataUrl, 'PNG', marginX, yOffset, imgWidth, finalHeight);
+          
+          // Footer line
+          pdf.setFillColor(30, 30, 30);
+          pdf.rect(10, pageHeight - 8, pageWidth - 20, 0.3, 'F');
+          
+          // Footer text
+          pdf.setFontSize(7);
+          pdf.setTextColor(80, 80, 80);
+          pdf.text('Created with MySpaces', pageWidth / 2, pageHeight - 5, { align: 'center' });
         }
       }
       
@@ -669,6 +706,7 @@ const Presentation = () => {
       toast.error('Failed to generate PDF');
     } finally {
       setIsGenerating(false);
+      setDownloadProgress(0);
     }
   };
 
