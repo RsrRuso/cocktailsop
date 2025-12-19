@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageCircle, Reply, Trash2, Edit2, Send, X, Heart } from 'lucide-react';
+import { MessageCircle, Reply, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
-import OptimizedAvatar from './OptimizedAvatar';
 import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CommentItem } from './CommentItem';
 
 interface Reaction {
   emoji: string;
@@ -43,7 +43,6 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
   const [editContent, setEditContent] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
-  const lastTapRef = useRef<{ time: number; commentId: string | null }>({ time: 0, commentId: null });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -134,6 +133,15 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
     } else {
       updatedReactions = [...reactions, { emoji: '❤️', user_id: currentUserId }];
       setLikedComments(prev => new Set(prev).add(commentId));
+      
+      // Auto-remove heart animation after 1 second
+      setTimeout(() => {
+        setLikedComments(prev => {
+          const next = new Set(prev);
+          next.delete(commentId);
+          return next;
+        });
+      }, 1000);
     }
 
     const { error } = await supabase
@@ -143,29 +151,6 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
 
     if (!error) {
       fetchComments();
-    }
-  };
-
-  const handleTap = (commentId: string) => {
-    const now = Date.now();
-    const { time, commentId: lastId } = lastTapRef.current;
-    
-    if (now - time < 300 && lastId === commentId) {
-      // Double tap detected
-      handleDoubleTapLike(commentId);
-      lastTapRef.current = { time: 0, commentId: null };
-    } else {
-      lastTapRef.current = { time: now, commentId };
-    }
-  };
-
-  const handleSwipeEnd = (commentId: string, info: PanInfo) => {
-    if (info.offset.x > 80) {
-      // Swipe right - Reply
-      setReplyToId(commentId);
-    } else if (info.offset.x < -80) {
-      // Swipe left - Like
-      handleDoubleTapLike(commentId);
     }
   };
 
@@ -203,138 +188,17 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
     fetchComments();
   };
 
-  const renderComment = (comment: Comment, isReply = false) => {
-    const isOwner = comment.user_id === currentUserId;
-    const isEditing = editingCommentId === comment.id;
-    const reactions = comment.reactions || [];
-    const likeCount = reactions.filter(r => r.emoji === '❤️').length;
-    const hasLiked = reactions.some(r => r.user_id === currentUserId && r.emoji === '❤️');
-    const x = useMotionValue(0);
-    const replyOpacity = useTransform(x, [0, 80], [0, 1]);
-    const likeOpacity = useTransform(x, [-80, 0], [1, 0]);
+  const handleStartEdit = (commentId: string) => {
+    const comment = comments.find(c => c.id === commentId);
+    if (comment) {
+      setEditingCommentId(commentId);
+      setEditContent(comment.content);
+    }
+  };
 
-    return (
-      <div key={comment.id} className={`relative ${isReply ? 'ml-10 mt-3' : ''}`}>
-        {/* Swipe indicators */}
-        <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-          <motion.div style={{ opacity: replyOpacity }} className="text-primary">
-            <Reply className="w-5 h-5" />
-          </motion.div>
-        </div>
-        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <motion.div style={{ opacity: likeOpacity }} className="text-red-500">
-            <Heart className="w-5 h-5 fill-current" />
-          </motion.div>
-        </div>
-
-        <motion.div
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(_, info) => handleSwipeEnd(comment.id, info)}
-          onClick={() => handleTap(comment.id)}
-          style={{ x }}
-          className="flex gap-3 bg-transparent relative z-10 py-2"
-        >
-          <OptimizedAvatar
-            src={comment.profiles?.avatar_url}
-            alt={comment.profiles?.username || 'User'}
-            className="w-9 h-9"
-            showStatus={false}
-            userId={comment.user_id}
-            showOnlineIndicator={true}
-          />
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm text-white">
-                {comment.profiles?.username || 'Anonymous'}
-              </span>
-              <span className="text-[10px] text-white/40">
-                {new Date(comment.created_at).toLocaleDateString()}
-              </span>
-            </div>
-
-            {isEditing ? (
-              <div className="space-y-2">
-                <textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full min-h-[60px] bg-white/5 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none"
-                />
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleEditComment(comment.id)}
-                    className="px-3 py-1.5 bg-white text-black text-xs font-medium rounded-full"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingCommentId(null);
-                      setEditContent('');
-                    }}
-                    className="px-3 py-1.5 bg-white/10 text-white/70 text-xs rounded-full"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-white/90 leading-relaxed">{comment.content}</p>
-                
-                {/* Inline engagement - minimal */}
-                <div className="flex items-center gap-4 pt-1">
-                  {likeCount > 0 && (
-                    <span className={`text-xs ${hasLiked ? 'text-red-400' : 'text-white/40'}`}>
-                      ❤️ {likeCount}
-                    </span>
-                  )}
-                  
-                  {isOwner && (
-                    <div className="flex items-center gap-3 ml-auto">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCommentId(comment.id);
-                          setEditContent(comment.content);
-                        }}
-                        className="text-[10px] text-white/40"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteComment(comment.id);
-                        }}
-                        className="text-[10px] text-red-400/60"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Heart animation on double tap */}
-          <AnimatePresence>
-            {likedComments.has(comment.id) && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              >
-                <Heart className="w-12 h-12 text-red-500 fill-current" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-    );
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditContent('');
   };
 
   return (
@@ -383,10 +247,40 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
                     .filter(c => !c.parent_comment_id)
                     .map((comment) => (
                       <div key={comment.id}>
-                        {renderComment(comment)}
+                        <CommentItem
+                          comment={comment}
+                          currentUserId={currentUserId}
+                          isEditing={editingCommentId === comment.id}
+                          editContent={editContent}
+                          setEditContent={setEditContent}
+                          onEdit={handleStartEdit}
+                          onSaveEdit={handleEditComment}
+                          onCancelEdit={handleCancelEdit}
+                          onDelete={handleDeleteComment}
+                          onDoubleTapLike={handleDoubleTapLike}
+                          onSwipeReply={setReplyToId}
+                          showHeartAnimation={likedComments.has(comment.id)}
+                        />
                         {comments
                           .filter(c => c.parent_comment_id === comment.id)
-                          .map(reply => renderComment(reply, true))}
+                          .map(reply => (
+                            <CommentItem
+                              key={reply.id}
+                              comment={reply}
+                              isReply
+                              currentUserId={currentUserId}
+                              isEditing={editingCommentId === reply.id}
+                              editContent={editContent}
+                              setEditContent={setEditContent}
+                              onEdit={handleStartEdit}
+                              onSaveEdit={handleEditComment}
+                              onCancelEdit={handleCancelEdit}
+                              onDelete={handleDeleteComment}
+                              onDoubleTapLike={handleDoubleTapLike}
+                              onSwipeReply={setReplyToId}
+                              showHeartAnimation={likedComments.has(reply.id)}
+                            />
+                          ))}
                       </div>
                     ))}
                 </>
