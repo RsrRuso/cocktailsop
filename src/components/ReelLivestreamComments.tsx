@@ -278,7 +278,7 @@ export const ReelLivestreamComments = ({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none pb-safe">
+    <div className="fixed inset-x-0 bottom-32 z-40 flex flex-col pointer-events-none pb-safe">
       {/* Flying hearts */}
       <AnimatePresence>
         {flyingHearts.map((heart) => (
