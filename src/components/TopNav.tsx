@@ -426,12 +426,23 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 </CollapsibleContent>
               </Collapsible>
               
-              <DropdownMenuItem onClick={() => { lightTap(); setShareSpecVerseOpen(true); }} className="cursor-pointer px-2 py-1.5 text-sm text-primary hover:bg-white/10">
-                <Share2 className="w-3.5 h-3.5 mr-2" />Share SpecVerse
+              {/* Share SpecVerse - clean B&W button style */}
+              <DropdownMenuItem 
+                onClick={() => { lightTap(); setShareSpecVerseOpen(true); }} 
+                className="cursor-pointer mx-2 my-1.5 px-3 py-2.5 text-sm font-medium rounded-lg bg-white text-black hover:bg-white/90 transition-colors flex items-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                Share SpecVerse
               </DropdownMenuItem>
               
-              <DropdownMenuItem onClick={() => { lightTap(); clearAppCache(); }} className="cursor-pointer px-2 py-1.5 text-sm text-orange-400 hover:bg-white/10">
-                <RefreshCw className="w-3.5 h-3.5 mr-2" />Clear Cache</DropdownMenuItem>
+              {/* Clear Cache - clean B&W outlined button style */}
+              <DropdownMenuItem 
+                onClick={() => { lightTap(); clearAppCache(); }} 
+                className="cursor-pointer mx-2 my-1.5 px-3 py-2.5 text-sm font-medium rounded-lg border border-white/30 text-white bg-transparent hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Clear Cache
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
