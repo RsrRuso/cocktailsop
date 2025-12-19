@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { Heart, Pencil, Trash2 } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -36,6 +38,10 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [swipedCommentId, setSwipedCommentId] = useState<string | null>(null);
 
   const tableName = isReel ? "reel_comments" : "post_comments";
   const columnName = isReel ? "reel_id" : "post_id";
@@ -44,7 +50,6 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
     if (open) {
       loadComments();
       
-      // Subscribe to new comments
       const channel = supabase
         .channel(`comments-${postId}-${isReel}`)
         .on(
@@ -86,7 +91,6 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
 
       if (error) throw error;
 
-      // Build comment tree
       const commentMap = new Map<string, Comment>();
       const rootComments: Comment[] = [];
 
@@ -168,6 +172,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
       if (error) throw error;
       
       toast.success("Comment deleted");
+      setSwipedCommentId(null);
       onCommentChange?.();
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -175,55 +180,187 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
     }
   };
 
-  const renderComment = (comment: Comment, level: number = 0) => (
-    <div key={comment.id} className={`${level > 0 ? 'ml-10 mt-3' : ''}`}>
-      <div className="flex gap-3">
-        <Avatar className="w-8 h-8 flex-shrink-0">
-          <AvatarImage src={comment.profiles.avatar_url || undefined} />
-          <AvatarFallback className="text-xs bg-white/10 text-white">{comment.profiles.username[0]}</AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-white">{comment.profiles.username}</span>
-            <span className="text-xs text-white/50">
-              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-            </span>
-          </div>
-          <p className="text-sm text-white/90 mt-0.5 break-words">{comment.content}</p>
+  const handleEdit = async (commentId: string) => {
+    if (!editContent.trim()) return;
+    
+    try {
+      const { error } = await supabase
+        .from(tableName as any)
+        .update({ content: editContent.trim() })
+        .eq("id", commentId);
 
-          <div className="flex items-center gap-4 mt-2">
-            <button
-              onClick={() => setReplyingTo(comment.id)}
-              className="text-xs text-white/50 hover:text-white/70 font-medium"
-            >
-              Reply
-            </button>
+      if (error) throw error;
+      
+      toast.success("Comment updated");
+      setEditingComment(null);
+      setEditContent("");
+      loadComments();
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast.error("Failed to update comment");
+    }
+  };
 
-            {comment.user_id === user?.id && (
-              <button
-                onClick={() => handleDelete(comment.id)}
-                className="text-xs text-red-400/70 hover:text-red-400 font-medium"
+  // Double tap to like comment
+  const lastTapRef = useRef<{ [key: string]: number }>({});
+  
+  const handleDoubleTap = useCallback((commentId: string) => {
+    const now = Date.now();
+    const lastTap = lastTapRef.current[commentId] || 0;
+    
+    if (now - lastTap < 300) {
+      // Double tap - toggle like
+      setLikedComments(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(commentId)) {
+          newSet.delete(commentId);
+        } else {
+          newSet.add(commentId);
+          // Haptic feedback
+          if ('vibrate' in navigator) {
+            navigator.vibrate(20);
+          }
+        }
+        return newSet;
+      });
+    }
+    lastTapRef.current[commentId] = now;
+  }, []);
+
+  // Swipe handler
+  const handleDragEnd = (commentId: string, info: PanInfo) => {
+    if (info.offset.x < -60) {
+      setSwipedCommentId(commentId);
+    } else {
+      setSwipedCommentId(null);
+    }
+  };
+
+  const renderComment = (comment: Comment, level: number = 0) => {
+    const isOwner = comment.user_id === user?.id;
+    const isLiked = likedComments.has(comment.id);
+    const isSwiped = swipedCommentId === comment.id && isOwner;
+    const isEditing = editingComment === comment.id;
+
+    return (
+      <div key={comment.id} className={`${level > 0 ? 'ml-10 mt-3' : ''}`}>
+        <div className="relative overflow-hidden">
+          {/* Swipe actions - only for owner */}
+          {isOwner && (
+            <div className="absolute right-0 top-0 bottom-0 flex items-center gap-1 pr-2">
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: isSwiped ? 1 : 0, scale: isSwiped ? 1 : 0.8 }}
+                onClick={() => {
+                  setEditingComment(comment.id);
+                  setEditContent(comment.content);
+                  setSwipedCommentId(null);
+                }}
+                className="w-8 h-8 rounded-full bg-blue-500/90 flex items-center justify-center"
               >
-                Delete
-              </button>
-            )}
-          </div>
-
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-3 space-y-3">
-              {comment.replies.map((reply) => renderComment(reply, level + 1))}
+                <Pencil className="w-4 h-4 text-white" />
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: isSwiped ? 1 : 0, scale: isSwiped ? 1 : 0.8 }}
+                transition={{ delay: 0.05 }}
+                onClick={() => handleDelete(comment.id)}
+                className="w-8 h-8 rounded-full bg-red-500/90 flex items-center justify-center"
+              >
+                <Trash2 className="w-4 h-4 text-white" />
+              </motion.button>
             </div>
           )}
+
+          {/* Comment content - swipeable */}
+          <motion.div
+            drag={isOwner ? "x" : false}
+            dragConstraints={{ left: -80, right: 0 }}
+            dragElastic={0.1}
+            onDragEnd={(_, info) => handleDragEnd(comment.id, info)}
+            animate={{ x: isSwiped ? -80 : 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={() => handleDoubleTap(comment.id)}
+            className="flex gap-3 bg-transparent relative z-10 cursor-pointer"
+          >
+            <Avatar className="w-8 h-8 flex-shrink-0">
+              <AvatarImage src={comment.profiles.avatar_url || undefined} />
+              <AvatarFallback className="text-xs bg-white/10 text-white">
+                {comment.profiles.username[0]}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm text-white">{comment.profiles.username}</span>
+                <span className="text-[11px] text-white/40">
+                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: false })}
+                </span>
+              </div>
+              
+              {isEditing ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="flex-1 bg-white/10 text-white text-sm rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => handleEdit(comment.id)}
+                    className="text-xs text-primary font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingComment(null);
+                      setEditContent("");
+                    }}
+                    className="text-xs text-white/50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-white/90 mt-0.5 break-words">{comment.content}</p>
+              )}
+            </div>
+
+            {/* Like indicator */}
+            <div className="flex flex-col items-center justify-center pr-1">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isLiked ? 'liked' : 'not-liked'}
+                  initial={{ scale: 0.5 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.5 }}
+                  transition={{ type: "spring", damping: 15, stiffness: 400 }}
+                >
+                  <Heart 
+                    className={`w-3.5 h-3.5 transition-colors ${
+                      isLiked ? 'text-red-500 fill-red-500' : 'text-white/30'
+                    }`}
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.div>
         </div>
+
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="mt-3 space-y-3">
+            {comment.replies.map((reply) => renderComment(reply, level + 1))}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-[100vw] sm:max-w-lg h-[60vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-transparent border-0 shadow-none [&>button]:hidden !rounded-none">
-        {/* Instagram-style header - minimal */}
         <DialogHeader className="px-4 py-3 shrink-0">
           <DialogTitle className="flex items-center justify-center gap-2 text-sm font-semibold text-white">
             Comments
@@ -247,7 +384,6 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
           )}
         </ScrollArea>
 
-        {/* Instagram-style input */}
         <form onSubmit={handleSubmit} className="px-4 py-3 shrink-0">
           {replyingTo && (
             <div className="flex items-center justify-between mb-2">
