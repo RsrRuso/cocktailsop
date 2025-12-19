@@ -12,7 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send, Copy, Link, QrCode } from "lucide-react";
+import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send, Copy, Link, QrCode, MoreVertical, XCircle, ChevronRight } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import TopNav from "@/components/TopNav";
@@ -65,6 +67,8 @@ const TeamManagement = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [memberRole, setMemberRole] = useState("member");
   const [memberTitle, setMemberTitle] = useState("Member");
+  const [deleteTeamId, setDeleteTeamId] = useState<string | null>(null);
+  const [mobileTeamView, setMobileTeamView] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -376,6 +380,45 @@ const TeamManagement = () => {
     }
   };
 
+  const handleDeleteTeam = async (teamId: string) => {
+    try {
+      // First delete all team members
+      const { error: membersError } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("team_id", teamId);
+
+      if (membersError) throw membersError;
+
+      // Delete team invitations
+      await supabase
+        .from("team_invitations")
+        .delete()
+        .eq("team_id", teamId);
+
+      // Delete the team
+      const { error: teamError } = await supabase
+        .from("teams")
+        .delete()
+        .eq("id", teamId);
+
+      if (teamError) throw teamError;
+
+      toast.success("Team deleted successfully!");
+      setDeleteTeamId(null);
+      
+      if (selectedTeam?.id === teamId) {
+        setSelectedTeam(null);
+        setMobileTeamView(false);
+      }
+      
+      fetchTeams();
+    } catch (error: any) {
+      console.error("Delete team error:", error);
+      toast.error("Failed to delete team");
+    }
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "owner":
@@ -407,6 +450,11 @@ const TeamManagement = () => {
     });
   };
 
+  const handleSelectTeam = (team: Team) => {
+    setSelectedTeam(team);
+    setMobileTeamView(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -419,21 +467,22 @@ const TeamManagement = () => {
     <div className="min-h-screen bg-background">
       <TopNav />
       
-      <div className="container mx-auto p-4 pt-20 pb-24 max-w-7xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto p-3 sm:p-4 pt-16 sm:pt-20 pb-24 max-w-7xl">
+        {/* Header - Mobile Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Team Management</h1>
-            <p className="text-muted-foreground">Manage your teams and members</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Team Management</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage your teams and members</p>
           </div>
           
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Team
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>Create New Team</DialogTitle>
                 <DialogDescription>
@@ -467,34 +516,68 @@ const TeamManagement = () => {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Teams List */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Teams List - Hide on mobile when viewing team details */}
+          <Card className={`lg:col-span-1 ${mobileTeamView ? 'hidden lg:block' : ''}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="w-5 h-5" />
                 Teams
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[600px]">
+            <CardContent className="px-3 sm:px-6">
+              <ScrollArea className="h-[calc(100vh-280px)] sm:h-[600px]">
                 <div className="space-y-2">
                   {teams.map((team) => (
                     <div
                       key={team.id}
-                      onClick={() => setSelectedTeam(team)}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      className={`p-3 rounded-lg cursor-pointer transition-colors group ${
                         selectedTeam?.id === team.id
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted"
                       }`}
                     >
-                      <div className="font-medium">{team.name}</div>
-                      {team.description && (
-                        <div className="text-sm opacity-80 truncate">
-                          {team.description}
+                      <div className="flex items-center justify-between gap-2">
+                        <div 
+                          className="flex-1 min-w-0"
+                          onClick={() => handleSelectTeam(team)}
+                        >
+                          <div className="font-medium truncate">{team.name}</div>
+                          {team.description && (
+                            <div className="text-sm opacity-80 truncate">
+                              {team.description}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="flex items-center gap-1">
+                          <ChevronRight className="w-4 h-4 lg:hidden opacity-50" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className={`h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                  selectedTeam?.id === team.id ? 'text-primary-foreground hover:bg-primary-foreground/20' : ''
+                                }`}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTeamId(team.id);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete Team
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
                     </div>
                   ))}
                   {teams.length === 0 && (
@@ -507,66 +590,99 @@ const TeamManagement = () => {
             </CardContent>
           </Card>
 
-          {/* Team Members */}
+          {/* Delete Team Confirmation */}
+          <AlertDialog open={!!deleteTeamId} onOpenChange={(open) => !open && setDeleteTeamId(null)}>
+            <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:max-w-lg">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Team?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the team and remove all members. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => deleteTeamId && handleDeleteTeam(deleteTeamId)}
+                >
+                  Delete Team
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Team Members - Show on mobile only when team selected */}
           {selectedTeam && (
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl">{selectedTeam.name}</CardTitle>
-                    <CardDescription className="mt-1">{selectedTeam.description || "No description"}</CardDescription>
-                    <div className="flex items-center gap-4 mt-3">
-                      <Badge variant="outline" className="text-sm">
+            <Card className={`lg:col-span-2 ${!mobileTeamView ? 'hidden lg:block' : ''}`}>
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1">
+                    {/* Back button for mobile */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="lg:hidden mb-2 -ml-2 text-muted-foreground"
+                      onClick={() => setMobileTeamView(false)}
+                    >
+                      <ChevronRight className="w-4 h-4 mr-1 rotate-180" />
+                      Back to Teams
+                    </Button>
+                    <CardTitle className="text-xl sm:text-2xl">{selectedTeam.name}</CardTitle>
+                    <CardDescription className="mt-1 text-sm">{selectedTeam.description || "No description"}</CardDescription>
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs sm:text-sm">
                         <Users className="w-3 h-3 mr-1" />
                         {teamMembers.length} {teamMembers.length === 1 ? 'member' : 'members'}
                       </Badge>
-                      <Badge variant="secondary" className="text-sm">
+                      <Badge variant="secondary" className="text-xs sm:text-sm">
                         Created {format(new Date(selectedTeam.created_at), "MMM dd, yyyy")}
                       </Badge>
                     </div>
                   </div>
-                  <Button size="lg" onClick={() => setInviteDialogOpen(true)}>
+                  <Button className="w-full sm:w-auto" onClick={() => setInviteDialogOpen(true)}>
                     <Mail className="w-4 h-4 mr-2" />
                     Invite Member
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px]">
+              <CardContent className="px-3 sm:px-6">
+                <ScrollArea className="h-[calc(100vh-350px)] sm:h-[600px]">
                   <div className="space-y-3">
                     {teamMembers.map((member) => (
                       <Card key={member.id} className="border-2 hover:border-primary/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center font-semibold text-lg">
-                              {member.profiles.full_name.charAt(0).toUpperCase()}
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center font-semibold text-base sm:text-lg shrink-0">
+                                {member.profiles.full_name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="font-semibold text-base sm:text-lg truncate">{member.profiles.full_name}</div>
+                                  {getRoleIcon(member.role)}
+                                </div>
+                                <div className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">
+                                  @{member.profiles.username}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                  <Badge variant={getRoleBadgeVariant(member.role)} className="font-medium text-xs">
+                                    {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">{member.title}</Badge>
+                                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                                    Joined {format(new Date(member.joined_at), "MMM dd")}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="font-semibold text-lg">{member.profiles.full_name}</div>
-                                {getRoleIcon(member.role)}
-                              </div>
-                              <div className="text-sm text-muted-foreground mb-2">
-                                @{member.profiles.username}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant={getRoleBadgeVariant(member.role)} className="font-medium">
-                                  {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                                </Badge>
-                                <Badge variant="outline">{member.title}</Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  Joined {format(new Date(member.joined_at), "MMM dd")}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-row sm:flex-col gap-2 sm:gap-2 mt-2 sm:mt-0">
                               <Select
                                 value={member.role}
                                 onValueChange={(value) =>
                                   handleUpdateMemberRole(member.id, value)
                                 }
                               >
-                                <SelectTrigger className="w-[140px]">
+                                <SelectTrigger className="w-[110px] sm:w-[140px] h-9">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -578,10 +694,11 @@ const TeamManagement = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
+                                className="h-9"
                                 onClick={() => handleRemoveMember(member.id)}
                               >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Remove
+                                <Trash2 className="w-3 h-3 sm:mr-1" />
+                                <span className="hidden sm:inline">Remove</span>
                               </Button>
                             </div>
                           </div>
@@ -606,24 +723,24 @@ const TeamManagement = () => {
                    {/* Pending Invitations Section */}
                    {pendingInvitations.length > 0 && (
                      <>
-                       <Separator className="my-6" />
+                       <Separator className="my-4 sm:my-6" />
                        <div className="space-y-3">
-                         <h3 className="text-lg font-semibold flex items-center gap-2">
-                           <Mail className="w-5 h-5" />
+                         <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                           <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
                            Pending Invitations ({pendingInvitations.length})
                          </h3>
                            {pendingInvitations.map((invitation) => {
                              const invitationLink = `${window.location.origin}/team-invitation?token=${invitation.id}`;
                              return (
                                <Card key={invitation.id} className="border-2 border-dashed">
-                                 <CardContent className="p-4">
-                                   <div className="flex gap-4">
+                                 <CardContent className="p-3 sm:p-4">
+                                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                      <div className="flex-1 flex flex-col gap-3">
-                                       <div className="flex items-center justify-between">
-                                         <div className="flex-1">
-                                           <div className="font-medium">{invitation.invited_email}</div>
-                                           <div className="flex items-center gap-2 mt-1">
-                                             <Badge variant="outline" className="font-medium">
+                                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                         <div className="flex-1 min-w-0">
+                                           <div className="font-medium text-sm sm:text-base truncate">{invitation.invited_email}</div>
+                                           <div className="flex flex-wrap items-center gap-2 mt-1">
+                                             <Badge variant="outline" className="font-medium text-xs">
                                                {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
                                              </Badge>
                                              <span className="text-xs text-muted-foreground">
@@ -635,33 +752,35 @@ const TeamManagement = () => {
                                            <Button
                                              size="sm"
                                              variant="outline"
+                                             className="flex-1 sm:flex-none h-8"
                                              onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
                                            >
-                                             <Send className="w-3 h-3 mr-1" />
-                                             Resend
+                                             <Send className="w-3 h-3 sm:mr-1" />
+                                             <span className="hidden sm:inline">Resend</span>
                                            </Button>
                                            <Button
                                              size="sm"
                                              variant="secondary"
+                                             className="flex-1 sm:flex-none h-8"
                                              onClick={() => handleCopyInvitationLink(invitation.id, invitation.invited_email)}
                                            >
-                                             <Copy className="w-3 h-3 mr-1" />
-                                             Copy Link
+                                             <Copy className="w-3 h-3 sm:mr-1" />
+                                             <span className="hidden sm:inline">Copy Link</span>
                                            </Button>
                                          </div>
                                        </div>
                                        <div className="bg-muted/50 rounded-md p-2 flex items-center gap-2">
-                                         <Link className="w-3 h-3 text-muted-foreground" />
+                                         <Link className="w-3 h-3 text-muted-foreground shrink-0" />
                                          <code className="text-xs flex-1 truncate text-muted-foreground">
                                            {invitationLink}
                                          </code>
                                        </div>
                                      </div>
-                                     <div className="flex flex-col items-center gap-2 p-3 bg-background rounded-md border">
+                                     <div className="hidden sm:flex flex-col items-center gap-2 p-3 bg-background rounded-md border shrink-0">
                                        <QrCode className="w-4 h-4 text-muted-foreground" />
                                        <QRCodeSVG 
                                          value={invitationLink}
-                                         size={120}
+                                         size={100}
                                          level="H"
                                          className="rounded"
                                        />
