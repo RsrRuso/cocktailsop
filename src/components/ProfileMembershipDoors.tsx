@@ -322,7 +322,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
                   </div>
                   
                   {/* Name label */}
-                  <p className="text-[11px] font-medium text-muted-foreground max-w-[70px] truncate">
+                  <p className="text-[11px] font-semibold text-foreground max-w-[70px] truncate text-center">
                     {m.name}
                   </p>
                 </button>
