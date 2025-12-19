@@ -293,7 +293,7 @@ export const SavedRepostedContent = ({ userId, defaultViewType = 'saves' }: Save
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* Dropdown Selector */}
       <div className="flex items-center gap-3">
         <Select value={viewType} onValueChange={(v) => setViewType(v as ViewType)}>
@@ -332,19 +332,19 @@ export const SavedRepostedContent = ({ userId, defaultViewType = 'saves' }: Save
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : content.length === 0 ? (
-        <div className="glass rounded-xl p-8 text-center text-muted-foreground border border-border/50">
+        <div className="py-12 text-center text-muted-foreground">
           <div className="flex flex-col items-center gap-3">
             {getEmptyIcon()}
             <p>{getEmptyText()}</p>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="pt-4">
           {content.map((item, index) => (
             <div key={`${item.type}-${item.id}-${index}`}>
               {/* Show user's comment preview for comments view */}
               {viewType === 'comments' && item.user_comment && (
-                <div className="mb-2 px-3 py-2 glass rounded-lg border border-border/50">
+                <div className="mb-2 px-3 py-2 bg-muted/30 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Your comment:</p>
                   <p className="text-sm line-clamp-2">"{item.user_comment}"</p>
                 </div>

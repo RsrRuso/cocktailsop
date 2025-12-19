@@ -115,14 +115,14 @@ const ProfileFeedTab = ({ userId, profile }: ProfileFeedTabProps) => {
 
   if (allItems.length === 0) {
     return (
-      <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
+      <div className="py-12 text-center text-muted-foreground">
         <p>No posts or reels yet</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 pt-6">
+    <div className="pt-2">
       {allItems.map((item: any) => (
         <FeedItem
           key={`${item.type}-${item.id}`}
