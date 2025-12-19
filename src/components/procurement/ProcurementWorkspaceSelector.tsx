@@ -107,18 +107,20 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
         if (error) throw error;
       }
 
-      // Send notification to member when PIN is granted
+      // Send email notification to member when PIN is granted
       if (userId && data.pin_code) {
-        const notificationContent = `🔐 You've been granted access PIN: **${data.pin_code}** for procurement workspace "${selectedWorkspace?.name}". Keep this PIN secure for mobile access.`;
-        
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: userId,
-            type: "pin_granted",
-            content: notificationContent,
-            read: false
+        try {
+          await supabase.functions.invoke('send-pin-notification', {
+            body: {
+              userId: userId,
+              pin: data.pin_code,
+              workspaceName: selectedWorkspace?.name || 'Procurement Workspace',
+              workspaceType: 'procurement'
+            }
           });
+        } catch (emailError) {
+          console.error("Error sending PIN email:", emailError);
+        }
       }
     },
     onSuccess: () => {
