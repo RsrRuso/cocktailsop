@@ -5,7 +5,7 @@ import {
   Bookmark,
   MoreVertical,
   Trash2,
-  X,
+  ArrowLeft,
   Volume2,
   VolumeX,
   Music,
@@ -400,15 +400,15 @@ export const ReelsFullscreenViewer = ({
         WebkitOverflowScrolling: 'touch'
       }}
     >
-      {/* Close Button with Smooth Bounce */}
+      {/* Back Button with Smooth Bounce */}
       <motion.button
         onClick={onClose}
-        className="absolute top-4 left-4 z-50 flex items-center justify-center"
+        className="absolute top-12 left-4 z-50 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.85 }}
         transition={{ type: "spring", stiffness: 500, damping: 15 }}
       >
-        <X className="w-6 h-6 text-white drop-shadow-lg" />
+        <ArrowLeft className="w-5 h-5 text-white" />
       </motion.button>
 
       {/* Video Container with Smooth Transitions */}
