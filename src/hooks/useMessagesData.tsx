@@ -29,15 +29,46 @@ let conversationsCache: {
   userId: string;
 } | null = null;
 
+// Also use sessionStorage for persistence across page loads
+const STORAGE_KEY = 'msg_cache';
+const getStoredCache = (userId: string): Conversation[] | null => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.userId === userId && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+        return parsed.data;
+      }
+    }
+  } catch {}
+  return null;
+};
+
+const setStoredCache = (userId: string, data: Conversation[]) => {
+  try {
+    const cache = { data, timestamp: Date.now(), userId };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+  } catch {}
+};
+
 const CACHE_TIME = 60 * 1000; // 1 minute
 
 export const useMessagesData = (userId: string | null) => {
-  const [conversations, setConversations] = useState<Conversation[]>(
-    conversationsCache?.userId === userId ? conversationsCache.data : []
-  );
-  const [isLoading, setIsLoading] = useState(
-    !conversationsCache || conversationsCache.userId !== userId
-  );
+  // Initialize from any available cache immediately
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    if (conversationsCache?.userId === userId) return conversationsCache.data;
+    if (userId) {
+      const stored = getStoredCache(userId);
+      if (stored) return stored;
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (conversationsCache?.userId === userId) return false;
+    if (userId && getStoredCache(userId)) return false;
+    return true;
+  });
   const isMounted = useRef(true);
 
   // Get pinned/archived from localStorage
@@ -118,6 +149,7 @@ export const useMessagesData = (userId: string | null) => {
         timestamp: Date.now(),
         userId
       };
+      setStoredCache(userId, conversationsWithData);
 
       if (isMounted.current) {
         setConversations(conversationsWithData);
@@ -178,6 +210,7 @@ export const useMessagesData = (userId: string | null) => {
         timestamp: Date.now(),
         userId: uid
       };
+      setStoredCache(uid, updatedData);
 
       if (isMounted.current) {
         setConversations(updatedData);

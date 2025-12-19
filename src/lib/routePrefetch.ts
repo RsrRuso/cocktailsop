@@ -115,3 +115,111 @@ export const prefetchHomeFeed = async (region: string | null) => {
     console.error('Feed prefetch failed');
   }
 };
+
+// Prefetch emails for instant loading
+export const prefetchEmails = async (userId: string) => {
+  try {
+    const { data } = await supabase
+      .from('internal_emails')
+      .select('*')
+      .eq('recipient_id', userId)
+      .eq('archived', false)
+      .eq('is_draft', false)
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    if (data?.length) {
+      // Get profiles for senders
+      const senderIds = [...new Set(data.map(e => e.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', senderIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      const enriched = data.map(e => ({
+        ...e,
+        sender_name: profileMap.get(e.sender_id)?.full_name || 'Unknown',
+        recipient_name: 'You',
+      }));
+
+      // Store in sessionStorage for instant access
+      try {
+        sessionStorage.setItem('em_inbox', JSON.stringify(enriched));
+        sessionStorage.setItem('em_uid', JSON.stringify(userId));
+      } catch {}
+    }
+  } catch (e) {
+    console.error('Email prefetch failed');
+  }
+};
+
+// Prefetch messages for instant loading
+export const prefetchMessages = async (userId: string) => {
+  try {
+    const { data: convData } = await supabase
+      .from('conversations')
+      .select('id, participant_ids, last_message_at, is_group, group_name, group_avatar_url')
+      .contains('participant_ids', [userId])
+      .order('last_message_at', { ascending: false })
+      .limit(30);
+
+    if (convData?.length) {
+      const otherUserIds = convData
+        .filter(conv => !conv.is_group)
+        .map(conv => conv.participant_ids.find((id: string) => id !== userId))
+        .filter(Boolean) as string[];
+
+      const { data: profiles } = otherUserIds.length > 0
+        ? await supabase.from('profiles').select('id, username, avatar_url, full_name').in('id', otherUserIds)
+        : { data: [] };
+
+      const profilesMap = new Map<string, any>();
+      profiles?.forEach(p => profilesMap.set(p.id, p));
+      const pinnedChats = new Set<string>(JSON.parse(localStorage.getItem('pinnedChats') || '[]'));
+      const archivedChats = new Set<string>(JSON.parse(localStorage.getItem('archivedChats') || '[]'));
+
+      const conversations = convData.map(conv => ({
+        id: conv.id,
+        participant_ids: conv.participant_ids,
+        last_message_at: conv.last_message_at,
+        is_group: conv.is_group,
+        group_name: conv.group_name,
+        group_avatar_url: conv.group_avatar_url,
+        otherUser: conv.is_group ? undefined : profilesMap.get(conv.participant_ids.find((id: string) => id !== userId)),
+        unreadCount: 0,
+        lastMessage: '',
+        isPinned: pinnedChats.has(conv.id),
+        isArchived: archivedChats.has(conv.id),
+      }));
+
+      // Store in sessionStorage for instant access
+      try {
+        const cache = { data: conversations, timestamp: Date.now(), userId };
+        sessionStorage.setItem('msg_cache', JSON.stringify(cache));
+      } catch {}
+    }
+  } catch (e) {
+    console.error('Messages prefetch failed');
+  }
+};
+
+// Prefetch all critical routes for instant navigation
+export const prefetchAllCritical = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Prefetch in parallel
+    await Promise.all([
+      prefetchEmails(user.id),
+      prefetchMessages(user.id),
+      prefetchHomeFeed(null),
+    ]);
+    
+    console.log('⚡ Critical routes prefetched');
+  } catch (e) {
+    console.error('Critical prefetch failed');
+  }
+};

@@ -116,10 +116,7 @@ export const throttle = <T extends (...args: any[]) => void>(fn: T, limit: numbe
 
 // Initialize performance optimizations
 export const initFastLoad = () => {
-  // Preload critical routes
-  preloadCriticalRoutes();
-  
-  // Add resource hints
+  // Add resource hints immediately
   const hints = [
     { rel: 'preconnect', href: 'https://cbfqwaqwliehgxsdueem.supabase.co' },
     { rel: 'dns-prefetch', href: 'https://fonts.googleapis.com' },
@@ -135,6 +132,24 @@ export const initFastLoad = () => {
       document.head.appendChild(link);
     }
   });
+  
+  // Prefetch critical data after page loads
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
+        prefetchAllCritical();
+      });
+    });
+  } else {
+    setTimeout(() => {
+      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
+        prefetchAllCritical();
+      });
+    }, 1000);
+  }
+  
+  // Preload critical routes
+  preloadCriticalRoutes();
   
   console.log('⚡ Fast load optimizations initialized');
 };
