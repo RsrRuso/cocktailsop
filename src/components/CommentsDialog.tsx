@@ -233,7 +233,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg h-[50vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-black/60 backdrop-blur-xl border-0 shadow-none">
+      <DialogContent className="w-[95vw] sm:max-w-lg h-[50vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-black/50 backdrop-blur-md border-none shadow-none outline-none ring-0 focus:outline-none focus:ring-0 [&>button]:hidden">
         <DialogHeader className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 border-b border-white/10 shrink-0">
           <DialogTitle className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white">
             <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white/70" />
