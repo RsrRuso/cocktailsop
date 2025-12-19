@@ -207,7 +207,7 @@ const Profile = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 mt-4">
           <button 
             onClick={() => navigate("/profile/edit")}
             className="flex-1 py-1.5 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium text-white transition-colors"
