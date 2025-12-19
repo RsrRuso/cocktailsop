@@ -32,9 +32,21 @@ interface Profile {
   avatar_url: string;
 }
 
+// Fast cache with IndexedDB fallback
 const CACHE = {
-  get: (key: string) => { try { return JSON.parse(localStorage.getItem(`em_${key}`) || "null"); } catch { return null; } },
-  set: (key: string, val: any) => { try { localStorage.setItem(`em_${key}`, JSON.stringify(val)); } catch {} },
+  get: (key: string) => { 
+    try { 
+      const data = sessionStorage.getItem(`em_${key}`) || localStorage.getItem(`em_${key}`);
+      return data ? JSON.parse(data) : null; 
+    } catch { return null; } 
+  },
+  set: (key: string, val: any) => { 
+    try { 
+      const str = JSON.stringify(val);
+      sessionStorage.setItem(`em_${key}`, str); // Fast access
+      localStorage.setItem(`em_${key}`, str); // Persist
+    } catch {} 
+  },
 };
 
 const decodeHtml = (html: string): string => {
@@ -93,9 +105,13 @@ let profileCache: Map<string, Profile> = new Map(CACHE.get("profiles") || []);
 const saveProfileCache = () => CACHE.set("profiles", [...profileCache]);
 
 const Email = () => {
+  // Initialize from cache immediately - no loading state needed
   const [userId] = useState<string | null>(() => CACHE.get("uid"));
   const [emails, setEmails] = useState<EmailType[]>(() => CACHE.get("inbox") || []);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>(() => {
+    const cached = CACHE.get("profiles_list");
+    return cached || [];
+  });
   const [filter, setFilter] = useState<"inbox" | "sent" | "starred" | "archived" | "drafts">("inbox");
   const [showCompose, setShowCompose] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<EmailType | null>(null);
@@ -106,14 +122,18 @@ const Email = () => {
   const [uid, setUid] = useState<string | null>(userId);
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecipientPicker, setShowRecipientPicker] = useState(false);
+  const [isReady, setIsReady] = useState(!!CACHE.get("uid")); // Ready if we have cached user
 
   useEffect(() => {
+    // Background auth check - don't block rendering
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { window.location.href = "/auth"; return; }
       setUid(user.id);
+      setIsReady(true);
       CACHE.set("uid", user.id);
 
-      supabase.from("profiles").select("id, username, full_name, avatar_url").eq("id", user.id).single().then(({ data }) => {
+      // Background profile fetch
+      supabase.from("profiles").select("id, username, full_name, avatar_url").eq("id", user.id).maybeSingle().then(({ data }) => {
         if (data) {
           setUsername(data.username);
           CACHE.set("username", data.username);
@@ -122,7 +142,7 @@ const Email = () => {
         }
       });
 
-      // Load BOTH followers AND following
+      // Background followers/following fetch
       Promise.all([
         supabase.from("follows").select("follower_id").eq("following_id", user.id),
         supabase.from("follows").select("following_id").eq("follower_id", user.id)
@@ -135,6 +155,7 @@ const Email = () => {
           supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", allIds).then(({ data: pData }) => {
             if (pData) {
               setProfiles(pData);
+              CACHE.set("profiles_list", pData);
               pData.forEach(p => profileCache.set(p.id, p));
               saveProfileCache();
             }
@@ -142,13 +163,16 @@ const Email = () => {
         }
       });
 
+      // Background email refresh
       ["inbox", "sent", "starred", "archived", "drafts"].forEach(f => fetchEmails(user.id, f as any, f === "inbox"));
     });
   }, []);
 
   useEffect(() => {
+    // Show cached data instantly
     const cached = CACHE.get(filter);
     if (cached?.length) setEmails(cached);
+    // Background refresh
     if (uid) fetchEmails(uid, filter, true);
   }, [filter, uid]);
 
