@@ -65,6 +65,7 @@ export const ReelsFullscreenViewer = ({
   onDelete,
 }: ReelsFullscreenViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  // Start unmuted in fullscreen - user explicitly opened fullscreen to watch
   const [isMuted, setIsMuted] = useState(false);
   const [lastTap, setLastTap] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -137,7 +138,7 @@ export const ReelsFullscreenViewer = ({
   useEffect(() => {
     setCurrentIndex(initialIndex);
     
-    // Auto-unmute when entering fullscreen
+    // Always unmute when opening fullscreen - user wants to watch with sound
     if (isOpen) {
       setIsMuted(false);
     }
@@ -164,6 +165,7 @@ export const ReelsFullscreenViewer = ({
         const currentVideo = videoRefs.current.get(initialIndex);
         if (currentVideo) {
           // If music is attached, always keep the video muted to avoid original audio bleeding through.
+          // The music audio element will play the music track unmuted.
           currentVideo.muted = hasMusic;
           currentVideo.play().catch(() => {
             // If playback fails, retry muted (mobile autoplay rules)
@@ -186,6 +188,30 @@ export const ReelsFullscreenViewer = ({
       body.style.scrollbarWidth = "";
     };
   }, [initialIndex, isOpen, preloadVideos]);
+
+  // When changing reels, ensure audio plays correctly
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const currentReel = reels[currentIndex];
+    if (!currentReel) return;
+    
+    const musicUrl =
+      currentReel.music_tracks?.original_url ||
+      currentReel.music_tracks?.preview_url ||
+      currentReel.music_url;
+    const hasMusic = Boolean(musicUrl);
+    
+    const currentVideo = videoRefs.current.get(currentIndex);
+    if (currentVideo) {
+      // Mute video only if there's attached music (music plays via separate audio element)
+      currentVideo.muted = hasMusic || isMuted;
+      currentVideo.play().catch(() => {
+        currentVideo.muted = true;
+        currentVideo.play().catch(() => {});
+      });
+    }
+  }, [currentIndex, isOpen, reels, isMuted]);
 
   // Preload adjacent videos when index changes
   useEffect(() => {
