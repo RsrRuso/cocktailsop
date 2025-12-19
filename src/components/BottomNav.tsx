@@ -115,6 +115,7 @@ const BottomNav = () => {
               className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-white" : "ring-1 ring-white/70"}`}
               showStatus={false}
               showAddButton={false}
+              showOnlineIndicator={false}
             />
           </button>
         </div>

@@ -13,6 +13,7 @@ interface OptimizedAvatarProps {
   showStatus?: boolean;
   showAddButton?: boolean;
   onAddStatusClick?: () => void;
+  showOnlineIndicator?: boolean;
 }
 
 const OptimizedAvatar = memo(({ 
@@ -23,7 +24,8 @@ const OptimizedAvatar = memo(({
   userId,
   showStatus = false,
   showAddButton = false,
-  onAddStatusClick
+  onAddStatusClick,
+  showOnlineIndicator = true
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
   // Only fetch status if explicitly requested
@@ -58,6 +60,7 @@ const OptimizedAvatar = memo(({
       username={alt}
       avatarUrl={src || undefined}
       userId={userId}
+      showOnlineIndicator={showOnlineIndicator}
     >
       {avatar}
     </StatusRing>
