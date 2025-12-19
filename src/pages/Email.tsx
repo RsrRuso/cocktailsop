@@ -1,15 +1,15 @@
 import { useState, useEffect, memo, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Send, Star, Archive, Inbox, Trash2, FileText } from "lucide-react";
+import { Mail, Send, Star, Archive, Inbox, Trash2, FileText, Search, X, Check } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 
 interface EmailType {
   id: string;
@@ -32,7 +32,6 @@ interface Profile {
   avatar_url: string;
 }
 
-// Ultra-fast localStorage cache
 const CACHE = {
   get: (key: string) => { try { return JSON.parse(localStorage.getItem(`em_${key}`) || "null"); } catch { return null; } },
   set: (key: string, val: any) => { try { localStorage.setItem(`em_${key}`, JSON.stringify(val)); } catch {} },
@@ -46,7 +45,6 @@ const decodeHtml = (html: string): string => {
 
 const stripHtml = (html: string): string => decodeHtml(html).replace(/<[^>]*>/g, '').trim();
 
-// Super lightweight email item with swipe delete
 const EmailItem = memo(({ email, isSent, isUnread, onClick, onDelete }: { email: EmailType; isSent: boolean; isUnread: boolean; onClick: () => void; onDelete: (id: string) => void }) => {
   const [showDelete, setShowDelete] = useState(false);
   
@@ -91,32 +89,30 @@ const EmailItem = memo(({ email, isSent, isUnread, onClick, onDelete }: { email:
 });
 EmailItem.displayName = "EmailItem";
 
-// Profile cache
 let profileCache: Map<string, Profile> = new Map(CACHE.get("profiles") || []);
 const saveProfileCache = () => CACHE.set("profiles", [...profileCache]);
 
 const Email = () => {
-  const navigate = useNavigate();
   const [userId] = useState<string | null>(() => CACHE.get("uid"));
   const [emails, setEmails] = useState<EmailType[]>(() => CACHE.get("inbox") || []);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [filter, setFilter] = useState<"inbox" | "sent" | "starred" | "archived" | "drafts">("inbox");
   const [showCompose, setShowCompose] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<EmailType | null>(null);
-  const [recipient, setRecipient] = useState("");
+  const [recipient, setRecipient] = useState<Profile | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [username, setUsername] = useState(() => CACHE.get("username") || "");
   const [uid, setUid] = useState<string | null>(userId);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showRecipientPicker, setShowRecipientPicker] = useState(false);
 
-  // Instant init - check auth and prefetch everything
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { navigate("/auth"); return; }
+      if (!user) { window.location.href = "/auth"; return; }
       setUid(user.id);
       CACHE.set("uid", user.id);
 
-      // Load user profile
       supabase.from("profiles").select("id, username, full_name, avatar_url").eq("id", user.id).single().then(({ data }) => {
         if (data) {
           setUsername(data.username);
@@ -126,10 +122,17 @@ const Email = () => {
         }
       });
 
-      // Load followers for compose
-      supabase.from("follows").select("follower_id").eq("following_id", user.id).then(({ data }) => {
-        if (data?.length) {
-          supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", data.map(f => f.follower_id)).then(({ data: pData }) => {
+      // Load BOTH followers AND following
+      Promise.all([
+        supabase.from("follows").select("follower_id").eq("following_id", user.id),
+        supabase.from("follows").select("following_id").eq("follower_id", user.id)
+      ]).then(([followersRes, followingRes]) => {
+        const followerIds = followersRes.data?.map(f => f.follower_id) || [];
+        const followingIds = followingRes.data?.map(f => f.following_id) || [];
+        const allIds = [...new Set([...followerIds, ...followingIds])].filter(id => id !== user.id);
+        
+        if (allIds.length) {
+          supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", allIds).then(({ data: pData }) => {
             if (pData) {
               setProfiles(pData);
               pData.forEach(p => profileCache.set(p.id, p));
@@ -139,12 +142,10 @@ const Email = () => {
         }
       });
 
-      // Prefetch all tabs in background
       ["inbox", "sent", "starred", "archived", "drafts"].forEach(f => fetchEmails(user.id, f as any, f === "inbox"));
     });
-  }, [navigate]);
+  }, []);
 
-  // Filter change - instant from cache
   useEffect(() => {
     const cached = CACHE.get(filter);
     if (cached?.length) setEmails(cached);
@@ -163,7 +164,6 @@ const Email = () => {
     const { data } = await query;
     if (!data) return;
 
-    // Batch fetch missing profiles
     const ids = [...new Set([...data.map(e => e.sender_id), ...data.map(e => e.recipient_id)])];
     const missing = ids.filter(i => !profileCache.has(i));
     if (missing.length) {
@@ -184,10 +184,10 @@ const Email = () => {
 
   const sendEmail = async () => {
     if (!recipient || !subject || !body || !uid) return toast.error("Fill all fields");
-    await supabase.from("internal_emails").insert({ sender_id: uid, recipient_id: recipient, subject, body, is_draft: false });
+    await supabase.from("internal_emails").insert({ sender_id: uid, recipient_id: recipient.id, subject, body, is_draft: false });
     toast.success("Sent!");
     setShowCompose(false);
-    setRecipient(""); setSubject(""); setBody("");
+    setRecipient(null); setSubject(""); setBody("");
     fetchEmails(uid, filter, true);
   };
 
@@ -212,6 +212,15 @@ const Email = () => {
     toast.success("Deleted");
     if (uid) fetchEmails(uid, filter, true);
   };
+
+  const filteredProfiles = useMemo(() => {
+    if (!searchQuery) return profiles;
+    const q = searchQuery.toLowerCase();
+    return profiles.filter(p => 
+      p.full_name?.toLowerCase().includes(q) || 
+      p.username?.toLowerCase().includes(q)
+    );
+  }, [profiles, searchQuery]);
 
   const tabs = useMemo(() => [
     { id: "inbox", icon: Inbox, label: "Inbox" },
@@ -254,23 +263,114 @@ const Email = () => {
         </div>
       </div>
 
-      <Dialog open={showCompose} onOpenChange={setShowCompose}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="text-base">New Message</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <Select value={recipient} onValueChange={setRecipient}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="To" /></SelectTrigger>
-              <SelectContent>{profiles.filter(p => p.id !== uid).map(p => (<SelectItem key={p.id} value={p.id} className="text-sm">{p.full_name}</SelectItem>))}</SelectContent>
-            </Select>
-            <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" className="h-9 text-sm" />
-            <Textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Message" rows={4} className="text-sm resize-none" />
-            <div className="flex justify-end"><Button onClick={sendEmail} size="sm" className="h-8 px-4 rounded-full">Send</Button></div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Full-screen mobile compose sheet */}
+      <Sheet open={showCompose} onOpenChange={setShowCompose}>
+        <SheetContent side="bottom" className="h-[100dvh] p-0 rounded-t-none">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border/30">
+              <button onClick={() => setShowCompose(false)} className="text-muted-foreground">
+                <X className="w-6 h-6" />
+              </button>
+              <SheetTitle className="text-base font-semibold">New Message</SheetTitle>
+              <Button onClick={sendEmail} size="sm" className="h-8 px-4 rounded-full" disabled={!recipient || !subject || !body}>
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
 
+            {/* Compose form */}
+            <div className="flex-1 overflow-y-auto">
+              {/* To field */}
+              <div 
+                className="flex items-center gap-3 px-4 py-3 border-b border-border/20 cursor-pointer"
+                onClick={() => setShowRecipientPicker(true)}
+              >
+                <span className="text-muted-foreground text-sm w-12">To</span>
+                {recipient ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <OptimizedAvatar src={recipient.avatar_url} alt={recipient.username} fallback={recipient.full_name?.[0]} className="w-6 h-6" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{recipient.full_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{recipient.username}@sv.internal</p>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); setRecipient(null); }} className="p-1">
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">Select recipient</span>
+                )}
+              </div>
+
+              {/* Subject */}
+              <div className="px-4 py-3 border-b border-border/20">
+                <Input 
+                  value={subject} 
+                  onChange={e => setSubject(e.target.value)} 
+                  placeholder="Subject" 
+                  className="border-0 p-0 h-auto text-base focus-visible:ring-0 bg-transparent"
+                />
+              </div>
+
+              {/* Message body */}
+              <div className="px-4 py-3 flex-1">
+                <Textarea 
+                  value={body} 
+                  onChange={e => setBody(e.target.value)} 
+                  placeholder="Message" 
+                  className="border-0 p-0 min-h-[200px] text-base focus-visible:ring-0 bg-transparent resize-none"
+                />
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Recipient picker sheet */}
+      <Sheet open={showRecipientPicker} onOpenChange={setShowRecipientPicker}>
+        <SheetContent side="bottom" className="h-[85dvh] p-0 rounded-t-2xl">
+          <div className="flex flex-col h-full">
+            <div className="p-4 border-b border-border/30">
+              <SheetTitle className="text-base font-semibold mb-3">Select Recipient</SheetTitle>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search followers & following"
+                  className="pl-9 h-10 rounded-xl bg-muted/50 border-0"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {filteredProfiles.length > 0 ? filteredProfiles.map(p => (
+                <div 
+                  key={p.id}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 active:bg-muted"
+                  onClick={() => { setRecipient(p); setShowRecipientPicker(false); setSearchQuery(""); }}
+                >
+                  <OptimizedAvatar src={p.avatar_url} alt={p.username} fallback={p.full_name?.[0]} className="w-11 h-11" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{p.full_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{p.username}@sv.internal</p>
+                  </div>
+                  {recipient?.id === p.id && <Check className="w-5 h-5 text-primary" />}
+                </div>
+              )) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p className="text-sm">No contacts found</p>
+                  <p className="text-xs mt-1">Follow users to email them</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Email detail dialog */}
       <Dialog open={!!selectedEmail} onOpenChange={() => setSelectedEmail(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85dvh] overflow-y-auto">
           {selectedEmail && (
             <>
               <DialogHeader>
