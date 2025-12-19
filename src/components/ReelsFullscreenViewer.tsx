@@ -68,8 +68,10 @@ export const ReelsFullscreenViewer = ({
   // Start unmuted in fullscreen - user explicitly opened fullscreen to watch
   const [isMuted, setIsMuted] = useState(false);
   const [needsSoundTap, setNeedsSoundTap] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const soundUnlockedRef = useRef(false);
   const [lastTap, setLastTap] = useState(0);
+  const tapCountRef = useRef(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -263,6 +265,7 @@ export const ReelsFullscreenViewer = ({
     if (currentIndex > 0) {
       setDirection(-1);
       setCurrentIndex(currentIndex - 1);
+      setShowComments(false); // Hide comments when switching reels
     }
   };
  
@@ -270,6 +273,7 @@ export const ReelsFullscreenViewer = ({
     if (currentIndex < reels.length - 1) {
       setDirection(1);
       setCurrentIndex(currentIndex + 1);
+      setShowComments(false); // Hide comments when switching reels
     }
   };
 
@@ -285,10 +289,12 @@ export const ReelsFullscreenViewer = ({
         // Swipe up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
+        setShowComments(false);
       } else if (velocity > 0 && currentIndex > 0) {
         // Swipe down -> previous reel
         setDirection(-1);
         setCurrentIndex(currentIndex - 1);
+        setShowComments(false);
       }
       return;
     }
@@ -299,22 +305,35 @@ export const ReelsFullscreenViewer = ({
         // Drag up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
+        setShowComments(false);
       } else if (offset > 0 && currentIndex > 0) {
         // Drag down -> previous reel
         setDirection(-1);
         setCurrentIndex(currentIndex - 1);
+        setShowComments(false);
       }
     }
   };
 
-  const handleDoubleTap = () => {
+  const handleTap = () => {
     const now = Date.now();
+    // Double tap = like
     if (now - lastTap < 300) {
       onLike(currentReel.id);
       setLastTap(0);
+      tapCountRef.current = 0;
       return;
     }
     setLastTap(now);
+    
+    // Single tap toggles comments
+    tapCountRef.current += 1;
+    setTimeout(() => {
+      if (tapCountRef.current === 1) {
+        setShowComments(prev => !prev);
+      }
+      tapCountRef.current = 0;
+    }, 300);
   };
 
   return (
@@ -361,7 +380,7 @@ export const ReelsFullscreenViewer = ({
             modifyTarget: (target) => Math.round(target / window.innerHeight) * window.innerHeight 
           }}
           onDragEnd={handleDragEnd}
-          onClick={handleDoubleTap}
+          onClick={handleTap}
           initial={{ 
             y: direction === 1 ? "100%" : "-100%", 
             scale: 1,
@@ -619,8 +638,8 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Livestream Comments Overlay - Always visible in fullscreen */}
-      {currentReel && (
+      {/* Livestream Comments Overlay - Only visible when toggled */}
+      {currentReel && showComments && (
         <ReelLivestreamComments key={currentReel.id} reelId={currentReel.id} />
       )}
     </motion.div>
