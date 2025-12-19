@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Play } from "lucide-react";
 import StatusViewerDialog from "./StatusViewerDialog";
-import { useUserOnlineStatus } from "@/hooks/useUserOnlineStatus";
+import { useUserOnlineStatus } from "@/components/OnlineStatusIndicator";
 
 interface StatusData {
   id: string;
