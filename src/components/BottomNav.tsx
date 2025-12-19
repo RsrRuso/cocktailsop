@@ -72,35 +72,35 @@ const BottomNav = () => {
               }
             }}
             className={`p-2 transition-all ${
-              isActive("/home") ? "text-white" : "text-white/60"
+              isActive("/home") ? "text-white" : "text-white/80"
             }`}
           >
-            <Home className={`w-6 h-6 ${isActive("/home") ? "fill-current" : ""}`} />
+            <Home className={`w-7 h-7 ${isActive("/home") ? "fill-current" : ""}`} />
           </button>
 
           <button
             onClick={() => navigate("/explore")}
             className={`p-2 transition-all ${
-              isActive("/explore") ? "text-white" : "text-white/60"
+              isActive("/explore") ? "text-white" : "text-white/80"
             }`}
           >
-            <Search className={`w-6 h-6 ${isActive("/explore") ? "stroke-[2.5]" : ""}`} />
+            <Search className={`w-7 h-7 ${isActive("/explore") ? "stroke-[2.5]" : ""}`} />
           </button>
 
           <button
             onClick={() => navigate("/create/reel")}
-            className="p-2 transition-all text-white/90"
+            className="p-2 transition-all text-white"
           >
-            <Plus className="w-7 h-7 stroke-[2]" />
+            <Plus className="w-8 h-8 stroke-[2.5]" />
           </button>
 
           <button
             onClick={() => navigate("/map")}
             className={`p-2 transition-all ${
-              isActive("/map") ? "text-white" : "text-white/60"
+              isActive("/map") ? "text-white" : "text-white/80"
             }`}
           >
-            <MapPin className={`w-6 h-6 ${isActive("/map") ? "fill-current" : ""}`} />
+            <MapPin className={`w-7 h-7 ${isActive("/map") ? "fill-current" : ""}`} />
           </button>
 
           <button
@@ -112,7 +112,7 @@ const BottomNav = () => {
               alt={username}
               fallback={username[0] || "U"}
               userId={userId}
-              className={`w-7 h-7 ${isActive("/profile") ? "ring-[1.5px] ring-white" : "ring-1 ring-white/50"}`}
+              className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-white" : "ring-1 ring-white/70"}`}
               showStatus={false}
               showAddButton={false}
             />
