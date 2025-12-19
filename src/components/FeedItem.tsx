@@ -283,7 +283,7 @@ export const FeedItem = memo(({
 
       {/* Media content */}
       {item.media_urls && item.media_urls.length > 0 && (
-        <div className="relative w-full bg-black" onClick={handleDoubleTap}>
+        <div className="relative w-full bg-gradient-to-br from-muted to-secondary" onClick={handleDoubleTap}>
           {item.media_urls.map((url: string, idx: number) => (
             <div key={idx} className="relative w-full aspect-[4/5]">
               {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
