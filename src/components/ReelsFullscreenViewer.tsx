@@ -152,18 +152,26 @@ export const ReelsFullscreenViewer = ({
       body.style.scrollbarWidth = "none";
       preloadVideos();
       
-      // Try to play current video with sound after a small delay
+      // Ensure correct audio source on open (music vs original)
       setTimeout(() => {
+        const initialReel = reels[initialIndex];
+        const musicUrl =
+          initialReel?.music_tracks?.original_url ||
+          initialReel?.music_tracks?.preview_url ||
+          initialReel?.music_url;
+        const hasMusic = Boolean(musicUrl);
+
         const currentVideo = videoRefs.current.get(initialIndex);
         if (currentVideo) {
-          currentVideo.muted = false;
+          // If music is attached, always keep the video muted to avoid original audio bleeding through.
+          currentVideo.muted = hasMusic;
           currentVideo.play().catch(() => {
-            // If autoplay with sound fails, mute and retry
+            // If playback fails, retry muted (mobile autoplay rules)
             currentVideo.muted = true;
             currentVideo.play().catch(() => {});
           });
         }
-      }, 100);
+      }, 50);
     } else {
       html.style.overflow = "";
       body.style.overflow = "";
