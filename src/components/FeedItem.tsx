@@ -366,80 +366,60 @@ export const FeedItem = memo(({
         </div>
       )}
 
-      {/* Action Buttons - Lightweight */}
-      <div className="px-3 pt-2">
+      {/* Instagram-style Action Buttons */}
+      <div className="px-4 pt-3 pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onLike();
               }}
-              className="active:scale-90 transition-transform"
+              className="active:scale-90 transition-transform p-0"
             >
-              <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white/80'}`} strokeWidth={1.5} />
+              <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} strokeWidth={1.5} />
             </button>
 
-            <button onClick={() => setShowComments(true)} className="active:scale-90 transition-transform">
-              <MessageCircle className="w-6 h-6 text-white/80" strokeWidth={1.5} />
+            <button onClick={() => setShowComments(true)} className="active:scale-90 transition-transform p-0">
+              <MessageCircle className="w-7 h-7" strokeWidth={1.5} />
             </button>
 
-            <button onClick={onShare} className="active:scale-90 transition-transform">
-              <Send className="w-6 h-6 text-white/80 -rotate-12" strokeWidth={1.5} />
+            <button onClick={onShare} className="active:scale-90 transition-transform p-0">
+              <Send className="w-6 h-6 -rotate-12" strokeWidth={1.5} />
             </button>
 
-            <button onClick={() => onRepost?.()} className="active:scale-90 transition-transform">
-              <Repeat2 className={`w-6 h-6 ${isReposted ? 'text-green-500' : 'text-white/80'}`} strokeWidth={1.5} />
+            <button onClick={() => onRepost?.()} className="active:scale-90 transition-transform p-0">
+              <Repeat2 className={`w-6 h-6 ${isReposted ? 'text-green-500' : ''}`} strokeWidth={1.5} />
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={() => setShowInsights(true)} className="active:scale-90 transition-transform">
-              <Eye className="w-5 h-5 text-white/50" strokeWidth={1.5} />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowInsights(true)} className="active:scale-90 transition-transform p-0">
+              <Eye className="w-6 h-6 opacity-60" strokeWidth={1.5} />
             </button>
 
-            <button onClick={() => onSave?.()} className="active:scale-90 transition-transform">
-              <Bookmark className={`w-6 h-6 ${isSaved ? 'fill-white text-white' : 'text-white/80'}`} strokeWidth={1.5} />
+            <button onClick={() => onSave?.()} className="active:scale-90 transition-transform p-0">
+              <Bookmark className={`w-7 h-7 ${isSaved ? 'fill-current' : ''}`} strokeWidth={1.5} />
             </button>
           </div>
         </div>
 
-        {/* Engagement Stats - only show counts > 0 */}
-        <div className="flex items-center gap-4 mt-2 text-sm">
-          {(item.like_count || 0) > 0 && (
-            <button 
-              onClick={() => setShowLikes(true)}
-              className="font-semibold text-foreground hover:opacity-70 transition-opacity"
-            >
-              {item.like_count.toLocaleString()} likes
-            </button>
-          )}
-          
-          {(item.repost_count || 0) > 0 && (
-            <button 
-              onClick={() => setShowReposts(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item.repost_count.toLocaleString()} reposts
-            </button>
-          )}
-          
-          {(item.save_count || 0) > 0 && (
-            <button 
-              onClick={() => setShowSaves(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item.save_count.toLocaleString()} saves
-            </button>
-          )}
-        </div>
+        {/* Like count - Instagram style */}
+        {(item.like_count || 0) > 0 && (
+          <button 
+            onClick={() => setShowLikes(true)}
+            className="font-semibold text-sm mt-2 block"
+          >
+            {item.like_count.toLocaleString()} {item.like_count === 1 ? 'like' : 'likes'}
+          </button>
+        )}
 
-        {/* Caption */}
+        {/* Caption - Instagram style */}
         {'content' in item && item.content && item.media_urls && item.media_urls.length > 0 && (
           <p className="text-sm mt-1">
             <span 
-              className="font-semibold mr-1.5 cursor-pointer hover:opacity-70"
+              className="font-semibold mr-1 cursor-pointer"
               onClick={() => navigate(`/user/${item.user_id}`)}
             >
               {item.profiles?.username}
@@ -448,21 +428,37 @@ export const FeedItem = memo(({
           </p>
         )}
 
-        {/* Comments Preview */}
+        {/* View all comments - Instagram style */}
         {commentCount > 0 && (
           <button 
             onClick={() => setShowComments(true)}
-            className="text-sm text-muted-foreground mt-1 hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground mt-1 block"
           >
             View all {commentCount} comments
           </button>
         )}
 
-        {/* Views */}
-        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground pb-3">
-          <Eye className="w-3.5 h-3.5" />
+        {/* Views count - Instagram style */}
+        <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+          <Eye className="w-4 h-4" />
           <span>{(item.view_count || 0).toLocaleString()} views</span>
         </div>
+
+        {/* Reposts and saves in subtle text */}
+        {((item.repost_count || 0) > 0 || (item.save_count || 0) > 0) && (
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+            {(item.repost_count || 0) > 0 && (
+              <button onClick={() => setShowReposts(true)}>
+                {item.repost_count} reposts
+              </button>
+            )}
+            {(item.save_count || 0) > 0 && (
+              <button onClick={() => setShowSaves(true)}>
+                {item.save_count} saves
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}

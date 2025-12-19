@@ -152,61 +152,50 @@ export const ReelFullscreen = ({
         </p>
       </div>
 
-      {/* Action Buttons - Right Side Vertical */}
-      <div className="absolute right-3 bottom-20 flex flex-col gap-6 z-40">
+      {/* Instagram-style Action Buttons - Right Side Vertical */}
+      <div className="absolute right-4 bottom-28 flex flex-col items-center gap-5 z-40">
         {/* Like Button */}
         <button
           onClick={onLike}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Heart
-              className={`w-7 h-7 transition-colors ${
-                isLiked ? "fill-red-500 text-red-500" : "text-white"
-              }`}
-            />
-          </div>
-          <span className="text-white text-xs font-bold drop-shadow-lg">{likeCount || 0}</span>
+          <Heart
+            className={`w-7 h-7 drop-shadow-lg ${
+              isLiked ? "fill-red-500 text-red-500" : "text-white"
+            }`}
+            strokeWidth={1.5}
+          />
+          <span className="text-white text-xs font-semibold drop-shadow-lg">{likeCount || 0}</span>
         </button>
 
         {/* Comment Button */}
         <button
           onClick={onComment}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <MessageCircle className="w-7 h-7 text-white" />
-          </div>
-          <span className="text-white text-xs font-bold drop-shadow-lg">{commentCount || 0}</span>
+          <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={1.5} />
+          <span className="text-white text-xs font-semibold drop-shadow-lg">{commentCount || 0}</span>
         </button>
 
         {/* Share/Send Button */}
         <button
           onClick={onShare}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Send className="w-7 h-7 text-white" />
-          </div>
+          <Send className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
         </button>
 
         {/* Bookmark Button */}
-        <button
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
-        >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Bookmark className="w-7 h-7 text-white" />
-          </div>
+        <button className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
+          <Bookmark className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={1.5} />
         </button>
 
         {/* Three Dot Menu - Only for own posts */}
         {isOwnPost && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95">
-                <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-                  <MoreVertical className="w-7 h-7 text-white" />
-                </div>
+              <button className="flex flex-col items-center active:scale-90 transition-transform">
+                <MoreVertical className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border/50">
