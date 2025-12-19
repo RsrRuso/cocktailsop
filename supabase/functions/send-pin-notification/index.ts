@@ -142,11 +142,38 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("PIN notification email sent successfully:", emailResponse);
 
+    // Create internal email (Neuron Email)
+    const workspaceTypeLabel = {
+      fifo: "FIFO Workspace",
+      store_management: "Store Management",
+      procurement: "Procurement Workspace",
+      mixologist: "Mixologist Group"
+    }[workspaceType] || "Workspace";
+
+    await supabase.from("internal_emails").insert({
+      sender_id: userId, // Self-sent system notification
+      recipient_id: userId,
+      subject: `🔐 Access PIN Granted - ${workspaceName}`,
+      body: `<div style="font-family: system-ui, sans-serif;">
+        <h2 style="color: #f59e0b; margin-bottom: 16px;">Access PIN Granted</h2>
+        <p style="margin-bottom: 12px;">You've been granted access to <strong>${workspaceName}</strong> (${workspaceTypeLabel}).</p>
+        <div style="background: linear-gradient(135deg, #f59e0b20, #d9770620); border: 1px solid #f59e0b40; border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0;">
+          <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Your PIN Code</p>
+          <p style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #f59e0b; margin: 0; font-family: monospace;">${pin}</p>
+        </div>
+        <p style="color: #888; font-size: 14px; margin-top: 16px;">⚠️ Keep this PIN secure. Do not share it with anyone who shouldn't have access.</p>
+      </div>`,
+      read: false,
+      starred: true,
+      archived: false,
+      is_draft: false
+    });
+
     // Also create in-app notification
     await supabase.from("notifications").insert({
       user_id: userId,
       type: "pin_granted",
-      content: `🔐 You've been granted access PIN: **${pin}** for ${workspaceName}. Check your email for details.`,
+      content: `🔐 You've been granted access PIN: **${pin}** for ${workspaceName}. Check your Neuron Email for details.`,
       read: false
     });
 
