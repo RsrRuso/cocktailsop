@@ -244,9 +244,9 @@ const Email = () => {
 
         <div className="flex border-b border-border/30 overflow-x-auto scrollbar-hide">
           {tabs.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => setFilter(id)} className={`flex items-center gap-1.5 px-3 py-2.5 text-sm border-b-2 whitespace-nowrap ${filter === id ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"}`}>
+            <button key={id} onClick={() => setFilter(id)} className={`flex flex-col items-center gap-0.5 px-3 py-2 text-xs border-b-2 whitespace-nowrap min-w-[56px] ${filter === id ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"}`}>
               <Icon className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">{label}</span>
+              <span>{label}</span>
             </button>
           ))}
         </div>
