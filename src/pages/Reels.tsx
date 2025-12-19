@@ -74,9 +74,8 @@ const Reels = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
   const [targetReelId, setTargetReelId] = useState<string | null>(() => initialState?.scrollToReelId ?? null);
-  const [showFullscreenViewer, setShowFullscreenViewer] = useState(() =>
-    Boolean(initialState?.reelData || initialState?.showLivestreamComments)
-  );
+  // ALWAYS open fullscreen viewer immediately - no separate scroll view
+  const [showFullscreenViewer, setShowFullscreenViewer] = useState(true);
   const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
   const [showLivestreamComments, setShowLivestreamComments] = useState(() => Boolean(initialState?.showLivestreamComments));
   const [isLoading, setIsLoading] = useState(() => Boolean(user) && !initialState?.reelData);
@@ -393,8 +392,8 @@ const Reels = () => {
       <ReelsFullscreenViewer
         isOpen={showFullscreenViewer}
         onClose={() => {
-          setShowFullscreenViewer(false);
-          setShowLivestreamComments(false);
+          // Navigate back instead of hiding viewer
+          navigate(-1);
         }}
         reels={reels}
         initialIndex={fullscreenStartIndex}
