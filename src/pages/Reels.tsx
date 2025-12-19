@@ -304,7 +304,7 @@ const Reels = () => {
             </div>
           </div>
         )
-      ) : (
+      ) : !showFullscreenViewer ? (
         <div 
           className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide"
           style={{
@@ -355,7 +355,7 @@ const Reels = () => {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       <ShareDialog
         open={showShare}
