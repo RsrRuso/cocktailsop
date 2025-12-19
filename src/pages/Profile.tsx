@@ -99,9 +99,7 @@ const Profile = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
         
         {/* Header overlay */}
-        <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-12">
-          <h1 className="text-base font-semibold text-white drop-shadow-lg">{p.username}</h1>
-          
+        <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-end px-4 h-12">
           {/* Menu Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

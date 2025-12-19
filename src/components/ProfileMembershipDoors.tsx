@@ -47,8 +47,13 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     }
   }, [memberships, getMemberCount]);
 
-  const handleDoorPress = async (membership: Membership) => {
-    console.log('[ProfileMembershipDoors] Door pressed:', membership.name, 'Type:', membership.type, 'ID:', membership.id);
+  const handleDoorPress = (membership: Membership) => {
+    // Navigate instantly to the space
+    navigate(membership.route);
+  };
+  
+  const handleDoorLongPress = async (membership: Membership) => {
+    console.log('[ProfileMembershipDoors] Door long pressed:', membership.name, 'Type:', membership.type, 'ID:', membership.id);
     
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
     
@@ -61,9 +66,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     }
     
     // Fetch all members for this space
-    console.log('[ProfileMembershipDoors] Fetching members for:', membership.id, membership.type);
     await fetchMembers(membership.id, membership.type);
-    console.log('[ProfileMembershipDoors] Members fetched, count:', members.length);
     
     setSelectedSpace(membership);
   };
