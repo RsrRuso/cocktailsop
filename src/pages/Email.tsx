@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Mail, Send, Star, Archive, Inbox, Sparkles, Trash2, Copy, FileText, Sav
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Email {
   id: string;
@@ -44,6 +45,9 @@ interface Profile {
   internal_email?: string;
 }
 
+// Cache for profiles to avoid refetching
+const profileCache = new Map<string, Profile>();
+
 const Email = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -57,7 +61,10 @@ const Email = () => {
   const [body, setBody] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize user and profiles only once
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -67,98 +74,107 @@ const Email = () => {
       }
       setCurrentUser(user);
       
-      // Fetch current user's profile
-      const { data: currentProfile } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .eq("id", user.id)
-        .single();
+      // Parallel fetch: current profile + followers
+      const [profileResult, followsResult] = await Promise.all([
+        supabase.from("profiles").select("id, username, full_name, avatar_url").eq("id", user.id).single(),
+        supabase.from("follows").select("follower_id").eq("following_id", user.id)
+      ]);
       
-      // Fetch followers as available contacts for internal email
-      const { data: followsData } = await supabase
-        .from("follows")
-        .select("follower_id")
-        .eq("following_id", user.id);
+      const allProfiles: Profile[] = [];
       
-      const allProfiles = [];
-      
-      // Add current user to profiles
-      if (currentProfile) {
-        allProfiles.push({
-          ...currentProfile,
-          internal_email: `${currentProfile.username}@sv.internal`
-        });
+      if (profileResult.data) {
+        const profile = { ...profileResult.data, internal_email: `${profileResult.data.username}@sv.internal` };
+        allProfiles.push(profile);
+        profileCache.set(profile.id, profile);
       }
       
-      if (followsData && followsData.length > 0) {
-        const followerIds = followsData.map(f => f.follower_id);
+      if (followsResult.data && followsResult.data.length > 0) {
+        const followerIds = followsResult.data.map(f => f.follower_id);
         const { data: profilesData } = await supabase
           .from("profiles")
           .select("id, username, full_name, avatar_url")
           .in("id", followerIds);
         
         if (profilesData) {
-          // Add internal email addresses
-          const profilesWithEmail = profilesData.map(p => ({
-            ...p,
-            internal_email: `${p.username}@sv.internal`
-          }));
-          allProfiles.push(...profilesWithEmail);
+          profilesData.forEach(p => {
+            const profile = { ...p, internal_email: `${p.username}@sv.internal` };
+            allProfiles.push(profile);
+            profileCache.set(profile.id, profile);
+          });
         }
       }
       
       setProfiles(allProfiles);
-      
-      fetchEmails(user.id);
+      setIsInitialized(true);
+      fetchEmails(user.id, "inbox");
     };
     init();
-  }, [filter]);
+  }, [navigate]);
 
-  const fetchEmails = async (userId: string) => {
+  // Fetch emails when filter changes (after initialization)
+  useEffect(() => {
+    if (isInitialized && currentUser) {
+      fetchEmails(currentUser.id, filter);
+    }
+  }, [filter, isInitialized, currentUser]);
+
+  const fetchEmails = useCallback(async (userId: string, currentFilter: string) => {
+    setIsLoading(true);
+    
     let query = supabase
       .from("internal_emails")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(50); // Limit for faster loading
 
-    if (filter === "inbox") {
+    if (currentFilter === "inbox") {
       query = query.eq("recipient_id", userId).eq("archived", false).eq("is_draft", false);
-    } else if (filter === "sent") {
+    } else if (currentFilter === "sent") {
       query = query.eq("sender_id", userId).eq("is_draft", false);
-    } else if (filter === "starred") {
+    } else if (currentFilter === "starred") {
       query = query.or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).eq("starred", true).eq("is_draft", false);
-    } else if (filter === "archived") {
+    } else if (currentFilter === "archived") {
       query = query.eq("recipient_id", userId).eq("archived", true).eq("is_draft", false);
-    } else if (filter === "drafts") {
+    } else if (currentFilter === "drafts") {
       query = query.eq("sender_id", userId).eq("is_draft", true);
     }
 
     const { data, error } = await query;
+    
     if (error) {
       toast.error("Failed to fetch emails");
+      setIsLoading(false);
       return;
     }
     
-    // Fetch sender and recipient profiles separately
     if (data && data.length > 0) {
+      // Get unique user IDs not in cache
       const userIds = [...new Set([...data.map(e => e.sender_id), ...data.map(e => e.recipient_id)])];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .in("id", userIds);
+      const uncachedIds = userIds.filter(id => !profileCache.has(id));
       
-      const profileMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      if (uncachedIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", uncachedIds);
+        
+        profilesData?.forEach(p => {
+          profileCache.set(p.id, { ...p, internal_email: `${p.username}@sv.internal` });
+        });
+      }
       
       const enrichedEmails = data.map(email => ({
         ...email,
-        sender: profileMap.get(email.sender_id),
-        recipient: profileMap.get(email.recipient_id),
+        sender: profileCache.get(email.sender_id),
+        recipient: profileCache.get(email.recipient_id),
       }));
       
       setEmails(enrichedEmails);
     } else {
       setEmails([]);
     }
-  };
+    setIsLoading(false);
+  }, []);
 
   const generateAiSuggestion = async () => {
     if (!subject && !body) {
@@ -228,7 +244,7 @@ const Email = () => {
     setSubject("");
     setBody("");
     setAiSuggestion("");
-    fetchEmails(currentUser.id);
+    fetchEmails(currentUser.id, filter);
   };
 
   const saveDraft = async () => {
@@ -257,7 +273,7 @@ const Email = () => {
     setSubject("");
     setBody("");
     setAiSuggestion("");
-    fetchEmails(currentUser.id);
+    fetchEmails(currentUser.id, filter);
   };
 
   const copyToClipboard = async (text: string) => {
@@ -274,7 +290,7 @@ const Email = () => {
       .from("internal_emails")
       .update({ starred: !currentStarred })
       .eq("id", emailId);
-    fetchEmails(currentUser.id);
+    fetchEmails(currentUser.id, filter);
   };
 
   const toggleArchive = async (emailId: string, currentArchived: boolean) => {
@@ -282,7 +298,7 @@ const Email = () => {
       .from("internal_emails")
       .update({ archived: !currentArchived })
       .eq("id", emailId);
-    fetchEmails(currentUser.id);
+    fetchEmails(currentUser.id, filter);
   };
 
   const markAsRead = async (emailId: string) => {
@@ -290,7 +306,7 @@ const Email = () => {
       .from("internal_emails")
       .update({ read: true })
       .eq("id", emailId);
-    fetchEmails(currentUser.id);
+    fetchEmails(currentUser.id, filter);
   };
 
   const deleteEmail = async (emailId: string) => {
@@ -300,30 +316,23 @@ const Email = () => {
       .eq("id", emailId);
     toast.success("Email deleted");
     setSelectedEmail(null);
-    fetchEmails(currentUser.id);
+    fetchEmails(currentUser.id, filter);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 relative overflow-hidden">
-      {/* Floating particles background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-20 left-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-40 right-20 w-48 h-48 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-primary/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 relative">
       <TopNav isVisible={true} />
       <div className="container max-w-4xl mx-auto px-3 pt-16 sm:pt-20 pb-20 sm:pb-24 relative z-10">
-        {/* Header - Enhanced Design */}
+        {/* Header - Simplified for speed */}
         <div className="mb-6 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-lg animate-pulse" style={{ animationDuration: '3s' }}>
+            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
               Neuron Email
             </h1>
             <Button 
               onClick={() => setShowCompose(true)} 
               size="sm"
-              className="gap-2 text-xs sm:text-sm h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-primary via-accent to-primary hover:scale-110 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-primary/40 rounded-full"
+              className="gap-2 text-xs sm:text-sm h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity rounded-full"
             >
               <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline font-semibold">Compose</span>
@@ -332,19 +341,18 @@ const Email = () => {
           </div>
           
           {currentUser && (
-            <div className="glass backdrop-blur-2xl p-4 rounded-2xl border-2 border-primary/30 shadow-xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 animate-pulse" style={{ animationDuration: '3s' }} />
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative z-10">
+            <div className="glass backdrop-blur-xl p-4 rounded-2xl border border-primary/30 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-muted-foreground/80 mb-1">Your IE Account</p>
-                  <p className="text-sm sm:text-base font-mono font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate">
+                  <p className="text-sm sm:text-base font-mono font-bold text-primary truncate">
                     {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
                   </p>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-medium">
                   <span className="glass px-3 py-1.5 rounded-full whitespace-nowrap">{profiles.length - 1} contacts</span>
-                  <span className="glass px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-500 whitespace-nowrap flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="glass px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 whitespace-nowrap flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                     Unique
                   </span>
                 </div>
@@ -424,49 +432,67 @@ const Email = () => {
 
         {/* Email List - Enhanced Design */}
         <div className="space-y-3">
-          {emails.map((email) => (
-            <div
-              key={email.id}
-              onClick={() => {
-                setSelectedEmail(email);
-                if (!email.read && email.recipient_id === currentUser?.id) {
-                  markAsRead(email.id);
-                }
-              }}
-              className={`glass backdrop-blur-2xl p-4 rounded-2xl cursor-pointer hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] shadow-lg hover:shadow-2xl relative overflow-hidden ${
-                !email.read && email.recipient_id === currentUser?.id ? "border-2 border-primary shadow-primary/30" : "border border-border/20"
-              }`}
-            >
-              {!email.read && email.recipient_id === currentUser?.id && (
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 animate-pulse" />
-              )}
-              <div className="flex items-start gap-2.5">
-                <OptimizedAvatar
-                  src={filter === "sent" ? email.recipient?.avatar_url : email.sender?.avatar_url}
-                  alt={filter === "sent" ? email.recipient?.username : email.sender?.username}
-                  fallback={(filter === "sent" ? email.recipient?.username?.[0] : email.sender?.username?.[0]) || "U"}
-                  userId={filter === "sent" ? email.recipient?.id : email.sender?.id}
-                  className="w-10 h-10 sm:w-12 sm:h-12"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className="text-sm sm:text-base font-semibold truncate">
-                        {filter === "sent" ? email.recipient?.full_name : email.sender?.full_name}
-                      </p>
-                      {email.starred && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />}
+          {isLoading ? (
+            // Loading skeletons for instant perceived load
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="glass backdrop-blur-xl p-4 rounded-2xl border border-border/20">
+                <div className="flex items-start gap-2.5">
+                  <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-12" />
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                      {new Date(email.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
                   </div>
-                  <p className="text-xs sm:text-sm font-medium truncate mb-0.5">{email.subject}</p>
-                  <p className="text-xs text-muted-foreground truncate">{email.body}</p>
                 </div>
               </div>
-            </div>
-          ))}
-          {emails.length === 0 && (
+            ))
+          ) : emails.length > 0 ? (
+            emails.map((email) => (
+              <div
+                key={email.id}
+                onClick={() => {
+                  setSelectedEmail(email);
+                  if (!email.read && email.recipient_id === currentUser?.id) {
+                    markAsRead(email.id);
+                  }
+                }}
+                className={`glass backdrop-blur-xl p-4 rounded-2xl cursor-pointer hover:bg-primary/5 transition-all duration-200 active:scale-[0.98] shadow-lg relative overflow-hidden ${
+                  !email.read && email.recipient_id === currentUser?.id ? "border-2 border-primary shadow-primary/20" : "border border-border/20"
+                }`}
+              >
+                {!email.read && email.recipient_id === currentUser?.id && (
+                  <div className="absolute inset-0 bg-primary/5" />
+                )}
+                <div className="flex items-start gap-2.5 relative z-10">
+                  <OptimizedAvatar
+                    src={filter === "sent" ? email.recipient?.avatar_url : email.sender?.avatar_url}
+                    alt={filter === "sent" ? email.recipient?.username : email.sender?.username}
+                    fallback={(filter === "sent" ? email.recipient?.username?.[0] : email.sender?.username?.[0]) || "U"}
+                    userId={filter === "sent" ? email.recipient?.id : email.sender?.id}
+                    className="w-10 h-10 sm:w-12 sm:h-12"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-sm sm:text-base font-semibold truncate">
+                          {filter === "sent" ? email.recipient?.full_name : email.sender?.full_name}
+                        </p>
+                        {email.starred && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />}
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                        {new Date(email.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-medium truncate mb-0.5">{email.subject}</p>
+                    <p className="text-xs text-muted-foreground truncate">{email.body.replace(/<[^>]*>/g, '').slice(0, 100)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Mail className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
               <p className="text-sm">No emails found</p>
