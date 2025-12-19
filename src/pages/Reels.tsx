@@ -53,7 +53,16 @@ const Reels = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [reels, setReels] = useState<Reel[]>([]);
+
+  // Check if we're navigating to a specific reel - if so, open fullscreen immediately
+  const initialState = location.state as {
+    scrollToReelId?: string;
+    reelData?: any;
+    showLivestreamComments?: boolean;
+  } | null;
+  const hasTargetReel = !!(initialState?.scrollToReelId || initialState?.reelData);
+
+  const [reels, setReels] = useState<Reel[]>(() => (initialState?.reelData ? [initialState.reelData] : []));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showShare, setShowShare] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
@@ -64,15 +73,13 @@ const Reels = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
-  const [targetReelId, setTargetReelId] = useState<string | null>(null);
-  const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
+  const [targetReelId, setTargetReelId] = useState<string | null>(() => initialState?.scrollToReelId ?? null);
+  const [showFullscreenViewer, setShowFullscreenViewer] = useState(() =>
+    Boolean(initialState?.reelData || initialState?.showLivestreamComments)
+  );
   const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
-  const [showLivestreamComments, setShowLivestreamComments] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Check if we're navigating to a specific reel - if so, open fullscreen immediately
-  const initialState = location.state as { scrollToReelId?: string; reelData?: any; showLivestreamComments?: boolean } | null;
-  const hasTargetReel = !!(initialState?.scrollToReelId || initialState?.reelData);
+  const [showLivestreamComments, setShowLivestreamComments] = useState(() => Boolean(initialState?.showLivestreamComments));
+  const [isLoading, setIsLoading] = useState(() => Boolean(user) && !initialState?.reelData);
 
   // Optimistic like count updater
   const handleLikeCountChange = useCallback((reelId: string, type: 'like' | 'save' | 'repost', delta: number) => {

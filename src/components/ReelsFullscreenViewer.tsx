@@ -1,4 +1,17 @@
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, X, Volume2, VolumeX, Music } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Send,
+  Bookmark,
+  MoreVertical,
+  Trash2,
+  X,
+  Volume2,
+  VolumeX,
+  Music,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import {
@@ -71,7 +84,7 @@ export const ReelsFullscreenViewer = ({
   const [showComments, setShowComments] = useState(false);
   const soundUnlockedRef = useRef(false);
   const [lastTap, setLastTap] = useState(0);
-  const tapCountRef = useRef(0);
+  const singleTapTimeoutRef = useRef<number | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -167,22 +180,26 @@ export const ReelsFullscreenViewer = ({
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
-    
-    // Always unmute when opening fullscreen - user wants to watch with sound
+
     if (isOpen) {
+      // Reset per-open UI
+      setShowComments(false);
+      setNeedsSoundTap(false);
+
+      // Always try to start unmuted in fullscreen
       setIsMuted(false);
     }
 
     const html = document.documentElement;
     const body = document.body;
-    
+
     if (isOpen) {
       html.style.overflow = "hidden";
       body.style.overflow = "hidden";
       html.style.scrollbarWidth = "none";
       body.style.scrollbarWidth = "none";
       preloadVideos();
-      
+
       // Ensure correct audio source on open (music vs original)
       setTimeout(() => {
         const initialReel = reels[initialIndex];
@@ -223,19 +240,26 @@ export const ReelsFullscreenViewer = ({
     };
   }, [initialIndex, isOpen, preloadVideos]);
 
+  // Always try to be unmuted by default when switching reels
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsMuted(false);
+    setNeedsSoundTap(false);
+  }, [currentIndex, isOpen]);
+
   // When changing reels, ensure audio plays correctly
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const currentReel = reels[currentIndex];
     if (!currentReel) return;
-    
+
     const musicUrl =
       currentReel.music_tracks?.original_url ||
       currentReel.music_tracks?.preview_url ||
       currentReel.music_url;
     const hasMusic = Boolean(musicUrl);
-    
+
     const currentVideo = videoRefs.current.get(currentIndex);
     if (currentVideo) {
       // Mute video only if user muted OR if there's attached music with mute_original_audio flag
@@ -317,23 +341,25 @@ export const ReelsFullscreenViewer = ({
 
   const handleTap = () => {
     const now = Date.now();
+
     // Double tap = like
     if (now - lastTap < 300) {
+      if (singleTapTimeoutRef.current) {
+        window.clearTimeout(singleTapTimeoutRef.current);
+        singleTapTimeoutRef.current = null;
+      }
       onLike(currentReel.id);
       setLastTap(0);
-      tapCountRef.current = 0;
       return;
     }
+
     setLastTap(now);
-    
-    // Single tap toggles comments
-    tapCountRef.current += 1;
-    setTimeout(() => {
-      if (tapCountRef.current === 1) {
-        setShowComments(prev => !prev);
-      }
-      tapCountRef.current = 0;
-    }, 300);
+
+    // Single tap = unlock / unmute sound (if needed)
+    if (singleTapTimeoutRef.current) window.clearTimeout(singleTapTimeoutRef.current);
+    singleTapTimeoutRef.current = window.setTimeout(() => {
+      if (needsSoundTap || isMuted) handleEnableSound();
+    }, 280);
   };
 
   return (
@@ -559,6 +585,29 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
+      {/* Swipe-up hint for comments (Instagram-style) */}
+      {!showComments && (
+        <motion.div
+          className="absolute bottom-6 left-1/2 z-40 -translate-x-1/2 pointer-events-auto"
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            e.stopPropagation();
+            if (info.offset.y < -40) setShowComments(true);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowComments(true);
+          }}
+        >
+          <div className="flex flex-col items-center gap-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-4 py-2">
+            <ChevronUp className="w-4 h-4 text-white/90" />
+            <span className="text-white/90 text-xs font-medium">Swipe up to see comments</span>
+          </div>
+        </motion.div>
+      )}
+
       {/* Action Buttons - Right Side with Smooth Slide In */}
       <motion.div 
         className="absolute right-2 bottom-24 flex flex-col gap-4 z-40"
@@ -638,7 +687,31 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Livestream Comments Overlay - Only visible when toggled */}
+      {/* Comments: swipe down handle + overlay */}
+      {showComments && (
+        <motion.button
+          type="button"
+          className="fixed inset-x-0 bottom-0 z-[60] flex justify-center pb-safe pointer-events-auto"
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            e.stopPropagation();
+            if (info.offset.y > 40) setShowComments(false);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowComments(false);
+          }}
+        >
+          <div className="mb-2 flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-4 py-2">
+            <ChevronDown className="w-4 h-4 text-white/90" />
+            <span className="text-white/90 text-xs font-medium">Swipe down to close</span>
+          </div>
+        </motion.button>
+      )}
+
+      {/* Livestream Comments Overlay */}
       {currentReel && showComments && (
         <ReelLivestreamComments key={currentReel.id} reelId={currentReel.id} />
       )}
