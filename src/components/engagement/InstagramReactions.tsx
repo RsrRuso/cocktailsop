@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const QUICK_REACTIONS = ['❤️', '🔥', '👏', '😍', '😮', '😢'];
+const QUICK_REACTIONS = ['❤️', '🔥', '👏', '😍', '😮', '😂'];
 
 interface InstagramReactionsProps {
   isLiked: boolean;
@@ -11,66 +11,119 @@ interface InstagramReactionsProps {
   onReaction?: (emoji: string) => void;
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }
 
-export const InstagramReactions = ({ 
+// Lightweight heart burst particles
+const HeartBurst = memo(() => (
+  <div className="absolute inset-0 pointer-events-none z-30">
+    {[...Array(6)].map((_, i) => (
+      <motion.div
+        key={i}
+        initial={{ 
+          scale: 0, 
+          x: 0, 
+          y: 0,
+          opacity: 1 
+        }}
+        animate={{ 
+          scale: [0, 1, 0.5],
+          x: Math.cos((i * 60) * Math.PI / 180) * 60,
+          y: Math.sin((i * 60) * Math.PI / 180) * 60,
+          opacity: [1, 1, 0]
+        }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+      >
+        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+      </motion.div>
+    ))}
+  </div>
+));
+
+HeartBurst.displayName = 'HeartBurst';
+
+export const InstagramReactions = memo(({ 
   isLiked, 
   onLike, 
   onReaction,
   children, 
-  className 
+  className,
+  disabled = false
 }: InstagramReactionsProps) => {
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [showBurst, setShowBurst] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [flyingEmoji, setFlyingEmoji] = useState<string | null>(null);
+  const [ripplePos, setRipplePos] = useState<{ x: number; y: number } | null>(null);
   const lastTapRef = useRef(0);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Double tap to like
-  const handleDoubleTap = useCallback(() => {
+  // Haptic feedback helper
+  const haptic = useCallback((pattern: number | number[]) => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  }, []);
+
+  // Double tap to like with position-aware ripple
+  const handleDoubleTap = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    if (disabled) return;
+    
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      // Double tap detected
+      // Get tap position for ripple effect
+      if (e && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const clientX = 'touches' in e ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.changedTouches[0].clientY : e.clientY;
+        setRipplePos({
+          x: ((clientX - rect.left) / rect.width) * 100,
+          y: ((clientY - rect.top) / rect.height) * 100
+        });
+      }
+
       if (!isLiked) {
         onLike();
       }
+      
       setShowHeartAnimation(true);
+      setShowBurst(true);
+      haptic([25, 25, 25]);
       
-      // Haptic feedback
-      if ('vibrate' in navigator) {
-        navigator.vibrate(50);
-      }
-      
-      setTimeout(() => setShowHeartAnimation(false), 1000);
+      setTimeout(() => {
+        setShowHeartAnimation(false);
+        setShowBurst(false);
+        setRipplePos(null);
+      }, 800);
     }
     lastTapRef.current = now;
-  }, [isLiked, onLike]);
+  }, [isLiked, onLike, haptic, disabled]);
 
   // Long press for reactions
-  const handleTouchStart = useCallback(() => {
+  const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    if (disabled) return;
     isLongPressRef.current = false;
+    
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
       setShowReactions(true);
-      
-      // Haptic feedback
-      if ('vibrate' in navigator) {
-        navigator.vibrate([30, 20, 30]);
-      }
-    }, 500);
-  }, []);
+      haptic([20, 30, 20]);
+    }, 400);
+  }, [haptic, disabled]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
     
-    if (!isLongPressRef.current) {
-      handleDoubleTap();
+    if (!isLongPressRef.current && !disabled) {
+      handleDoubleTap(e);
     }
-  }, [handleDoubleTap]);
+  }, [handleDoubleTap, disabled]);
 
   const handleTouchMove = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -79,22 +132,19 @@ export const InstagramReactions = ({
     }
   }, []);
 
-  const handleReaction = (emoji: string) => {
+  const handleReaction = useCallback((emoji: string) => {
     setFlyingEmoji(emoji);
     setShowReactions(false);
     onReaction?.(emoji);
+    haptic(15);
     
-    // Haptic feedback
-    if ('vibrate' in navigator) {
-      navigator.vibrate(30);
-    }
-    
-    setTimeout(() => setFlyingEmoji(null), 800);
-  };
+    setTimeout(() => setFlyingEmoji(null), 600);
+  }, [onReaction, haptic]);
 
   return (
     <div 
-      className={cn("relative", className)}
+      ref={containerRef}
+      className={cn("relative select-none", className)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
@@ -108,35 +158,62 @@ export const InstagramReactions = ({
     >
       {children}
       
-      {/* Double tap heart animation */}
+      {/* Ripple effect at tap position */}
+      <AnimatePresence>
+        {ripplePos && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0.5 }}
+            animate={{ scale: 3, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="absolute w-20 h-20 rounded-full bg-white/20 pointer-events-none z-20"
+            style={{ 
+              left: `${ripplePos.x}%`, 
+              top: `${ripplePos.y}%`,
+              transform: 'translate(-50%, -50%)'
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main heart animation */}
       <AnimatePresence>
         {showHeartAnimation && (
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 1.5, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ scale: 0, opacity: 0, rotate: -15 }}
+            animate={{ scale: [0, 1.2, 1], opacity: 1, rotate: 0 }}
+            exit={{ scale: 1.3, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
           >
             <Heart 
-              className="w-24 h-24 text-white fill-white drop-shadow-2xl" 
-              strokeWidth={1}
+              className="w-20 h-20 text-white fill-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]" 
+              strokeWidth={0}
             />
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Heart burst particles */}
+      <AnimatePresence>
+        {showBurst && <HeartBurst />}
       </AnimatePresence>
 
       {/* Flying emoji animation */}
       <AnimatePresence>
         {flyingEmoji && (
           <motion.div
-            initial={{ scale: 0.5, opacity: 0, y: 0 }}
-            animate={{ scale: 1.2, opacity: 1, y: -50 }}
-            exit={{ scale: 0.5, opacity: 0, y: -100 }}
+            initial={{ scale: 0.3, opacity: 0, y: 0, rotate: -10 }}
+            animate={{ 
+              scale: [0.3, 1.4, 1.2], 
+              opacity: [0, 1, 0], 
+              y: -80,
+              rotate: [-10, 5, 0]
+            }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
           >
-            <span className="text-6xl drop-shadow-2xl">{flyingEmoji}</span>
+            <span className="text-5xl drop-shadow-xl">{flyingEmoji}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -145,34 +222,38 @@ export const InstagramReactions = ({
       <AnimatePresence>
         {showReactions && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-40"
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
               onClick={() => setShowReactions(false)}
             />
             
-            {/* Reactions bar */}
             <motion.div
-              initial={{ scale: 0.5, opacity: 0, y: 20 }}
+              initial={{ scale: 0.6, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.5, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              exit={{ scale: 0.8, opacity: 0, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
             >
-              <div className="flex items-center gap-2 bg-background/95 backdrop-blur-xl rounded-full px-3 py-2 shadow-2xl border border-white/10">
+              <div className="flex items-center gap-1.5 bg-background/98 backdrop-blur-xl rounded-full px-2 py-1.5 shadow-2xl border border-border/50">
                 {QUICK_REACTIONS.map((emoji, index) => (
                   <motion.button
                     key={emoji}
-                    initial={{ scale: 0, y: 20 }}
+                    initial={{ scale: 0, y: 15 }}
                     animate={{ scale: 1, y: 0 }}
-                    transition={{ delay: index * 0.05, type: "spring", damping: 15 }}
-                    whileHover={{ scale: 1.3, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
+                    transition={{ 
+                      delay: index * 0.03, 
+                      type: "spring", 
+                      damping: 12,
+                      stiffness: 400
+                    }}
+                    whileHover={{ scale: 1.35, y: -10 }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => handleReaction(emoji)}
-                    className="w-12 h-12 flex items-center justify-center text-3xl hover:bg-white/10 rounded-full transition-colors"
+                    className="w-11 h-11 flex items-center justify-center text-2xl hover:bg-accent/50 rounded-full transition-colors active:bg-accent"
                   >
                     {emoji}
                   </motion.button>
@@ -184,4 +265,6 @@ export const InstagramReactions = ({
       </AnimatePresence>
     </div>
   );
-};
+});
+
+InstagramReactions.displayName = 'InstagramReactions';
