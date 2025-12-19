@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign } from "lucide-react";
+import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign, Link as LinkIcon } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useNavigate } from "react-router-dom";
@@ -14,11 +14,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { ProfileMembershipDoors } from "@/components/ProfileMembershipDoors";
 
 // Lazy load tabs and dialogs
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
-const ProfileMembershipDoors = lazy(() => import("@/components/ProfileMembershipDoors").then(m => ({ default: m.ProfileMembershipDoors })));
+const ProfessionalDashboard = lazy(() => import("@/components/profile/ProfessionalDashboard"));
 const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 const Profile = () => {
@@ -139,7 +140,7 @@ const Profile = () => {
       
       <div className="px-4 -mt-10 relative z-10">
         {/* Profile Header - Instagram Style */}
-        <div className="flex items-start gap-6 mb-4">
+        <div className="flex items-start gap-6 mb-6">
           {/* Avatar */}
           <OptimizedAvatar
             src={p.avatar_url}
@@ -152,7 +153,7 @@ const Profile = () => {
           />
 
           {/* Stats */}
-          <div className="flex-1 flex items-center justify-around pt-2">
+          <div className="flex-1 flex items-center justify-around pt-4">
             <div className="text-center">
               <p className="text-lg font-bold text-white">{totalPosts}</p>
               <p className="text-[11px] text-white/50">posts</p>
@@ -174,9 +175,37 @@ const Profile = () => {
             <span className="font-semibold text-white">{p.full_name || p.username}</span>
             {isVerified && <VerifiedBadge size="sm" />}
           </div>
+          
+          {/* Professional title */}
+          {profile?.professional_title && (
+            <p className="text-sm text-white/50 capitalize mt-0.5">
+              {profile.professional_title.replace(/_/g, " ")}
+            </p>
+          )}
+          
           {p.bio && (
             <p className="text-sm text-white/70 mt-1 leading-relaxed">{p.bio}</p>
           )}
+          
+          {/* Website link */}
+          {profile?.show_website && profile?.website && (
+            <a 
+              href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-primary font-medium mt-1"
+            >
+              <LinkIcon className="w-3.5 h-3.5" />
+              {profile.website.replace(/^https?:\/\//, '')}
+            </a>
+          )}
+        </div>
+
+        {/* Professional Dashboard */}
+        <div className="mb-4">
+          <Suspense fallback={<div className="h-16 animate-pulse bg-white/5 rounded-xl" />}>
+            <ProfessionalDashboard userId={user.id} />
+          </Suspense>
         </div>
 
         {/* Action Buttons */}
@@ -199,11 +228,9 @@ const Profile = () => {
           </button>
         </div>
 
-        {/* Membership Doors */}
+        {/* Membership Doors - No lazy load for instant display */}
         <div className="mb-4">
-          <Suspense fallback={<div className="h-20 animate-pulse bg-white/5 rounded-xl" />}>
-            <ProfileMembershipDoors userId={user.id} />
-          </Suspense>
+          <ProfileMembershipDoors userId={user.id} />
         </div>
         {/* Tab Icons */}
         <div className="flex border-t border-white/10">
