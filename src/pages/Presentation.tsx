@@ -688,9 +688,9 @@ const Presentation = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <div className="container max-w-lg mx-auto px-4 py-4">
+      <div className="container max-w-lg mx-auto px-4 pt-6 pb-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 mt-2">
           <div>
             <h1 className="text-xl font-bold">Presentation</h1>
             <p className="text-xs text-muted-foreground">My Spaces Overview</p>
