@@ -418,13 +418,8 @@ export const ReelsFullscreenViewer = ({
           className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.15}
-          dragMomentum={true}
-          dragTransition={{
-            power: 0.4,
-            timeConstant: 250,
-            modifyTarget: (target) => Math.round(target / window.innerHeight) * window.innerHeight,
-          }}
+          dragElastic={0.18}
+          dragMomentum={false}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onClick={handleTap}
@@ -433,15 +428,15 @@ export const ReelsFullscreenViewer = ({
             scale: 1,
             opacity: 0,
           }}
-          animate={{ 
-            y: 0, 
+          animate={{
+            y: 0,
             scale: 1,
-            opacity: 1 
+            opacity: 1,
           }}
-          exit={{ 
-            y: direction === 1 ? "-100%" : "100%", 
+          exit={{
+            y: direction === 1 ? "-100%" : "100%",
             scale: 1,
-            opacity: 0 
+            opacity: 0,
           }}
           transition={{
             type: "spring",
@@ -449,11 +444,12 @@ export const ReelsFullscreenViewer = ({
             damping: 28,
             mass: 0.7,
             restDelta: 0.001,
-            restSpeed: 0.001
+            restSpeed: 0.001,
           }}
-          style={{ 
-            touchAction: 'pan-y',
-            overflow: 'hidden'
+          style={{
+            // Prevent the browser from hijacking vertical swipes (fixes "can't switch reels" on mobile)
+            touchAction: "none",
+            overflow: "hidden",
           }}
         >
           {(() => {
