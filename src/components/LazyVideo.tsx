@@ -62,25 +62,26 @@ export const LazyVideo = ({ src, className, muted = true, onClick, onVisibilityC
   }, [muted]);
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Loading skeleton with gradient background instead of black */}
+    <div className={`relative ${className}`} style={{ backgroundColor: 'transparent' }}>
+      {/* Loading state - only show spinner, keep transparent */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/80 to-muted/80 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-muted-foreground/50 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
         </div>
       )}
       
       <video
         ref={videoRef}
-        src={isInView ? src : undefined}
+        src={src}
         loop
         playsInline
         muted={muted}
         autoPlay
-        preload="metadata"
+        preload="auto"
         poster={videoPoster}
-        className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
+        className="w-full h-full object-cover"
         onLoadedData={() => setIsLoaded(true)}
+        onCanPlay={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         onClick={onClick}
         style={{ backgroundColor: 'transparent' }}
