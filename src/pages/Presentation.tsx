@@ -592,27 +592,44 @@ const Presentation = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas context not available');
       
-      // Set canvas size
-      canvas.width = 1080;
-      canvas.height = 1920;
+      // Set canvas size (portrait mobile)
+      canvas.width = 720;
+      canvas.height = 1280;
       
       // Create a stream from the canvas
-      const stream = canvas.captureStream(30); // 30 FPS
+      const stream = canvas.captureStream(24); // 24 FPS
+      
+      // Try different codecs for browser compatibility
+      let mimeType = 'video/webm';
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        mimeType = 'video/webm;codecs=vp9';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+        mimeType = 'video/webm;codecs=vp8';
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        mimeType = 'video/webm';
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/mp4';
+      }
+      
+      console.log('Using mimeType:', mimeType);
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000
+        mimeType,
+        videoBitsPerSecond: 2500000
       });
       
       recordedChunksRef.current = [];
       
       mediaRecorder.ondataavailable = (event) => {
+        console.log('Data available:', event.data.size);
         if (event.data.size > 0) {
           recordedChunksRef.current.push(event.data);
         }
       };
       
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        console.log('Recording stopped, chunks:', recordedChunksRef.current.length);
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -626,31 +643,40 @@ const Presentation = () => {
         setRecordingProgress(0);
       };
       
-      mediaRecorder.start();
+      mediaRecorder.onerror = (e) => {
+        console.error('MediaRecorder error:', e);
+        toast.error('Recording failed');
+        setIsRecording(false);
+      };
+      
+      // Request data every second
+      mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
       
       const originalSlide = currentSlide;
       const totalSlides = slides.length;
-      const framesPerSlide = 120; // 4 seconds at 30fps
+      const framesPerSlide = 72; // 3 seconds at 24fps
       
       for (let slideIndex = 0; slideIndex < totalSlides; slideIndex++) {
         setCurrentSlide(slideIndex);
-        setRecordingProgress(((slideIndex + 1) / totalSlides) * 100);
+        setRecordingProgress(((slideIndex + 0.5) / totalSlides) * 100);
         
         // Wait for slide animations to settle
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 600));
         
-        // Capture multiple frames for this slide
+        // Capture frames for this slide
         for (let frame = 0; frame < framesPerSlide; frame++) {
           if (slideRef.current) {
             try {
               const dataUrl = await toPng(slideRef.current, {
-                quality: 0.9,
-                pixelRatio: 1.5,
+                quality: 0.85,
+                pixelRatio: 1.2,
               });
               
               const img = new Image();
-              await new Promise<void>((resolve, reject) => {
+              img.crossOrigin = 'anonymous';
+              
+              await new Promise<void>((resolve) => {
                 img.onload = () => {
                   // Draw background
                   ctx.fillStyle = '#1a1a1a';
@@ -658,8 +684,8 @@ const Presentation = () => {
                   
                   // Calculate centered position
                   const scale = Math.min(
-                    (canvas.width - 40) / img.width,
-                    (canvas.height - 100) / img.height
+                    (canvas.width - 20) / img.width,
+                    (canvas.height - 80) / img.height
                   );
                   const x = (canvas.width - img.width * scale) / 2;
                   const y = (canvas.height - img.height * scale) / 2;
@@ -667,33 +693,36 @@ const Presentation = () => {
                   ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
                   
                   // Add slide number
-                  ctx.fillStyle = '#888888';
-                  ctx.font = '24px sans-serif';
+                  ctx.fillStyle = '#666666';
+                  ctx.font = '20px Arial, sans-serif';
                   ctx.textAlign = 'center';
-                  ctx.fillText(`${slideIndex + 1} / ${totalSlides}`, canvas.width / 2, canvas.height - 40);
+                  ctx.fillText(`${slideIndex + 1} / ${totalSlides}`, canvas.width / 2, canvas.height - 30);
                   
                   resolve();
                 };
-                img.onerror = reject;
+                img.onerror = () => resolve();
                 img.src = dataUrl;
               });
             } catch (e) {
-              console.error('Frame capture error:', e);
+              console.error('Frame error:', e);
             }
           }
           
-          // Small delay between frames to allow recording
-          await new Promise(resolve => setTimeout(resolve, 33)); // ~30fps
+          // Delay between frames
+          await new Promise(resolve => setTimeout(resolve, 42)); // ~24fps
         }
+        
+        setRecordingProgress(((slideIndex + 1) / totalSlides) * 100);
       }
       
       // Stop recording
+      console.log('Stopping recorder...');
       mediaRecorder.stop();
       setCurrentSlide(originalSlide);
       
     } catch (error) {
       console.error('Error generating video:', error);
-      toast.error('Failed to generate video. Try downloading PDF instead.');
+      toast.error('Video recording failed. Try PDF instead.');
       setIsRecording(false);
       setRecordingProgress(0);
     }
