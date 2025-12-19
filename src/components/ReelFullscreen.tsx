@@ -49,6 +49,25 @@ export const ReelFullscreen = ({
 }: ReelFullscreenProps) => {
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Auto-unmute when opening fullscreen
+  useEffect(() => {
+    if (isOpen) {
+      setIsMuted(false);
+      // Try to play with sound
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.muted = musicUrl ? true : false;
+          videoRef.current.play().catch(() => {});
+        }
+        if (audioRef.current) {
+          audioRef.current.muted = false;
+          audioRef.current.play().catch(() => {});
+        }
+      }, 100);
+    }
+  }, [isOpen, musicUrl]);
 
   // Handle audio mute sync
   useEffect(() => {
@@ -72,6 +91,7 @@ export const ReelFullscreen = ({
       {/* Video - Full screen 9:16 aspect ratio */}
       <div className="relative w-full h-full flex items-center justify-center bg-black">
         <video
+          ref={videoRef}
           src={videoUrl}
           className="w-full h-full object-cover"
           style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
