@@ -252,11 +252,24 @@ export const FeedItem = memo(({
           </p>
           
           {hasAttachedMusic && (
-            <div className="flex items-center gap-1.5 mt-1 opacity-50">
+            <div className="flex items-center gap-1.5 mt-1 opacity-60">
               <Music className={`w-3 h-3 ${isMusicPlaying ? 'animate-pulse' : ''}`} />
-              <span className="text-[11px] truncate max-w-[200px]">
+              <span className="text-[11px] truncate max-w-[180px]">
                 {item.music_tracks?.title || 'Added Music'}
               </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMute(videoKey);
+                }}
+                className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
+              >
+                {mutedVideos.has(videoKey) ? (
+                  <VolumeX className="w-3 h-3" />
+                ) : (
+                  <Volume2 className="w-3 h-3" />
+                )}
+              </button>
             </div>
           )}
           
