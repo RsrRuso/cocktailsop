@@ -275,7 +275,15 @@ export function MatrixChatTab() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        const errorMsg = error.message || "Failed to get response";
+        throw new Error(errorMsg);
+      }
+
+      // Check if response contains an error (from edge function HTTP errors)
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -290,7 +298,8 @@ export function MatrixChatTab() {
         speakText(data.response);
       }
     } catch (error: any) {
-      toast.error("Failed to get response");
+      const errorMessage = error?.message || "Failed to get response";
+      toast.error(errorMessage);
       console.error("Chat error:", error);
       setMessages((prev) => prev.slice(0, -1));
     } finally {
