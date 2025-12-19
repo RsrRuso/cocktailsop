@@ -42,72 +42,23 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
   
   if (!hasMusic && !hasText) return null;
 
-  // Dark background status bubble
+  // Compact status badge under avatar (no overlap)
   return (
     <>
+      {/* Status indicator shown as small icon on avatar - no floating bubble */}
       <div 
-        className={`absolute -top-8 left-1/2 -translate-x-1/4 z-20 pointer-events-auto cursor-pointer animate-fade-in ${className}`}
+        className={`absolute -bottom-0.5 left-0 z-10 pointer-events-auto cursor-pointer ${className}`}
         onClick={handleStatusClick}
       >
-        <div className="relative group">
-          {/* Dark bubble */}
-          <div className="relative bg-zinc-800 text-white rounded-full shadow-lg px-2.5 py-1.5 overflow-hidden min-w-[70px] max-w-[140px]">
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            
-            <div className="relative flex items-center gap-1.5">
-              {/* Album Art if music */}
-              {hasMusic && status.music_album_art && (
-                <div className="w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 ring-1 ring-white/20">
-                  <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
-                </div>
-              )}
-              
-              {/* Emoji if no music */}
-              {!hasMusic && status.emoji && (
-                <span className="text-sm flex-shrink-0">{status.emoji}</span>
-              )}
-
-              {/* Combined text - music + status */}
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="whitespace-nowrap text-[9px] font-semibold text-white tracking-wide">
-                  <div className="animate-marquee inline-block">
-                    {hasMusic && hasText ? (
-                      <>
-                        {status.music_track_name} {status.emoji && <span>{status.emoji}</span>} {status.status_text}
-                        <span className="ml-6">{status.music_track_name} {status.emoji && <span>{status.emoji}</span>} {status.status_text}</span>
-                      </>
-                    ) : hasMusic ? (
-                      <>
-                        {status.music_track_name}
-                        {status.music_track_name!.length > 10 && <span className="ml-6">{status.music_track_name}</span>}
-                      </>
-                    ) : hasText ? (
-                      <>
-                        {status.status_text}
-                        {status.status_text!.length > 10 && <span className="ml-6">{status.status_text}</span>}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* Play Button if music */}
-              {hasMusic && (
-                <button
-                  onClick={handleStatusClick}
-                  className="w-4 h-4 rounded-full bg-white flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform"
-                >
-                  <Play className="w-2 h-2 text-black ml-px" />
-                </button>
-              )}
-            </div>
+        {hasMusic ? (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center shadow-lg ring-2 ring-background">
+            <Play className="w-2 h-2 text-white fill-white" />
           </div>
-          
-          {/* Connector dots */}
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-800 rounded-full shadow-md" />
-          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-zinc-800 rounded-full shadow-sm" />
-        </div>
+        ) : (
+          <div className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center shadow-lg ring-2 ring-background">
+            <span className="text-[8px]">{status.emoji || '💬'}</span>
+          </div>
+        )}
       </div>
       <StatusViewerDialog
         open={showViewer}
