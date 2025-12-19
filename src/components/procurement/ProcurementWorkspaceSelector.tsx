@@ -84,7 +84,7 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
 
   // Add/Update staff PIN mutation
   const upsertStaffMutation = useMutation({
-    mutationFn: async ({ name, data }: { name: string; data: typeof pinFormData }) => {
+    mutationFn: async ({ name, userId, data }: { name: string; userId?: string; data: typeof pinFormData }) => {
       const existingStaff = getStaffInfo(name);
       if (existingStaff) {
         const { error } = await supabase
@@ -106,6 +106,20 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
         });
         if (error) throw error;
       }
+
+      // Send notification to member when PIN is granted
+      if (userId && data.pin_code) {
+        const notificationContent = `🔐 You've been granted access PIN: **${data.pin_code}** for procurement workspace "${selectedWorkspace?.name}". Keep this PIN secure for mobile access.`;
+        
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: userId,
+            type: "pin_granted",
+            content: notificationContent,
+            read: false
+          });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["procurement-staff", selectedWorkspaceId] });
@@ -117,9 +131,9 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
     onError: () => toast.error("Failed to update PIN access")
   });
 
-  const handleSetupPin = (memberName: string) => {
+  const handleSetupPin = (memberName: string, userId?: string) => {
     const existingStaff = getStaffInfo(memberName);
-    setEditingMember({ name: memberName });
+    setEditingMember({ name: memberName, userId });
     setPinFormData({
       pin_code: existingStaff?.pin_code || "",
       can_create_po: existingStaff?.permissions?.can_create_po ?? true,
@@ -134,7 +148,7 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
       toast.error("PIN must be 4 digits");
       return;
     }
-    upsertStaffMutation.mutate({ name: editingMember.name, data: pinFormData });
+    upsertStaffMutation.mutate({ name: editingMember.name, userId: editingMember.userId, data: pinFormData });
   };
 
   const handleCreateWorkspace = async () => {
@@ -377,7 +391,7 @@ export const ProcurementWorkspaceSelector = ({ selectedWorkspaceId, onSelectWork
                               size="icon"
                               variant="ghost"
                               className="h-7 w-7"
-                              onClick={() => handleSetupPin(memberName)}
+                              onClick={() => handleSetupPin(memberName, member.user_id)}
                             >
                               {staffInfo ? <Edit className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
                             </Button>
