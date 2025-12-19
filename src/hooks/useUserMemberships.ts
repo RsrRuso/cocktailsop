@@ -48,6 +48,33 @@ export const clearMembershipCache = () => {
   membershipCache = null;
 };
 
+export const useUserMemberships = (userId: string | null) => {
+  const [memberships, setMemberships] = useState<Membership[]>(() => {
+    // Initialize from memory cache
+    if (
+      membershipCache &&
+      membershipCache.userId === userId &&
+      Date.now() - membershipCache.timestamp < CACHE_TIME
+    ) {
+      return membershipCache.data;
+    }
+    // Fallback to local cache for instant UI
+    const local = readLocalCache(userId);
+    if (local && local.data?.length) {
+      return local.data;
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    // Not loading if we have any cache
+    const hasMemory =
+      membershipCache &&
+      membershipCache.userId === userId &&
+      Date.now() - membershipCache.timestamp < CACHE_TIME;
+    const hasLocal = !!readLocalCache(userId)?.data?.length;
+    return !(hasMemory || hasLocal);
+  });
+
   useEffect(() => {
     if (!userId) {
       setMemberships([]);
