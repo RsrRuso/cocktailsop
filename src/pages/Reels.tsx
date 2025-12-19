@@ -59,7 +59,7 @@ const Reels = () => {
   const [selectedReelVideo, setSelectedReelVideo] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [selectedReelForComments, setSelectedReelForComments] = useState("");
-  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
+  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set()); // Start unmuted by default
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
   const [targetReelId, setTargetReelId] = useState<string | null>(() => initialState?.scrollToReelId ?? null);
@@ -181,17 +181,7 @@ const Reels = () => {
 
     setReels(finalReels as any);
     setIsLoading(false);
-
-    setMutedVideos((prev) => {
-      const next = new Set(prev);
-      finalReels.forEach((r: any) => {
-        if (!next.has(r.id)) next.add(r.id);
-      });
-      Array.from(next).forEach((id) => {
-        if (!finalReels.some((r: any) => r.id === id)) next.delete(id);
-      });
-      return next;
-    });
+    // Videos start unmuted - no need to add to mutedVideos set
   };
 
   const handleLikeReel = useCallback((reelId: string) => {
