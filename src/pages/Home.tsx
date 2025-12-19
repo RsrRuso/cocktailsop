@@ -319,20 +319,10 @@ const Home = () => {
     });
   }, []);
 
-  // Show skeletons only on very first load when no cached data exists
-  // Otherwise show stale data immediately while refreshing in background
-  const showSkeleton = (isLoading || storiesLoading) && stories.length === 0 && feed.length === 0;
-  
-  if (showSkeleton) {
-    return (
-      <div className="min-h-screen pb-20 pt-16">
-        <TopNav isVisible={showTopNav} />
-        <StoriesSkeleton />
-        <FeedSkeleton />
-        <BottomNav />
-      </div>
-    );
-  }
+  // Never block render with skeleton - always show UI immediately
+  // Data will load in background and update when ready
+  const hasData = stories.length > 0 || feed.length > 0;
+  const showInlineSkeleton = !hasData && (isLoading || storiesLoading);
 
   return (
     <div className="min-h-screen pb-20 pt-16">
@@ -537,8 +527,8 @@ const Home = () => {
               getBadgeColor={getBadgeColor}
             />
           ))
-        ) : (
-          // Loading skeletons
+        ) : showInlineSkeleton ? (
+          // Only show skeletons on first load with no cached data
           <>
             {[1, 2, 3].map((i) => (
               <div key={i} className="glass rounded-xl p-4 space-y-3 animate-pulse">
@@ -559,6 +549,10 @@ const Home = () => {
               </div>
             ))}
           </>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            No posts yet. Follow people to see their content!
+          </div>
         )}
       </div>
 
