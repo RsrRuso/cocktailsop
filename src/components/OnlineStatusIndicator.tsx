@@ -18,9 +18,24 @@ interface OnlineUser {
 let globalOnlineUsers: OnlineUser[] = [];
 let globalChannel: any = null;
 let subscribers = new Set<() => void>();
+let currentTrackedUserId: string | null = null;
 
-const initGlobalPresence = () => {
-  if (globalChannel) return;
+const initGlobalPresence = (trackUserId?: string | null) => {
+  // Store the user ID to track
+  if (trackUserId) {
+    currentTrackedUserId = trackUserId;
+  }
+
+  if (globalChannel) {
+    // If channel exists and we have a new user to track, track them
+    if (trackUserId && globalChannel.state === 'joined') {
+      globalChannel.track({
+        user_id: trackUserId,
+        online_at: new Date().toISOString(),
+      });
+    }
+    return;
+  }
 
   globalChannel = supabase.channel('specverse-global-presence');
 
@@ -44,7 +59,15 @@ const initGlobalPresence = () => {
       // Notify all subscribers
       subscribers.forEach(callback => callback());
     })
-    .subscribe();
+    .subscribe(async (status) => {
+      // Track the current user when channel is ready
+      if (status === 'SUBSCRIBED' && currentTrackedUserId) {
+        await globalChannel.track({
+          user_id: currentTrackedUserId,
+          online_at: new Date().toISOString(),
+        });
+      }
+    });
 };
 
 export const OnlineStatusIndicator = ({ 
@@ -141,21 +164,13 @@ export const useTrackPresence = (userId: string | null) => {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase.channel('specverse-global-presence');
+    // Initialize and track on the same global channel
+    initGlobalPresence(userId);
 
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          user_id: userId,
-          online_at: new Date().toISOString(),
-        });
-      }
-    });
-
-    // Handle visibility change
+    // Handle visibility change - re-track when user returns
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        await channel.track({
+      if (document.visibilityState === 'visible' && globalChannel) {
+        await globalChannel.track({
           user_id: userId,
           online_at: new Date().toISOString(),
         });
@@ -166,7 +181,7 @@ export const useTrackPresence = (userId: string | null) => {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      supabase.removeChannel(channel);
+      // Don't remove channel - it's shared globally
     };
   }, [userId]);
 };
