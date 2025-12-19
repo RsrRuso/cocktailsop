@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const QUICK_REACTIONS = ['❤️', '🔥', '👏', '😍', '😮', '😂'];
+const QUICK_REACTIONS = ['❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '🎉'];
 
 interface InstagramReactionsProps {
   isLiked: boolean;
@@ -238,22 +238,22 @@ export const InstagramReactions = memo(({
               transition={{ type: "spring", damping: 25, stiffness: 400 }}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
             >
-              <div className="flex items-center gap-1.5 bg-background/98 backdrop-blur-xl rounded-full px-2 py-1.5 shadow-2xl border border-border/50">
+              <div className="flex items-center gap-0.5 bg-black/80 backdrop-blur-xl rounded-full px-1 py-1 shadow-2xl">
                 {QUICK_REACTIONS.map((emoji, index) => (
                   <motion.button
                     key={emoji}
-                    initial={{ scale: 0, y: 15 }}
+                    initial={{ scale: 0, y: 10 }}
                     animate={{ scale: 1, y: 0 }}
                     transition={{ 
-                      delay: index * 0.03, 
+                      delay: index * 0.02, 
                       type: "spring", 
-                      damping: 12,
-                      stiffness: 400
+                      damping: 15,
+                      stiffness: 500
                     }}
-                    whileHover={{ scale: 1.35, y: -10 }}
-                    whileTap={{ scale: 0.85 }}
+                    whileHover={{ scale: 1.3, y: -6 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => handleReaction(emoji)}
-                    className="w-11 h-11 flex items-center justify-center text-2xl hover:bg-accent/50 rounded-full transition-colors active:bg-accent"
+                    className="w-10 h-10 flex items-center justify-center text-[22px] rounded-full transition-all active:bg-white/10"
                   >
                     {emoji}
                   </motion.button>
