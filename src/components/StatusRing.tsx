@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Play } from "lucide-react";
 import StatusViewerDialog from "./StatusViewerDialog";
+import { useUserOnlineStatus } from "@/hooks/useUserOnlineStatus";
 
 interface StatusData {
   id: string;
@@ -26,6 +27,7 @@ interface StatusRingProps {
   className?: string;
   username?: string;
   avatarUrl?: string;
+  userId?: string | null;
 }
 
 const StatusRing = ({ 
@@ -37,9 +39,11 @@ const StatusRing = ({
   isNew = false,
   className = "",
   username,
-  avatarUrl
+  avatarUrl,
+  userId
 }: StatusRingProps) => {
   const [showViewer, setShowViewer] = useState(false);
+  const isOnline = useUserOnlineStatus(userId);
   
   const statusText = status?.status_text;
   const emoji = status?.emoji;
@@ -132,8 +136,8 @@ const StatusRing = ({
       <div className="relative">
         {children}
         
-        {/* Online indicator dot - shows when user has active status */}
-        {hasStatus && (
+        {/* Online indicator dot - shows when user is online on the platform */}
+        {isOnline && (
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background z-10 animate-pulse" />
         )}
       </div>

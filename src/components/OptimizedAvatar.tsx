@@ -57,6 +57,7 @@ const OptimizedAvatar = memo(({
       onAddClick={onAddStatusClick}
       username={alt}
       avatarUrl={src || undefined}
+      userId={userId}
     >
       {avatar}
     </StatusRing>
