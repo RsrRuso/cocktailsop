@@ -233,13 +233,11 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg h-[50vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 shadow-2xl">
-        <DialogHeader className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
-          <DialogTitle className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold">
-            <div className="p-1 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
-              <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
-            </div>
-            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Comments</span>
+      <DialogContent className="w-[95vw] sm:max-w-lg h-[50vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-black/60 backdrop-blur-xl border-0 shadow-none">
+        <DialogHeader className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 border-b border-white/10 shrink-0">
+          <DialogTitle className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white">
+            <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white/70" />
+            <span>Comments</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -267,7 +265,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="p-2 border-t border-primary/20 shrink-0 bg-background/80 backdrop-blur-sm sticky bottom-0">
+        <form onSubmit={handleSubmit} className="p-2 border-t border-white/10 shrink-0 bg-black/40 backdrop-blur-sm sticky bottom-0">
           {replyingTo && (
             <div className="flex items-center justify-between bg-primary/10 px-2 py-1 rounded-lg mb-1.5 border border-primary/20">
               <p className="text-[9px] sm:text-[10px] text-primary font-medium">Replying...</p>
