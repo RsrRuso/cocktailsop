@@ -339,7 +339,7 @@ export const SavedRepostedContent = ({ userId, defaultViewType = 'saves' }: Save
           </div>
         </div>
       ) : (
-        <div className="pt-4">
+        <div>
           {content.map((item, index) => (
             <div key={`${item.type}-${item.id}-${index}`}>
               {/* Show user's comment preview for comments view */}
