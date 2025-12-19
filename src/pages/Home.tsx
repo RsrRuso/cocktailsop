@@ -6,7 +6,7 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StoriesSkeleton, FeedSkeleton } from "@/components/ui/skeleton-shimmer";
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useEngagement } from "@/hooks/useEngagement";
@@ -30,39 +30,7 @@ const EventsTicker = lazy(() => import("@/components/EventsTicker").then(m => ({
 const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 const MusicStatusDialog = lazy(() => import("@/components/MusicStatusDialog"));
 
-// Story skeleton for instant UI
-const StorySkeleton = () => (
-  <div className="flex gap-3 px-4 py-2">
-    {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex flex-col items-center gap-1.5">
-        <Skeleton className="w-[88px] h-[88px] rounded-full" />
-        <Skeleton className="w-14 h-3" />
-      </div>
-    ))}
-  </div>
-);
-
-// Feed skeleton for instant UI
-const FeedSkeleton = () => (
-  <div className="space-y-4 px-4">
-    {[...Array(3)].map((_, i) => (
-      <div key={i} className="bg-card rounded-xl p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <Skeleton className="w-10 h-10 rounded-full" />
-          <div className="space-y-1">
-            <Skeleton className="w-24 h-4" />
-            <Skeleton className="w-16 h-3" />
-          </div>
-        </div>
-        <Skeleton className="w-full h-48 rounded-lg" />
-        <div className="flex gap-4">
-          <Skeleton className="w-16 h-6" />
-          <Skeleton className="w-16 h-6" />
-        </div>
-      </div>
-    ))}
-  </div>
-);
+// Removed inline skeletons - using shimmer components now
 
 interface Story {
   id: string;
@@ -359,7 +327,7 @@ const Home = () => {
     return (
       <div className="min-h-screen pb-20 pt-16">
         <TopNav isVisible={showTopNav} />
-        <StorySkeleton />
+        <StoriesSkeleton />
         <FeedSkeleton />
         <BottomNav />
       </div>

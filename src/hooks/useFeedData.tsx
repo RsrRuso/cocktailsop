@@ -44,7 +44,29 @@ interface Reel {
 // Cache for feed data - persisted across navigations (module-level singleton)
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
 const CACHE_TIME = 600000; // 10 minutes for instant loads
-const INITIAL_LIMIT = 6; // Start small for instant first paint
+const INITIAL_LIMIT = 4; // Reduced for faster first paint
+
+// Aggressive localStorage cache for instant cold starts
+const STORAGE_KEY = 'feed_cache_v2';
+const loadFromStorage = (): typeof feedCache => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Date.now() - parsed.timestamp < CACHE_TIME) return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const saveToStorage = (cache: typeof feedCache) => {
+  try {
+    if (cache) localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+  } catch {}
+};
+
+// Initialize from localStorage on module load
+if (!feedCache) feedCache = loadFromStorage();
 
 const hydrateReelsMusicTracks = async (input: Reel[]) => {
   const missingUrls = Array.from(
@@ -207,6 +229,9 @@ export const useFeedData = (selectedRegion: string | null) => {
       timestamp: Date.now(),
       region: selectedRegion
     };
+    
+    // Persist to localStorage for instant cold starts
+    saveToStorage(feedCache);
     
     setIsLoading(false);
   }, [fetchPosts, fetchReels, selectedRegion]);
