@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserMemberships, Membership } from '@/hooks/useUserMemberships';
 import { useSpacePresence } from '@/hooks/useSpacePresence';
 import { useSpaceMembers } from '@/hooks/useSpaceMembers';
-import { DoorOpen, Users, Wifi, X, Activity, Crown, Shield, User } from 'lucide-react';
+import { DoorOpen, Users, Wifi, X, Activity, Crown, Shield, User, RotateCcw, Check } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
@@ -12,6 +12,7 @@ import { useCachedProfiles } from '@/hooks/useCachedProfiles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkspaceActivityPanel } from '@/components/WorkspaceActivityPanel';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface ProfileMembershipDoorsProps {
   userId: string | null;
@@ -19,9 +20,13 @@ interface ProfileMembershipDoorsProps {
 
 export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) => {
   const navigate = useNavigate();
-  const { memberships, isLoading } = useUserMemberships(userId);
+  const { memberships, hiddenMemberships, isLoading, hideSpace, restoreSpace, restoreAllSpaces } = useUserMemberships(userId);
 
   const [presenceEnabled, setPresenceEnabled] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [showRestoreSheet, setShowRestoreSheet] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPress = useRef(false);
 
   // Defer presence subscriptions slightly so the UI renders instantly
   useEffect(() => {
@@ -67,7 +72,33 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     };
   }, [memberships, getMemberCount]);
 
+  const handleLongPressStart = () => {
+    isLongPress.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPress.current = true;
+      setEditMode(true);
+    }, 500);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   const handleDoorPress = (membership: Membership) => {
+    // If was long press, don't navigate
+    if (isLongPress.current) {
+      isLongPress.current = false;
+      return;
+    }
+    
+    // If in edit mode, clicking just exits edit mode
+    if (editMode) {
+      return;
+    }
+    
     // Open instantly - sheet appears immediately
     setSelectedSpace(membership);
     setOnlineProfiles([]);
@@ -82,6 +113,35 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
         const profiles = onlineUsers.map((u) => getProfile(u.user_id)).filter(Boolean);
         setOnlineProfiles(profiles);
       });
+    }
+  };
+
+  const handleHideSpace = async (membership: Membership, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const success = await hideSpace(membership.id, membership.type);
+    if (success) {
+      toast.success(`${membership.name} hidden from My Spaces`);
+    } else {
+      toast.error('Failed to hide space');
+    }
+  };
+
+  const handleRestoreSpace = async (membership: Membership) => {
+    const success = await restoreSpace(membership.id, membership.type);
+    if (success) {
+      toast.success(`${membership.name} restored to My Spaces`);
+    } else {
+      toast.error('Failed to restore space');
+    }
+  };
+
+  const handleRestoreAll = async () => {
+    const success = await restoreAllSpaces();
+    if (success) {
+      toast.success('All spaces restored');
+      setShowRestoreSheet(false);
+    } else {
+      toast.error('Failed to restore spaces');
     }
   };
 
@@ -146,7 +206,7 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     );
   }
 
-  if (memberships.length === 0) return null;
+  if (memberships.length === 0 && hiddenMemberships.length === 0) return null;
 
   return (
     <>
@@ -154,61 +214,180 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
         <div className="flex items-center gap-2 px-1">
           <DoorOpen className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">My Spaces</span>
-          <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium ml-auto">
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
             {memberships.length}
           </span>
+          <div className="flex items-center gap-1 ml-auto">
+            {editMode && (
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-6 px-2 text-xs"
+                onClick={() => setEditMode(false)}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Done
+              </Button>
+            )}
+            {hiddenMemberships.length > 0 && (
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-6 px-2 text-xs text-muted-foreground"
+                onClick={() => setShowRestoreSheet(true)}
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Restore ({hiddenMemberships.length})
+              </Button>
+            )}
+          </div>
         </div>
         
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {memberships.map((m) => {
-            const onlineCount = getOnlineCount(m.type, m.id);
-            const totalMembers = memberCounts[`${m.type}-${m.id}`] || m.memberCount || 0;
-            
-            return (
-              <button
-                key={`${m.type}-${m.id}`}
-                onClick={() => handleDoorPress(m)}
-                className="flex-shrink-0 flex flex-col items-center gap-1 active:opacity-70 transition-opacity"
-              >
-                {/* Circle container - Instagram style */}
-                <div className="relative">
-                  {/* Online ring indicator */}
-                  <div className={`w-[68px] h-[68px] rounded-full p-[2px] ${
-                    onlineCount > 0 
-                      ? 'bg-gradient-to-tr from-foreground via-muted-foreground to-foreground' 
-                      : 'bg-border'
-                  }`}>
-                    <div className="w-full h-full rounded-full bg-background p-[2px]">
-                      <div className="w-full h-full rounded-full bg-muted/30 border border-border flex items-center justify-center">
-                        <span className="text-2xl grayscale">{m.icon}</span>
+        {memberships.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground text-sm">
+            <p>All spaces hidden</p>
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="text-xs"
+              onClick={() => setShowRestoreSheet(true)}
+            >
+              Restore spaces
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <p className="text-[10px] text-muted-foreground px-1 mb-1 italic">
+              {editMode ? 'Tap X to remove • Tap Done when finished' : 'Long press to edit'}
+            </p>
+          </div>
+        )}
+        {memberships.length > 0 && (
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {memberships.map((m) => {
+              const onlineCount = getOnlineCount(m.type, m.id);
+              const totalMembers = memberCounts[`${m.type}-${m.id}`] || m.memberCount || 0;
+              
+              return (
+                <button
+                  key={`${m.type}-${m.id}`}
+                  onClick={() => handleDoorPress(m)}
+                  onMouseDown={handleLongPressStart}
+                  onMouseUp={handleLongPressEnd}
+                  onMouseLeave={handleLongPressEnd}
+                  onTouchStart={handleLongPressStart}
+                  onTouchEnd={handleLongPressEnd}
+                  className={`flex-shrink-0 flex flex-col items-center gap-1 active:opacity-70 transition-all ${
+                    editMode ? 'animate-wiggle' : ''
+                  }`}
+                >
+                  {/* Circle container - Instagram style */}
+                  <div className="relative">
+                    {/* X button for removal in edit mode */}
+                    {editMode && (
+                      <button
+                        onClick={(e) => handleHideSpace(m, e)}
+                        className="absolute -top-1 -left-1 z-10 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                    
+                    {/* Online ring indicator */}
+                    <div className={`w-[68px] h-[68px] rounded-full p-[2px] ${
+                      onlineCount > 0 
+                        ? 'bg-gradient-to-tr from-foreground via-muted-foreground to-foreground' 
+                        : 'bg-border'
+                    }`}>
+                      <div className="w-full h-full rounded-full bg-background p-[2px]">
+                        <div className="w-full h-full rounded-full bg-muted/30 border border-border flex items-center justify-center">
+                          <span className="text-2xl grayscale">{m.icon}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Online count badge */}
-                  {onlineCount > 0 && (
-                    <div className="absolute -top-0.5 -right-0.5 flex items-center gap-0.5 bg-foreground text-background rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm">
-                      <Wifi className="w-2.5 h-2.5" />
-                      {onlineCount}
+                    
+                    {/* Online count badge */}
+                    {onlineCount > 0 && !editMode && (
+                      <div className="absolute -top-0.5 -right-0.5 flex items-center gap-0.5 bg-foreground text-background rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm">
+                        <Wifi className="w-2.5 h-2.5" />
+                        {onlineCount}
+                      </div>
+                    )}
+                    
+                    {/* Member count badge */}
+                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-muted border border-border rounded-full px-1.5 py-0.5">
+                      <Users className="w-2.5 h-2.5 text-muted-foreground" />
+                      <span className="text-[9px] font-medium text-muted-foreground">{totalMembers}</span>
                     </div>
-                  )}
-                  
-                  {/* Member count badge */}
-                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-muted border border-border rounded-full px-1.5 py-0.5">
-                    <Users className="w-2.5 h-2.5 text-muted-foreground" />
-                    <span className="text-[9px] font-medium text-muted-foreground">{totalMembers}</span>
                   </div>
-                </div>
-                
-                {/* Name label */}
-                <p className="text-[11px] font-medium text-muted-foreground max-w-[70px] truncate">
-                  {m.name}
-                </p>
-              </button>
-            );
-          })}
-        </div>
+                  
+                  {/* Name label */}
+                  <p className="text-[11px] font-medium text-muted-foreground max-w-[70px] truncate">
+                    {m.name}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Restore hidden spaces sheet */}
+      <Sheet open={showRestoreSheet} onOpenChange={setShowRestoreSheet}>
+        <SheetContent side="bottom" className="rounded-t-xl max-h-[60vh]">
+          <SheetHeader className="pb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5" />
+              Hidden Spaces
+            </SheetTitle>
+          </SheetHeader>
+          
+          {hiddenMemberships.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">No hidden spaces</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {hiddenMemberships.map((m) => (
+                  <button
+                    key={`hidden-${m.type}-${m.id}`}
+                    onClick={() => handleRestoreSpace(m)}
+                    className="flex-shrink-0 flex flex-col items-center gap-1 active:opacity-70 transition-opacity"
+                  >
+                    <div className="relative">
+                      <div className="w-[68px] h-[68px] rounded-full p-[2px] bg-border opacity-60">
+                        <div className="w-full h-full rounded-full bg-background p-[2px]">
+                          <div className="w-full h-full rounded-full bg-muted/30 border border-border flex items-center justify-center">
+                            <span className="text-2xl grayscale opacity-50">{m.icon}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-primary/90 flex items-center justify-center">
+                          <RotateCcw className="w-3 h-3 text-primary-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[11px] font-medium text-muted-foreground max-w-[70px] truncate">
+                      {m.name}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleRestoreAll}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restore All Spaces
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Space details sheet with activity */}
       <Sheet open={!!selectedSpace} onOpenChange={(open) => !open && setSelectedSpace(null)}>
