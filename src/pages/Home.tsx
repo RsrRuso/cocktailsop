@@ -338,155 +338,86 @@ const Home = () => {
     <div className="min-h-screen pb-20 pt-16">
       <TopNav isVisible={showTopNav} />
 
-      {/* Stories */}
-      <div className="px-3 pt-2 pb-3 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-3">
+      {/* Stories - Instagram-style compact horizontal scroll */}
+      <div className="px-2 pt-2 pb-3 border-b border-border/30">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-1.5 min-w-fit">
-            <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
-              <div className="relative overflow-visible">
-                {/* White glow when has active story - constant until expires */}
-                {userHasStory && (
-                  <div className="absolute inset-0 rounded-full bg-white/50 blur-md scale-110" />
+          <div className="flex flex-col items-center gap-1 min-w-[72px] flex-shrink-0">
+            <div className="relative">
+              {userHasStory && (
+                <div className="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]" />
+              )}
+              <button
+                onClick={() => navigate(userHasStory ? `/story/${user?.id}` : "/story-options")}
+                className="relative block"
+              >
+                <Avatar className="w-16 h-16 border-2 border-background">
+                  <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
+                  <AvatarFallback className="text-lg bg-muted">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                </Avatar>
+                {!userHasStory && (
+                  <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-2 border-background">
+                    <span className="text-primary-foreground text-xs font-bold">+</span>
+                  </div>
                 )}
-                <button
-                  onClick={() => navigate(userHasStory ? `/story/${user?.id}` : "/story-options")}
-                  className={`relative group ${userHasStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
-                >
-                  <Avatar className="w-[88px] h-[88px] rounded-full">
-                    <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
-                    <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                  </Avatar>
-                  {!userHasStory && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10 cursor-pointer">
-                          <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
-                        </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
-                        <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
-                          <Camera className="w-4 h-4 mr-2 opacity-70" />
-                          Story
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer text-white/90">
-                          <MessageCircle className="w-4 h-4 mr-2 opacity-70" />
-                          Status
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer text-white/90">
-                          <Music className="w-4 h-4 mr-2 opacity-70" />
-                          Music
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
-                    <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
-                  )}
-                </button>
-                {/* Add more button when story exists */}
-                {userHasStory && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-20 active:scale-95 transition-transform"
-                      >
-                        <span className="text-primary-foreground text-base font-bold leading-none">+</span>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
-                      <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
-                        <Camera className="w-4 h-4 mr-2 opacity-70" />
-                        Story
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer text-white/90">
-                        <MessageCircle className="w-4 h-4 mr-2 opacity-70" />
-                        Status
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer text-white/90">
-                        <Music className="w-4 h-4 mr-2 opacity-70" />
-                        Music
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            </BirthdayFireworks>
-            <span className="text-xs text-muted-foreground font-medium">Your Story</span>
+              </button>
+            </div>
+            <span className="text-[11px] text-muted-foreground truncate w-full text-center">Your Story</span>
           </div>
 
-          {/* Other Stories - Live Preview (exclude current user's stories) */}
+          {/* Other Stories */}
           {stories.filter(s => s.user_id !== user?.id).map((story) => {
             const isViewed = viewedStories.has(story.id);
-            const hasBirthday = isBirthday(story.profiles.date_of_birth);
             const previewMedia = story.media_urls?.[0];
             const previewType = story.media_types?.[0];
             const isVideo = previewType?.startsWith('video');
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-1.5 min-w-[92px] pt-4">
-                <BirthdayFireworks isBirthday={hasBirthday}>
-                  <div className="relative">
-                    {/* User Status Indicator */}
-                    <UserStatusIndicator userId={story.user_id} size="sm" />
-                    
-                    <button 
-                      onClick={() => navigate(`/story/${story.user_id}`)}
-                      className="relative group cursor-pointer"
-                    >
-                      {/* White glow for new/unviewed stories - constant until viewed */}
-                      {!isViewed && (
-                        <>
-                          <div className="absolute -inset-2 rounded-full bg-white/60 blur-lg" />
-                          <div className="absolute -inset-1 rounded-full bg-white/50 blur-sm" />
-                        </>
-                      )}
-                      
-                      {/* Live Preview Content */}
-                      <div className={`w-[88px] h-[88px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80' : ''}`}>
-                        {previewMedia ? (
-                          <>
-                            {isVideo ? (
-                              <video
-                                src={previewMedia}
-                                className="w-full h-full object-cover"
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                              />
-                            ) : (
-                              <img
-                                src={previewMedia}
-                                alt={story.profiles.username}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                            
-                            {/* Video indicator */}
-                            {isVideo && (
-                              <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                                <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
-                              </div>
-                            )}
-                          </>
+              <div key={story.id} className="flex flex-col items-center gap-1 min-w-[72px] flex-shrink-0">
+                <div className="relative">
+                  {/* Gradient ring for unviewed */}
+                  <div className={`absolute -inset-0.5 rounded-full p-[2px] ${!isViewed ? 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600' : 'bg-muted/50'}`} />
+                  
+                  <button 
+                    onClick={() => navigate(`/story/${story.user_id}`)}
+                    className="relative block"
+                  >
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-background">
+                      {previewMedia ? (
+                        isVideo ? (
+                          <video
+                            src={previewMedia}
+                            className="w-full h-full object-cover"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                          />
                         ) : (
-                          <Avatar className="w-full h-full rounded-full">
-                            <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                            <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                      
-                      {/* Birthday badge */}
-                      {hasBirthday && (
-                        <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
+                          <img
+                            src={previewMedia}
+                            alt={story.profiles.username}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        )
+                      ) : (
+                        <Avatar className="w-full h-full">
+                          <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                          <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                        </Avatar>
                       )}
-                    </button>
-                  </div>
-                </BirthdayFireworks>
-                <span className="text-xs text-foreground/90 font-medium truncate w-full text-center max-w-[80px]">
+                    </div>
+                    
+                    {/* Video indicator */}
+                    {isVideo && (
+                      <div className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-black/60 flex items-center justify-center">
+                        <div className="w-0 h-0 border-l-[4px] border-l-white border-y-[2px] border-y-transparent ml-0.5" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+                <span className="text-[11px] text-foreground/80 truncate w-full text-center max-w-[68px]">
                   {story.profiles.username}
                 </span>
               </div>
@@ -498,7 +429,7 @@ const Home = () => {
       {/* Events Ticker - lazy loaded */}
       {selectedRegion && (
         <Suspense fallback={null}>
-          <div className="px-4 mt-2 mb-8 relative z-20">
+          <div className="px-3 py-2">
             <EventsTicker region={selectedRegion} />
           </div>
         </Suspense>

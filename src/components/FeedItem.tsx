@@ -183,30 +183,30 @@ export const FeedItem = memo(({
         <audio ref={audioRef} src={musicUrl} loop preload="auto" />
       )}
 
-      {/* Header - User Info */}
-      <div className="flex items-center justify-between px-3 py-2">
+      {/* Header - User Info - Instagram style */}
+      <div className="flex items-center justify-between px-3 py-2.5">
         <div 
-          className="flex items-center gap-3 cursor-pointer"
+          className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
           onClick={() => navigate(`/user/${item.user_id}`)}
         >
-          <div className="relative">
-            <UserStatusIndicator userId={item.user_id} size="sm" />
+          <div className="relative flex-shrink-0">
             <OptimizedAvatar
               src={item.profiles?.avatar_url}
               alt={item.profiles?.username || 'User'}
               fallback={item.profiles?.username?.[0] || '?'}
               userId={item.user_id}
-              className={`w-9 h-9 ring-2 ring-border bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-muted to-muted'}`}
+              className={`w-8 h-8 ring-1 ring-border/50`}
             />
+            <UserStatusIndicator userId={item.user_id} size="sm" />
           </div>
           
-          <div className="flex flex-col">
-            <span className="font-semibold text-sm leading-tight flex items-center gap-1">
+          <div className="flex flex-col min-w-0">
+            <span className="font-semibold text-sm leading-tight flex items-center gap-1 truncate">
               {item.profiles?.username || 'Unknown'}
               {item.profiles?.is_verified && <VerifiedBadge size="xs" />}
             </span>
             {item.profiles?.professional_title && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground truncate">
                 {item.profiles.professional_title.replace(/_/g, " ")}
               </span>
             )}
