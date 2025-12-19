@@ -53,6 +53,9 @@ export const useSpaceMembers = () => {
     async (spaceId: string, spaceType: SpaceType) => {
       console.log('[useSpaceMembers] fetchMembers called:', spaceId, spaceType);
       setIsLoading(true);
+      // Clear stale UI immediately so sheets don’t flash old members
+      setMembers([]);
+      setMemberCount(0);
       try {
         let rows: MemberRow[] = [];
 
