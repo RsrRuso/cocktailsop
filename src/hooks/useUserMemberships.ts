@@ -73,7 +73,15 @@ export const useUserMemberships = (userId: string | null) => {
       
       try {
         // Fetch ALL membership types in parallel for speed
-        const [workspaceMemberRes, ownedWorkspacesRes, groupRes, teamRes, procurementRes] = await Promise.all([
+        const [
+          workspaceMemberRes, 
+          ownedWorkspacesRes, 
+          groupRes, 
+          ownedGroupsRes,
+          teamRes, 
+          procurementRes,
+          ownedProcurementRes
+        ] = await Promise.all([
           // Workspaces user is a member of
           supabase
             .from('workspace_members')
@@ -84,21 +92,31 @@ export const useUserMemberships = (userId: string | null) => {
             .from('workspaces')
             .select('id, name, workspace_type')
             .eq('owner_id', userId),
-          // Mixologist groups
+          // Mixologist groups user is a member of
           supabase
             .from('mixologist_group_members')
             .select('group_id, role, mixologist_groups!inner(id, name)')
             .eq('user_id', userId),
+          // Mixologist groups user created (in case not in members)
+          supabase
+            .from('mixologist_groups')
+            .select('id, name')
+            .eq('created_by', userId),
           // Teams
           supabase
             .from('team_members')
             .select('team_id, role, teams!inner(id, name)')
             .eq('user_id', userId),
-          // Procurement workspaces
+          // Procurement workspaces user is a member of
           supabase
             .from('procurement_workspace_members')
             .select('workspace_id, role, procurement_workspaces!inner(id, name)')
             .eq('user_id', userId),
+          // Procurement workspaces user owns (in case not in members)
+          supabase
+            .from('procurement_workspaces')
+            .select('id, name')
+            .eq('owner_id', userId),
         ]);
 
         const allMemberships: Membership[] = [];
@@ -151,16 +169,36 @@ export const useUserMemberships = (userId: string | null) => {
           }
         }
 
-        // Process groups
+        // Process groups from membership table
+        const processedGroupIds = new Set<string>();
         if (groupRes.data) {
           for (const g of groupRes.data as any[]) {
             if (g.mixologist_groups) {
+              processedGroupIds.add(g.group_id);
               allMemberships.push({
                 id: g.group_id,
                 type: 'group',
                 name: g.mixologist_groups.name,
                 role: g.role,
                 route: `/batch-calculator-pin-access?group=${g.group_id}`,
+                icon: '🍸',
+                color: 'from-amber-500/20 to-amber-600/20 border-amber-500/30',
+                memberCount: 0,
+              });
+            }
+          }
+        }
+
+        // Add created groups not already in members (creator/owner)
+        if (ownedGroupsRes.data) {
+          for (const g of ownedGroupsRes.data as any[]) {
+            if (!processedGroupIds.has(g.id)) {
+              allMemberships.push({
+                id: g.id,
+                type: 'group',
+                name: g.name,
+                role: 'owner',
+                route: `/batch-calculator-pin-access?group=${g.id}`,
                 icon: '🍸',
                 color: 'from-amber-500/20 to-amber-600/20 border-amber-500/30',
                 memberCount: 0,
@@ -187,16 +225,36 @@ export const useUserMemberships = (userId: string | null) => {
           }
         }
 
-        // Process procurement
+        // Process procurement from membership table
+        const processedProcurementIds = new Set<string>();
         if (procurementRes.data) {
           for (const p of procurementRes.data as any[]) {
             if (p.procurement_workspaces) {
+              processedProcurementIds.add(p.workspace_id);
               allMemberships.push({
                 id: p.workspace_id,
                 type: 'procurement',
                 name: p.procurement_workspaces.name,
                 role: p.role,
                 route: `/purchase-orders?workspace=${p.workspace_id}`,
+                icon: '📦',
+                color: 'from-violet-500/20 to-violet-600/20 border-violet-500/30',
+                memberCount: 0,
+              });
+            }
+          }
+        }
+
+        // Add owned procurement workspaces not already in members
+        if (ownedProcurementRes.data) {
+          for (const p of ownedProcurementRes.data as any[]) {
+            if (!processedProcurementIds.has(p.id)) {
+              allMemberships.push({
+                id: p.id,
+                type: 'procurement',
+                name: p.name,
+                role: 'owner',
+                route: `/purchase-orders?workspace=${p.id}`,
                 icon: '📦',
                 color: 'from-violet-500/20 to-violet-600/20 border-violet-500/30',
                 memberCount: 0,
