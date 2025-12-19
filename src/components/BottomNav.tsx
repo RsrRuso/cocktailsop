@@ -72,62 +72,54 @@ const BottomNav = () => {
               }
             }}
             className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
-              isActive("/home") 
-                ? "text-primary" 
-                : "text-white hover:text-primary"
+              isActive("/home") ? "text-white" : "text-white/60"
             }`}
           >
-            <Home className={`w-7 h-7 ${isActive("/home") ? "fill-current drop-shadow-[0_0_8px_hsl(var(--primary))]" : ""}`} />
-            <span className="text-[10px] mt-0.5 font-semibold">Home</span>
+            <Home className={`w-6 h-6 ${isActive("/home") ? "fill-current" : ""}`} />
+            <span className="text-[9px] mt-0.5">Home</span>
           </button>
 
           <button
             onClick={() => navigate("/explore")}
             className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
-              isActive("/explore") 
-                ? "text-primary" 
-                : "text-white hover:text-primary"
+              isActive("/explore") ? "text-white" : "text-white/60"
             }`}
           >
-            <Search className={`w-7 h-7 ${isActive("/explore") ? "stroke-[2.5] drop-shadow-[0_0_8px_hsl(var(--primary))]" : ""}`} />
-            <span className="text-[10px] mt-0.5 font-semibold">Explore</span>
+            <Search className={`w-6 h-6 ${isActive("/explore") ? "stroke-[2.5]" : ""}`} />
+            <span className="text-[9px] mt-0.5">Explore</span>
           </button>
 
           <button
             onClick={() => navigate("/create/reel")}
-            className="flex items-center justify-center -mt-3"
+            className="flex items-center justify-center -mt-2"
           >
-            <Plus className="w-8 h-8 text-white hover:text-primary transition-all stroke-[2.5]" />
+            <Plus className="w-7 h-7 text-white/90 stroke-[2]" />
           </button>
 
           <button
             onClick={() => navigate("/map")}
             className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
-              isActive("/map") 
-                ? "text-primary" 
-                : "text-white hover:text-primary"
+              isActive("/map") ? "text-white" : "text-white/60"
             }`}
           >
-            <MapPin className={`w-7 h-7 ${isActive("/map") ? "fill-current drop-shadow-[0_0_8px_hsl(var(--primary))]" : ""}`} />
-            <span className="text-[10px] mt-0.5 font-semibold">Map</span>
+            <MapPin className={`w-6 h-6 ${isActive("/map") ? "fill-current" : ""}`} />
+            <span className="text-[9px] mt-0.5">Map</span>
           </button>
 
           <button
             onClick={() => navigate("/profile")}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
-              isActive("/profile") ? "" : ""
-            }`}
+            className="flex flex-col items-center justify-center w-14 h-12 transition-all"
           >
             <OptimizedAvatar
               src={avatarUrl}
               alt={username}
               fallback={username[0] || "U"}
               userId={userId}
-              className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-primary shadow-[0_0_12px_hsl(var(--primary)/0.6)]" : "ring-2 ring-white"}`}
+              className={`w-7 h-7 ${isActive("/profile") ? "ring-[1.5px] ring-white" : "ring-1 ring-white/50"}`}
               showStatus={false}
               showAddButton={false}
             />
-            <span className={`text-[10px] mt-0.5 font-semibold ${isActive("/profile") ? "text-primary" : "text-white"}`}>Profile</span>
+            <span className={`text-[9px] mt-0.5 ${isActive("/profile") ? "text-white" : "text-white/60"}`}>Profile</span>
           </button>
         </div>
     </div>
