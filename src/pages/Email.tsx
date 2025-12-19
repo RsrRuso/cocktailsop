@@ -48,6 +48,18 @@ interface Profile {
 // Cache for profiles to avoid refetching
 const profileCache = new Map<string, Profile>();
 
+// Helper to decode HTML entities if content was escaped
+const decodeHtmlEntities = (html: string): string => {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = html;
+  return textarea.value;
+};
+
+// Helper to strip HTML tags for preview
+const stripHtml = (html: string): string => {
+  const decoded = decodeHtmlEntities(html);
+  return decoded.replace(/<[^>]*>/g, '').trim();
+};
 const Email = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -469,7 +481,7 @@ const Email = () => {
                       {email.subject}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {email.body.replace(/<[^>]*>/g, '').slice(0, 80)}
+                      {stripHtml(email.body).slice(0, 80)}
                     </p>
                   </div>
                 </div>
@@ -627,8 +639,8 @@ const Email = () => {
               
               <div className="py-4">
                 <div 
-                  className="text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                  className="text-sm leading-relaxed [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-3 [&_p]:mb-2 [&_strong]:font-semibold"
+                  dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(selectedEmail.body) }}
                 />
                 <p className="text-xs text-muted-foreground mt-4">
                   {new Date(selectedEmail.created_at).toLocaleString()}
