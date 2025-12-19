@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -6,27 +6,17 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
 
-  // Instant redirect based on cached session - don't wait for auth
-  useLayoutEffect(() => {
-    const cachedSession = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
-    if (cachedSession) {
-      // User likely logged in - go to home immediately
-      navigate("/home", { replace: true });
-    } else {
-      // No session - go to landing immediately
-      navigate("/landing", { replace: true });
-    }
-  }, [navigate]);
-
-  // Fallback: handle auth state changes after initial redirect
   useEffect(() => {
+    // Wait for auth to fully initialize before making any decisions
     if (isLoading) return;
     
-    const currentPath = window.location.pathname;
-    if (currentPath === "/") {
-      if (user) {
-        navigate("/home", { replace: true });
-      } else {
+    if (user) {
+      navigate("/home", { replace: true });
+    } else {
+      // Only redirect to landing if we're certain there's no session
+      // Check localStorage as a fallback to prevent premature redirect
+      const cachedSession = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
+      if (!cachedSession) {
         navigate("/landing", { replace: true });
       }
     }
