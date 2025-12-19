@@ -204,8 +204,9 @@ export const ReelsFullscreenViewer = ({
     
     const currentVideo = videoRefs.current.get(currentIndex);
     if (currentVideo) {
-      // Mute video only if there's attached music (music plays via separate audio element)
-      currentVideo.muted = hasMusic || isMuted;
+      // Mute video only if user muted OR if there's attached music with mute_original_audio flag
+      const shouldMuteVideoTrack = isMuted || (hasMusic && currentReel.mute_original_audio === true);
+      currentVideo.muted = shouldMuteVideoTrack;
       currentVideo.play().catch(() => {
         currentVideo.muted = true;
         currentVideo.play().catch(() => {});
@@ -365,8 +366,8 @@ export const ReelsFullscreenViewer = ({
 
             const isImage = currentReel.is_image_reel === true;
 
-            // Determine if video should be muted - ALWAYS mute video when music is attached
-            const shouldMuteVideo = isMuted || hasMusic;
+            // Video should be muted only if user pressed mute, OR if music is attached and mute_original_audio is true
+            const shouldMuteVideoTrack = isMuted || (hasMusic && currentReel.mute_original_audio === true);
 
             if (isImage) {
               return (
@@ -392,8 +393,8 @@ export const ReelsFullscreenViewer = ({
                 loop
                 playsInline
                 autoPlay
-                muted={shouldMuteVideo}
-                preload="auto"
+                muted={shouldMuteVideoTrack}
+                preload="metadata"
               />
             );
           })()}
