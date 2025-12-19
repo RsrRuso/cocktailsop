@@ -80,47 +80,38 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
   if (events.length === 0) return null;
 
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl p-4 mb-4 border border-primary/20">
-      <div className="flex items-center gap-2 mb-2">
-        <Calendar className="w-4 h-4 text-primary" />
-        <button
-          onClick={() => setListDialogOpen(true)}
-          className="text-xs font-semibold text-primary uppercase tracking-wide hover:underline cursor-pointer"
-        >
-          Upcoming Events
-        </button>
-      </div>
+    <div className="w-full overflow-hidden bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2 mb-3 border border-white/10">
       <div className="relative overflow-hidden">
-        <div className="animate-marquee whitespace-nowrap">
-          {events.map((event) => (
-            <div
-              key={event.id}
-              className="inline-flex items-center mx-8 hover:opacity-80 transition-opacity"
-            >
-              <button
-                onClick={() => handleEventClick(event)}
-                className="inline-flex items-center hover:underline cursor-pointer"
-              >
-                <span className="font-semibold text-foreground">{event.title}</span>
-                {event.event_date && (
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    {new Date(event.event_date).toLocaleDateString()}
-                  </span>
-                )}
-                <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                  {event.attendee_count || 0} going
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setListDialogOpen(true)}
+            className="flex-shrink-0 text-[10px] font-medium text-white/60 hover:text-white transition-colors"
+          >
+            <Calendar className="w-3 h-3" />
+          </button>
+          <div className="flex-1 overflow-hidden">
+            <div className="animate-marquee whitespace-nowrap">
+              {events.map((event, idx) => (
+                <span key={event.id} className="inline-flex items-center text-[11px]">
+                  <button
+                    onClick={() => handleEventClick(event)}
+                    className="text-white/90 hover:text-white font-medium"
+                  >
+                    {event.title}
+                  </button>
+                  <span className="text-white/40 mx-1">•</span>
+                  <span className="text-white/50">{event.attendee_count || 0}↑</span>
+                  <button
+                    onClick={(e) => handleCommentsClick(event, e)}
+                    className="ml-1 text-white/40 hover:text-white/70"
+                  >
+                    💬{event.comment_count || 0}
+                  </button>
+                  {idx < events.length - 1 && <span className="text-white/20 mx-3">|</span>}
                 </span>
-              </button>
-              <button
-                onClick={(e) => handleCommentsClick(event, e)}
-                className="ml-2 inline-flex items-center gap-1 text-xs bg-accent/20 text-accent-foreground px-2 py-0.5 rounded-full hover:bg-accent/30 transition-colors"
-              >
-                <MessageCircle className="w-3 h-3" />
-                {event.comment_count || 0}
-              </button>
-              <span className="mx-2 text-primary">•</span>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
       

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, Plus, Search, Video, MapPin, User } from "lucide-react";
+import { Home, Search, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,13 +87,6 @@ const BottomNav = () => {
           >
             <Search className={`w-6 h-6 ${isActive("/explore") ? "stroke-[2.5]" : ""}`} />
             <span className="text-[9px] mt-0.5">Explore</span>
-          </button>
-
-          <button
-            onClick={() => navigate("/create/reel")}
-            className="flex items-center justify-center -mt-2"
-          >
-            <Plus className="w-7 h-7 text-white/90 stroke-[2]" />
           </button>
 
           <button
