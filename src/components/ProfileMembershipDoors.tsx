@@ -20,10 +20,22 @@ interface ProfileMembershipDoorsProps {
 export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) => {
   const navigate = useNavigate();
   const { memberships, isLoading } = useUserMemberships(userId);
+
+  const [presenceEnabled, setPresenceEnabled] = useState(false);
+
+  // Defer presence subscriptions slightly so the UI renders instantly
+  useEffect(() => {
+    if (memberships.length === 0) return;
+    setPresenceEnabled(false);
+    const t = window.setTimeout(() => setPresenceEnabled(true), 200);
+    return () => window.clearTimeout(t);
+  }, [memberships.length]);
+
   const { getOnlineCount, getOnlineUsers } = useSpacePresence(
     userId,
-    memberships.map(m => ({ id: m.id, type: m.type }))
+    presenceEnabled ? memberships.map((m) => ({ id: m.id, type: m.type })) : []
   );
+
   const { getProfile, fetchProfiles } = useCachedProfiles();
   const { members, memberCount, isLoading: membersLoading, fetchMembers, getMemberCount } = useSpaceMembers();
   
@@ -31,25 +43,31 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   const [onlineProfiles, setOnlineProfiles] = useState<any[]>([]);
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
 
-  // Fetch member counts for all spaces on mount
+  // Fetch member counts for all spaces (parallel)
   useEffect(() => {
+    if (memberships.length === 0) return;
+    let cancelled = false;
+
     const fetchCounts = async () => {
-      const counts: Record<string, number> = {};
-      for (const m of memberships) {
-        const count = await getMemberCount(m.id, m.type);
-        counts[`${m.type}-${m.id}`] = count;
-      }
-      setMemberCounts(counts);
+      const entries = await Promise.all(
+        memberships.map(async (m) => {
+          const count = await getMemberCount(m.id, m.type);
+          return [`${m.type}-${m.id}`, count] as const;
+        })
+      );
+
+      if (cancelled) return;
+      setMemberCounts(Object.fromEntries(entries));
     };
-    
-    if (memberships.length > 0) {
-      fetchCounts();
-    }
+
+    const t = window.setTimeout(fetchCounts, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
   }, [memberships, getMemberCount]);
 
   const handleDoorPress = async (membership: Membership) => {
-    console.log('[ProfileMembershipDoors] Door pressed:', membership.name, 'Type:', membership.type, 'ID:', membership.id);
-    
     const onlineUsers = getOnlineUsers(membership.type, membership.id);
     
     if (onlineUsers.length > 0) {

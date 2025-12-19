@@ -207,7 +207,7 @@ const Profile = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mb-4 mt-4">
+        <div className="flex gap-2 mt-4 mb-6">
           <button 
             onClick={() => navigate("/profile/edit")}
             className="flex-1 py-1.5 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium text-white transition-colors"
@@ -227,11 +227,11 @@ const Profile = () => {
         </div>
 
         {/* Membership Doors - No lazy load for instant display */}
-        <div className="mb-4">
+        <div className="mt-2 mb-8">
           <ProfileMembershipDoors userId={user.id} />
         </div>
         {/* Tab Icons */}
-        <div className="flex border-t border-white/10">
+        <div className="mt-3 flex border-t border-white/10">
           <button 
             onClick={() => setActiveTab('posts')}
             className={`flex-1 py-3 flex justify-center ${activeTab === 'posts' ? 'border-t border-white text-white' : 'text-white/40'}`}
