@@ -1,12 +1,12 @@
 import { memo, useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Sparkles, Repeat2, Music } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Repeat2, Music } from "lucide-react";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
 import { useViewTracking } from "@/hooks/useViewTracking";
-import { EngagementInsightsDialog, EnhancedLikesDialog, EnhancedCommentsDialog } from "@/components/engagement";
+import { EngagementInsightsDialog, EnhancedLikesDialog, EnhancedCommentsDialog, InstagramReactions } from "@/components/engagement";
 import { RepostsDialog } from "@/components/engagement/RepostsDialog";
 import { SavesDialog } from "@/components/engagement/SavesDialog";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface FeedItemProps {
   item: any;
@@ -68,8 +69,6 @@ export const FeedItem = memo(({
   const [showComments, setShowComments] = useState(false);
   const [showReposts, setShowReposts] = useState(false);
   const [showSaves, setShowSaves] = useState(false);
-  const [doubleTapLike, setDoubleTapLike] = useState(false);
-  const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
   const [isVisible, setIsVisible] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
@@ -171,18 +170,11 @@ export const FeedItem = memo(({
     };
   }, [item.id, item.type]);
 
-  // Handle double tap to like
-  const handleDoubleTap = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      if (!isLiked) {
-        onLike();
-        setDoubleTapLike(true);
-        setTimeout(() => setDoubleTapLike(false), 1000);
-      }
-    }
-    setLastTap(now);
-  }, [lastTap, isLiked, onLike]);
+  // Handle emoji reaction
+  const handleEmojiReaction = useCallback((emoji: string) => {
+    toast.success(`Reacted with ${emoji}`);
+    // Can extend to save reactions to database
+  }, []);
 
   return (
     <div ref={containerRef} className="relative w-full bg-background">
@@ -246,124 +238,116 @@ export const FeedItem = memo(({
 
       {/* Text-only posts */}
       {(!item.media_urls || item.media_urls.length === 0) && item.content && (
-        <div className="px-3 py-4 relative" onClick={handleDoubleTap}>
-          <p className="text-base leading-relaxed whitespace-pre-wrap">
-            {item.content}
-          </p>
-          
-          {hasAttachedMusic && (
-            <div className="flex items-center gap-1.5 mt-1 opacity-60">
-              <Music className={`w-3 h-3 ${isMusicPlaying ? 'animate-pulse' : ''}`} />
-              <span className="text-[11px] truncate max-w-[180px]">
-                {item.music_tracks?.title || 'Added Music'}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleMute(videoKey);
-                }}
-                className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
-              >
-                {mutedVideos.has(videoKey) ? (
-                  <VolumeX className="w-3 h-3" />
-                ) : (
-                  <Volume2 className="w-3 h-3" />
-                )}
-              </button>
-            </div>
-          )}
-          
-          {doubleTapLike && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-              <Heart className="w-24 h-24 text-primary fill-primary animate-ping" style={{ animationDuration: '0.5s' }} />
-            </div>
-          )}
-        </div>
+        <InstagramReactions isLiked={isLiked} onLike={onLike} onReaction={handleEmojiReaction}>
+          <div className="px-3 py-4 relative">
+            <p className="text-base leading-relaxed whitespace-pre-wrap">
+              {item.content}
+            </p>
+            
+            {hasAttachedMusic && (
+              <div className="flex items-center gap-1.5 mt-1 opacity-60">
+                <Music className={`w-3 h-3 ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+                <span className="text-[11px] truncate max-w-[180px]">
+                  {item.music_tracks?.title || 'Added Music'}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleMute(videoKey);
+                  }}
+                  className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
+                >
+                  {mutedVideos.has(videoKey) ? (
+                    <VolumeX className="w-3 h-3" />
+                  ) : (
+                    <Volume2 className="w-3 h-3" />
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </InstagramReactions>
       )}
 
       {/* Media content */}
       {item.media_urls && item.media_urls.length > 0 && (
-        <div className="relative w-full bg-gradient-to-br from-muted to-secondary" onClick={handleDoubleTap}>
-          {item.media_urls.map((url: string, idx: number) => (
-            <div key={idx} className="relative w-full aspect-[4/5]">
-              {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-6">
-                  <audio src={url} controls className="w-full" />
-                </div>
-              ) : (item.type === 'reel' && !isImageReel) || url.includes('.mp4') || url.includes('video') ? (
-                <div 
-                  className="relative w-full h-full cursor-pointer"
-                  onClick={item.type === 'reel' ? onFullscreen : undefined}
-                >
-                  <LazyVideo
-                    src={url}
-                    muted={!isVisible || shouldMuteVideo || mutedVideos.has(item.id + url)}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onVisibilityChange={handleVisibilityChange}
-                  />
-                  
-                  {hasAttachedMusic && (
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
-                      <Music className="w-3 h-3 text-white" />
-                      <span className="text-[10px] text-white font-medium truncate max-w-[100px]">
-                        {item.music_tracks?.title || 'Added Music'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleMute(item.id + url);
-                    }}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+        <InstagramReactions isLiked={isLiked} onLike={onLike} onReaction={handleEmojiReaction}>
+          <div className="relative w-full bg-gradient-to-br from-muted to-secondary">
+            {item.media_urls.map((url: string, idx: number) => (
+              <div key={idx} className="relative w-full aspect-[4/5]">
+                {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-6">
+                    <audio src={url} controls className="w-full" />
+                  </div>
+                ) : (item.type === 'reel' && !isImageReel) || url.includes('.mp4') || url.includes('video') ? (
+                  <div 
+                    className="relative w-full h-full cursor-pointer"
+                    onClick={item.type === 'reel' ? onFullscreen : undefined}
                   >
-                    {mutedVideos.has(item.id + url) ? (
-                      <VolumeX className="w-4 h-4 text-white" />
-                    ) : (
-                      <Volume2 className="w-4 h-4 text-white" />
+                    <LazyVideo
+                      src={url}
+                      muted={!isVisible || shouldMuteVideo || mutedVideos.has(item.id + url)}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onVisibilityChange={handleVisibilityChange}
+                    />
+                    
+                    {hasAttachedMusic && (
+                      <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
+                        <Music className="w-3 h-3 text-white" />
+                        <span className="text-[10px] text-white font-medium truncate max-w-[100px]">
+                          {item.music_tracks?.title || 'Added Music'}
+                        </span>
+                      </div>
                     )}
-                  </button>
-                </div>
-              ) : (
-                <div className="relative w-full h-full">
-                  <LazyImage src={url} alt="Post media" className="absolute inset-0 w-full h-full object-cover" />
-                  
-                  {hasAttachedMusic && (
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
-                      <Music className={`w-3 h-3 text-white ${isMusicPlaying ? 'animate-pulse' : ''}`} />
-                      <span className="text-[10px] text-white font-medium truncate max-w-[100px]">
-                        {item.music_tracks?.title || 'Added Music'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {hasAttachedMusic && (
+                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleMute(videoKey);
+                        onToggleMute(item.id + url);
                       }}
                       className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
                     >
-                      {mutedVideos.has(videoKey) ? (
+                      {mutedVideos.has(item.id + url) ? (
                         <VolumeX className="w-4 h-4 text-white" />
                       ) : (
                         <Volume2 className="w-4 h-4 text-white" />
                       )}
                     </button>
-                  )}
-                </div>
-              )}
-
-              {doubleTapLike && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <Heart className="w-24 h-24 text-white fill-white animate-ping" style={{ animationDuration: '0.5s' }} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                  </div>
+                ) : (
+                  <div className="relative w-full h-full">
+                    <LazyImage src={url} alt="Post media" className="absolute inset-0 w-full h-full object-cover" />
+                    
+                    {hasAttachedMusic && (
+                      <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
+                        <Music className={`w-3 h-3 text-white ${isMusicPlaying ? 'animate-pulse' : ''}`} />
+                        <span className="text-[10px] text-white font-medium truncate max-w-[100px]">
+                          {item.music_tracks?.title || 'Added Music'}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {hasAttachedMusic && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleMute(videoKey);
+                        }}
+                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+                      >
+                        {mutedVideos.has(videoKey) ? (
+                          <VolumeX className="w-4 h-4 text-white" />
+                        ) : (
+                          <Volume2 className="w-4 h-4 text-white" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </InstagramReactions>
       )}
 
       {/* Instagram-style Action Buttons */}

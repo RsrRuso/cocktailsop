@@ -13,3 +13,4 @@ export { TrendingContentAnalyzer } from './TrendingContentAnalyzer';
 export { ViralPredictionEngine } from './ViralPredictionEngine';
 export { ContentBoostSuggestions } from './ContentBoostSuggestions';
 export { EngagementInsightsDialog } from './EngagementInsightsDialog';
+export { InstagramReactions } from './InstagramReactions';
