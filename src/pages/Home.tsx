@@ -371,7 +371,7 @@ const Home = () => {
       <TopNav isVisible={showTopNav} />
 
       {/* Stories */}
-      <div className="px-3 py-2 overflow-x-auto scrollbar-hide">
+      <div className="px-3 pt-2 pb-10 overflow-x-auto scrollbar-hide">
         <div className="flex gap-3">
           {/* Your Story */}
           <div className="flex flex-col items-center gap-1.5 min-w-fit">
@@ -530,7 +530,7 @@ const Home = () => {
       {/* Events Ticker - lazy loaded */}
       {selectedRegion && (
         <Suspense fallback={null}>
-          <div className="px-4 mt-6">
+          <div className="px-4 -mt-4">
             <EventsTicker region={selectedRegion} />
           </div>
         </Suspense>
