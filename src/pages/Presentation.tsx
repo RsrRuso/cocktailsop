@@ -57,13 +57,12 @@ const Presentation = () => {
       content: (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground text-center">
-            Space Doors gives you instant access to all your collaborative spaces - workspaces, groups, and teams - in one unified interface with real-time presence indicators.
+            Space Doors gives you instant access to all your collaborative spaces - workspaces and groups - in one unified interface with real-time presence indicators.
           </p>
-          <div className="grid grid-cols-5 gap-2 mt-4">
+          <div className="grid grid-cols-4 gap-2 mt-4">
             {[
               { icon: "🏪", name: "Stores" },
               { icon: "🍸", name: "Groups" },
-              { icon: "👥", name: "Teams" },
               { icon: "📦", name: "Orders" },
               { icon: "📊", name: "FIFO" },
             ].map((type, i) => (
@@ -396,84 +395,6 @@ const Presentation = () => {
       )
     },
     {
-      id: 10,
-      title: "Team Scheduling",
-      icon: <Calendar className="w-12 h-12 text-blue-500" />,
-      content: (
-        <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• Schedule changes communicated via group chat</li>
-              <li>• Staff availability tracked on paper or memory</li>
-              <li>• Shift swaps cause confusion</li>
-              <li>• Overtime not tracked properly</li>
-              <li>• No visibility into labor costs per shift</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              Team calendar with shift scheduling, availability management, and swap requests. Staff get push notifications for schedule updates. Managers see labor cost projections and can optimize coverage based on forecasted demand.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Shift Plans", "Availability", "Swap Requests", "Labor Cost", "Notifications", "Time Track"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: 11,
-      title: "Team Chat",
-      icon: <MessageSquare className="w-12 h-12 text-pink-500" />,
-      content: (
-        <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• Work communication mixed with personal chats</li>
-              <li>• Important updates get lost in group messages</li>
-              <li>• No searchable history of decisions</li>
-              <li>• File sharing scattered across platforms</li>
-              <li>• New hires can't access past discussions</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              Built-in team messaging with channels for different topics (announcements, shift trades, general). Share files, photos, and voice notes. Pin important messages, mention team members, and search message history.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Channels", "File Share", "Search", "Mentions", "Pin Messages", "History"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )
-    },
-    {
       id: 12,
       title: "Supplier Management",
       icon: <Truck className="w-12 h-12 text-slate-500" />,
@@ -531,8 +452,6 @@ const Presentation = () => {
               { icon: <AlertTriangle className="w-4 h-4" />, name: "FIFO Tracking" },
               { icon: <Receipt className="w-4 h-4" />, name: "Purchase Orders" },
               { icon: <TrendingUp className="w-4 h-4" />, name: "Cost Analysis" },
-              { icon: <Calendar className="w-4 h-4" />, name: "Scheduling" },
-              { icon: <MessageSquare className="w-4 h-4" />, name: "Team Chat" },
               { icon: <Truck className="w-4 h-4" />, name: "Suppliers" },
               { icon: <Users className="w-4 h-4" />, name: "My Spaces" },
             ].map((tool, i) => (
