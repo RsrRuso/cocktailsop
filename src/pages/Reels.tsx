@@ -74,8 +74,8 @@ const Reels = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
   const [targetReelId, setTargetReelId] = useState<string | null>(() => initialState?.scrollToReelId ?? null);
-  // ALWAYS open fullscreen viewer immediately - no separate scroll view
-  const [showFullscreenViewer, setShowFullscreenViewer] = useState(true);
+  // Start with scroll view - only open fullscreen when explicitly requested
+  const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
   const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
   const [showLivestreamComments, setShowLivestreamComments] = useState(() => Boolean(initialState?.showLivestreamComments));
   const [isLoading, setIsLoading] = useState(() => Boolean(user) && !initialState?.reelData);
@@ -281,15 +281,13 @@ const Reels = () => {
 
   return (
     <div className="h-screen bg-black overflow-hidden relative">
-      {/* Back Button - only show when fullscreen viewer is NOT open */}
-      {!showFullscreenViewer && (
-        <button
-          onClick={() => navigate(-1)}
-          className="fixed top-12 left-4 z-30 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
-        >
-          <ArrowLeft className="w-5 h-5 text-white" />
-        </button>
-      )}
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-12 left-4 z-30 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+      >
+        <ArrowLeft className="w-5 h-5 text-white" />
+      </button>
       
       {/* Show loading or empty state only when NOT navigating to specific reel */}
       {reels.length === 0 && !hasTargetReel ? (
@@ -389,29 +387,31 @@ const Reels = () => {
         isReel={true}
       />
 
-      <ReelsFullscreenViewer
-        isOpen={showFullscreenViewer}
-        onClose={() => {
-          // Navigate back instead of hiding viewer
-          navigate(-1);
-        }}
-        reels={reels}
-        initialIndex={fullscreenStartIndex}
-        currentUserId={user?.id || ''}
-        likedReels={reelEngagement.likedIds}
-        onLike={handleLikeReel}
-        onComment={(reelId) => {
-          setSelectedReelForComments(reelId);
-          setShowComments(true);
-        }}
-        onShare={(reelId, caption, videoUrl) => {
-          setSelectedReelId(reelId);
-          setSelectedReelCaption(caption);
-          setSelectedReelVideo(videoUrl);
-          setShowShare(true);
-        }}
-        onDelete={handleDeleteReel}
-      />
+      {showFullscreenViewer && (
+        <ReelsFullscreenViewer
+          isOpen={showFullscreenViewer}
+          onClose={() => {
+            setShowFullscreenViewer(false);
+            setShowLivestreamComments(false);
+          }}
+          reels={reels}
+          initialIndex={fullscreenStartIndex}
+          currentUserId={user?.id || ''}
+          likedReels={reelEngagement.likedIds}
+          onLike={handleLikeReel}
+          onComment={(reelId) => {
+            setSelectedReelForComments(reelId);
+            setShowComments(true);
+          }}
+          onShare={(reelId, caption, videoUrl) => {
+            setSelectedReelId(reelId);
+            setSelectedReelCaption(caption);
+            setSelectedReelVideo(videoUrl);
+            setShowShare(true);
+          }}
+          onDelete={handleDeleteReel}
+        />
+      )}
     </div>
   );
 };
