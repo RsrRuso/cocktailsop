@@ -67,12 +67,39 @@ export const ReelsFullscreenViewer = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   // Start unmuted in fullscreen - user explicitly opened fullscreen to watch
   const [isMuted, setIsMuted] = useState(false);
+  const [needsSoundTap, setNeedsSoundTap] = useState(false);
+  const soundUnlockedRef = useRef(false);
   const [lastTap, setLastTap] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleEnableSound = useCallback(() => {
+    soundUnlockedRef.current = true;
+    setNeedsSoundTap(false);
+    setIsMuted(false);
+
+    const reel = reels[currentIndex];
+    const video = videoRefs.current.get(currentIndex);
+    if (reel && video) {
+      const musicUrl =
+        reel.music_tracks?.original_url ||
+        reel.music_tracks?.preview_url ||
+        reel.music_url;
+      const hasMusic = Boolean(musicUrl);
+      const shouldMuteVideoTrack = hasMusic && reel.mute_original_audio === true;
+
+      video.muted = shouldMuteVideoTrack;
+      video.play().catch(() => {});
+    }
+
+    if (musicAudioRef.current) {
+      musicAudioRef.current.muted = false;
+      musicAudioRef.current.play().catch(() => {});
+    }
+  }, [currentIndex, reels]);
 
   // Handle music playback synchronized with video
   useEffect(() => {
@@ -103,6 +130,7 @@ export const ReelsFullscreenViewer = ({
 
       audio.play().catch(() => {
         // Mobile browsers may require explicit user interaction before audio can play.
+        if (!isMuted) setNeedsSoundTap(true);
       });
     }
 
@@ -156,23 +184,27 @@ export const ReelsFullscreenViewer = ({
       // Ensure correct audio source on open (music vs original)
       setTimeout(() => {
         const initialReel = reels[initialIndex];
+        if (!initialReel) return;
+
         const musicUrl =
-          initialReel?.music_tracks?.original_url ||
-          initialReel?.music_tracks?.preview_url ||
-          initialReel?.music_url;
+          initialReel.music_tracks?.original_url ||
+          initialReel.music_tracks?.preview_url ||
+          initialReel.music_url;
         const hasMusic = Boolean(musicUrl);
 
         const currentVideo = videoRefs.current.get(initialIndex);
-        if (currentVideo) {
-          // If music is attached, always keep the video muted to avoid original audio bleeding through.
-          // The music audio element will play the music track unmuted.
-          currentVideo.muted = hasMusic;
-          currentVideo.play().catch(() => {
-            // If playback fails, retry muted (mobile autoplay rules)
-            currentVideo.muted = true;
-            currentVideo.play().catch(() => {});
-          });
-        }
+        if (!currentVideo) return;
+
+        // If the reel has attached music and wants original muted, mute the video track.
+        const shouldMuteVideoTrack = hasMusic && initialReel.mute_original_audio === true;
+        currentVideo.muted = shouldMuteVideoTrack;
+
+        currentVideo.play().catch(() => {
+          // If unmuted autoplay fails (mobile rule), keep video running muted and ask for a tap.
+          if (!shouldMuteVideoTrack) setNeedsSoundTap(true);
+          currentVideo.muted = true;
+          currentVideo.play().catch(() => {});
+        });
       }, 50);
     } else {
       html.style.overflow = "";
@@ -208,6 +240,7 @@ export const ReelsFullscreenViewer = ({
       const shouldMuteVideoTrack = isMuted || (hasMusic && currentReel.mute_original_audio === true);
       currentVideo.muted = shouldMuteVideoTrack;
       currentVideo.play().catch(() => {
+        if (!shouldMuteVideoTrack) setNeedsSoundTap(true);
         currentVideo.muted = true;
         currentVideo.play().catch(() => {});
       });
@@ -394,7 +427,7 @@ export const ReelsFullscreenViewer = ({
                 playsInline
                 autoPlay
                 muted={shouldMuteVideoTrack}
-                preload="metadata"
+                preload="auto"
               />
             );
           })()}
