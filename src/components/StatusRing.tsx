@@ -68,7 +68,7 @@ const StatusRing = ({
       
       {hasContent && (
         <div 
-          className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-auto cursor-pointer animate-fade-in"
+          className="absolute -top-8 left-1/2 -translate-x-1/2 z-[5] pointer-events-auto cursor-pointer animate-fade-in"
           onClick={handleStatusClick}
         >
           <div className="relative group">
