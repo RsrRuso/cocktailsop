@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, ChevronLeft, ChevronRight, Store, Package, BarChart3, CheckCircle, XCircle, Play, Pause, RotateCcw, Sparkles, Zap, Target, AlertTriangle, Lightbulb, Award } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Store, Package, BarChart3, CheckCircle, XCircle, Play, Pause, RotateCcw, Sparkles, Zap, Target, AlertTriangle, Lightbulb, Award, Video, FileVideo } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,12 +23,18 @@ interface Slide {
 const Presentation = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingProgress, setRecordingProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const slideRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const SLIDE_DURATION = 8000; // 8 seconds per slide
+  const VIDEO_SLIDE_DURATION = 4000; // 4 seconds per slide for video (faster)
 
   const slides: Slide[] = [
     // Opening slide
@@ -572,6 +578,127 @@ const Presentation = () => {
     setIsPlaying(true);
   };
 
+  // Generate video by capturing frames
+  const generateVideo = useCallback(async () => {
+    if (!slideRef.current) return;
+    
+    setIsPlaying(false);
+    setIsRecording(true);
+    setRecordingProgress(0);
+    toast.info('Recording video... Please wait.');
+    
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context not available');
+      
+      // Set canvas size
+      canvas.width = 1080;
+      canvas.height = 1920;
+      
+      // Create a stream from the canvas
+      const stream = canvas.captureStream(30); // 30 FPS
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 5000000
+      });
+      
+      recordedChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'MySpaces_Presentation.webm';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Video downloaded!');
+        setIsRecording(false);
+        setRecordingProgress(0);
+      };
+      
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      
+      const originalSlide = currentSlide;
+      const totalSlides = slides.length;
+      const framesPerSlide = 120; // 4 seconds at 30fps
+      
+      for (let slideIndex = 0; slideIndex < totalSlides; slideIndex++) {
+        setCurrentSlide(slideIndex);
+        setRecordingProgress(((slideIndex + 1) / totalSlides) * 100);
+        
+        // Wait for slide animations to settle
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Capture multiple frames for this slide
+        for (let frame = 0; frame < framesPerSlide; frame++) {
+          if (slideRef.current) {
+            try {
+              const dataUrl = await toPng(slideRef.current, {
+                quality: 0.9,
+                pixelRatio: 1.5,
+              });
+              
+              const img = new Image();
+              await new Promise<void>((resolve, reject) => {
+                img.onload = () => {
+                  // Draw background
+                  ctx.fillStyle = '#1a1a1a';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  
+                  // Calculate centered position
+                  const scale = Math.min(
+                    (canvas.width - 40) / img.width,
+                    (canvas.height - 100) / img.height
+                  );
+                  const x = (canvas.width - img.width * scale) / 2;
+                  const y = (canvas.height - img.height * scale) / 2;
+                  
+                  ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                  
+                  // Add slide number
+                  ctx.fillStyle = '#888888';
+                  ctx.font = '24px sans-serif';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(`${slideIndex + 1} / ${totalSlides}`, canvas.width / 2, canvas.height - 40);
+                  
+                  resolve();
+                };
+                img.onerror = reject;
+                img.src = dataUrl;
+              });
+            } catch (e) {
+              console.error('Frame capture error:', e);
+            }
+          }
+          
+          // Small delay between frames to allow recording
+          await new Promise(resolve => setTimeout(resolve, 33)); // ~30fps
+        }
+      }
+      
+      // Stop recording
+      mediaRecorder.stop();
+      setCurrentSlide(originalSlide);
+      
+    } catch (error) {
+      console.error('Error generating video:', error);
+      toast.error('Failed to generate video. Try downloading PDF instead.');
+      setIsRecording(false);
+      setRecordingProgress(0);
+    }
+  }, [currentSlide, slides.length]);
+
   const generatePDF = async () => {
     if (!slideRef.current) return;
     
@@ -645,16 +772,42 @@ const Presentation = () => {
             <h1 className="text-xl font-bold">Video Presentation</h1>
             <p className="text-xs text-muted-foreground">My Spaces Overview</p>
           </div>
-          <Button 
-            onClick={generatePDF}
-            disabled={isGenerating}
-            variant="outline"
-            size="sm"
-          >
-            <Download className="w-4 h-4 mr-1" />
-            {isGenerating ? '...' : 'PDF'}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={generateVideo}
+              disabled={isRecording || isGenerating}
+              variant="default"
+              size="sm"
+              className="gap-1"
+            >
+              <Video className="w-4 h-4" />
+              {isRecording ? `${Math.round(recordingProgress)}%` : 'Video'}
+            </Button>
+            <Button 
+              onClick={generatePDF}
+              disabled={isGenerating || isRecording}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              PDF
+            </Button>
+          </div>
         </div>
+
+        {/* Recording progress */}
+        {isRecording && (
+          <div className="mb-3 p-3 rounded-lg bg-primary/10 border border-primary/30">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-sm font-medium">Recording video...</span>
+            </div>
+            <Progress value={recordingProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              Please wait while we capture all slides
+            </p>
+          </div>
+        )}
 
         {/* Video controls */}
         <div className="flex items-center gap-2 mb-3">
