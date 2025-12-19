@@ -1,16 +1,24 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare } from "lucide-react";
+import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
-// Lazy load tabs
+// Lazy load tabs and dialogs
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
+const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -19,6 +27,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved'>('posts');
   const [isVerified, setIsVerified] = useState(false);
   const [stats, setStats] = useState({ posts: 0, reels: 0 });
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -48,6 +57,12 @@ const Profile = () => {
     if (!isLoading && !user) navigate("/auth");
   }, [user, isLoading, navigate]);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate("/auth");
+  };
+
   if (isLoading && !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -75,12 +90,40 @@ const Profile = () => {
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-white/10">
         <div className="flex items-center justify-between px-4 h-12">
           <h1 className="text-base font-semibold">{p.username}</h1>
-          <button 
-            onClick={() => navigate("/profile/edit")}
-            className="p-2 text-white/70 hover:text-white"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+          
+          {/* Menu Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2 text-white/70 hover:text-white">
+                <Settings className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border-white/10">
+              <DropdownMenuItem onClick={() => navigate("/profile/edit")} className="text-white/90">
+                <Settings className="w-4 h-4 mr-2" />
+                Edit Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="text-white/90">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Set Status
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/create-story")} className="text-white/90">
+                <Film className="w-4 h-4 mr-2" />
+                Add Story
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => navigate("/monetization")} className="text-white/90">
+                <DollarSign className="w-4 h-4 mr-2" />
+                Monetization
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-400">
+                <LogOut className="w-4 h-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
@@ -181,6 +224,17 @@ const Profile = () => {
       </div>
 
       <BottomNav />
+
+      {/* Status Dialog */}
+      {showStatusDialog && (
+        <Suspense fallback={null}>
+          <CreateStatusDialog
+            open={showStatusDialog}
+            onOpenChange={setShowStatusDialog}
+            userId={user.id}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
