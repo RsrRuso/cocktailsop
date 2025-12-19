@@ -342,7 +342,6 @@ const Presentation = () => {
           const dataUrl = await toPng(slideRef.current, {
             quality: 1,
             pixelRatio: 2,
-            backgroundColor: '#2a2a2a'
           });
           
           // Calculate dimensions to fit A4
@@ -352,6 +351,10 @@ const Presentation = () => {
           if (i > 0) {
             pdf.addPage();
           }
+          
+          // Fill page with dark grey background
+          pdf.setFillColor(42, 42, 42);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
           
           // Add slide number
           pdf.setFontSize(10);
