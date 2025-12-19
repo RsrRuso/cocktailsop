@@ -25,6 +25,7 @@ const Presentation = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isPdfMode, setIsPdfMode] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -627,8 +628,12 @@ const Presentation = () => {
     
     setIsPlaying(false);
     setIsGenerating(true);
+    setIsPdfMode(true);
     setDownloadProgress(0);
-    toast.info('Generating premium PDF...');
+    toast.info('Generating PDF - please wait...');
+    
+    // Wait for PDF mode to apply (disables animations)
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -639,73 +644,72 @@ const Presentation = () => {
       for (let i = 0; i < slides.length; i++) {
         setCurrentSlide(i);
         setDownloadProgress(((i + 1) / slides.length) * 100);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Longer wait to ensure full render
+        await new Promise(resolve => setTimeout(resolve, 800));
         
         if (slideRef.current) {
           const dataUrl = await toPng(slideRef.current, {
             quality: 1,
-            pixelRatio: 3,
-            backgroundColor: '#0a0a0a'
+            pixelRatio: 2,
+            backgroundColor: '#0a0a0a',
+            cacheBust: true,
+            skipAutoScale: true,
           });
           
           if (i > 0) pdf.addPage();
           
           // Deep black background
-          pdf.setFillColor(10, 10, 10);
+          pdf.setFillColor(8, 8, 8);
           pdf.rect(0, 0, pageWidth, pageHeight, 'F');
           
-          // Subtle accent line at top
+          // Accent gradient bar at top
           pdf.setFillColor(59, 130, 246);
-          pdf.rect(0, 0, pageWidth, 1.5, 'F');
+          pdf.rect(0, 0, pageWidth, 2, 'F');
           
-          // Header with branding
-          pdf.setFontSize(8);
-          pdf.setTextColor(100, 100, 100);
-          pdf.text('MY SPACES', 10, 8);
-          
-          // Page number on right
+          // Header
           pdf.setFontSize(9);
-          pdf.setTextColor(120, 120, 120);
-          pdf.text(`${i + 1} / ${slides.length}`, pageWidth - 10, 8, { align: 'right' });
+          pdf.setTextColor(100, 100, 100);
+          pdf.text('MY SPACES PRESENTATION', 10, 10);
           
-          // Calculate image dimensions to fit nicely
-          const marginX = 8;
-          const marginTop = 12;
-          const marginBottom = 15;
+          // Page number
+          pdf.setFontSize(10);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text(`${i + 1} of ${slides.length}`, pageWidth - 10, 10, { align: 'right' });
+          
+          // Calculate image dimensions - maximize space
+          const marginX = 6;
+          const marginTop = 16;
+          const marginBottom = 12;
           const imgWidth = pageWidth - (marginX * 2);
           const availableHeight = pageHeight - marginTop - marginBottom;
-          const imgHeight = (slideRef.current.offsetHeight * imgWidth) / slideRef.current.offsetWidth;
-          const finalHeight = Math.min(imgHeight, availableHeight);
+          const aspectRatio = slideRef.current.offsetHeight / slideRef.current.offsetWidth;
+          const imgHeight = Math.min(imgWidth * aspectRatio, availableHeight);
           
-          // Center image vertically if smaller than available space
-          const yOffset = marginTop + (availableHeight - finalHeight) / 2;
-          
-          // Add subtle shadow effect (dark rectangle behind)
-          pdf.setFillColor(5, 5, 5);
-          pdf.roundedRect(marginX + 1, yOffset + 1, imgWidth, finalHeight, 2, 2, 'F');
+          // Center vertically
+          const yOffset = marginTop + (availableHeight - imgHeight) / 2;
           
           // Add the slide image
-          pdf.addImage(dataUrl, 'PNG', marginX, yOffset, imgWidth, finalHeight);
+          pdf.addImage(dataUrl, 'PNG', marginX, yOffset, imgWidth, imgHeight);
           
-          // Footer line
-          pdf.setFillColor(30, 30, 30);
-          pdf.rect(10, pageHeight - 8, pageWidth - 20, 0.3, 'F');
-          
-          // Footer text
+          // Footer
+          pdf.setFillColor(20, 20, 20);
+          pdf.rect(0, pageHeight - 10, pageWidth, 10, 'F');
           pdf.setFontSize(7);
           pdf.setTextColor(80, 80, 80);
-          pdf.text('Created with MySpaces', pageWidth / 2, pageHeight - 5, { align: 'center' });
+          pdf.text('Created with MySpaces', pageWidth / 2, pageHeight - 4, { align: 'center' });
         }
       }
       
       setCurrentSlide(originalSlide);
       pdf.save('MySpaces_Presentation.pdf');
-      toast.success('PDF downloaded!');
+      toast.success('PDF downloaded successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
     } finally {
       setIsGenerating(false);
+      setIsPdfMode(false);
       setDownloadProgress(0);
     }
   };
@@ -815,49 +819,67 @@ const Presentation = () => {
         </div>
 
         {/* Slide content */}
-        <Card ref={slideRef} className="p-4 min-h-[480px] overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Slide header */}
+        <Card ref={slideRef} className="p-4 min-h-[480px] overflow-hidden bg-card">
+          {isPdfMode ? (
+            // Static render for PDF - no animations
+            <div>
               <div className="text-center mb-4">
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", delay: 0.1 }}
-                  className="flex justify-center mb-2"
-                >
+                <div className="flex justify-center mb-2">
                   {slides[currentSlide].icon}
-                </motion.div>
-                <motion.h2 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-xl font-bold"
-                >
+                </div>
+                <h2 className="text-xl font-bold">
                   {slides[currentSlide].title}
-                </motion.h2>
+                </h2>
                 {slides[currentSlide].subtitle && (
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-xs text-muted-foreground"
-                  >
+                  <p className="text-xs text-muted-foreground">
                     {slides[currentSlide].subtitle}
-                  </motion.p>
+                  </p>
                 )}
               </div>
-              
-              {/* Slide content */}
               {slides[currentSlide].content}
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          ) : (
+            // Animated render for normal viewing
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="text-center mb-4">
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", delay: 0.1 }}
+                    className="flex justify-center mb-2"
+                  >
+                    {slides[currentSlide].icon}
+                  </motion.div>
+                  <motion.h2 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-xl font-bold"
+                  >
+                    {slides[currentSlide].title}
+                  </motion.h2>
+                  {slides[currentSlide].subtitle && (
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-xs text-muted-foreground"
+                    >
+                      {slides[currentSlide].subtitle}
+                    </motion.p>
+                  )}
+                </div>
+                {slides[currentSlide].content}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </Card>
 
         {/* Navigation */}
