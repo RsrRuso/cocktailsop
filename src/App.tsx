@@ -181,6 +181,7 @@ const Uploads = lazy(() => import("./pages/Uploads"));
 const Approvals = lazy(() => import("./pages/Approvals"));
 const Moderation = lazy(() => import("./pages/Moderation"));
 const PostAnalytics = lazy(() => import("./pages/PostAnalytics"));
+const Presentation = lazy(() => import("./pages/Presentation"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -389,6 +390,7 @@ const AppContent = () => {
           <Route path="/analytics/reel/:reelId" element={<PostAnalytics />} />
           
           <Route path="/campaign-payment" element={<CampaignPayment />} />
+          <Route path="/presentation" element={<Presentation />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
