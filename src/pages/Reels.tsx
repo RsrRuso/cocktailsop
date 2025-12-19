@@ -68,6 +68,11 @@ const Reels = () => {
   const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
   const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
   const [showLivestreamComments, setShowLivestreamComments] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Check if we're navigating to a specific reel - if so, open fullscreen immediately
+  const initialState = location.state as { scrollToReelId?: string; reelData?: any; showLivestreamComments?: boolean } | null;
+  const hasTargetReel = !!(initialState?.scrollToReelId || initialState?.reelData);
 
   // Optimistic like count updater
   const handleLikeCountChange = useCallback((reelId: string, type: 'like' | 'save' | 'repost', delta: number) => {
@@ -89,6 +94,8 @@ const Reels = () => {
     if (user) {
       fetchReels();
       reelEngagement.fetchEngagement();
+    } else {
+      setIsLoading(false);
     }
 
     // Subscribe to reel updates for comment counts
@@ -102,7 +109,7 @@ const Reels = () => {
     };
   }, [user]);
 
-  // Navigate to specific reel if coming from profile or notification
+  // Navigate to specific reel if coming from profile or notification - open fullscreen immediately
   useEffect(() => {
     const state = location.state as { scrollToReelId?: string; reelData?: any; showLivestreamComments?: boolean };
     if (state?.scrollToReelId && !targetReelId) {
@@ -111,10 +118,13 @@ const Reels = () => {
       if (state.showLivestreamComments) {
         setShowLivestreamComments(true);
       }
-      // If reel data was passed, use it immediately for instant display
+      // If reel data was passed, use it immediately and open fullscreen instantly
       if (state.reelData) {
         setReels([state.reelData]);
         setCurrentIndex(0);
+        setFullscreenStartIndex(0);
+        setShowFullscreenViewer(true); // Open fullscreen immediately
+        setIsLoading(false);
       }
       // Clear navigation state immediately
       navigate(location.pathname, { replace: true, state: {} });
@@ -144,6 +154,7 @@ const Reels = () => {
   }, [reels, targetReelId, showLivestreamComments]);
 
   const fetchReels = async () => {
+    setIsLoading(true);
     // Fetch reels with music track info
     const { data, error } = await supabase
       .from("reels")
@@ -155,7 +166,10 @@ const Reels = () => {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (error || !data) return;
+    if (error || !data) {
+      setIsLoading(false);
+      return;
+    }
 
     // Fetch profiles separately in ONE query
     const userIds = [...new Set(data.map(r => r.user_id))];
@@ -197,6 +211,7 @@ const Reels = () => {
     }
 
     setReels(finalReels as any);
+    setIsLoading(false);
 
     // Default to muted for newly loaded reels (prevents autoplay failures on mobile)
     setMutedVideos((prev) => {
@@ -268,20 +283,27 @@ const Reels = () => {
         <ArrowLeft className="w-5 h-5 text-white" />
       </button>
       
-      {reels.length === 0 ? (
-        <div className="h-full flex items-center justify-center px-4">
-          <div className="text-center space-y-4">
-            <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <Music className="w-10 h-10 text-primary" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-semibold">No Reels Yet</h3>
-              <p className="text-muted-foreground text-sm">
-                Start creating amazing reels
-              </p>
+      {/* Show loading or empty state only when NOT navigating to specific reel */}
+      {reels.length === 0 && !hasTargetReel ? (
+        isLoading ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center px-4">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <Music className="w-10 h-10 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">No Reels Yet</h3>
+                <p className="text-muted-foreground text-sm">
+                  Start creating amazing reels
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )
       ) : (
         <div 
           className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide"
