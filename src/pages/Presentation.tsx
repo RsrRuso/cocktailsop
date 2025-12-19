@@ -25,22 +25,22 @@ const Presentation = () => {
   const slides: Slide[] = [
     {
       id: 0,
-      title: "Tools Overview",
-      subtitle: "Your Complete Toolkit",
-      icon: <div className="text-6xl">🛠️</div>,
+      title: "My Spaces",
+      subtitle: "Collaborative Workspaces",
+      icon: <div className="text-6xl">🚪</div>,
       content: (
         <div className="text-center space-y-6">
           <p className="text-xl text-muted-foreground">
-            Powerful tools designed for hospitality professionals
+            Unified access to all your collaborative spaces
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-8">
-            {['📊', '🧮', '🌡️', '📋', '📦', '💰', '🍸', '📈'].map((icon, i) => (
+            {['🏪', '🍸', '📦', '📊'].map((icon, i) => (
               <motion.div
                 key={i}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: i * 0.1 }}
-                className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-2xl"
+                className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-3xl"
               >
                 {icon}
               </motion.div>
@@ -51,13 +51,13 @@ const Presentation = () => {
     },
     {
       id: 1,
-      title: "My Spaces",
-      subtitle: "Quick Introduction",
-      icon: <div className="text-5xl">🚪</div>,
+      title: "Space Doors Overview",
+      subtitle: "How It Works",
+      icon: <Users className="w-12 h-12 text-primary" />,
       content: (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground text-center">
-            Space Doors gives you instant access to all your collaborative spaces - workspaces and groups - in one unified interface with real-time presence indicators.
+            Space Doors gives you instant access to all your collaborative spaces in one unified interface with real-time presence indicators.
           </p>
           <div className="grid grid-cols-4 gap-2 mt-4">
             {[
@@ -76,7 +76,7 @@ const Presentation = () => {
           </div>
           <Card className="p-3 bg-primary/5 border-primary/20 mt-4">
             <p className="text-xs text-center text-muted-foreground">
-              Tap to open • Long press to edit • See who's online in real-time
+              Tap to open • Long press to edit • See who is online in real-time
             </p>
           </Card>
         </div>
@@ -84,8 +84,9 @@ const Presentation = () => {
     },
     {
       id: 2,
-      title: "Batch Calculator",
-      icon: <Calculator className="w-12 h-12 text-amber-500" />,
+      title: "Store Management",
+      subtitle: "Workspaces",
+      icon: <Store className="w-12 h-12 text-emerald-500" />,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
@@ -93,11 +94,11 @@ const Presentation = () => {
               <XCircle className="w-4 h-4" /> Problem
             </h3>
             <ul className="mt-2 space-y-1 text-xs">
-              <li>• Manual scaling of cocktail recipes is error-prone</li>
-              <li>• Converting single serve to batch requires complex math</li>
-              <li>• Inconsistent batches lead to flavor inconsistency</li>
-              <li>• No way to save and share scaled recipes</li>
-              <li>• Time wasted recalculating every prep session</li>
+              <li>• Personal inventory mixed with team inventory</li>
+              <li>• No way to share stores with team members</li>
+              <li>• Single user access creates bottlenecks</li>
+              <li>• No role-based permissions for different staff</li>
+              <li>• Data silos when managers change</li>
             </ul>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
@@ -105,7 +106,7 @@ const Presentation = () => {
               <CheckCircle className="w-4 h-4" /> Solution
             </h3>
             <p className="mt-2 text-xs">
-              Intelligent batch scaling tool that automatically converts single-serve recipes to any batch size. Input your base recipe, select target serves or liters, and get precise measurements instantly. Save recipes for future use and share with your team.
+              Collaborative workspaces where teams share stores, inventory, and data with role-based access control and PIN security. Invite team members, assign roles, and maintain complete activity logs for accountability.
             </p>
           </Card>
           <Card className="p-3 bg-blue-500/10 border-blue-500/30">
@@ -113,7 +114,7 @@ const Presentation = () => {
               <Award className="w-4 h-4" /> Benefits
             </h3>
             <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Precision Scaling", "Time Savings", "Consistency", "Recipe Library", "Team Sharing", "QR Labels"].map((b, i) => (
+              {["Shared Stores", "Role Access", "PIN Security", "Activity Logs", "Team Invites", "Real-time Sync"].map((b, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
               ))}
             </div>
@@ -123,8 +124,9 @@ const Presentation = () => {
     },
     {
       id: 3,
-      title: "Temperature Monitoring",
-      icon: <Thermometer className="w-12 h-12 text-red-500" />,
+      title: "Mixologist Groups",
+      subtitle: "Recipe Collaboration",
+      icon: <div className="text-5xl">🍸</div>,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
@@ -132,11 +134,11 @@ const Presentation = () => {
               <XCircle className="w-4 h-4" /> Problem
             </h3>
             <ul className="mt-2 space-y-1 text-xs">
-              <li>• Paper logs are easy to falsify or forget</li>
-              <li>• No alerts for out-of-range temperatures</li>
-              <li>• Compliance audits require digging through records</li>
-              <li>• Equipment failures go unnoticed until spoilage</li>
-              <li>• Multiple fridges/freezers hard to track</li>
+              <li>• Batch recipes scattered across individuals</li>
+              <li>• No way to share recipes with the team</li>
+              <li>• Production tracking is fragmented</li>
+              <li>• Knowledge silos when staff leaves</li>
+              <li>• Inconsistent batches across locations</li>
             </ul>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
@@ -144,7 +146,7 @@ const Presentation = () => {
               <CheckCircle className="w-4 h-4" /> Solution
             </h3>
             <p className="mt-2 text-xs">
-              Digital temperature logging system for all refrigeration equipment. Log readings with timestamps, set target temperatures, receive deviation alerts, and generate compliance reports. Track multiple units across locations with a single dashboard.
+              Dedicated spaces for bar teams to share batch recipes, track production runs, and collaborate on cocktail development. All recipes are centralized, version-controlled, and accessible to authorized team members.
             </p>
           </Card>
           <Card className="p-3 bg-blue-500/10 border-blue-500/30">
@@ -152,7 +154,7 @@ const Presentation = () => {
               <Award className="w-4 h-4" /> Benefits
             </h3>
             <div className="grid grid-cols-3 gap-2 mt-2">
-              {["HACCP Compliant", "Instant Alerts", "Audit Ready", "Multi-Unit", "History Logs", "Trend Analysis"].map((b, i) => (
+              {["Shared Recipes", "Production Log", "QR Labels", "Version Control", "Team Access", "Batch History"].map((b, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
               ))}
             </div>
@@ -162,8 +164,9 @@ const Presentation = () => {
     },
     {
       id: 4,
-      title: "Prep Checklists",
-      icon: <ClipboardCheck className="w-12 h-12 text-green-500" />,
+      title: "Procurement",
+      subtitle: "Workspaces",
+      icon: <Package className="w-12 h-12 text-violet-500" />,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
@@ -171,11 +174,11 @@ const Presentation = () => {
               <XCircle className="w-4 h-4" /> Problem
             </h3>
             <ul className="mt-2 space-y-1 text-xs">
-              <li>• Prep tasks forgotten during busy shifts</li>
-              <li>• No accountability for who completed what</li>
-              <li>• New staff don't know the prep routine</li>
-              <li>• Opening/closing procedures inconsistent</li>
-              <li>• Manager has no visibility into prep status</li>
+              <li>• Purchase orders managed by single person</li>
+              <li>• No visibility into ordering status</li>
+              <li>• Receiving not tracked systematically</li>
+              <li>• Supplier relationships not shared</li>
+              <li>• Spend data locked in individual accounts</li>
             </ul>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
@@ -183,7 +186,7 @@ const Presentation = () => {
               <CheckCircle className="w-4 h-4" /> Solution
             </h3>
             <p className="mt-2 text-xs">
-              Customizable digital checklists for opening, closing, and prep routines. Assign tasks to team members, track completion times, and ensure nothing is missed. Create templates for different shifts and stations with photo verification options.
+              Shared purchasing management for supplier orders, receiving workflows, and automatic inventory sync. Multiple team members can create POs, receive deliveries, and track spending with full visibility across the organization.
             </p>
           </Card>
           <Card className="p-3 bg-blue-500/10 border-blue-500/30">
@@ -191,7 +194,7 @@ const Presentation = () => {
               <Award className="w-4 h-4" /> Benefits
             </h3>
             <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Accountability", "Consistency", "Training Tool", "Time Stamps", "Photo Proof", "Templates"].map((b, i) => (
+              {["Shared POs", "Scan Receiving", "Cost Tracking", "Approvals", "Supplier List", "Spend Reports"].map((b, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
               ))}
             </div>
@@ -201,8 +204,9 @@ const Presentation = () => {
     },
     {
       id: 5,
-      title: "Cocktail SOP Builder",
-      icon: <FileText className="w-12 h-12 text-purple-500" />,
+      title: "FIFO Workspaces",
+      subtitle: "Expiry & Waste Tracking",
+      icon: <BarChart3 className="w-12 h-12 text-rose-500" />,
       content: (
         <div className="space-y-4">
           <Card className="p-4 bg-destructive/10 border-destructive/30">
@@ -210,11 +214,11 @@ const Presentation = () => {
               <XCircle className="w-4 h-4" /> Problem
             </h3>
             <ul className="mt-2 space-y-1 text-xs">
-              <li>• Recipes only exist in bartenders' heads</li>
-              <li>• Drinks taste different depending on who makes them</li>
-              <li>• No costing or profit margin visibility</li>
-              <li>• Training new staff is time-consuming</li>
-              <li>• Menu changes cause confusion</li>
+              <li>• FIFO tracking individual to each user</li>
+              <li>• No shared expiration monitoring</li>
+              <li>• Wastage data not aggregated</li>
+              <li>• Temperature logs scattered</li>
+              <li>• Compliance gaps across shifts</li>
             </ul>
           </Card>
           <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
@@ -222,7 +226,7 @@ const Presentation = () => {
               <CheckCircle className="w-4 h-4" /> Solution
             </h3>
             <p className="mt-2 text-xs">
-              Professional cocktail documentation with precise measurements, techniques, glassware, garnishes, and photos. Auto-calculate costs, ABV, and nutrition. Version control lets you track recipe evolution and A/B test variations.
+              Team-based first-in-first-out inventory tracking with shared expiration monitoring and waste analysis. All team members contribute to FIFO logs, see expiring items, and record waste with unified reporting.
             </p>
           </Card>
           <Card className="p-3 bg-blue-500/10 border-blue-500/30">
@@ -230,7 +234,7 @@ const Presentation = () => {
               <Award className="w-4 h-4" /> Benefits
             </h3>
             <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Cost Analysis", "Consistency", "Training", "Versioning", "ABV Calc", "Photo SOPs"].map((b, i) => (
+              {["Shared FIFO", "Expiry Alerts", "Waste Tracking", "Team Logs", "Compliance", "Analytics"].map((b, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
               ))}
             </div>
@@ -240,238 +244,76 @@ const Presentation = () => {
     },
     {
       id: 6,
-      title: "Inventory Management",
-      icon: <Boxes className="w-12 h-12 text-indigo-500" />,
+      title: "UI Interactions",
+      subtitle: "How to Navigate",
+      icon: <div className="text-5xl">👆</div>,
       content: (
         <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• Counting stock is tedious and inaccurate</li>
-              <li>• No visibility into what's running low</li>
-              <li>• Variance between actual and theoretical unknown</li>
-              <li>• Dead stock ties up capital</li>
-              <li>• Theft and over-pouring undetected</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              Comprehensive stock tracking with barcode scanning, par levels, and automated reorder suggestions. Count inventory by weight or units, track variance, and identify shrinkage patterns. Multi-location support with transfer tracking.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Par Levels", "Variance Track", "Barcode Scan", "Multi-Store", "Reorder Alerts", "Cost Control"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
+          <div className="grid gap-3">
+            {[
+              { action: "Tap", result: "Opens space detail sheet" },
+              { action: "Long Press", result: "Enters edit mode (shows X to hide)" },
+              { action: "Tap X", result: "Hides space from view" },
+              { action: "Swipe", result: "Scroll through spaces" },
+              { action: "Restore", result: "Brings back hidden spaces" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Badge className="w-24 justify-center">{item.action}</Badge>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">{item.result}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )
     },
     {
       id: 7,
-      title: "FIFO & Expiry Tracking",
-      icon: <AlertTriangle className="w-12 h-12 text-orange-500" />,
-      content: (
-        <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• Products expire before being used</li>
-              <li>• FIFO rotation is not followed properly</li>
-              <li>• Wastage costs unknown and uncontrolled</li>
-              <li>• Health inspector concerns about date management</li>
-              <li>• No systematic approach to shelf life</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              First-In-First-Out inventory system with expiration date tracking. Color-coded alerts for approaching dates, automatic rotation reminders, and waste logging. Generate reports on waste patterns to identify problem categories.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Expiry Alerts", "Waste Reduction", "Compliance", "Date Labels", "Rotation Guide", "Waste Reports"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: 8,
-      title: "Purchase Orders",
-      icon: <Receipt className="w-12 h-12 text-teal-500" />,
-      content: (
-        <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• Orders placed via text/phone with no record</li>
-              <li>• No approval workflow for large purchases</li>
-              <li>• Deliveries not checked against orders</li>
-              <li>• Spend tracking across vendors is manual</li>
-              <li>• Invoice reconciliation is a nightmare</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              Digital purchase order system with supplier catalogs, approval workflows, and receiving verification. Create POs from par level suggestions, track order status, and match deliveries to orders. Complete spend analytics by category and vendor.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Order History", "Approvals", "Receiving", "Vendor Track", "Spend Reports", "Auto-PO"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: 9,
-      title: "Cost Analysis",
-      icon: <TrendingUp className="w-12 h-12 text-emerald-500" />,
-      content: (
-        <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• True pour cost unknown for most drinks</li>
-              <li>• Menu pricing based on guesswork</li>
-              <li>• Ingredient price changes not reflected</li>
-              <li>• Profit margins vary wildly across menu</li>
-              <li>• No visibility into cost trends over time</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              Real-time cost calculation engine that tracks ingredient prices, calculates pour costs, and suggests optimal pricing. Update costs automatically when purchase prices change. Compare theoretical vs actual usage to identify variance.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Pour Cost", "Margin Calc", "Price Updates", "Menu Analysis", "Trend Reports", "Profit Insights"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: 12,
-      title: "Supplier Management",
-      icon: <Truck className="w-12 h-12 text-slate-500" />,
-      content: (
-        <div className="space-y-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/30">
-            <h3 className="font-bold text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="w-4 h-4" /> Problem
-            </h3>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>• Vendor contacts in personal phones</li>
-              <li>• Price lists outdated or missing</li>
-              <li>• No comparison between suppliers</li>
-              <li>• Delivery performance not tracked</li>
-              <li>• Contract terms forgotten or lost</li>
-            </ul>
-          </Card>
-          <Card className="p-4 bg-emerald-500/10 border-emerald-500/30">
-            <h3 className="font-bold text-emerald-500 flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4" /> Solution
-            </h3>
-            <p className="mt-2 text-xs">
-              Centralized supplier database with contacts, price lists, delivery schedules, and performance ratings. Compare prices across vendors, track delivery reliability, and store contract documents. Set up preferred supplier lists by category.
-            </p>
-          </Card>
-          <Card className="p-3 bg-blue-500/10 border-blue-500/30">
-            <h3 className="font-bold text-blue-500 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4" /> Benefits
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {["Contact Hub", "Price Lists", "Compare", "Ratings", "Contracts", "Preferred"].map((b, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] justify-center">{b}</Badge>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: 13,
       title: "Summary",
       icon: <Sparkles className="w-12 h-12 text-primary" />,
       content: (
         <div className="space-y-4">
           <p className="text-center text-sm text-muted-foreground">
-            A complete toolkit for modern hospitality operations
+            My Spaces brings all collaboration together
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { icon: <Calculator className="w-4 h-4" />, name: "Batch Calculator" },
-              { icon: <Thermometer className="w-4 h-4" />, name: "Temp Monitoring" },
-              { icon: <ClipboardCheck className="w-4 h-4" />, name: "Prep Checklists" },
-              { icon: <FileText className="w-4 h-4" />, name: "Cocktail SOPs" },
-              { icon: <Boxes className="w-4 h-4" />, name: "Inventory" },
-              { icon: <AlertTriangle className="w-4 h-4" />, name: "FIFO Tracking" },
-              { icon: <Receipt className="w-4 h-4" />, name: "Purchase Orders" },
-              { icon: <TrendingUp className="w-4 h-4" />, name: "Cost Analysis" },
-              { icon: <Truck className="w-4 h-4" />, name: "Suppliers" },
-              { icon: <Users className="w-4 h-4" />, name: "My Spaces" },
+              { icon: <Store className="w-4 h-4" />, name: "Store Management" },
+              { icon: <div className="text-sm">🍸</div>, name: "Mixologist Groups" },
+              { icon: <Package className="w-4 h-4" />, name: "Procurement" },
+              { icon: <BarChart3 className="w-4 h-4" />, name: "FIFO Workspaces" },
             ].map((tool, i) => (
               <motion.div
                 key={i}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-2 p-2 rounded-lg bg-primary/10"
+                transition={{ delay: i * 0.1 }}
+                className="flex items-center gap-2 p-3 rounded-lg bg-primary/10"
               >
                 <div className="text-primary">{tool.icon}</div>
                 <span className="text-xs font-medium">{tool.name}</span>
               </motion.div>
             ))}
           </div>
-          <Card className="p-3 bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 mt-4">
-            <p className="text-xs text-center font-medium">
-              🚀 All tools work together seamlessly to streamline your operations
-            </p>
-          </Card>
+          <div className="grid gap-2 mt-4">
+            {[
+              "Unified Access - All spaces in one interface",
+              "Real-Time Presence - See who is online",
+              "Role-Based Security - Right access for each member",
+              "Seamless Navigation - One tap to any workspace",
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ x: -10, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex items-center gap-2 p-2 rounded-lg bg-muted/30"
+              >
+                <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-xs">{item}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
       )
     },
