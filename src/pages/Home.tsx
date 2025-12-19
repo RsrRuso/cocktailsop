@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, lazy, Suspense, memo } from "react";
+import { useEffect, useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,11 +6,15 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { StoriesSkeleton, FeedSkeleton } from "@/components/ui/skeleton-shimmer";
+import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useEngagement } from "@/hooks/useEngagement";
 import { useStoriesData } from "@/hooks/useStoriesData";
-import { useVerifiedUsers } from "@/hooks/useVerifiedUsers";
 import { useUserStatus } from "@/hooks/useUserStatus";
+import { useVerifiedUsers } from "@/hooks/useVerifiedUsers";
+import BirthdayFireworks from "@/components/BirthdayFireworks";
+import UserStatusIndicator from "@/components/UserStatusIndicator";
 import { Camera, MessageCircle, Music } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,30 +23,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Lazy load ALL heavy components for instant first paint
-const FeedItem = lazy(() => import("@/components/FeedItem").then(m => ({ default: m.FeedItem })));
+// Lazy load non-critical dialogs only
 const ShareDialog = lazy(() => import("@/components/ShareDialog"));
 const LikesDialog = lazy(() => import("@/components/LikesDialog"));
 const EventsTicker = lazy(() => import("@/components/EventsTicker").then(m => ({ default: m.EventsTicker })));
 const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 const MusicStatusDialog = lazy(() => import("@/components/MusicStatusDialog"));
-const BirthdayFireworks = lazy(() => import("@/components/BirthdayFireworks"));
-const UserStatusIndicator = lazy(() => import("@/components/UserStatusIndicator"));
 
-// Lightweight placeholder - instant render with shimmer
-const FeedItemPlaceholder = memo(() => (
-  <div className="feed-item w-full bg-background py-2">
-    <div className="flex items-center gap-3 px-3 py-2">
-      <div className="w-9 h-9 rounded-full shimmer-placeholder" />
-      <div className="flex-1">
-        <div className="h-3 w-20 shimmer-placeholder rounded" />
-      </div>
-    </div>
-    <div className="aspect-[4/5] w-full shimmer-placeholder" />
-  </div>
-));
-
-// Removed inline skeletons - using lightweight placeholders
+// Removed inline skeletons - using shimmer components now
 
 interface Story {
   id: string;
@@ -340,61 +328,31 @@ const Home = () => {
     <div className="min-h-screen pb-20 pt-16">
       <TopNav isVisible={showTopNav} />
 
-      {/* Stories - hardware accelerated horizontal scroll */}
-      <div className="px-3 pt-2 pb-3 overflow-x-auto scrollbar-hide scroll-container gpu-accelerated">
+      {/* Stories */}
+      <div className="px-3 pt-2 pb-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-3">
           {/* Your Story */}
           <div className="flex flex-col items-center gap-1.5 min-w-fit">
-            <Suspense fallback={<div className="w-[88px] h-[88px] rounded-full bg-muted/30" />}>
-              <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
-                <div className="relative overflow-visible">
-                  {userHasStory && (
-                    <div className="absolute inset-0 rounded-full bg-white/50 blur-md scale-110" />
-                  )}
-                  <button
-                    onClick={() => navigate(userHasStory ? `/story/${user?.id}` : "/story-options")}
-                    className={`relative group ${userHasStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
-                  >
-                    <Avatar className="w-[88px] h-[88px] rounded-full">
-                      <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
-                      <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                    </Avatar>
-                    {!userHasStory && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10 cursor-pointer">
-                            <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
-                          </div>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
-                          <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
-                            <Camera className="w-4 h-4 mr-2 opacity-70" />
-                            Story
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer text-white/90">
-                            <MessageCircle className="w-4 h-4 mr-2 opacity-70" />
-                            Status
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer text-white/90">
-                            <Music className="w-4 h-4 mr-2 opacity-70" />
-                            Music
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
-                      <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
-                    )}
-                  </button>
-                  {userHasStory && (
+            <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
+              <div className="relative overflow-visible">
+                {/* White glow when has active story - constant until expires */}
+                {userHasStory && (
+                  <div className="absolute inset-0 rounded-full bg-white/50 blur-md scale-110" />
+                )}
+                <button
+                  onClick={() => navigate(userHasStory ? `/story/${user?.id}` : "/story-options")}
+                  className={`relative group ${userHasStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
+                >
+                  <Avatar className="w-[88px] h-[88px] rounded-full">
+                    <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
+                    <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                  </Avatar>
+                  {!userHasStory && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-20 active:scale-95 transition-transform"
-                        >
-                          <span className="text-primary-foreground text-base font-bold leading-none">+</span>
-                        </button>
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10 cursor-pointer">
+                          <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
+                        </div>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
                         <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
@@ -412,9 +370,39 @@ const Home = () => {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
-                </div>
-              </BirthdayFireworks>
-            </Suspense>
+                  {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
+                    <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
+                  )}
+                </button>
+                {/* Add more button when story exists */}
+                {userHasStory && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-20 active:scale-95 transition-transform"
+                      >
+                        <span className="text-primary-foreground text-base font-bold leading-none">+</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-44 bg-black/80 border-0">
+                      <DropdownMenuItem onClick={() => navigate("/create/story")} className="cursor-pointer text-white/90">
+                        <Camera className="w-4 h-4 mr-2 opacity-70" />
+                        Story
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowStatusDialog(true)} className="cursor-pointer text-white/90">
+                        <MessageCircle className="w-4 h-4 mr-2 opacity-70" />
+                        Status
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowMusicDialog(true)} className="cursor-pointer text-white/90">
+                        <Music className="w-4 h-4 mr-2 opacity-70" />
+                        Music
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </BirthdayFireworks>
             <span className="text-xs text-muted-foreground font-medium">Your Story</span>
           </div>
 
@@ -428,64 +416,66 @@ const Home = () => {
             
             return (
               <div key={story.id} className="flex flex-col items-center gap-1.5 min-w-[92px] pt-4">
-                <Suspense fallback={<div className="w-[88px] h-[88px] rounded-full bg-muted/30" />}>
-                  <BirthdayFireworks isBirthday={hasBirthday}>
-                    <div className="relative">
-                      <UserStatusIndicator userId={story.user_id} size="sm" />
+                <BirthdayFireworks isBirthday={hasBirthday}>
+                  <div className="relative">
+                    {/* User Status Indicator */}
+                    <UserStatusIndicator userId={story.user_id} size="sm" />
+                    
+                    <button 
+                      onClick={() => navigate(`/story/${story.user_id}`)}
+                      className="relative group cursor-pointer"
+                    >
+                      {/* White glow for new/unviewed stories - constant until viewed */}
+                      {!isViewed && (
+                        <>
+                          <div className="absolute -inset-2 rounded-full bg-white/60 blur-lg" />
+                          <div className="absolute -inset-1 rounded-full bg-white/50 blur-sm" />
+                        </>
+                      )}
                       
-                      <button 
-                        onClick={() => navigate(`/story/${story.user_id}`)}
-                        className="relative group cursor-pointer"
-                      >
-                        {!isViewed && (
+                      {/* Live Preview Content */}
+                      <div className={`w-[88px] h-[88px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80' : ''}`}>
+                        {previewMedia ? (
                           <>
-                            <div className="absolute -inset-2 rounded-full bg-white/60 blur-lg" />
-                            <div className="absolute -inset-1 rounded-full bg-white/50 blur-sm" />
+                            {isVideo ? (
+                              <video
+                                src={previewMedia}
+                                className="w-full h-full object-cover"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                              />
+                            ) : (
+                              <img
+                                src={previewMedia}
+                                alt={story.profiles.username}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            
+                            {/* Video indicator */}
+                            {isVideo && (
+                              <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
+                              </div>
+                            )}
                           </>
+                        ) : (
+                          <Avatar className="w-full h-full rounded-full">
+                            <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                            <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
+                          </Avatar>
                         )}
-                        
-                        <div className={`w-[88px] h-[88px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80' : ''}`}>
-                          {previewMedia ? (
-                            <>
-                              {isVideo ? (
-                                <video
-                                  src={previewMedia}
-                                  className="w-full h-full object-cover"
-                                  autoPlay
-                                  loop
-                                  muted
-                                  playsInline
-                                />
-                              ) : (
-                                <img
-                                  src={previewMedia}
-                                  alt={story.profiles.username}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              )}
-                              
-                              {isVideo && (
-                                <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                                  <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <Avatar className="w-full h-full rounded-full">
-                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                              <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
-                            </Avatar>
-                          )}
-                        </div>
-                        
-                        {hasBirthday && (
-                          <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
-                        )}
-                      </button>
-                    </div>
-                  </BirthdayFireworks>
-                </Suspense>
+                      </div>
+                      
+                      {/* Birthday badge */}
+                      {hasBirthday && (
+                        <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
+                      )}
+                    </button>
+                  </div>
+                </BirthdayFireworks>
                 <span className="text-xs text-foreground/90 font-medium truncate w-full text-center max-w-[80px]">
                   {story.profiles.username}
                 </span>
@@ -504,50 +494,67 @@ const Home = () => {
         </Suspense>
       )}
 
-      {/* Feed - with content-visibility optimization */}
-      <Suspense fallback={<>{[1,2,3].map(i => <FeedItemPlaceholder key={i} />)}</>}>
-        <div className="passive-scroll">
-          {filteredFeed.length > 0 ? (
-            filteredFeed.map((item) => (
-              <div key={item.id} className="feed-item touch-feedback">
-                <FeedItem
-                  item={item}
-                  currentUserId={currentUser?.id}
-                  isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
-                  isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
-                  isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
-                  mutedVideos={mutedVideos}
-                  onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
-                  onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
-                  onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
-                  onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
-                  onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
-                  onComment={() => {}}
-                  onShare={() => {
-                    setSelectedPostId(item.id);
-                    setSelectedPostType(item.type);
-                    setSelectedMediaUrls(item.media_urls || []);
-                    setShareDialogOpen(true);
-                  }}
-                  onToggleMute={handleToggleMute}
-                  onFullscreen={() => {
-                    if (item.type === 'reel') {
-                      navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } });
-                    }
-                  }}
-                  getBadgeColor={getBadgeColor}
-                />
+      {/* Feed */}
+      <div>
+        {filteredFeed.length > 0 ? (
+          filteredFeed.map((item) => (
+            <FeedItem
+              key={item.id}
+              item={item}
+              currentUserId={currentUser?.id}
+              isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
+              isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
+              isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
+              mutedVideos={mutedVideos}
+              onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
+              onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
+              onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
+              onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
+              onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
+              onComment={() => {}}
+              onShare={() => {
+                setSelectedPostId(item.id);
+                setSelectedPostType(item.type);
+                setSelectedMediaUrls(item.media_urls || []);
+                setShareDialogOpen(true);
+              }}
+              onToggleMute={handleToggleMute}
+              onFullscreen={() => {
+                if (item.type === 'reel') {
+                  navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } });
+                }
+              }}
+              getBadgeColor={getBadgeColor}
+            />
+          ))
+        ) : showInlineSkeleton ? (
+          // Only show skeletons on first load with no cached data
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="glass rounded-xl p-4 space-y-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-muted rounded" />
+                    <div className="h-3 w-32 bg-muted rounded" />
+                  </div>
+                </div>
+                <div className="h-4 w-full bg-muted rounded" />
+                <div className="h-64 w-full bg-muted rounded-xl" />
+                <div className="flex gap-4">
+                  <div className="h-8 w-16 bg-muted rounded" />
+                  <div className="h-8 w-16 bg-muted rounded" />
+                  <div className="h-8 w-16 bg-muted rounded" />
+                </div>
               </div>
-            ))
-          ) : showInlineSkeleton ? (
-            <>{[1, 2, 3].map(i => <FeedItemPlaceholder key={i} />)}</>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              No posts yet. Follow people to see their content!
-            </div>
-          )}
-        </div>
-      </Suspense>
+            ))}
+          </>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            No posts yet. Follow people to see their content!
+          </div>
+        )}
+      </div>
 
       <Suspense fallback={null}>
         <ShareDialog
