@@ -282,13 +282,15 @@ const Reels = () => {
 
   return (
     <div className="h-screen bg-black overflow-hidden relative">
-      {/* Back Button - positioned at safe area top */}
-      <button
-        onClick={() => navigate(-1)}
-        className="fixed top-12 left-4 z-30 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
-      >
-        <ArrowLeft className="w-5 h-5 text-white" />
-      </button>
+      {/* Back Button - only show when fullscreen viewer is NOT open */}
+      {!showFullscreenViewer && (
+        <button
+          onClick={() => navigate(-1)}
+          className="fixed top-12 left-4 z-30 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </button>
+      )}
       
       {/* Show loading or empty state only when NOT navigating to specific reel */}
       {reels.length === 0 && !hasTargetReel ? (
