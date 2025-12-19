@@ -42,6 +42,8 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
   const [selectedSpace, setSelectedSpace] = useState<Membership | null>(null);
   const [onlineProfiles, setOnlineProfiles] = useState<any[]>([]);
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
+  const [openingSpaceKey, setOpeningSpaceKey] = useState<string | null>(null);
+  const [onlineProfilesLoading, setOnlineProfilesLoading] = useState(false);
 
   // Fetch member counts for all spaces (parallel)
   useEffect(() => {
@@ -67,27 +69,52 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     };
   }, [memberships, getMemberCount]);
 
-  const handleDoorPress = async (membership: Membership) => {
-    const onlineUsers = getOnlineUsers(membership.type, membership.id);
-    
-    if (onlineUsers.length > 0) {
-      await fetchProfiles(onlineUsers.map(u => u.user_id));
-      const profiles = onlineUsers.map(u => getProfile(u.user_id)).filter(Boolean);
-      setOnlineProfiles(profiles);
-    } else {
-      setOnlineProfiles([]);
-    }
-    
-    // Fetch all members for this space
-    await fetchMembers(membership.id, membership.type);
-    
+  const handleDoorPress = (membership: Membership) => {
+    const spaceKey = `${membership.type}-${membership.id}`;
+
+    // Open instantly
     setSelectedSpace(membership);
+    setOpeningSpaceKey(spaceKey);
+
+    // Reset stale state immediately
+    setOnlineProfiles([]);
+
+    const onlineUsers = getOnlineUsers(membership.type, membership.id);
+
+    const tasks: Promise<unknown>[] = [];
+
+    // Fetch members (drives skeleton state in the sheet)
+    tasks.push(fetchMembers(membership.id, membership.type));
+
+    // Fetch online profiles for the Online tab
+    if (onlineUsers.length > 0) {
+      setOnlineProfilesLoading(true);
+      tasks.push(
+        fetchProfiles(onlineUsers.map((u) => u.user_id))
+          .then(() => {
+            const profiles = onlineUsers.map((u) => getProfile(u.user_id)).filter(Boolean);
+            setOnlineProfiles(profiles);
+          })
+          .finally(() => setOnlineProfilesLoading(false))
+      );
+    } else {
+      setOnlineProfilesLoading(false);
+    }
+
+    Promise.all(tasks)
+      .catch(() => {})
+      .finally(() => {
+        setOpeningSpaceKey((cur) => (cur === spaceKey ? null : cur));
+      });
   };
 
   const handleGoToSpace = () => {
     if (selectedSpace) {
       navigate(selectedSpace.route);
       setSelectedSpace(null);
+      setOnlineProfiles([]);
+      setOpeningSpaceKey(null);
+      setOnlineProfilesLoading(false);
     }
   };
 
@@ -118,7 +145,33 @@ export const ProfileMembershipDoors = ({ userId }: ProfileMembershipDoorsProps) 
     }
   };
 
-  if (isLoading || memberships.length === 0) return null;
+  if (!userId) return null;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2" aria-busy="true" aria-label="Loading spaces">
+        <div className="flex items-center gap-2 px-1">
+          <DoorOpen className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold">My Spaces</span>
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium ml-auto">…</span>
+        </div>
+
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 flex flex-col items-center gap-1">
+              <div className="relative">
+                <div className="w-[68px] h-[68px] rounded-full bg-border animate-pulse" />
+                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-5 w-10 rounded-full bg-muted/30 border border-border animate-pulse" />
+              </div>
+              <div className="h-3 w-16 rounded bg-muted/30 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (memberships.length === 0) return null;
 
   return (
     <>
