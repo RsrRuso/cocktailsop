@@ -1,23 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, ArrowLeft, Eye } from "lucide-react";
+import { Music, ArrowLeft } from "lucide-react";
 
-import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { toast } from "sonner";
 import CommentsDialog from "@/components/CommentsDialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ShareDialog";
 import LikesDialog from "@/components/LikesDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { useViewTracking } from "@/hooks/useViewTracking";
 import { ReelItemWrapper } from "@/components/ReelItemWrapper";
-import { ReelsFullscreenViewer } from "@/components/ReelsFullscreenViewer";
 import { useEngagement } from "@/hooks/useEngagement";
 
 interface Reel {
@@ -54,11 +45,9 @@ const Reels = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Check if we're navigating to a specific reel - if so, open fullscreen immediately
   const initialState = location.state as {
     scrollToReelId?: string;
     reelData?: any;
-    showLivestreamComments?: boolean;
   } | null;
   const hasTargetReel = !!(initialState?.scrollToReelId || initialState?.reelData);
 
@@ -74,10 +63,6 @@ const Reels = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
   const [targetReelId, setTargetReelId] = useState<string | null>(() => initialState?.scrollToReelId ?? null);
-  // Start with scroll view - only open fullscreen when explicitly requested
-  const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
-  const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
-  const [showLivestreamComments, setShowLivestreamComments] = useState(() => Boolean(initialState?.showLivestreamComments));
   const [isLoading, setIsLoading] = useState(() => Boolean(user) && !initialState?.reelData);
 
   // Optimistic like count updater
@@ -92,10 +77,6 @@ const Reels = () => {
   // Use centralized useEngagement hook for consistent like/unlike behavior
   const reelEngagement = useEngagement('reel', user?.id, handleLikeCountChange);
 
-  // IMPORTANT: keep reels muted by default (mobile autoplay with sound is blocked).
-  // Users can unmute via the volume button on each reel.
-
-
   useEffect(() => {
     if (user) {
       fetchReels();
@@ -104,7 +85,6 @@ const Reels = () => {
       setIsLoading(false);
     }
 
-    // Subscribe to reel updates for comment counts
     const reelsChannel = supabase
       .channel('reels-page')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => fetchReels())
@@ -115,53 +95,39 @@ const Reels = () => {
     };
   }, [user]);
 
-  // Navigate to specific reel if coming from profile or notification - open fullscreen immediately
+  // Navigate to specific reel if coming from profile or notification
   useEffect(() => {
-    const state = location.state as { scrollToReelId?: string; reelData?: any; showLivestreamComments?: boolean };
+    const state = location.state as { scrollToReelId?: string; reelData?: any };
     if (state?.scrollToReelId && !targetReelId) {
       setTargetReelId(state.scrollToReelId);
-      // Enable livestream comments if coming from notification
-      if (state.showLivestreamComments) {
-        setShowLivestreamComments(true);
-      }
-      // If reel data was passed, use it immediately and open fullscreen instantly
       if (state.reelData) {
         setReels([state.reelData]);
         setCurrentIndex(0);
-        setFullscreenStartIndex(0);
-        setShowFullscreenViewer(true); // Open fullscreen immediately
         setIsLoading(false);
       }
-      // Clear navigation state immediately
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, targetReelId, navigate, location.pathname]);
 
-  // Scroll to target reel when all reels are loaded and auto-open fullscreen
+  // Scroll to target reel when all reels are loaded
   useEffect(() => {
     if (targetReelId && reels.length > 0) {
       const reelIndex = reels.findIndex(r => r.id === targetReelId);
       if (reelIndex !== -1) {
         setCurrentIndex(reelIndex);
-        setFullscreenStartIndex(reelIndex);
-        // Auto-open fullscreen viewer when coming from notification
-        if (showLivestreamComments) {
-          setShowFullscreenViewer(true);
-        }
         requestAnimationFrame(() => {
           const container = document.querySelector('.snap-y') as HTMLElement;
           if (container) {
             container.scrollTop = reelIndex * window.innerHeight;
           }
         });
-        setTargetReelId(null); // Clear after successful scroll
+        setTargetReelId(null);
       }
     }
-  }, [reels, targetReelId, showLivestreamComments]);
+  }, [reels, targetReelId]);
 
   const fetchReels = async () => {
     setIsLoading(true);
-    // Fetch reels with music track info
     const { data, error } = await supabase
       .from("reels")
       .select(`
@@ -177,20 +143,17 @@ const Reels = () => {
       return;
     }
 
-    // Fetch profiles separately in ONE query
     const userIds = [...new Set(data.map(r => r.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, username, full_name, avatar_url, badge_level')
       .in('id', userIds);
 
-    // Map profiles to reels
     const reelsWithProfiles = data.map(reel => ({
       ...reel,
       profiles: profiles?.find(p => p.id === reel.user_id) || null
     }));
 
-    // Hydrate missing music_tracks by matching music_url -> music_tracks.original_url
     let finalReels: any[] = reelsWithProfiles;
     const missingMusicUrls = Array.from(
       new Set(
@@ -219,13 +182,11 @@ const Reels = () => {
     setReels(finalReels as any);
     setIsLoading(false);
 
-    // Default to muted for newly loaded reels (prevents autoplay failures on mobile)
     setMutedVideos((prev) => {
       const next = new Set(prev);
       finalReels.forEach((r: any) => {
         if (!next.has(r.id)) next.add(r.id);
       });
-      // cleanup removed reels
       Array.from(next).forEach((id) => {
         if (!finalReels.some((r: any) => r.id === id)) next.delete(id);
       });
@@ -233,7 +194,6 @@ const Reels = () => {
     });
   };
 
-  // Use reelEngagement for like/unlike
   const handleLikeReel = useCallback((reelId: string) => {
     reelEngagement.toggleLike(reelId);
   }, [reelEngagement]);
@@ -244,12 +204,10 @@ const Reels = () => {
       return;
     }
 
-    // Confirm deletion
     if (!window.confirm("Are you sure you want to delete this reel?")) {
       return;
     }
 
-    // Optimistic update - remove instantly
     setReels(prev => prev.filter(r => r.id !== reelId));
     toast.success("Reel deleted");
 
@@ -267,16 +225,8 @@ const Reels = () => {
     } catch (error: any) {
       console.error('Error deleting reel:', error);
       toast.error(error?.message || "Failed to delete reel");
-      // Refresh to restore if failed
       fetchReels();
     }
-  };
-
-  const currentReel = reels[currentIndex];
-
-  const handleReelClick = (index: number) => {
-    setFullscreenStartIndex(index);
-    setShowFullscreenViewer(true);
   };
 
   return (
@@ -289,7 +239,6 @@ const Reels = () => {
         <ArrowLeft className="w-5 h-5 text-white" />
       </button>
       
-      {/* Show loading or empty state only when NOT navigating to specific reel */}
       {reels.length === 0 && !hasTargetReel ? (
         isLoading ? (
           <div className="h-full flex items-center justify-center">
@@ -310,7 +259,7 @@ const Reels = () => {
             </div>
           </div>
         )
-      ) : !showFullscreenViewer ? (
+      ) : (
         <div 
           className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide"
           style={{
@@ -361,7 +310,7 @@ const Reels = () => {
             </div>
           ))}
         </div>
-      ) : null}
+      )}
 
       <ShareDialog
         open={showShare}
@@ -386,32 +335,6 @@ const Reels = () => {
         postId={selectedReelForLikes}
         isReel={true}
       />
-
-      {showFullscreenViewer && (
-        <ReelsFullscreenViewer
-          isOpen={showFullscreenViewer}
-          onClose={() => {
-            setShowFullscreenViewer(false);
-            setShowLivestreamComments(false);
-          }}
-          reels={reels}
-          initialIndex={fullscreenStartIndex}
-          currentUserId={user?.id || ''}
-          likedReels={reelEngagement.likedIds}
-          onLike={handleLikeReel}
-          onComment={(reelId) => {
-            setSelectedReelForComments(reelId);
-            setShowComments(true);
-          }}
-          onShare={(reelId, caption, videoUrl) => {
-            setSelectedReelId(reelId);
-            setSelectedReelCaption(caption);
-            setSelectedReelVideo(videoUrl);
-            setShowShare(true);
-          }}
-          onDelete={handleDeleteReel}
-        />
-      )}
     </div>
   );
 };
