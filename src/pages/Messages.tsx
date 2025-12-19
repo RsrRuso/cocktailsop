@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Search, Pin, Archive, Users, Mail, CheckCheck } from "lucide-react";
+import { MessageCircle, Search, Pin, Archive, Users, Mail, CheckCheck, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { CreateGroupDialog } from "@/components/CreateGroupDialog";
 import { useMessagesData } from "@/hooks/useMessagesData";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -33,62 +34,85 @@ interface Conversation {
   group_avatar_url?: string;
 }
 
-// Memoized conversation item
-const ConversationItem = memo(({ conversation, onNavigate, onTogglePin }: { 
+// Memoized conversation item with delete
+const ConversationItem = memo(({ conversation, onNavigate, onTogglePin, onDelete }: { 
   conversation: Conversation; 
   onNavigate: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onDelete: (id: string) => void;
 }) => {
+  const [showDelete, setShowDelete] = useState(false);
   const displayName = conversation.is_group 
     ? conversation.group_name 
     : conversation.otherUser?.full_name || conversation.otherUser?.username;
 
   return (
-    <div
-      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors active:scale-[0.99] ${
-        conversation.unreadCount! > 0 ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-muted/50'
-      } ${conversation.isPinned ? 'border-l-2 border-l-primary' : ''}`}
-      onClick={() => onNavigate(conversation.id)}
-    >
-      <div className="relative shrink-0">
-        {conversation.is_group ? (
-          <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center">
-            <Users className="w-5 h-5 text-primary" />
-          </div>
-        ) : (
-          <OptimizedAvatar
-            src={conversation.otherUser?.avatar_url}
-            alt={conversation.otherUser?.username || 'User'}
-            fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
-            userId={conversation.otherUser?.id}
-            className="w-11 h-11"
-          />
-        )}
-        {conversation.unreadCount! > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-            {conversation.unreadCount! > 9 ? '9+' : conversation.unreadCount}
-          </span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className={`font-medium truncate text-sm ${conversation.unreadCount! > 0 ? 'text-foreground' : 'text-foreground/80'}`}>
-            {displayName || 'Unknown'}
-          </p>
-          <span className="text-[10px] text-muted-foreground shrink-0">
-            {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: false })}
-          </span>
-        </div>
-        <p className={`text-xs truncate ${conversation.unreadCount! > 0 ? 'text-foreground/70 font-medium' : 'text-muted-foreground'}`}>
-          {conversation.lastMessage || 'Start a conversation'}
-        </p>
-      </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); onTogglePin(conversation.id); }}
-        className={`p-1.5 rounded-full ${conversation.isPinned ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+    <div className="relative group">
+      <div
+        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors active:scale-[0.99] ${
+          conversation.unreadCount! > 0 ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-muted/50'
+        } ${conversation.isPinned ? 'border-l-2 border-l-primary' : ''}`}
+        onClick={() => onNavigate(conversation.id)}
+        onContextMenu={(e) => { e.preventDefault(); setShowDelete(true); }}
       >
-        <Pin className="w-3.5 h-3.5" />
-      </button>
+        <div className="relative shrink-0">
+          {conversation.is_group ? (
+            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+          ) : (
+            <OptimizedAvatar
+              src={conversation.otherUser?.avatar_url}
+              alt={conversation.otherUser?.username || 'User'}
+              fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
+              userId={conversation.otherUser?.id}
+              className="w-11 h-11"
+            />
+          )}
+          {conversation.unreadCount! > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+              {conversation.unreadCount! > 9 ? '9+' : conversation.unreadCount}
+            </span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className={`font-medium truncate text-sm ${conversation.unreadCount! > 0 ? 'text-foreground' : 'text-foreground/80'}`}>
+              {displayName || 'Unknown'}
+            </p>
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: false })}
+            </span>
+          </div>
+          <p className={`text-xs truncate ${conversation.unreadCount! > 0 ? 'text-foreground/70 font-medium' : 'text-muted-foreground'}`}>
+            {conversation.lastMessage || 'Start a conversation'}
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); onTogglePin(conversation.id); }}
+            className={`p-1.5 rounded-full ${conversation.isPinned ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Pin className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
+            className="p-1.5 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      {showDelete && (
+        <div className="absolute inset-0 bg-destructive/10 backdrop-blur-sm rounded-xl flex items-center justify-center gap-2 z-10">
+          <Button size="sm" variant="destructive" onClick={() => { onDelete(conversation.id); setShowDelete(false); }} className="h-8">
+            <Trash2 className="w-4 h-4 mr-1" />Delete
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setShowDelete(false)} className="h-8">
+            <X className="w-4 h-4 mr-1" />Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 });
@@ -103,7 +127,6 @@ const Messages = () => {
   const [archivedChats, setArchivedChats] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.getItem('archivedChats') || '[]')));
   const [showCreateGroup, setShowCreateGroup] = useState(false);
 
-  // Use cached messages data for instant loading
   const { conversations, isLoading, refreshConversations, setConversations } = useMessagesData(user?.id || null);
 
   useEffect(() => { localStorage.setItem('pinnedChats', JSON.stringify([...pinnedChats])); }, [pinnedChats]);
@@ -126,6 +149,19 @@ const Messages = () => {
   const togglePin = useCallback((convId: string) => {
     setPinnedChats(prev => { const s = new Set(prev); s.has(convId) ? s.delete(convId) : s.add(convId); return s; });
     setConversations(prev => prev.map(c => c.id === convId ? { ...c, isPinned: !c.isPinned } : c));
+  }, [setConversations]);
+
+  const deleteChat = useCallback(async (convId: string) => {
+    // Delete all messages in this conversation first
+    await supabase.from("messages").delete().eq("conversation_id", convId);
+    // Then delete the conversation
+    await supabase.from("conversations").delete().eq("id", convId);
+    // Remove from local state immediately
+    setConversations(prev => prev.filter(c => c.id !== convId));
+    // Clean up localStorage
+    setPinnedChats(prev => { const s = new Set(prev); s.delete(convId); return s; });
+    setArchivedChats(prev => { const s = new Set(prev); s.delete(convId); return s; });
+    toast.success("Chat deleted");
   }, [setConversations]);
 
   const filteredConversations = useMemo(() => {
@@ -175,8 +211,8 @@ const Messages = () => {
           </button>
         </div>
         <div className="space-y-0.5">
-          {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
+          {isLoading && conversations.length === 0 ? (
+            Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
                 <div className="w-11 h-11 rounded-full bg-muted" />
                 <div className="flex-1 space-y-1.5"><div className="h-3 w-24 bg-muted rounded" /><div className="h-2.5 w-32 bg-muted rounded" /></div>
@@ -189,7 +225,7 @@ const Messages = () => {
             </div>
           ) : (
             filteredConversations.map((conversation) => (
-              <ConversationItem key={conversation.id} conversation={conversation} onNavigate={handleNavigate} onTogglePin={togglePin} />
+              <ConversationItem key={conversation.id} conversation={conversation} onNavigate={handleNavigate} onTogglePin={togglePin} onDelete={deleteChat} />
             ))
           )}
         </div>
