@@ -122,7 +122,7 @@ const ProfileFeedTab = ({ userId, profile }: ProfileFeedTabProps) => {
   }
 
   return (
-    <div className="pt-2">
+    <div>
       {allItems.map((item: any) => (
         <FeedItem
           key={`${item.type}-${item.id}`}
