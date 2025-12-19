@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, ChevronLeft, ChevronRight, Store, Package, BarChart3, CheckCircle, XCircle, Play, Pause, RotateCcw, Sparkles, Zap, Target, AlertTriangle, Lightbulb, Award, Video, FileVideo } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Store, Package, BarChart3, CheckCircle, XCircle, Play, Pause, RotateCcw, Sparkles, Zap, Target, AlertTriangle, Lightbulb, Award, Image, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,24 +17,18 @@ interface Slide {
   subtitle?: string;
   icon?: React.ReactNode;
   content: React.ReactNode;
-  duration?: number; // seconds
 }
 
 const Presentation = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingProgress, setRecordingProgress] = useState(0);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const slideRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
 
   const SLIDE_DURATION = 8000; // 8 seconds per slide
-  const VIDEO_SLIDE_DURATION = 4000; // 4 seconds per slide for video (faster)
 
   const slides: Slide[] = [
     // Opening slide
@@ -578,155 +572,55 @@ const Presentation = () => {
     setIsPlaying(true);
   };
 
-  // Generate video by capturing frames
-  const generateVideo = useCallback(async () => {
+  // Download all slides as images (ZIP alternative - downloads one by one)
+  const downloadImages = async () => {
     if (!slideRef.current) return;
     
     setIsPlaying(false);
-    setIsRecording(true);
-    setRecordingProgress(0);
-    toast.info('Recording video... Please wait.');
+    setIsGenerating(true);
+    setDownloadProgress(0);
+    toast.info('Preparing slide images...');
     
     try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas context not available');
-      
-      // Set canvas size (portrait mobile)
-      canvas.width = 720;
-      canvas.height = 1280;
-      
-      // Create a stream from the canvas
-      const stream = canvas.captureStream(24); // 24 FPS
-      
-      // Try different codecs for browser compatibility
-      let mimeType = 'video/webm';
-      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-        mimeType = 'video/webm;codecs=vp9';
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-        mimeType = 'video/webm;codecs=vp8';
-      } else if (MediaRecorder.isTypeSupported('video/webm')) {
-        mimeType = 'video/webm';
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-      }
-      
-      console.log('Using mimeType:', mimeType);
-      
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-        videoBitsPerSecond: 2500000
-      });
-      
-      recordedChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        console.log('Data available:', event.data.size);
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = () => {
-        console.log('Recording stopped, chunks:', recordedChunksRef.current.length);
-        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'MySpaces_Presentation.webm';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success('Video downloaded!');
-        setIsRecording(false);
-        setRecordingProgress(0);
-      };
-      
-      mediaRecorder.onerror = (e) => {
-        console.error('MediaRecorder error:', e);
-        toast.error('Recording failed');
-        setIsRecording(false);
-      };
-      
-      // Request data every second
-      mediaRecorder.start(1000);
-      mediaRecorderRef.current = mediaRecorder;
-      
       const originalSlide = currentSlide;
-      const totalSlides = slides.length;
-      const framesPerSlide = 72; // 3 seconds at 24fps
       
-      for (let slideIndex = 0; slideIndex < totalSlides; slideIndex++) {
-        setCurrentSlide(slideIndex);
-        setRecordingProgress(((slideIndex + 0.5) / totalSlides) * 100);
+      for (let i = 0; i < slides.length; i++) {
+        setCurrentSlide(i);
+        setDownloadProgress(((i + 1) / slides.length) * 100);
         
-        // Wait for slide animations to settle
-        await new Promise(resolve => setTimeout(resolve, 600));
+        // Wait for slide to render
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Capture frames for this slide
-        for (let frame = 0; frame < framesPerSlide; frame++) {
-          if (slideRef.current) {
-            try {
-              const dataUrl = await toPng(slideRef.current, {
-                quality: 0.85,
-                pixelRatio: 1.2,
-              });
-              
-              const img = new Image();
-              img.crossOrigin = 'anonymous';
-              
-              await new Promise<void>((resolve) => {
-                img.onload = () => {
-                  // Draw background
-                  ctx.fillStyle = '#1a1a1a';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  
-                  // Calculate centered position
-                  const scale = Math.min(
-                    (canvas.width - 20) / img.width,
-                    (canvas.height - 80) / img.height
-                  );
-                  const x = (canvas.width - img.width * scale) / 2;
-                  const y = (canvas.height - img.height * scale) / 2;
-                  
-                  ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-                  
-                  // Add slide number
-                  ctx.fillStyle = '#666666';
-                  ctx.font = '20px Arial, sans-serif';
-                  ctx.textAlign = 'center';
-                  ctx.fillText(`${slideIndex + 1} / ${totalSlides}`, canvas.width / 2, canvas.height - 30);
-                  
-                  resolve();
-                };
-                img.onerror = () => resolve();
-                img.src = dataUrl;
-              });
-            } catch (e) {
-              console.error('Frame error:', e);
-            }
-          }
+        if (slideRef.current) {
+          const dataUrl = await toPng(slideRef.current, {
+            quality: 1,
+            pixelRatio: 2,
+            backgroundColor: '#1a1a1a'
+          });
           
-          // Delay between frames
-          await new Promise(resolve => setTimeout(resolve, 42)); // ~24fps
+          // Download this slide
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `MySpaces_Slide_${i + 1}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          
+          // Small delay between downloads
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
-        
-        setRecordingProgress(((slideIndex + 1) / totalSlides) * 100);
       }
       
-      // Stop recording
-      console.log('Stopping recorder...');
-      mediaRecorder.stop();
       setCurrentSlide(originalSlide);
-      
+      toast.success(`${slides.length} slides downloaded!`);
     } catch (error) {
-      console.error('Error generating video:', error);
-      toast.error('Video recording failed. Try PDF instead.');
-      setIsRecording(false);
-      setRecordingProgress(0);
+      console.error('Error downloading images:', error);
+      toast.error('Failed to download images');
+    } finally {
+      setIsGenerating(false);
+      setDownloadProgress(0);
     }
-  }, [currentSlide, slides.length]);
+  };
 
   const generatePDF = async () => {
     if (!slideRef.current) return;
@@ -798,43 +692,40 @@ const Presentation = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold">Video Presentation</h1>
+            <h1 className="text-xl font-bold">Presentation</h1>
             <p className="text-xs text-muted-foreground">My Spaces Overview</p>
           </div>
           <div className="flex gap-2">
             <Button 
-              onClick={generateVideo}
-              disabled={isRecording || isGenerating}
-              variant="default"
+              onClick={downloadImages}
+              disabled={isGenerating}
+              variant="outline"
               size="sm"
               className="gap-1"
             >
-              <Video className="w-4 h-4" />
-              {isRecording ? `${Math.round(recordingProgress)}%` : 'Video'}
+              <Image className="w-4 h-4" />
+              Images
             </Button>
             <Button 
               onClick={generatePDF}
-              disabled={isGenerating || isRecording}
-              variant="outline"
+              disabled={isGenerating}
+              variant="default"
               size="sm"
             >
-              <Download className="w-4 h-4 mr-1" />
+              <FileText className="w-4 h-4 mr-1" />
               PDF
             </Button>
           </div>
         </div>
 
-        {/* Recording progress */}
-        {isRecording && (
+        {/* Download progress */}
+        {isGenerating && (
           <div className="mb-3 p-3 rounded-lg bg-primary/10 border border-primary/30">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-sm font-medium">Recording video...</span>
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-sm font-medium">Preparing download...</span>
             </div>
-            <Progress value={recordingProgress} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              Please wait while we capture all slides
-            </p>
+            <Progress value={downloadProgress} className="h-2" />
           </div>
         )}
 
