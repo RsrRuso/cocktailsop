@@ -15,6 +15,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ProfileMembershipDoors } from "@/components/ProfileMembershipDoors";
+import FollowersDialog from "@/components/FollowersDialog";
+import FollowingDialog from "@/components/FollowingDialog";
 
 // Lazy load tabs and dialogs
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
@@ -30,6 +32,8 @@ const Profile = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [stats, setStats] = useState({ posts: 0, reels: 0 });
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showFollowersDialog, setShowFollowersDialog] = useState(false);
+  const [showFollowingDialog, setShowFollowingDialog] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -156,18 +160,18 @@ const Profile = () => {
 
           {/* Stats */}
           <div className="flex-1 flex items-center justify-around pt-4">
-            <div className="text-center">
+            <button onClick={() => navigate("/home")} className="text-center">
               <p className="text-lg font-bold text-white">{totalPosts}</p>
               <p className="text-[11px] text-white/50">posts</p>
-            </div>
-            <div className="text-center">
+            </button>
+            <button onClick={() => setShowFollowersDialog(true)} className="text-center">
               <p className="text-lg font-bold text-white">{p.follower_count.toLocaleString()}</p>
               <p className="text-[11px] text-white/50">followers</p>
-            </div>
-            <div className="text-center">
+            </button>
+            <button onClick={() => setShowFollowingDialog(true)} className="text-center">
               <p className="text-lg font-bold text-white">{p.following_count.toLocaleString()}</p>
               <p className="text-[11px] text-white/50">following</p>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -281,6 +285,20 @@ const Profile = () => {
           />
         </Suspense>
       )}
+
+      {/* Followers Dialog */}
+      <FollowersDialog
+        open={showFollowersDialog}
+        onOpenChange={setShowFollowersDialog}
+        userId={user.id}
+      />
+
+      {/* Following Dialog */}
+      <FollowingDialog
+        open={showFollowingDialog}
+        onOpenChange={setShowFollowingDialog}
+        userId={user.id}
+      />
     </div>
   );
 };
