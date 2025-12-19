@@ -136,6 +136,11 @@ export const ReelsFullscreenViewer = ({
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
+    
+    // Auto-unmute when entering fullscreen
+    if (isOpen) {
+      setIsMuted(false);
+    }
 
     const html = document.documentElement;
     const body = document.body;
@@ -146,6 +151,19 @@ export const ReelsFullscreenViewer = ({
       html.style.scrollbarWidth = "none";
       body.style.scrollbarWidth = "none";
       preloadVideos();
+      
+      // Try to play current video with sound after a small delay
+      setTimeout(() => {
+        const currentVideo = videoRefs.current.get(initialIndex);
+        if (currentVideo) {
+          currentVideo.muted = false;
+          currentVideo.play().catch(() => {
+            // If autoplay with sound fails, mute and retry
+            currentVideo.muted = true;
+            currentVideo.play().catch(() => {});
+          });
+        }
+      }, 100);
     } else {
       html.style.overflow = "";
       body.style.overflow = "";
