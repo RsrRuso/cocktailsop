@@ -13,7 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,10 +85,10 @@ export const ReelsFullscreenViewer = ({
   const soundUnlockedRef = useRef(false);
   const [lastTap, setLastTap] = useState(0);
   const singleTapTimeoutRef = useRef<number | null>(null);
-  const dragStartYRef = useRef<number | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number>(0);
+  const touchStartTime = useRef<number>(0);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -302,62 +302,51 @@ export const ReelsFullscreenViewer = ({
     }
   };
 
-  const handleDragStart = (event: any, info: PanInfo) => {
-    dragStartYRef.current = info.point.y;
-  };
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+  }, []);
 
-  const handleDragEnd = (event: any, info: PanInfo) => {
-    const offsetThreshold = 50;
-    const velocityThreshold = 300;
-    const velocity = info.velocity.y;
-    const offset = info.offset.y;
-
-    const startY = dragStartYRef.current ?? info.point.y;
-    dragStartYRef.current = null;
-
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaY = touchStartY.current - touchEndY;
+    const deltaTime = Date.now() - touchStartTime.current;
+    
+    // Minimum swipe distance and max time for a swipe gesture
+    const minSwipeDistance = 50;
+    const maxSwipeTime = 400;
+    
     // Comments gesture zones
     const bottomZonePx = 140;
-    const startedNearBottom = startY > window.innerHeight - bottomZonePx;
+    const startedNearBottom = touchStartY.current > window.innerHeight - bottomZonePx;
 
-    // If comments are open: swipe down closes, otherwise ignore reel switching
+    // If comments are open: swipe down closes
     if (showComments) {
-      if (offset > 60) setShowComments(false);
+      if (deltaY < -60) setShowComments(false);
       return;
     }
 
-    // If comments are closed: swipe up from bottom zone opens comments (only on slower drags)
-    if (startedNearBottom && offset < -60 && Math.abs(velocity) < velocityThreshold) {
+    // If comments are closed: swipe up from bottom zone opens comments
+    if (startedNearBottom && deltaY > 60 && deltaTime > maxSwipeTime) {
       setShowComments(true);
       return;
     }
 
-    // Fast flicks based on velocity with smoother threshold
-    if (Math.abs(velocity) > velocityThreshold) {
-      if (velocity < 0 && currentIndex < reels.length - 1) {
+    // Handle reel switching
+    if (Math.abs(deltaY) > minSwipeDistance && deltaTime < maxSwipeTime) {
+      if (deltaY > 0 && currentIndex < reels.length - 1) {
         // Swipe up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
-      } else if (velocity > 0 && currentIndex > 0) {
+        setShowComments(false);
+      } else if (deltaY < 0 && currentIndex > 0) {
         // Swipe down -> previous reel
         setDirection(-1);
         setCurrentIndex(currentIndex - 1);
-      }
-      return;
-    }
-
-    // Slower drags based on distance with better sensitivity
-    if (Math.abs(offset) > offsetThreshold) {
-      if (offset < 0 && currentIndex < reels.length - 1) {
-        // Drag up -> next reel
-        setDirection(1);
-        setCurrentIndex(currentIndex + 1);
-      } else if (offset > 0 && currentIndex > 0) {
-        // Drag down -> previous reel
-        setDirection(-1);
-        setCurrentIndex(currentIndex - 1);
+        setShowComments(false);
       }
     }
-  };
+  }, [currentIndex, reels.length, showComments]);
 
   const handleTap = () => {
     const now = Date.now();
@@ -416,40 +405,28 @@ export const ReelsFullscreenViewer = ({
         <motion.div
           key={currentIndex}
           className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.18}
-          dragMomentum={false}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           onClick={handleTap}
           initial={{
             y: direction === 1 ? "100%" : "-100%",
-            scale: 1,
             opacity: 0,
           }}
           animate={{
             y: 0,
-            scale: 1,
             opacity: 1,
           }}
           exit={{
             y: direction === 1 ? "-100%" : "100%",
-            scale: 1,
             opacity: 0,
           }}
           transition={{
             type: "spring",
-            stiffness: 250,
-            damping: 28,
-            mass: 0.7,
-            restDelta: 0.001,
-            restSpeed: 0.001,
+            stiffness: 300,
+            damping: 30,
           }}
           style={{
-            // Prevent the browser from hijacking vertical swipes (fixes "can't switch reels" on mobile)
-            touchAction: "none",
-            overflow: "hidden",
+            touchAction: "pan-x",
           }}
         >
           {(() => {
