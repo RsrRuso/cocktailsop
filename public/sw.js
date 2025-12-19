@@ -1,12 +1,16 @@
-// Service Worker for offline caching, faster loads, and push notifications
+// Service Worker v5 - Optimized for faster loading
+// Cache-first for static assets, network-first for HTML/API
 
 // NOTE:
 // This SW is used for both the main app and the Procurement install flow.
 // It MUST support SPA navigation (return /index.html for navigation requests) to avoid "black screen".
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const PRECACHE = `precache-${CACHE_VERSION}`;
 const RUNTIME = `runtime-${CACHE_VERSION}`;
+
+// Static assets that benefit from cache-first
+const STATIC_EXTENSIONS = ['.js', '.css', '.woff', '.woff2', '.png', '.jpg', '.jpeg', '.svg', '.webp', '.ico'];
 
 // Assets to cache immediately (app shell)
 const PRECACHE_URLS = [
@@ -94,7 +98,23 @@ self.addEventListener('fetch', (event) => {
         }
       }
 
-      // For assets/API: network-first, then cache fallback
+      // For static assets: cache-first (much faster!)
+      const isStaticAsset = STATIC_EXTENSIONS.some(ext => url.pathname.endsWith(ext));
+      
+      if (isStaticAsset) {
+        const cached = await matchFromAnyCache(req);
+        if (cached) {
+          // Return cache immediately, update in background
+          fetch(req).then(res => {
+            if (res && res.status === 200) {
+              caches.open(RUNTIME).then(cache => cache.put(req, res));
+            }
+          }).catch(() => {});
+          return cached;
+        }
+      }
+
+      // For API/other: network-first, then cache fallback
       try {
         const res = await fetch(req);
         if (res && res.status === 200) {
