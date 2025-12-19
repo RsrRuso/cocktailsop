@@ -581,7 +581,7 @@ const Presentation = () => {
           const dataUrl = await toPng(slideRef.current, {
             quality: 1,
             pixelRatio: 2,
-            backgroundColor: '#1a1a2e'
+            backgroundColor: '#2a2a2a'
           });
           
           // Calculate dimensions to fit A4
