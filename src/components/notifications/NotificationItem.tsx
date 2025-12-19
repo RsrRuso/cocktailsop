@@ -4,7 +4,7 @@ import {
   Bell, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, 
   Image, Video, Music, MessageSquare, UserCheck, Calendar, 
   CalendarCheck, Settings, Package, FlaskConical, ClipboardList, 
-  Trash2, Users, Award, ShoppingCart, FileText, Briefcase
+  Trash2, Users, Award, ShoppingCart, FileText, Briefcase, Key
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -36,6 +36,7 @@ const WORK_NOTIFICATION_TYPES = new Set([
   'access_denied',
   'workspace_invite',
   'group_invite',
+  'pin_granted',
   // Inventory
   'stock_alert',
   'fifo_alert',
@@ -65,6 +66,7 @@ const WORK_NOTIFICATION_TOOLS: Record<string, { tool: string; color: string }> =
   access_denied: { tool: "Workspace", color: "bg-red-500/20 text-red-400" },
   workspace_invite: { tool: "Workspace", color: "bg-cyan-500/20 text-cyan-400" },
   group_invite: { tool: "Groups", color: "bg-purple-500/20 text-purple-400" },
+  pin_granted: { tool: "Access PIN", color: "bg-amber-500/20 text-amber-400" },
   // Inventory
   stock_alert: { tool: "Inventory", color: "bg-red-500/20 text-red-400" },
   fifo_alert: { tool: "FIFO Manager", color: "bg-amber-500/20 text-amber-400" },
@@ -110,6 +112,7 @@ const getNotificationConfig = (type: string) => {
     access_request: { icon: Settings, bg: "bg-orange-500/20", color: "text-orange-500" },
     access_granted: { icon: UserCheck, bg: "bg-emerald-500/20", color: "text-emerald-500" },
     access_denied: { icon: UserMinus, bg: "bg-red-500/20", color: "text-red-500" },
+    pin_granted: { icon: Key, bg: "bg-amber-500/20", color: "text-amber-500" },
     stock_alert: { icon: Package, bg: "bg-red-500/20", color: "text-red-500" },
     fifo_alert: { icon: Package, bg: "bg-amber-500/20", color: "text-amber-500" },
     inventory_transfer: { icon: Package, bg: "bg-blue-500/20", color: "text-blue-500" },
