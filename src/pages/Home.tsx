@@ -29,16 +29,16 @@ const MusicStatusDialog = lazy(() => import("@/components/MusicStatusDialog"));
 const BirthdayFireworks = lazy(() => import("@/components/BirthdayFireworks"));
 const UserStatusIndicator = lazy(() => import("@/components/UserStatusIndicator"));
 
-// Lightweight placeholder - instant render
+// Lightweight placeholder - instant render with shimmer
 const FeedItemPlaceholder = memo(() => (
-  <div className="w-full bg-background py-2">
+  <div className="feed-item w-full bg-background py-2">
     <div className="flex items-center gap-3 px-3 py-2">
-      <div className="w-9 h-9 rounded-full bg-muted/40" />
+      <div className="w-9 h-9 rounded-full shimmer-placeholder" />
       <div className="flex-1">
-        <div className="h-3 w-20 bg-muted/40 rounded" />
+        <div className="h-3 w-20 shimmer-placeholder rounded" />
       </div>
     </div>
-    <div className="aspect-[4/5] w-full bg-muted/30" />
+    <div className="aspect-[4/5] w-full shimmer-placeholder" />
   </div>
 ));
 
@@ -340,8 +340,8 @@ const Home = () => {
     <div className="min-h-screen pb-20 pt-16">
       <TopNav isVisible={showTopNav} />
 
-      {/* Stories */}
-      <div className="px-3 pt-2 pb-3 overflow-x-auto scrollbar-hide">
+      {/* Stories - hardware accelerated horizontal scroll */}
+      <div className="px-3 pt-2 pb-3 overflow-x-auto scrollbar-hide scroll-container gpu-accelerated">
         <div className="flex gap-3">
           {/* Your Story */}
           <div className="flex flex-col items-center gap-1.5 min-w-fit">
@@ -504,39 +504,40 @@ const Home = () => {
         </Suspense>
       )}
 
-      {/* Feed - with Suspense for lazy loaded FeedItem */}
+      {/* Feed - with content-visibility optimization */}
       <Suspense fallback={<>{[1,2,3].map(i => <FeedItemPlaceholder key={i} />)}</>}>
-        <div>
+        <div className="passive-scroll">
           {filteredFeed.length > 0 ? (
             filteredFeed.map((item) => (
-              <FeedItem
-                key={item.id}
-                item={item}
-                currentUserId={currentUser?.id}
-                isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
-                isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
-                isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
-                mutedVideos={mutedVideos}
-                onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
-                onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
-                onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
-                onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
-                onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
-                onComment={() => {}}
-                onShare={() => {
-                  setSelectedPostId(item.id);
-                  setSelectedPostType(item.type);
-                  setSelectedMediaUrls(item.media_urls || []);
-                  setShareDialogOpen(true);
-                }}
-                onToggleMute={handleToggleMute}
-                onFullscreen={() => {
-                  if (item.type === 'reel') {
-                    navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } });
-                  }
-                }}
-                getBadgeColor={getBadgeColor}
-              />
+              <div key={item.id} className="feed-item touch-feedback">
+                <FeedItem
+                  item={item}
+                  currentUserId={currentUser?.id}
+                  isLiked={item.type === 'post' ? postEngagement.isLiked(item.id) : reelEngagement.isLiked(item.id)}
+                  isSaved={item.type === 'post' ? postEngagement.isSaved(item.id) : reelEngagement.isSaved(item.id)}
+                  isReposted={item.type === 'post' ? postEngagement.isReposted(item.id) : reelEngagement.isReposted(item.id)}
+                  mutedVideos={mutedVideos}
+                  onLike={() => item.type === 'post' ? postEngagement.toggleLike(item.id) : reelEngagement.toggleLike(item.id)}
+                  onSave={() => item.type === 'post' ? postEngagement.toggleSave(item.id) : reelEngagement.toggleSave(item.id)}
+                  onRepost={() => item.type === 'post' ? postEngagement.toggleRepost(item.id) : reelEngagement.toggleRepost(item.id)}
+                  onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
+                  onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
+                  onComment={() => {}}
+                  onShare={() => {
+                    setSelectedPostId(item.id);
+                    setSelectedPostType(item.type);
+                    setSelectedMediaUrls(item.media_urls || []);
+                    setShareDialogOpen(true);
+                  }}
+                  onToggleMute={handleToggleMute}
+                  onFullscreen={() => {
+                    if (item.type === 'reel') {
+                      navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } });
+                    }
+                  }}
+                  getBadgeColor={getBadgeColor}
+                />
+              </div>
             ))
           ) : showInlineSkeleton ? (
             <>{[1, 2, 3].map(i => <FeedItemPlaceholder key={i} />)}</>
