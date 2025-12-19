@@ -85,6 +85,7 @@ export const ReelsFullscreenViewer = ({
   const soundUnlockedRef = useRef(false);
   const [lastTap, setLastTap] = useState(0);
   const singleTapTimeoutRef = useRef<number | null>(null);
+  const dragStartYRef = useRef<number | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -301,11 +302,34 @@ export const ReelsFullscreenViewer = ({
     }
   };
 
+  const handleDragStart = (event: any, info: PanInfo) => {
+    dragStartYRef.current = info.point.y;
+  };
+
   const handleDragEnd = (event: any, info: PanInfo) => {
     const offsetThreshold = 50;
     const velocityThreshold = 300;
     const velocity = info.velocity.y;
     const offset = info.offset.y;
+
+    const startY = dragStartYRef.current ?? info.point.y;
+    dragStartYRef.current = null;
+
+    // Comments gesture zones
+    const bottomZonePx = 140;
+    const startedNearBottom = startY > window.innerHeight - bottomZonePx;
+
+    // If comments are open: swipe down closes, otherwise ignore reel switching
+    if (showComments) {
+      if (offset > 60) setShowComments(false);
+      return;
+    }
+
+    // If comments are closed: swipe up from bottom zone opens comments (only on slower drags)
+    if (startedNearBottom && offset < -60 && Math.abs(velocity) < velocityThreshold) {
+      setShowComments(true);
+      return;
+    }
 
     // Fast flicks based on velocity with smoother threshold
     if (Math.abs(velocity) > velocityThreshold) {
@@ -313,12 +337,10 @@ export const ReelsFullscreenViewer = ({
         // Swipe up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
-        setShowComments(false);
       } else if (velocity > 0 && currentIndex > 0) {
         // Swipe down -> previous reel
         setDirection(-1);
         setCurrentIndex(currentIndex - 1);
-        setShowComments(false);
       }
       return;
     }
@@ -329,12 +351,10 @@ export const ReelsFullscreenViewer = ({
         // Drag up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
-        setShowComments(false);
       } else if (offset > 0 && currentIndex > 0) {
         // Drag down -> previous reel
         setDirection(-1);
         setCurrentIndex(currentIndex - 1);
-        setShowComments(false);
       }
     }
   };
@@ -400,17 +420,18 @@ export const ReelsFullscreenViewer = ({
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.15}
           dragMomentum={true}
-          dragTransition={{ 
+          dragTransition={{
             power: 0.4,
             timeConstant: 250,
-            modifyTarget: (target) => Math.round(target / window.innerHeight) * window.innerHeight 
+            modifyTarget: (target) => Math.round(target / window.innerHeight) * window.innerHeight,
           }}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onClick={handleTap}
-          initial={{ 
-            y: direction === 1 ? "100%" : "-100%", 
+          initial={{
+            y: direction === 1 ? "100%" : "-100%",
             scale: 1,
-            opacity: 0 
+            opacity: 0,
           }}
           animate={{ 
             y: 0, 
@@ -585,27 +606,21 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Swipe-up hint for comments (Instagram-style) */}
+      {/* Swipe-up hint for comments (doesn't block reel swipe) */}
       {!showComments && (
-        <motion.div
-          className="absolute bottom-6 left-1/2 z-40 -translate-x-1/2 pointer-events-auto"
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(e, info) => {
-            e.stopPropagation();
-            if (info.offset.y < -40) setShowComments(true);
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowComments(true);
-          }}
-        >
-          <div className="flex flex-col items-center gap-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-4 py-2">
+        <div className="absolute bottom-6 left-1/2 z-40 -translate-x-1/2 pointer-events-none">
+          <button
+            type="button"
+            className="pointer-events-auto flex flex-col items-center gap-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-4 py-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowComments(true);
+            }}
+          >
             <ChevronUp className="w-4 h-4 text-white/90" />
             <span className="text-white/90 text-xs font-medium">Swipe up to see comments</span>
-          </div>
-        </motion.div>
+          </button>
+        </div>
       )}
 
       {/* Action Buttons - Right Side with Smooth Slide In */}
@@ -687,28 +702,21 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Comments: swipe down handle + overlay */}
+      {/* Comments: swipe down hint (swipe down anywhere closes) */}
       {showComments && (
-        <motion.button
-          type="button"
-          className="fixed inset-x-0 bottom-0 z-[60] flex justify-center pb-safe pointer-events-auto"
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(e, info) => {
-            e.stopPropagation();
-            if (info.offset.y > 40) setShowComments(false);
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowComments(false);
-          }}
-        >
-          <div className="mb-2 flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-4 py-2">
+        <div className="fixed inset-x-0 bottom-0 z-[60] flex justify-center pb-safe pointer-events-none">
+          <button
+            type="button"
+            className="pointer-events-auto mb-2 flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-4 py-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowComments(false);
+            }}
+          >
             <ChevronDown className="w-4 h-4 text-white/90" />
             <span className="text-white/90 text-xs font-medium">Swipe down to close</span>
-          </div>
-        </motion.button>
+          </button>
+        </div>
       )}
 
       {/* Livestream Comments Overlay */}
