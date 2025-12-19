@@ -1,5 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { prefetchProfile, prefetchHomeFeed } from '@/lib/routePrefetch';
 import { prefetchStoriesData } from '@/hooks/useStoriesData';
 import { prefetchMessagesData } from '@/hooks/useMessagesData';
@@ -7,18 +6,35 @@ import { prefetchNotificationsData } from '@/hooks/useNotificationsData';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const RoutePreloader = () => {
-  const location = useLocation();
   const { user } = useAuth();
+  const [pathname, setPathname] = useState(() => window.location.pathname);
   const prefetchedRoutes = useRef(new Set<string>());
   const hasPrefetchedCore = useRef(false);
 
-  // Prefetch ALL core data immediately on mount for instant navigation
+  // Track pathname changes without useLocation
+  useEffect(() => {
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    
+    // Also observe pushState/replaceState
+    const originalPush = history.pushState.bind(history);
+    const originalReplace = history.replaceState.bind(history);
+    history.pushState = (...args) => { originalPush(...args); setPathname(window.location.pathname); };
+    history.replaceState = (...args) => { originalReplace(...args); setPathname(window.location.pathname); };
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      history.pushState = originalPush;
+      history.replaceState = originalReplace;
+    };
+  }, []);
+
+  // Prefetch ALL core data immediately on mount
   useEffect(() => {
     if (!hasPrefetchedCore.current) {
       hasPrefetchedCore.current = true;
       const region = localStorage.getItem('selectedRegion');
       
-      // Prefetch everything in parallel for instant loading - including profile
       Promise.all([
         prefetchHomeFeed(region),
         prefetchStoriesData(),
@@ -47,14 +63,12 @@ export const RoutePreloader = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    // Prefetch current route immediately
-    prefetchRoute(location.pathname);
-  }, [location.pathname, prefetchRoute]);
+    prefetchRoute(pathname);
+  }, [pathname, prefetchRoute]);
 
   useEffect(() => {
     const handleMouseEnter = (e: MouseEvent) => {
       if (!(e.target instanceof Element)) return;
-      
       const link = e.target.closest('a[href]') as HTMLAnchorElement;
       if (link) prefetchRoute(link.getAttribute('href') || '');
     };
