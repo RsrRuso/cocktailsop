@@ -324,8 +324,7 @@ const Reels = () => {
           {reels.map((reel, index) => (
             <div 
               key={reel.id}
-              onClick={() => handleReelClick(index)}
-              className="h-screen snap-start snap-always cursor-pointer"
+              className="h-screen snap-start snap-always"
               style={{ 
                 scrollSnapAlign: 'start',
                 scrollSnapStop: 'always',
