@@ -209,17 +209,43 @@ export const prefetchMessages = async (userId: string) => {
 export const prefetchAllCritical = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Prefetch in parallel
-    await Promise.all([
-      prefetchEmails(user.id),
-      prefetchMessages(user.id),
-      prefetchHomeFeed(null),
-    ]);
+    
+    if (user) {
+      // Prefetch ALL critical data in parallel
+      await Promise.all([
+        prefetchEmails(user.id),
+        prefetchMessages(user.id),
+        prefetchHomeFeed(null),
+        prefetchProfile(user.id),
+        prefetchStories(user.id)
+      ]);
+    } else {
+      await prefetchHomeFeed(null);
+    }
     
     console.log('⚡ Critical routes prefetched');
   } catch (e) {
     console.error('Critical prefetch failed');
+  }
+};
+
+// Ultra-aggressive prefetch on app start (called immediately, no await)
+export const prefetchImmediate = () => {
+  // Check for cached auth token for instant prefetch
+  const cachedAuth = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
+  if (cachedAuth) {
+    try {
+      const parsed = JSON.parse(cachedAuth);
+      const userId = parsed?.user?.id;
+      if (userId) {
+        // Fire and forget - don't block anything
+        prefetchHomeFeed(null).catch(() => {});
+        prefetchMessages(userId).catch(() => {});
+        prefetchEmails(userId).catch(() => {});
+      }
+    } catch {}
+  } else {
+    // Non-authenticated - just prefetch public feed
+    prefetchHomeFeed(null).catch(() => {});
   }
 };

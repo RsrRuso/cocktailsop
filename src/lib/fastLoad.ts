@@ -133,7 +133,12 @@ export const initFastLoad = () => {
     }
   });
   
-  // Prefetch critical data after page loads
+  // IMMEDIATE prefetch - don't wait for idle
+  import('@/lib/routePrefetch').then(({ prefetchImmediate }) => {
+    prefetchImmediate();
+  });
+  
+  // Full prefetch after page loads
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
       import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
@@ -145,7 +150,7 @@ export const initFastLoad = () => {
       import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
         prefetchAllCritical();
       });
-    }, 1000);
+    }, 500); // Reduced from 1000ms
   }
   
   // Preload critical routes
