@@ -18,6 +18,7 @@ import {
 // Lazy load tabs and dialogs
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
+const ProfileMembershipDoors = lazy(() => import("@/components/ProfileMembershipDoors").then(m => ({ default: m.ProfileMembershipDoors })));
 const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 const Profile = () => {
@@ -78,6 +79,7 @@ const Profile = () => {
     full_name: profile?.full_name || '',
     bio: profile?.bio,
     avatar_url: profile?.avatar_url,
+    cover_url: profile?.cover_url,
     follower_count: profile?.follower_count || 0,
     following_count: profile?.following_count || 0,
   };
@@ -86,16 +88,24 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Minimal Header */}
-      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-white/10">
-        <div className="flex items-center justify-between px-4 h-12">
-          <h1 className="text-base font-semibold">{p.username}</h1>
+      {/* Cover Background */}
+      <div className="relative h-32">
+        {p.cover_url ? (
+          <img src={p.cover_url} alt="Cover" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/5" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        
+        {/* Header overlay */}
+        <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-12">
+          <h1 className="text-base font-semibold text-white drop-shadow-lg">{p.username}</h1>
           
           {/* Menu Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 text-white/70 hover:text-white">
-                <Settings className="w-5 h-5" />
+              <button className="p-2 text-white/90 hover:text-white">
+                <Settings className="w-5 h-5 drop-shadow-lg" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border-white/10">
@@ -127,7 +137,7 @@ const Profile = () => {
         </div>
       </div>
       
-      <div className="px-4 py-4">
+      <div className="px-4 -mt-10 relative z-10">
         {/* Profile Header - Instagram Style */}
         <div className="flex items-start gap-6 mb-4">
           {/* Avatar */}
@@ -189,6 +199,12 @@ const Profile = () => {
           </button>
         </div>
 
+        {/* Membership Doors */}
+        <div className="mb-4">
+          <Suspense fallback={<div className="h-20 animate-pulse bg-white/5 rounded-xl" />}>
+            <ProfileMembershipDoors userId={user.id} />
+          </Suspense>
+        </div>
         {/* Tab Icons */}
         <div className="flex border-t border-white/10">
           <button 
