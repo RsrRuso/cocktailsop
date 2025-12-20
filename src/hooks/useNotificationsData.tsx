@@ -22,7 +22,7 @@ let notificationsCache: {
   userId: string;
 } | null = null;
 
-const CACHE_TIME = 1 * 60 * 1000; // 1 minute
+const CACHE_TIME = 10 * 60 * 1000; // 10 minutes for instant loads
 
 export const useNotificationsData = () => {
   const [notifications, setNotifications] = useState<Notification[]>(notificationsCache?.data || []);
