@@ -98,9 +98,12 @@ export const useMessagesData = (userId: string | null) => {
     }
 
     try {
+      // Trigger cleanup of old welcome messages (fire and forget)
+      void supabase.rpc('archive_old_welcome_messages');
+      
       const { data: convData, error } = await supabase
         .from('conversations')
-        .select('id, participant_ids, last_message_at, is_group, group_name, group_avatar_url')
+        .select('id, participant_ids, last_message_at, is_group, group_name, group_avatar_url, is_welcome_message')
         .contains('participant_ids', [userId])
         .order('last_message_at', { ascending: false })
         .limit(30);

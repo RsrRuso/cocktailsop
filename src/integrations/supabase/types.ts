@@ -1420,6 +1420,7 @@ export type Database = {
           group_name: string | null
           id: string
           is_group: boolean | null
+          is_welcome_message: boolean | null
           last_message_at: string | null
           participant_ids: string[]
         }
@@ -1431,6 +1432,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           is_group?: boolean | null
+          is_welcome_message?: boolean | null
           last_message_at?: string | null
           participant_ids: string[]
         }
@@ -1442,6 +1444,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           is_group?: boolean | null
+          is_welcome_message?: boolean | null
           last_message_at?: string | null
           participant_ids?: string[]
         }
@@ -14516,6 +14519,7 @@ export type Database = {
       }
     }
     Functions: {
+      archive_old_welcome_messages: { Args: never; Returns: undefined }
       calculate_fifo_priority: {
         Args: { p_expiration_date: string; p_received_date: string }
         Returns: number
