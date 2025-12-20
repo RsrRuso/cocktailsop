@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { useTrackPresence } from '@/components/OnlineStatusIndicator';
@@ -38,6 +38,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPendingPasswordReset, setIsPendingPasswordReset] = useState(false);
+  
+  // Prevent concurrent refresh calls
+  const isRefreshingRef = useRef(false);
+  const lastRefreshRef = useRef(0);
+  const MIN_REFRESH_INTERVAL = 5000; // Minimum 5 seconds between refreshes
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -77,29 +82,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Prevent concurrent refreshes and rate limit
+      const now = Date.now();
+      if (isRefreshingRef.current || (now - lastRefreshRef.current < MIN_REFRESH_INTERVAL)) {
+        return;
+      }
+
+      isRefreshingRef.current = true;
+      lastRefreshRef.current = now;
+
       try {
-        // Try to refresh the session - this will use the refresh token from localStorage
-        const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
-        
-        if (error) {
-          console.log('Session refresh failed, checking existing session:', error.message);
-        }
-        
-        // Get the current session (either refreshed or existing)
+        // Just get the current session - don't force refresh unless expired
         const { data: { session } } = await supabase.auth.getSession();
         if (!isMounted) return;
 
         if (session) {
-          setSession(session);
-          setUser(session.user);
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          // Only refresh if token is close to expiring (within 5 minutes)
+          const expiresAt = session.expires_at;
+          const fiveMinutesFromNow = Math.floor(Date.now() / 1000) + 300;
+          
+          if (expiresAt && expiresAt < fiveMinutesFromNow) {
+            // Token is expiring soon, refresh it
+            const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+            if (refreshedSession && isMounted) {
+              setSession(refreshedSession);
+              setUser(refreshedSession.user);
+            }
+          } else {
+            // Token is still valid, just use it
+            setSession(session);
+            setUser(session.user);
+          }
         }
-        // Don't clear session/user if refresh fails - let the auth state listener handle that
       } catch (err) {
         console.error('Session sync error:', err);
         // Don't clear session on error - preserve existing state
+      } finally {
+        isRefreshingRef.current = false;
       }
     };
 
@@ -168,23 +187,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initAuth();
 
-    // Web: refresh session when tab becomes visible
+    // Web: sync session when tab becomes visible (with debounce)
+    let visibilityTimeout: NodeJS.Timeout;
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        syncSession();
+        // Debounce visibility changes to prevent rapid calls
+        clearTimeout(visibilityTimeout);
+        visibilityTimeout = setTimeout(syncSession, 500);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Native (Capacitor): refresh session when app resumes
+    // Native (Capacitor): sync session when app resumes (with debounce)
     let removeAppListener: (() => void) | undefined;
+    let appStateTimeout: NodeJS.Timeout;
     (async () => {
       try {
         const { App } = await import('@capacitor/app');
         const handler = await App.addListener('appStateChange', ({ isActive }) => {
           if (isActive) {
-            syncSession();
+            // Debounce app state changes
+            clearTimeout(appStateTimeout);
+            appStateTimeout = setTimeout(syncSession, 500);
           }
         });
         removeAppListener = () => handler.remove();
@@ -197,6 +222,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isMounted = false;
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearTimeout(visibilityTimeout);
+      clearTimeout(appStateTimeout);
       removeAppListener?.();
     };
   }, [isPendingPasswordReset]);
