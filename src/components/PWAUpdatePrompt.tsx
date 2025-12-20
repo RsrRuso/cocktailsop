@@ -11,11 +11,14 @@ export function PWAUpdatePrompt() {
   } = useRegisterSW({
     onRegisteredSW(swUrl, registration) {
       console.log('SW Registered:', swUrl);
-      // Check for updates every hour
+      // Check for updates every 4 hours (reduced from 1 hour to save resources)
       if (registration) {
         setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000); // 1 hour
+          // Only check when tab is visible
+          if (document.visibilityState === 'visible') {
+            registration.update();
+          }
+        }, 4 * 60 * 60 * 1000); // 4 hours
       }
     },
     onRegisterError(error) {

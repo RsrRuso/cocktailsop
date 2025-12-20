@@ -157,13 +157,14 @@ export const useGPSTracking = (enabled: boolean = true) => {
               { onConflict: 'user_id' }
             );
 
-          // Start proximity checks (every minute)
+          // Start proximity checks (every 3 minutes instead of 1 minute to save API calls)
           checkNearbyFriends(newPosition.latitude, newPosition.longitude);
           proximityCheckRef.current = setInterval(() => {
-            if (position) {
+            // Only check when tab is visible
+            if (position && document.visibilityState === 'visible') {
               checkNearbyFriends(position.latitude, position.longitude);
             }
-          }, 60000);
+          }, 180000); // 3 minutes
         }
 
         // Watch position for continuous updates

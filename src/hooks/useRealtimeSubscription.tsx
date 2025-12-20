@@ -20,6 +20,8 @@ export const useRealtimeSubscription = ({
 }: SubscriptionOptions) => {
   const debounceRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
+  // Use a longer default debounce (2 seconds) to batch rapid updates
+  const effectiveDebounceMs = debounceMs || 2000;
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -28,7 +30,7 @@ export const useRealtimeSubscription = ({
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         if (isMountedRef.current) onUpdate();
-      }, debounceMs);
+      }, effectiveDebounceMs);
     };
 
     const subscriptionConfig: any = {
