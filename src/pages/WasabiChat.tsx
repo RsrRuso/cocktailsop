@@ -78,11 +78,17 @@ const WasabiChat = () => {
 
   const {
     isRecordingVoice,
+    isRecordingVideo,
     voiceDuration,
+    videoDuration,
     isUploading,
+    videoStream,
     startVoiceRecording,
     stopVoiceRecording,
     cancelVoiceRecording,
+    startVideoRecording,
+    stopVideoRecording,
+    cancelVideoRecording,
     handleFileSelect,
     formatDuration
   } = useWasabiMedia({
@@ -92,6 +98,15 @@ const WasabiChat = () => {
       // Messages will be updated via realtime subscription
     }
   });
+
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
+
+  // Set video stream to preview element
+  useEffect(() => {
+    if (videoPreviewRef.current && videoStream) {
+      videoPreviewRef.current.srcObject = videoStream;
+    }
+  }, [videoStream]);
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -658,6 +673,42 @@ const WasabiChat = () => {
         </div>
       )}
 
+      {/* Video Recording UI */}
+      {isRecordingVideo && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          <video 
+            ref={videoPreviewRef}
+            autoPlay
+            muted
+            playsInline
+            className="flex-1 object-cover"
+          />
+          <div className="absolute top-4 left-0 right-0 flex justify-center">
+            <div className="bg-red-500 px-3 py-1 rounded-full flex items-center gap-2">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              <span className="text-white font-medium">{formatDuration(videoDuration)}</span>
+            </div>
+          </div>
+          <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-8">
+            <Button 
+              size="lg"
+              variant="ghost" 
+              onClick={cancelVideoRecording}
+              className="text-white hover:bg-white/20 rounded-full w-14 h-14"
+            >
+              <X className="w-8 h-8" />
+            </Button>
+            <Button 
+              size="lg"
+              onClick={stopVideoRecording}
+              className="bg-red-500 hover:bg-red-600 rounded-full w-16 h-16"
+            >
+              <Square className="w-8 h-8 fill-white" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Voice Recording UI */}
       {isRecordingVoice && (
         <div className="sticky bottom-0 bg-red-500 px-4 py-3 flex items-center gap-3">
@@ -725,8 +776,11 @@ const WasabiChat = () => {
                 <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
                   <ImageIcon className="w-4 h-4 mr-2" /> Gallery
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={startVideoRecording}>
+                  <Camera className="w-4 h-4 mr-2" /> Record Video
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => videoInputRef.current?.click()}>
-                  <Video className="w-4 h-4 mr-2" /> Video
+                  <Video className="w-4 h-4 mr-2" /> Video from Gallery
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => documentInputRef.current?.click()}>
                   <FileText className="w-4 h-4 mr-2" /> Document
