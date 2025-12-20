@@ -23,31 +23,48 @@ export default function FifoPinAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
+  const [isLoading, setIsLoading] = useState(false); // Start false for instant display
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(() => {
+    // Try to get workspace from URL immediately
+    const workspaceId = new URLSearchParams(window.location.search).get('workspace');
+    if (workspaceId) {
+      return { id: workspaceId, name: '' } as Workspace; // Placeholder, will hydrate
+    }
+    return null;
+  });
   const [pin, setPin] = useState("");
   const [isPinLoading, setIsPinLoading] = useState(false);
-  const [loggedInMember, setLoggedInMember] = useState<WorkspaceMember | null>(null);
-  const [loggedInWorkspace, setLoggedInWorkspace] = useState<Workspace | null>(null);
-  const [memberName, setMemberName] = useState<string>("");
+  const [loggedInMember, setLoggedInMember] = useState<WorkspaceMember | null>(() => {
+    // Check session immediately on init
+    const savedSession = sessionStorage.getItem("fifo_staff_session");
+    if (savedSession) {
+      try {
+        return JSON.parse(savedSession).member;
+      } catch { return null; }
+    }
+    return null;
+  });
+  const [loggedInWorkspace, setLoggedInWorkspace] = useState<Workspace | null>(() => {
+    const savedSession = sessionStorage.getItem("fifo_staff_session");
+    if (savedSession) {
+      try {
+        return JSON.parse(savedSession).workspace;
+      } catch { return null; }
+    }
+    return null;
+  });
+  const [memberName, setMemberName] = useState<string>(() => {
+    const savedSession = sessionStorage.getItem("fifo_staff_session");
+    if (savedSession) {
+      try {
+        return JSON.parse(savedSession).name || "";
+      } catch { return ""; }
+    }
+    return "";
+  });
 
   useEffect(() => {
     fetchWorkspaces();
-
-    // Check for existing session
-    const savedSession = sessionStorage.getItem("fifo_staff_session");
-    if (savedSession) {
-      const { member, workspace, name } = JSON.parse(savedSession);
-      setLoggedInMember(member);
-      setLoggedInWorkspace(workspace);
-      setMemberName(name);
-    }
-
-    // Auto-select workspace from URL param
-    const workspaceId = searchParams.get('workspace');
-    if (workspaceId) {
-      // Will be handled after workspaces load
-    }
   }, []);
 
   useEffect(() => {
@@ -68,6 +85,13 @@ export default function FifoPinAccess() {
 
       if (error) throw error;
       setWorkspaces(data || []);
+      
+      // Hydrate selected workspace name if we have placeholder
+      const workspaceId = searchParams.get('workspace');
+      if (workspaceId && data) {
+        const found = data.find(w => w.id === workspaceId);
+        if (found) setSelectedWorkspace(found);
+      }
     } catch (error) {
       console.error("Error fetching workspaces:", error);
     } finally {
@@ -168,22 +192,7 @@ export default function FifoPinAccess() {
     }
   }, [pin]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md animate-pulse">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4" />
-            <div className="h-6 bg-muted rounded w-48 mx-auto" />
-            <div className="h-4 bg-muted rounded w-64 mx-auto mt-2" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="h-14 bg-muted rounded" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Skip loading state - we initialize from session/URL immediately
 
   // Action Selection Screen (after login)
   if (loggedInMember && loggedInWorkspace) {
