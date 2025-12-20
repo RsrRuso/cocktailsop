@@ -78,6 +78,17 @@ const InventoryManager = () => {
   const [selectedTransferItemId, setSelectedTransferItemId] = useState<string>("");
   const [selectedFromStoreId, setSelectedFromStoreId] = useState<string>("");
   const [inviteMemberDialogOpen, setInviteMemberDialogOpen] = useState(false);
+  const [pendingTransfer, setPendingTransfer] = useState<{
+    itemId: string;
+    fromStoreId: string;
+    toStoreId: string;
+    quantity: number;
+    transferredBy: string;
+    notes: string;
+    itemName: string;
+    fromStoreName: string;
+    toStoreName: string;
+  } | null>(null);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -761,13 +772,55 @@ const InventoryManager = () => {
   const handleTransfer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
     const itemId = formData.get("itemId") as string;
     const fromStoreId = formData.get("fromStoreId") as string;
     const toStoreId = formData.get("toStoreId") as string;
     const quantity = parseFloat(formData.get("quantity") as string);
+    const transferredBy = formData.get("transferredBy") as string;
+    const notes = formData.get("transferNotes") as string;
+
+    // Validate
+    if (fromStoreId === toStoreId) {
+      toast.error("Cannot transfer to the same store");
+      return;
+    }
+
+    const totalAvailable = inventory
+      .filter(inv => inv.item_id === itemId && inv.store_id === fromStoreId && inv.status === 'available')
+      .reduce((sum, inv) => sum + inv.quantity, 0);
+
+    if (quantity > totalAvailable) {
+      toast.error(`Cannot transfer ${quantity} items. Only ${totalAvailable} available.`);
+      return;
+    }
+
+    // Get names for confirmation
+    const itemName = items.find(i => i.id === itemId)?.name || 'Unknown Item';
+    const fromStoreName = stores.find(s => s.id === fromStoreId)?.name || 'Unknown';
+    const toStoreName = stores.find(s => s.id === toStoreId)?.name || 'Unknown';
+
+    // Show confirmation dialog
+    setPendingTransfer({
+      itemId,
+      fromStoreId,
+      toStoreId,
+      quantity,
+      transferredBy,
+      notes,
+      itemName,
+      fromStoreName,
+      toStoreName
+    });
+  };
+
+  const executeTransfer = async () => {
+    if (!pendingTransfer) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { itemId, fromStoreId, toStoreId, quantity, transferredBy, notes } = pendingTransfer;
 
     // Get ALL available inventory entries for this item in source store
     const { data: sourceInventories, error: sourceError } = await supabase
@@ -781,25 +834,22 @@ const InventoryManager = () => {
 
     if (sourceError) {
       toast.error("Failed to fetch source inventory");
+      setPendingTransfer(null);
       return;
     }
 
     if (!sourceInventories || sourceInventories.length === 0) {
       toast.error("No inventory found for this item in the selected source store");
+      setPendingTransfer(null);
       return;
     }
 
     // Calculate total available quantity across all FIFO entries
     const totalAvailable = sourceInventories.reduce((sum, inv) => sum + inv.quantity, 0);
 
-    // Prevent same-store transfers
-    if (sourceInventories[0].store_id === toStoreId) {
-      toast.error("Cannot transfer to the same store");
-      return;
-    }
-
     if (quantity > totalAvailable) {
       toast.error(`Cannot transfer ${quantity} items. Only ${totalAvailable} available.`);
+      setPendingTransfer(null);
       return;
     }
 
@@ -816,8 +866,8 @@ const InventoryManager = () => {
         from_store_id: sourceInv.store_id,
         to_store_id: toStoreId,
         quantity: quantity,
-        transferred_by: formData.get("transferredBy") as string,
-        notes: formData.get("transferNotes") as string,
+        transferred_by: transferredBy,
+        notes: notes,
         status: "completed"
       })
       .select()
@@ -825,6 +875,7 @@ const InventoryManager = () => {
 
     if (transferError) {
       toast.error("Failed to create transfer");
+      setPendingTransfer(null);
       return;
     }
 
@@ -893,7 +944,9 @@ const InventoryManager = () => {
 
     toast.success(`Transfer completed! Transferred: ${quantity}, Remaining: ${remainingQty}`);
     fetchData();
-    e.currentTarget.reset();
+    setPendingTransfer(null);
+    setSelectedTransferItemId("");
+    setSelectedFromStoreId("");
   };
 
   const getDaysUntilExpiry = (expirationDate: string) => {
@@ -2626,7 +2679,51 @@ const InventoryManager = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete All Items Confirmation Dialog */}
+      {/* Transfer Confirmation Dialog */}
+      <AlertDialog open={!!pendingTransfer} onOpenChange={(open) => !open && setPendingTransfer(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5 text-primary" />
+              Confirm Transfer
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 mt-2">
+                <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Item:</span>
+                    <span className="font-medium text-foreground">{pendingTransfer?.itemName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Quantity:</span>
+                    <span className="font-medium text-foreground">{pendingTransfer?.quantity} units</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">From:</span>
+                    <Badge variant="outline">{pendingTransfer?.fromStoreName}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">To:</span>
+                    <Badge variant="secondary">{pendingTransfer?.toStoreName}</Badge>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to complete this transfer?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingTransfer(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={executeTransfer} className="bg-primary">
+              Confirm Transfer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
