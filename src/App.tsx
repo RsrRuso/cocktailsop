@@ -18,10 +18,13 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
 import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt";
+import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
 import { initFastLoad } from "@/lib/fastLoad";
+import { initNetworkMonitor } from "@/hooks/useNetworkStatus";
 
-// Initialize fast loading optimizations
+// Initialize fast loading optimizations and network monitor
 initFastLoad();
+initNetworkMonitor();
 
 // Eager load critical routes for instant display
 import Index from "./pages/Index";
@@ -218,6 +221,7 @@ const AppContent = () => {
   
   return (
     <>
+      <NetworkStatusIndicator />
       <RoutePreloader />
       <Toaster />
       <Sonner />
