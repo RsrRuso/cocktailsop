@@ -54,10 +54,6 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [audioReady, setAudioReady] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showTapToPlay, setShowTapToPlay] = useState(false);
-  // Keep video muted until the user explicitly enables sound (required for reliable autoplay on mobile)
-  const [allowSound, setAllowSound] = useState(false);
 
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
@@ -73,13 +69,10 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   // Global mute state is controlled by the user
   const isUserMuted = mutedVideos.has(reel.id);
 
-  // Reset media state when reel changes
+  // Reset loading state when video URL changes
   useEffect(() => {
     setIsVideoLoaded(false);
-    setIsPlaying(false);
-    setShowTapToPlay(false);
-    setAllowSound(false);
-  }, [reel.video_url, reel.id]);
+  }, [reel.video_url]);
 
   // Preload adjacent videos aggressively (skip for image reels)
   useEffect(() => {
@@ -88,23 +81,6 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
       videoRef.current.load();
     }
   }, [index, currentIndex, isImageReel]);
-
-  // Track playback state (to detect autoplay blocks)
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlaying = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-
-    video.addEventListener('playing', handlePlaying);
-    video.addEventListener('pause', handlePause);
-
-    return () => {
-      video.removeEventListener('playing', handlePlaying);
-      video.removeEventListener('pause', handlePause);
-    };
-  }, [reel.id]);
 
   // Handle audio ready state
   useEffect(() => {
@@ -130,12 +106,9 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     const isActive = index === currentIndex;
 
     if (isActive) {
-      if (!isImageReel && video) {
-        // Autoplay is most reliable if we start muted; sound is enabled only after user interaction.
-        video.play().catch(() => {
-          // If autoplay is blocked, UI will show a "Tap to play" overlay.
-          setIsPlaying(false);
-        });
+      if (!isImageReel) {
+        // Video autoplay must be muted on mobile (handled via mutedVideos state)
+        video?.play().catch(() => {});
       }
 
       if (hasAttachedMusic && audio && musicUrl && !isUserMuted) {
@@ -159,7 +132,6 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         audio.pause();
         audio.currentTime = 0;
       }
-      setIsPlaying(false);
     }
   }, [index, currentIndex, hasAttachedMusic, musicUrl, isUserMuted, isImageReel]);
 
@@ -170,35 +142,13 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     }
   }, [isUserMuted]);
 
-  // Sync video mute - always start muted for autoplay; only allow sound after explicit user interaction
+  // Sync video mute - mute if has attached music with mute flag OR user manually muted
   useEffect(() => {
     if (isImageReel) return;
-    const video = videoRef.current;
-    if (!video) return;
-
-    const muted = shouldMuteVideo || isUserMuted || !allowSound;
-    video.muted = muted;
-    // Helps some mobile browsers respect the initial muted state
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (video as any).defaultMuted = muted;
-  }, [shouldMuteVideo, isUserMuted, allowSound, isImageReel]);
-
-  // Delay the "Tap to play" overlay to avoid a flash while playback starts
-  useEffect(() => {
-    if (isImageReel) return;
-    const isActive = index === currentIndex;
-
-    if (!isActive || !isVideoLoaded || isPlaying) {
-      setShowTapToPlay(false);
-      return;
+    if (videoRef.current) {
+      videoRef.current.muted = shouldMuteVideo || isUserMuted;
     }
-
-    const t = window.setTimeout(() => {
-      setShowTapToPlay(index === currentIndex && isVideoLoaded && !isPlaying);
-    }, 700);
-
-    return () => window.clearTimeout(t);
-  }, [index, currentIndex, isVideoLoaded, isPlaying, isImageReel]);
+  }, [shouldMuteVideo, isUserMuted, isImageReel]);
 
   // Parse caption for hashtags and mentions
   const renderCaption = (text: string) => {
@@ -222,25 +172,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
         </div>
       )}
-
-      {/* If autoplay was blocked, allow user to start playback */}
-      {!isImageReel && showTapToPlay && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            // First user interaction: allow sound (if user also unmutes)
-            setAllowSound(true);
-            const v = videoRef.current;
-            v?.play().catch(() => {});
-          }}
-          className="absolute inset-0 z-10 flex items-center justify-center"
-          aria-label="Tap to play"
-        >
-          <div className="rounded-full bg-black/60 px-4 py-2 text-white text-sm font-medium">Tap to play</div>
-        </button>
-      )}
-
+      
       {/* Full Screen Media */}
       {isImageReel ? (
         <img
@@ -258,11 +190,10 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           loop
           playsInline
           autoPlay
-          muted={shouldMuteVideo || isUserMuted || !allowSound}
+          muted={shouldMuteVideo || isUserMuted}
           preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
           onLoadedData={() => setIsVideoLoaded(true)}
           onCanPlay={() => setIsVideoLoaded(true)}
-          onError={() => setIsVideoLoaded(true)}
         />
       )}
 
@@ -284,15 +215,8 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
            setMutedVideos((prev) => {
              const next = new Set(prev);
              const wasMuted = next.has(reel.id);
-
-             if (wasMuted) {
-               next.delete(reel.id);
-               // User explicitly enabled sound
-               setAllowSound(true);
-             } else {
-               next.add(reel.id);
-               setAllowSound(false);
-             }
+             if (wasMuted) next.delete(reel.id);
+             else next.add(reel.id);
 
              // If user just unmuted the currently visible reel, try to start playback (needed on iOS)
              if (wasMuted && index === currentIndex) {
