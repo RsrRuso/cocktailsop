@@ -28,18 +28,18 @@ export const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000, // 10 minutes - data stays fresh longer
-      gcTime: 60 * 60 * 1000, // 1 hour - keep in cache longer
+      staleTime: 15 * 60 * 1000, // 15 minutes - data stays fresh even longer
+      gcTime: 2 * 60 * 60 * 1000, // 2 hours - keep in cache longer for repeat visits
       refetchOnWindowFocus: false,
       refetchOnReconnect: 'always', // Refetch when back online
       refetchOnMount: false,
       retry: (failureCount, error) => {
         // Don't retry on network errors when offline
         if (!navigator.onLine) return false;
-        // Retry up to 2 times with exponential backoff
-        return failureCount < 2;
+        // Retry only once to reduce API calls on errors
+        return failureCount < 1;
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 15000),
       networkMode: 'offlineFirst', // Use cache first, fetch in background
       structuralSharing: true, // Optimize re-renders
     },
