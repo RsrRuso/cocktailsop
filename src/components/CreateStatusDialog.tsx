@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,9 @@ import {
   Heart, Star, Zap, Coffee, Music, Camera,
   Palette, Send, Loader2, TrendingUp, X
 } from "lucide-react";
-import MusicStatusDialog from "./MusicStatusDialog";
+
+// Lazy load to avoid circular dependency with Home.tsx
+const MusicStatusDialog = lazy(() => import("./MusicStatusDialog"));
 
 interface CreateStatusDialogProps {
   open: boolean;
@@ -516,29 +518,31 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
       </DialogContent>
       
       {/* Music Selection Dialog */}
-      <MusicStatusDialog 
-        open={musicDialogOpen} 
-        onOpenChange={(isOpen) => {
-          setMusicDialogOpen(isOpen);
-          // Refetch music when dialog closes
-          if (!isOpen && currentUserId) {
-            supabase
-              .from('user_status')
-              .select('music_track_name, music_artist, music_album_art')
-              .eq('user_id', currentUserId)
-              .maybeSingle()
-              .then(({ data }) => {
-                if (data?.music_track_name) {
-                  setCurrentMusic({
-                    name: data.music_track_name,
-                    artist: data.music_artist || '',
-                    albumArt: data.music_album_art || undefined,
-                  });
-                }
-              });
-          }
-        }} 
-      />
+      <Suspense fallback={null}>
+        <MusicStatusDialog 
+          open={musicDialogOpen} 
+          onOpenChange={(isOpen) => {
+            setMusicDialogOpen(isOpen);
+            // Refetch music when dialog closes
+            if (!isOpen && currentUserId) {
+              supabase
+                .from('user_status')
+                .select('music_track_name, music_artist, music_album_art')
+                .eq('user_id', currentUserId)
+                .maybeSingle()
+                .then(({ data }) => {
+                  if (data?.music_track_name) {
+                    setCurrentMusic({
+                      name: data.music_track_name,
+                      artist: data.music_artist || '',
+                      albumArt: data.music_album_art || undefined,
+                    });
+                  }
+                });
+            }
+          }} 
+        />
+      </Suspense>
     </Dialog>
   );
 };
