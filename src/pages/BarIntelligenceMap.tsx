@@ -214,8 +214,8 @@ const BarIntelligenceMap = () => {
 
     loadData();
     
-    // Refresh every 30 seconds for live feel
-    const interval = setInterval(loadData, 30000);
+    // Refresh every 5 minutes instead of 30 seconds (mock data doesn't need frequent updates)
+    const interval = setInterval(loadData, 300000);
     return () => clearInterval(interval);
   }, [generateMockVenues, generateMockTrending, generateMockEvents]);
 

@@ -81,8 +81,8 @@ export const useAutomationProcessor = () => {
     // Run immediately
     processPendingAutomations();
 
-    // Then run every 30 seconds
-    intervalRef.current = setInterval(processPendingAutomations, 30000);
+    // Then run every 2 minutes (reduced from 30 seconds to save costs)
+    intervalRef.current = setInterval(processPendingAutomations, 120000);
 
     // Cleanup
     return () => {
