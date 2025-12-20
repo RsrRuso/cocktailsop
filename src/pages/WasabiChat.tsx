@@ -8,7 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Send, Paperclip, Mic, MoreVertical, Phone, Video, 
   Image as ImageIcon, FileText, Camera, Users, Check, CheckCheck,
-  Smile, Reply, Forward, Trash2, Star, X
+  Smile, Reply, Forward, Trash2, Star, X, Square, Play, Pause,
+  Download, File, Loader2
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useWasabiMedia } from "@/hooks/useWasabiMedia";
 
 interface Message {
   id: string;
@@ -59,6 +61,9 @@ const WasabiChat = () => {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatInfo, setChatInfo] = useState<ChatInfo | null>(null);
@@ -68,6 +73,25 @@ const WasabiChat = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const {
+    isRecordingVoice,
+    voiceDuration,
+    isUploading,
+    startVoiceRecording,
+    stopVoiceRecording,
+    cancelVoiceRecording,
+    handleFileSelect,
+    formatDuration
+  } = useWasabiMedia({
+    conversationId: conversationId || '',
+    currentUserId,
+    onMessageSent: () => {
+      // Messages will be updated via realtime subscription
+    }
+  });
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -446,11 +470,92 @@ const WasabiChat = () => {
                         )}
 
                         {/* Message content */}
-                        <p className="text-sm break-words">
-                          {msg.is_deleted 
-                            ? '🚫 This message was deleted' 
-                            : msg.content}
-                        </p>
+                        {msg.is_deleted ? (
+                          <p className="text-sm italic">🚫 This message was deleted</p>
+                        ) : msg.message_type === 'voice' ? (
+                          <div className="flex items-center gap-2 min-w-[150px]">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (playingAudio === msg.id) {
+                                  audioRef.current?.pause();
+                                  setPlayingAudio(null);
+                                } else {
+                                  if (audioRef.current) {
+                                    audioRef.current.pause();
+                                  }
+                                  const audio = new Audio(msg.media_url || '');
+                                  audio.onended = () => setPlayingAudio(null);
+                                  audio.play();
+                                  audioRef.current = audio;
+                                  setPlayingAudio(msg.id);
+                                }
+                              }}
+                              className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center",
+                                isOwn ? "bg-white/20" : "bg-primary/20"
+                              )}
+                            >
+                              {playingAudio === msg.id ? (
+                                <Pause className="w-4 h-4" />
+                              ) : (
+                                <Play className="w-4 h-4 ml-0.5" />
+                              )}
+                            </button>
+                            <div className="flex-1">
+                              <div className="flex gap-0.5">
+                                {[...Array(20)].map((_, i) => (
+                                  <div 
+                                    key={i} 
+                                    className={cn(
+                                      "w-0.5 rounded-full",
+                                      isOwn ? "bg-white/40" : "bg-muted-foreground/40"
+                                    )}
+                                    style={{ height: `${Math.random() * 16 + 4}px` }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <Mic className="w-4 h-4 opacity-60" />
+                          </div>
+                        ) : msg.message_type === 'image' ? (
+                          <img 
+                            src={msg.media_url || ''} 
+                            alt="Shared image"
+                            className="max-w-[250px] rounded-lg cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(msg.media_url || '', '_blank');
+                            }}
+                          />
+                        ) : msg.message_type === 'video' ? (
+                          <video 
+                            src={msg.media_url || ''} 
+                            controls
+                            className="max-w-[250px] rounded-lg"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : msg.message_type === 'document' ? (
+                          <a 
+                            href={msg.media_url || ''} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-lg",
+                              isOwn ? "bg-white/10" : "bg-muted"
+                            )}
+                          >
+                            <File className="w-8 h-8" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm truncate">{msg.content || 'Document'}</p>
+                              <p className="text-xs opacity-60">Tap to open</p>
+                            </div>
+                            <Download className="w-4 h-4" />
+                          </a>
+                        ) : (
+                          <p className="text-sm break-words">{msg.content}</p>
+                        )}
 
                         {/* Time and status */}
                         <div className={cn(
@@ -553,53 +658,114 @@ const WasabiChat = () => {
         </div>
       )}
 
-      {/* Input */}
-      <div className="sticky bottom-0 bg-background border-t px-4 py-3">
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Paperclip className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem>
-                <ImageIcon className="w-4 h-4 mr-2" /> Gallery
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Camera className="w-4 h-4 mr-2" /> Camera
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <FileText className="w-4 h-4 mr-2" /> Document
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* Voice Recording UI */}
+      {isRecordingVoice && (
+        <div className="sticky bottom-0 bg-red-500 px-4 py-3 flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={cancelVoiceRecording}
+            className="text-white hover:bg-white/20"
+          >
+            <Trash2 className="w-5 h-5" />
+          </Button>
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+            <span className="text-white font-medium">{formatDuration(voiceDuration)}</span>
+            <span className="text-white/80">Recording...</span>
+          </div>
+          <Button 
+            size="icon" 
+            onClick={stopVoiceRecording}
+            className="bg-white text-red-500 hover:bg-white/90"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
 
-          <Input
-            ref={inputRef}
-            placeholder="Type a message"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            className="flex-1"
+      {/* Input */}
+      {!isRecordingVoice && (
+        <div className="sticky bottom-0 bg-background border-t px-4 py-3">
+          {/* Hidden file inputs */}
+          <input 
+            ref={imageInputRef}
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            onChange={(e) => handleFileSelect(e, 'image')}
+          />
+          <input 
+            ref={videoInputRef}
+            type="file" 
+            accept="video/*" 
+            className="hidden" 
+            onChange={(e) => handleFileSelect(e, 'video')}
+          />
+          <input 
+            ref={documentInputRef}
+            type="file" 
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" 
+            className="hidden" 
+            onChange={(e) => handleFileSelect(e, 'document')}
           />
 
-          {newMessage.trim() ? (
-            <Button 
-              size="icon" 
-              onClick={handleSend}
-              disabled={sending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
-          ) : (
-            <Button variant="ghost" size="icon">
-              <Mic className="w-5 h-5" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={isUploading}>
+                  {isUploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Paperclip className="w-5 h-5" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
+                  <ImageIcon className="w-4 h-4 mr-2" /> Gallery
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => videoInputRef.current?.click()}>
+                  <Video className="w-4 h-4 mr-2" /> Video
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => documentInputRef.current?.click()}>
+                  <FileText className="w-4 h-4 mr-2" /> Document
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Input
+              ref={inputRef}
+              placeholder="Type a message"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              className="flex-1"
+              disabled={isUploading}
+            />
+
+            {newMessage.trim() ? (
+              <Button 
+                size="icon" 
+                onClick={handleSend}
+                disabled={sending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={startVoiceRecording}
+                disabled={isUploading}
+              >
+                <Mic className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
