@@ -2,6 +2,37 @@ import { queryClient } from './queryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { deduplicateRequest } from './requestDeduplication';
 
+// Global engagement cache - shared across components
+export const engagementCache = {
+  postLikes: new Set<string>(),
+  postSaves: new Set<string>(),
+  reelLikes: new Set<string>(),
+  reelSaves: new Set<string>(),
+  loaded: false,
+};
+
+// Prefetch engagement data for instant like/save states
+export const prefetchEngagement = async (userId: string) => {
+  if (engagementCache.loaded) return;
+  
+  try {
+    const [postLikesRes, postSavesRes, reelLikesRes, reelSavesRes] = await Promise.all([
+      supabase.from('post_likes').select('post_id').eq('user_id', userId),
+      supabase.from('post_saves').select('post_id').eq('user_id', userId),
+      supabase.from('reel_likes').select('reel_id').eq('user_id', userId),
+      supabase.from('reel_saves').select('reel_id').eq('user_id', userId),
+    ]);
+
+    engagementCache.postLikes = new Set((postLikesRes.data || []).map(r => r.post_id));
+    engagementCache.postSaves = new Set((postSavesRes.data || []).map(r => r.post_id));
+    engagementCache.reelLikes = new Set((reelLikesRes.data || []).map(r => r.reel_id));
+    engagementCache.reelSaves = new Set((reelSavesRes.data || []).map(r => r.reel_id));
+    engagementCache.loaded = true;
+  } catch (e) {
+    console.error('Engagement prefetch failed');
+  }
+};
+
 // Prefetch story data for user
 export const prefetchStories = async (userId: string) => {
   await queryClient.prefetchQuery({
@@ -110,6 +141,22 @@ export const prefetchHomeFeed = async (region: string | null) => {
         timestamp: Date.now(),
         region
       };
+
+      // Preload avatar images for instant display
+      profiles?.slice(0, 10).forEach(p => {
+        if (p.avatar_url) {
+          const img = new Image();
+          img.src = p.avatar_url;
+        }
+      });
+
+      // Preload first media from posts
+      postsWithProfiles.slice(0, 5).forEach(post => {
+        if (post.media_urls?.[0]) {
+          const img = new Image();
+          img.src = post.media_urls[0];
+        }
+      });
     }
   } catch (e) {
     console.error('Feed prefetch failed');
@@ -205,6 +252,23 @@ export const prefetchMessages = async (userId: string) => {
   }
 };
 
+// Prefetch notifications for instant badge counts
+export const prefetchNotifications = async (userId: string) => {
+  try {
+    const { count } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('read', false);
+
+    if (count !== null) {
+      sessionStorage.setItem('notif_count', String(count));
+    }
+  } catch (e) {
+    console.error('Notifications prefetch failed');
+  }
+};
+
 // Prefetch all critical routes for instant navigation
 export const prefetchAllCritical = async () => {
   try {
@@ -217,7 +281,9 @@ export const prefetchAllCritical = async () => {
         prefetchMessages(user.id),
         prefetchHomeFeed(null),
         prefetchProfile(user.id),
-        prefetchStories(user.id)
+        prefetchStories(user.id),
+        prefetchEngagement(user.id),
+        prefetchNotifications(user.id),
       ]);
     } else {
       await prefetchHomeFeed(null);
@@ -242,6 +308,8 @@ export const prefetchImmediate = () => {
         prefetchHomeFeed(null).catch(() => {});
         prefetchMessages(userId).catch(() => {});
         prefetchEmails(userId).catch(() => {});
+        prefetchEngagement(userId).catch(() => {});
+        prefetchNotifications(userId).catch(() => {});
       }
     } catch {}
   } else {

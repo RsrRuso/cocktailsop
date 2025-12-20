@@ -5,6 +5,9 @@ interface SimpleQueryOptions<T> {
   enabled?: boolean;
   cacheKey?: string;
   staleTime?: number;
+  // New options for better performance
+  refetchOnMount?: boolean;
+  keepPreviousData?: boolean;
 }
 
 interface SimpleQueryResult<T> {
@@ -12,36 +15,109 @@ interface SimpleQueryResult<T> {
   isLoading: boolean;
   error: unknown;
   refetch: () => Promise<void>;
+  isFetching: boolean;
 }
 
-// Global cache and request deduplication
-const cache = new Map<string, { data: any; timestamp: number }>();
+// Global cache with improved structure
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  isStale: boolean;
+}
+
+const cache = new Map<string, CacheEntry<any>>();
 const pendingRequests = new Map<string, Promise<any>>();
+const subscribers = new Map<string, Set<() => void>>();
+
+// Utility to invalidate cache for a specific key
+export function invalidateCache(key: string): void {
+  cache.delete(key);
+  pendingRequests.delete(key);
+  // Notify all subscribers
+  subscribers.get(key)?.forEach(callback => callback());
+}
+
+// Utility to invalidate all cache keys matching a pattern
+export function invalidateCachePattern(pattern: string): void {
+  const regex = new RegExp(pattern);
+  cache.forEach((_, key) => {
+    if (regex.test(key)) {
+      invalidateCache(key);
+    }
+  });
+}
+
+// Prefetch data into cache
+export async function prefetchQuery<T>(
+  cacheKey: string,
+  queryFn: () => Promise<T>,
+  staleTime: number = 30000
+): Promise<void> {
+  // Skip if already fresh in cache
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < staleTime) {
+    return;
+  }
+
+  // Skip if already fetching
+  if (pendingRequests.has(cacheKey)) {
+    return;
+  }
+
+  const promise = queryFn();
+  pendingRequests.set(cacheKey, promise);
+
+  try {
+    const result = await promise;
+    cache.set(cacheKey, { data: result, timestamp: Date.now(), isStale: false });
+  } catch (err) {
+    console.error(`Prefetch error for ${cacheKey}:`, err);
+  } finally {
+    pendingRequests.delete(cacheKey);
+  }
+}
 
 export function useSimpleQuery<T>(options: SimpleQueryOptions<T>): SimpleQueryResult<T> {
-  const { queryFn, enabled = true, cacheKey, staleTime = 30000 } = options;
+  const { 
+    queryFn, 
+    enabled = true, 
+    cacheKey, 
+    staleTime = 30000,
+    refetchOnMount = true,
+    keepPreviousData = true
+  } = options;
+  
+  // Initialize with cached data immediately (stale-while-revalidate)
   const [data, setData] = useState<T | undefined>(() => {
     if (cacheKey) {
       const cached = cache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < staleTime) {
+      if (cached) {
         return cached.data;
       }
     }
     return undefined;
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(!data);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<unknown>(undefined);
   const mountedRef = useRef(true);
+  const queryFnRef = useRef(queryFn);
+  
+  // Update queryFn ref to avoid stale closures
+  useEffect(() => {
+    queryFnRef.current = queryFn;
+  }, [queryFn]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force: boolean = false) => {
     if (!enabled) return;
     
-    // Check cache first
-    if (cacheKey) {
+    // Check cache first (unless forcing refresh)
+    if (cacheKey && !force) {
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < staleTime) {
-        if (mountedRef.current) {
+        if (mountedRef.current && cached.data !== data) {
           setData(cached.data);
+          setIsLoading(false);
         }
         return;
       }
@@ -53,6 +129,7 @@ export function useSimpleQuery<T>(options: SimpleQueryOptions<T>): SimpleQueryRe
           const result = await pending;
           if (mountedRef.current) {
             setData(result);
+            setIsLoading(false);
           }
           return;
         } catch (err) {
@@ -61,11 +138,15 @@ export function useSimpleQuery<T>(options: SimpleQueryOptions<T>): SimpleQueryRe
       }
     }
     
+    // Only show loading if we don't have data yet
     if (mountedRef.current) {
-      setIsLoading(true);
+      if (!data && !keepPreviousData) {
+        setIsLoading(true);
+      }
+      setIsFetching(true);
     }
     
-    const requestPromise = queryFn();
+    const requestPromise = queryFnRef.current();
     if (cacheKey) {
       pendingRequests.set(cacheKey, requestPromise);
     }
@@ -78,7 +159,7 @@ export function useSimpleQuery<T>(options: SimpleQueryOptions<T>): SimpleQueryRe
         
         // Update cache
         if (cacheKey) {
-          cache.set(cacheKey, { data: result, timestamp: Date.now() });
+          cache.set(cacheKey, { data: result, timestamp: Date.now(), isStale: false });
         }
       }
     } catch (err) {
@@ -91,19 +172,45 @@ export function useSimpleQuery<T>(options: SimpleQueryOptions<T>): SimpleQueryRe
       }
       if (mountedRef.current) {
         setIsLoading(false);
+        setIsFetching(false);
       }
     }
-  }, [enabled, queryFn, cacheKey, staleTime]);
+  }, [enabled, cacheKey, staleTime, data, keepPreviousData]);
+
+  // Subscribe to cache invalidations
+  useEffect(() => {
+    if (!cacheKey) return;
+    
+    const callback = () => {
+      fetchData(true);
+    };
+    
+    if (!subscribers.has(cacheKey)) {
+      subscribers.set(cacheKey, new Set());
+    }
+    subscribers.get(cacheKey)!.add(callback);
+    
+    return () => {
+      subscribers.get(cacheKey)?.delete(callback);
+    };
+  }, [cacheKey, fetchData]);
 
   useEffect(() => {
     mountedRef.current = true;
-    fetchData();
+    
+    // Only fetch on mount if refetchOnMount is true or no cached data
+    if (refetchOnMount || !data) {
+      fetchData();
+    }
+    
     return () => {
       mountedRef.current = false;
     };
-  }, [fetchData]);
+  }, [fetchData, refetchOnMount]);
 
-  return { data, isLoading, error, refetch: fetchData };
+  const refetch = useCallback(() => fetchData(true), [fetchData]);
+
+  return { data, isLoading, error, refetch, isFetching };
 }
 
 interface SimpleMutationOptions<TData, TVariables> {
