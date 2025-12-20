@@ -43,8 +43,8 @@ interface Reel {
 
 // Cache for feed data - persisted across navigations (module-level singleton)
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
-const CACHE_TIME = 30 * 60 * 1000; // 30 minutes for instant loads - aggressive caching
-const INITIAL_LIMIT = 6; // Balanced for faster first paint
+const CACHE_TIME = 60 * 60 * 1000; // 1 hour for instant loads - very aggressive caching
+const INITIAL_LIMIT = 8; // Slightly more for better first paint experience
 
 // Aggressive localStorage cache for instant cold starts
 const STORAGE_KEY = 'feed_cache_v2';
@@ -108,13 +108,18 @@ const isCacheValid = (region: string | null) => {
 };
 
 export const useFeedData = (selectedRegion: string | null) => {
-  // Initialize from cache immediately for instant display - compute once
-  const hasValidCache = useMemo(() => isCacheValid(selectedRegion), [selectedRegion]);
+  // Initialize from prefetch or localStorage immediately
+  initFromPrefetch();
+  const storedCache = loadFromStorage();
   
-  const [posts, setPosts] = useState<Post[]>(() => hasValidCache ? feedCache!.posts : []);
-  const [reels, setReels] = useState<Reel[]>(() => hasValidCache ? feedCache!.reels : []);
-  // INSTANT: Never show loading if we have ANY cache, even if stale
-  const [isLoading, setIsLoading] = useState(() => !feedCache && !loadFromStorage());
+  // Use ANY available cache for instant display (even if region mismatches - filter later)
+  const initialPosts = feedCache?.posts || storedCache?.posts || [];
+  const initialReels = feedCache?.reels || storedCache?.reels || [];
+  
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [reels, setReels] = useState<Reel[]>(initialReels);
+  // INSTANT: Never show loading if we have ANY cached data
+  const [isLoading, setIsLoading] = useState(initialPosts.length === 0 && initialReels.length === 0);
 
   const fetchPosts = useCallback(async () => {
     try {

@@ -319,10 +319,11 @@ const Home = () => {
     });
   }, []);
 
-  // Show skeletons only on very first load when no cached data exists
-  // Otherwise show stale data immediately while refreshing in background
-  const showSkeleton = (isLoading || storiesLoading) && stories.length === 0 && feed.length === 0;
+  // Show skeletons ONLY on absolute first load with zero data
+  // Any cached data = instant display
+  const showSkeleton = isLoading && storiesLoading && stories.length === 0 && feed.length === 0;
   
+  // Render immediately with cached data, never wait
   if (showSkeleton) {
     return (
       <div className="min-h-screen pb-20 pt-16">
