@@ -72,7 +72,9 @@ export const ProductionCard = ({
             bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
             leftoverMl = scaledMl % matchingSpirit.bottle_size_ml;
             totalBottles += bottles;
-            totalLeftoverMl += leftoverMl;
+
+            // "Extra ML" is only the remainder beyond at least one full bottle.
+            if (bottles > 0) totalLeftoverMl += leftoverMl;
           }
 
           ingredientDetails.push({
