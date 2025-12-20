@@ -306,7 +306,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         return;
       }
 
-      // Bulk insert unique new items
+      // Bulk upsert unique new items (handles duplicates gracefully)
       const newItems = Array.from(uniqueItems.values()).map(item => ({
         user_id: user?.id,
         workspace_id: workspaceId || null,
@@ -315,14 +315,24 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         last_price: item.price_per_unit
       }));
 
-      const { error: insertError } = await supabase
-        .from('purchase_order_master_items')
-        .insert(newItems);
-
-      if (insertError) throw insertError;
+      // Insert items one by one to handle duplicates gracefully
+      let addedCount = 0;
+      for (const item of newItems) {
+        try {
+          await addMasterItem.mutateAsync({
+            item_name: item.item_name,
+            unit: item.unit || undefined,
+            last_price: item.last_price || undefined
+          });
+          addedCount++;
+        } catch (err) {
+          // Skip duplicates silently
+          console.log('Skipping duplicate:', item.item_name);
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
-      toast.success(`Added ${newItems.length} unique items`);
+      toast.success(`Added ${addedCount} unique items`);
     } catch (error: any) {
       toast.error("Failed to sync: " + error.message);
     }
@@ -411,23 +421,24 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
               return;
             }
             
-            // Insert new items
-            const newItems = Array.from(uniqueItems.values()).map(item => ({
-              user_id: user?.id,
-              workspace_id: workspaceId || null,
-              item_name: item.item_name.trim(),
-              unit: item.unit,
-              last_price: item.price_per_unit
-            }));
-            
-            const { error: insertError } = await supabase
-              .from('purchase_order_master_items')
-              .insert(newItems);
-            
-            if (insertError) throw insertError;
+            // Insert new items one by one to handle duplicates gracefully
+            let addedCount = 0;
+            for (const item of Array.from(uniqueItems.values())) {
+              try {
+                await addMasterItem.mutateAsync({
+                  item_name: item.item_name.trim(),
+                  unit: item.unit || undefined,
+                  last_price: item.price_per_unit || undefined
+                });
+                addedCount++;
+              } catch (err) {
+                // Skip duplicates silently
+                console.log('Skipping duplicate:', item.item_name);
+              }
+            }
             
             queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
-            toast.success(`Added ${newItems.length} unique items from file`);
+            toast.success(`Added ${addedCount} unique items from file`);
             resolve();
           } catch (err: any) {
             toast.error("Failed to import: " + err.message);
