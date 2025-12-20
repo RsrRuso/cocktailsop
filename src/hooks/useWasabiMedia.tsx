@@ -26,8 +26,12 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
   const videoStreamRef = useRef<MediaStream | null>(null);
 
   const uploadToStorage = async (file: Blob, folder: string, fileName: string) => {
+    if (!navigator.onLine) {
+      throw new Error('offline');
+    }
+
     const filePath = `${folder}/${conversationId}/${Date.now()}_${fileName}`;
-    
+
     const { data, error } = await supabase.storage
       .from('wasabi-media')
       .upload(filePath, file);
@@ -44,6 +48,11 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
   const sendMediaMessage = async (mediaUrl: string, messageType: string, content?: string) => {
     if (!currentUserId || !conversationId) return;
 
+    if (!navigator.onLine) {
+      toast.error("You're offline", { description: 'Reconnect to send media' });
+      return;
+    }
+
     const { error } = await supabase
       .from('wasabi_messages')
       .insert({
@@ -51,7 +60,7 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
         sender_id: currentUserId,
         message_type: messageType,
         media_url: mediaUrl,
-        content: content || null
+        content: content || null,
       });
 
     if (error) throw error;
@@ -116,9 +125,10 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
           const url = await uploadToStorage(audioBlob, 'voice', 'voice.webm');
           await sendMediaMessage(url, 'voice', `Voice message (${voiceDuration}s)`);
           toast.success('Voice message sent');
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error uploading voice:', error);
-          toast.error('Failed to send voice message');
+          const msg = String(error?.message || error);
+          toast.error(msg === 'offline' ? "You're offline" : 'Failed to send voice message');
         } finally {
           setIsUploading(false);
           setVoiceDuration(0);
@@ -206,9 +216,10 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
           const url = await uploadToStorage(videoBlob, 'videos', 'video.webm');
           await sendMediaMessage(url, 'video', `Video message (${videoDuration}s)`);
           toast.success('Video message sent');
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error uploading video:', error);
-          toast.error('Failed to send video message');
+          const msg = String(error?.message || error);
+          toast.error(msg === 'offline' ? "You're offline" : 'Failed to send video message');
         } finally {
           setIsUploading(false);
           setVideoDuration(0);
@@ -246,9 +257,10 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
       const url = await uploadToStorage(file, folder, file.name);
       await sendMediaMessage(url, type, file.name);
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} sent`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading file:', error);
-      toast.error(`Failed to send ${type}`);
+      const msg = String(error?.message || error);
+      toast.error(msg === 'offline' ? "You're offline" : `Failed to send ${type}`);
     } finally {
       setIsUploading(false);
     }
