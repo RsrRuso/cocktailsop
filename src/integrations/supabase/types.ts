@@ -14619,18 +14619,12 @@ export type Database = {
     Views: {
       profiles_secure: {
         Row: {
-          address: string | null
           avatar_url: string | null
           badge_level: Database["public"]["Enums"]["badge_level"] | null
           bio: string | null
           career_score: number | null
-          city: string | null
-          country: string | null
           cover_url: string | null
           created_at: string | null
-          date_of_birth: string | null
-          email: string | null
-          email_verified: boolean | null
           follower_count: number | null
           following_count: number | null
           full_name: string | null
@@ -14638,9 +14632,7 @@ export type Database = {
           interests: string[] | null
           is_bot: boolean | null
           phone: string | null
-          phone_verified: boolean | null
           post_count: number | null
-          postal_code: string | null
           professional_title:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -14648,25 +14640,18 @@ export type Database = {
           show_phone: boolean | null
           show_website: boolean | null
           show_whatsapp: boolean | null
-          updated_at: string | null
           user_type: string | null
           username: string | null
           website: string | null
           whatsapp: string | null
         }
         Insert: {
-          address?: never
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
-          city?: never
-          country?: never
           cover_url?: string | null
           created_at?: string | null
-          date_of_birth?: string | null
-          email?: never
-          email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
           full_name?: string | null
@@ -14674,9 +14659,7 @@ export type Database = {
           interests?: string[] | null
           is_bot?: boolean | null
           phone?: never
-          phone_verified?: boolean | null
           post_count?: number | null
-          postal_code?: never
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -14684,25 +14667,18 @@ export type Database = {
           show_phone?: boolean | null
           show_website?: boolean | null
           show_whatsapp?: boolean | null
-          updated_at?: string | null
           user_type?: string | null
           username?: string | null
           website?: never
           whatsapp?: never
         }
         Update: {
-          address?: never
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
-          city?: never
-          country?: never
           cover_url?: string | null
           created_at?: string | null
-          date_of_birth?: string | null
-          email?: never
-          email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
           full_name?: string | null
@@ -14710,9 +14686,7 @@ export type Database = {
           interests?: string[] | null
           is_bot?: boolean | null
           phone?: never
-          phone_verified?: boolean | null
           post_count?: number | null
-          postal_code?: never
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -14720,7 +14694,6 @@ export type Database = {
           show_phone?: boolean | null
           show_website?: boolean | null
           show_whatsapp?: boolean | null
-          updated_at?: string | null
           user_type?: string | null
           username?: string | null
           website?: never
@@ -14817,6 +14790,42 @@ export type Database = {
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
         Returns: number
+      }
+      get_own_profile: {
+        Args: never
+        Returns: {
+          address: string
+          avatar_url: string
+          badge_level: string
+          bio: string
+          career_score: number
+          city: string
+          country: string
+          cover_url: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          email_verified: boolean
+          follower_count: number
+          following_count: number
+          full_name: string
+          id: string
+          interests: string[]
+          is_bot: boolean
+          phone: string
+          phone_verified: boolean
+          post_count: number
+          postal_code: string
+          professional_title: string
+          region: string
+          show_phone: boolean
+          show_website: boolean
+          show_whatsapp: boolean
+          user_type: string
+          username: string
+          website: string
+          whatsapp: string
+        }[]
       }
       get_task_hierarchy: {
         Args: { task_id: string }
