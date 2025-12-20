@@ -114,6 +114,60 @@ export const throttle = <T extends (...args: any[]) => void>(fn: T, limit: numbe
   };
 };
 
+// Optimistic navigation - prepare next page before click completes
+export const prefetchOnHover = (routePath: string, prefetchFn: () => Promise<void>) => {
+  let prefetched = false;
+  return {
+    onMouseEnter: () => {
+      if (!prefetched && getConnectionQuality() === 'fast') {
+        prefetched = true;
+        prefetchFn().catch(() => {});
+      }
+    },
+    onTouchStart: () => {
+      if (!prefetched) {
+        prefetched = true;
+        prefetchFn().catch(() => {});
+      }
+    }
+  };
+};
+
+// Intersection Observer for lazy loading with prefetch
+const observerCallbacks = new Map<Element, () => void>();
+let intersectionObserver: IntersectionObserver | null = null;
+
+const getObserver = () => {
+  if (!intersectionObserver) {
+    intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const callback = observerCallbacks.get(entry.target);
+            if (callback) {
+              callback();
+              observerCallbacks.delete(entry.target);
+              intersectionObserver?.unobserve(entry.target);
+            }
+          }
+        });
+      },
+      { rootMargin: '200px' } // Prefetch when 200px away from viewport
+    );
+  }
+  return intersectionObserver;
+};
+
+export const observeForPrefetch = (element: Element, callback: () => void) => {
+  observerCallbacks.set(element, callback);
+  getObserver().observe(element);
+  
+  return () => {
+    observerCallbacks.delete(element);
+    getObserver().unobserve(element);
+  };
+};
+
 // Initialize performance optimizations
 export const initFastLoad = () => {
   // Add resource hints immediately
