@@ -67,63 +67,19 @@ export const WasabiNewChatDialog = ({
   const handleCreateChat = async (otherUserId: string) => {
     setCreating(otherUserId);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Use atomic server-side function to get or create DM
+      const { data, error } = await supabase.rpc('wasabi_get_or_create_dm', {
+        other_user_id: otherUserId
+      });
 
-      // Check if conversation already exists
-      const { data: existingMembership } = await supabase
-        .from('wasabi_members')
-        .select('conversation_id, wasabi_conversations!inner(is_group)')
-        .eq('user_id', user.id);
+      if (error) throw error;
 
-      if (existingMembership) {
-        for (const m of existingMembership) {
-          const conv = m.wasabi_conversations as any;
-          if (conv?.is_group) continue;
-          
-          const { data: otherMember } = await supabase
-            .from('wasabi_members')
-            .select('user_id')
-            .eq('conversation_id', m.conversation_id)
-            .eq('user_id', otherUserId)
-            .single();
-
-          if (otherMember) {
-            onChatCreated(m.conversation_id);
-            onOpenChange(false);
-            return;
-          }
-        }
-      }
-
-      // Create new conversation
-      const { data: newConv, error: convError } = await supabase
-        .from('wasabi_conversations')
-        .insert({
-          is_group: false,
-          created_by: user.id
-        })
-        .select()
-        .single();
-
-      if (convError) throw convError;
-
-      // Add both members
-      const { error: memberError } = await supabase
-        .from('wasabi_members')
-        .insert([
-          { conversation_id: newConv.id, user_id: user.id, role: 'admin' },
-          { conversation_id: newConv.id, user_id: otherUserId, role: 'member' }
-        ]);
-
-      if (memberError) throw memberError;
-
-      onChatCreated(newConv.id);
+      onChatCreated(data);
       onOpenChange(false);
-      toast.success('Chat created!');
-    } catch (error) {
+      toast.success('Chat ready!');
+    } catch (error: any) {
       console.error('Error creating chat:', error);
-      toast.error('Failed to create chat');
+      toast.error(error?.message || 'Failed to create chat');
     } finally {
       setCreating(null);
     }

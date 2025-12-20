@@ -14736,6 +14736,10 @@ export type Database = {
           workspace_type: string
         }[]
       }
+      wasabi_get_or_create_dm: {
+        Args: { other_user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
