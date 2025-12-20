@@ -14624,10 +14624,6 @@ export type Database = {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: boolean
       }
-      is_profile_visible_to_user: {
-        Args: { profile_user_id: string; requesting_user_id: string }
-        Returns: boolean
-      }
       is_team_member: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
