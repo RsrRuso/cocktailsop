@@ -1,11 +1,35 @@
+import { useEffect, useRef } from 'react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { Wifi, WifiOff, Signal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export const NetworkStatusIndicator = () => {
   const { isOnline, isSlowConnection } = useNetworkStatus();
+  const prevOnlineRef = useRef(isOnline);
 
-  // Only show indicator when there's an issue
+  // Show toast notification when connection status changes
+  useEffect(() => {
+    // Only trigger on actual status change (not initial mount)
+    if (prevOnlineRef.current !== isOnline) {
+      if (!isOnline) {
+        toast.error("You're offline", {
+          description: "Check your internet connection",
+          icon: <WifiOff className="w-5 h-5" />,
+          duration: 5000,
+        });
+      } else {
+        toast.success("Back online", {
+          description: "Connection restored",
+          icon: <Wifi className="w-5 h-5" />,
+          duration: 3000,
+        });
+      }
+    }
+    prevOnlineRef.current = isOnline;
+  }, [isOnline]);
+
+  // Only show persistent indicator when there's an issue
   if (isOnline && !isSlowConnection) return null;
 
   return (
