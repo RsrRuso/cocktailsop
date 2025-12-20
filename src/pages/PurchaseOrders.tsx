@@ -357,11 +357,56 @@ const PurchaseOrders = () => {
         if (itemsError) throw itemsError;
       }
       
-      return { orderData, items: itemsToInsert };
+      // If this is an RQ order, also create po_received_records entry for FIFO sync
+      let receivedRecordId: string | null = null;
+      if (newOrder.order_number?.toUpperCase().startsWith('RQ')) {
+        const { data: recRecord, error: recError } = await (supabase as any)
+          .from('po_received_records')
+          .insert({
+            user_id: user?.id,
+            workspace_id: selectedWorkspaceId || null,
+            supplier_name: newOrder.supplier_name || null,
+            document_number: newOrder.order_number,
+            received_date: newOrder.order_date,
+            total_items: itemsToInsert.length,
+            total_quantity: itemsToInsert.reduce((sum, i) => sum + (i.quantity || 0), 0),
+            total_value: totalAmount,
+            status: 'complete',
+            received_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
+            received_by_email: staffMode ? null : (profile?.email || user?.email || null)
+          })
+          .select()
+          .single();
+        
+        if (!recError && recRecord) {
+          receivedRecordId = recRecord.id;
+          
+          // Create purchase_order_received_items for each item
+          const receivedItems = itemsToInsert.map(item => ({
+            purchase_order_id: orderData.id,
+            record_id: recRecord.id,
+            document_number: newOrder.order_number,
+            item_name: item.item_name,
+            quantity: item.quantity,
+            unit_price: item.price_per_unit || null,
+            total_price: item.price_total || null,
+            received_date: newOrder.order_date,
+            user_id: user?.id,
+            workspace_id: selectedWorkspaceId || null
+          }));
+          
+          await (supabase as any)
+            .from('purchase_order_received_items')
+            .insert(receivedItems);
+        }
+      }
+      
+      return { orderData, items: itemsToInsert, receivedRecordId };
     },
     onSuccess: async (result) => {
       toast.success("Purchase order created");
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['po-received-records'] });
       
       // Auto-add items to master list
       if (result.items && result.items.length > 0) {
