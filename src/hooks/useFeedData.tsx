@@ -122,6 +122,11 @@ export const useFeedData = (selectedRegion: string | null) => {
   const [isLoading, setIsLoading] = useState(initialPosts.length === 0 && initialReels.length === 0);
 
   const fetchPosts = useCallback(async () => {
+    // Skip network request if offline - use cached data
+    if (!navigator.onLine) {
+      return posts.length > 0 ? posts : [];
+    }
+    
     try {
       // Fetch posts WITHOUT expensive profile joins, but include music fields
       const { data: postsData, error } = await supabase
@@ -131,7 +136,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .limit(INITIAL_LIMIT);
 
       if (error) throw error;
-      if (!postsData) return;
+      if (!postsData) return posts; // Return existing data on empty response
 
       // Fetch profiles separately in ONE query
       const userIds = [...new Set(postsData.map(p => p.user_id))];
@@ -154,12 +159,17 @@ export const useFeedData = (selectedRegion: string | null) => {
       setPosts(filteredPosts);
       return filteredPosts;
     } catch (error) {
-      console.error('Fetch posts failed');
-      return [];
+      // Silently fail and return cached data
+      return posts.length > 0 ? posts : [];
     }
-  }, [selectedRegion]);
+  }, [selectedRegion, posts]);
 
   const fetchReels = useCallback(async () => {
+    // Skip network request if offline - use cached data
+    if (!navigator.onLine) {
+      return reels.length > 0 ? reels : [];
+    }
+    
     try {
       // Fetch reels WITH music track info
       const { data: reelsData, error } = await supabase
@@ -173,7 +183,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .limit(INITIAL_LIMIT);
 
       if (error) throw error;
-      if (!reelsData) return;
+      if (!reelsData) return reels; // Return existing data on empty response
 
       // Fetch profiles separately in ONE query
       const userIds = [...new Set(reelsData.map(r => r.user_id))];
@@ -198,10 +208,10 @@ export const useFeedData = (selectedRegion: string | null) => {
       setReels(filteredReels);
       return filteredReels;
     } catch (error) {
-      console.error('Fetch reels failed');
-      return [];
+      // Silently fail and return cached data
+      return reels.length > 0 ? reels : [];
     }
-  }, [selectedRegion]);
+  }, [selectedRegion, reels]);
 
   const refreshFeed = useCallback(async (forceRefresh: boolean = false) => {
     // Instant display from cache - skip network completely if valid
