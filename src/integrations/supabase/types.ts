@@ -14937,6 +14937,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      verify_staff_pin: {
+        Args: { p_outlet_id: string; p_pin_code: string }
+        Returns: {
+          staff_id: string
+          staff_name: string
+          staff_permissions: Json
+          staff_role: string
+        }[]
+      }
       verify_workspace_member_pin: {
         Args: { p_pin_code: string; p_workspace_id: string }
         Returns: {
