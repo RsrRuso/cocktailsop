@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useRef, useCallback } from 'react';
-import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Bookmark, Loader2 } from 'lucide-react';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import {
   DropdownMenu,
@@ -53,6 +53,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [audioReady, setAudioReady] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
@@ -67,6 +68,11 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   const shouldMuteVideo = hasAttachedMusic && reel.mute_original_audio === true;
   // Global mute state is controlled by the user
   const isUserMuted = mutedVideos.has(reel.id);
+
+  // Reset loading state when video URL changes
+  useEffect(() => {
+    setIsVideoLoaded(false);
+  }, [reel.video_url]);
 
   // Preload adjacent videos aggressively (skip for image reels)
   useEffect(() => {
@@ -159,7 +165,14 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   };
 
   return (
-    <div className="h-screen snap-start relative">
+    <div className="h-screen snap-start relative bg-black">
+      {/* Loading spinner - shows while video is loading */}
+      {!isImageReel && !isVideoLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black">
+          <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
+        </div>
+      )}
+      
       {/* Full Screen Media */}
       {isImageReel ? (
         <img
@@ -173,10 +186,14 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           ref={videoRef}
           src={reel.video_url}
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ backgroundColor: 'black' }}
           loop
           playsInline
+          autoPlay
           muted={shouldMuteVideo || isUserMuted}
           preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
+          onLoadedData={() => setIsVideoLoaded(true)}
+          onCanPlay={() => setIsVideoLoaded(true)}
         />
       )}
 
