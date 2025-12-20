@@ -45,6 +45,8 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Tools = lazy(() => import("./pages/Tools"));
 const BusinessHub = lazy(() => import("./pages/BusinessHub"));
 const OpsTools = lazy(() => import("./pages/OpsTools"));
+const Wasabi = lazy(() => import("./pages/Wasabi"));
+const WasabiChat = lazy(() => import("./pages/WasabiChat"));
 const TaskManager = lazy(() => import("./pages/TaskManager"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const TeamDashboard = lazy(() => import("./pages/TeamDashboard"));
@@ -244,6 +246,8 @@ const AppContent = () => {
           <Route path="/tools" element={<Tools />} />
           <Route path="/business-hub" element={<BusinessHub />} />
           <Route path="/ops-tools" element={<OpsTools />} />
+          <Route path="/wasabi" element={<Wasabi />} />
+          <Route path="/wasabi/:conversationId" element={<WasabiChat />} />
           <Route path="/task-manager" element={<TaskManager />} />
           <Route path="/team-management" element={<TeamManagement />} />
           <Route path="/team-dashboard" element={<TeamDashboard />} />
