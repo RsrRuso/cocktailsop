@@ -298,9 +298,19 @@ const BatchQRSubmit = () => {
           .eq("id", user.id)
           .maybeSingle();
 
-        if (profile) {
-          setProducedByName(profile.full_name || profile.username || "");
+        let name = profile?.full_name || profile?.username || "";
+        
+        // Fallback: extract name from email if no profile name
+        if (!name && user.email) {
+          const emailName = user.email.split('@')[0];
+          name = emailName
+            .replace(/[._]/g, ' ')
+            .split(' ')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
         }
+        
+        setProducedByName(name);
       }
     } catch (error) {
       console.error("Error loading QR data:", error);
