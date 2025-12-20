@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Search, TrendingUp, Clock, Brain, Sparkles, Target, Zap, Award, Camera, Music, MessageCircle, X } from 'lucide-react';
+import { Heart, Search, Clock, Sparkles, Camera, Music, MessageCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ContentType, getEngagementConfig, Like } from '@/types/engagement';
-import { getAbbreviatedName } from '@/lib/profileUtils';
 import { toast } from 'sonner';
 
 interface EnhancedLikesDialogProps {
@@ -33,12 +30,6 @@ export const EnhancedLikesDialog = ({
   const [filteredLikes, setFilteredLikes] = useState<Like[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [aiInsights, setAiInsights] = useState({
-    topInfluencer: null as Like | null,
-    engagementVelocity: 0,
-    predictedGrowth: 0,
-    audienceQuality: 0,
-  });
 
   const config = getEngagementConfig(contentType);
 
@@ -60,26 +51,6 @@ export const EnhancedLikesDialog = ({
       setFilteredLikes(filtered);
     }
   }, [searchQuery, likes]);
-
-  // AI Analytics
-  useEffect(() => {
-    if (likes.length > 0) {
-      const topInfluencer = likes[0];
-      const oldestLike = new Date(likes[likes.length - 1].created_at);
-      const newestLike = new Date(likes[0].created_at);
-      const hoursDiff = Math.max(1, (newestLike.getTime() - oldestLike.getTime()) / (1000 * 60 * 60));
-      const velocity = likes.length / hoursDiff;
-      const predictedGrowth = Math.min(100, velocity * 10 + likes.length * 0.5);
-      const audienceQuality = Math.min(100, (likes.length / hoursDiff) * 15);
-      
-      setAiInsights({
-        topInfluencer,
-        engagementVelocity: velocity,
-        predictedGrowth,
-        audienceQuality,
-      });
-    }
-  }, [likes]);
 
   const fetchLikes = async () => {
     setLoading(true);
@@ -137,7 +108,7 @@ export const EnhancedLikesDialog = ({
             <X className="w-5 h-5" />
           </button>
 
-          {/* Header - Transparent */}
+          {/* Header */}
           <div className="p-6 pb-4 text-center">
             <div className="flex items-center justify-center gap-3 mb-2">
               <div className="relative">
@@ -148,14 +119,10 @@ export const EnhancedLikesDialog = ({
               </div>
               <div className="flex-1">
                 <DialogPrimitive.Title className="text-xl font-semibold text-white">
-                  AI-Powered Likes Analysis
+                  Likes
                 </DialogPrimitive.Title>
-                <p className="text-sm text-white/60">{likes.length} total engagements</p>
+                <p className="text-sm text-white/60">{likes.length} people liked this</p>
               </div>
-              <Badge variant="secondary" className="gap-1 bg-amber-500/90 text-black border-0 px-3 py-1.5">
-                <Brain className="w-3 h-3" />
-                Live AI
-              </Badge>
             </div>
           </div>
 
@@ -189,63 +156,6 @@ export const EnhancedLikesDialog = ({
               <span className="text-sm text-white/80">Status</span>
             </button>
           </div>
-
-          {/* AI Insights Section - Transparent cards */}
-          {likes.length > 0 && (
-            <div className="p-6 pt-2 space-y-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                <h3 className="font-semibold text-sm text-white">Real-Time Insights</h3>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-3">
-                <Card className="p-3 bg-white/5 backdrop-blur-md border-purple-500/30 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs text-white/60">Velocity</span>
-                  </div>
-                  <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    {aiInsights.engagementVelocity.toFixed(1)}/h
-                  </div>
-                  <Progress value={Math.min(100, aiInsights.engagementVelocity * 10)} className="h-1 mt-2 bg-white/10" />
-                </Card>
-
-                <Card className="p-3 bg-white/5 backdrop-blur-md border-green-500/30 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-green-400" />
-                    <span className="text-xs text-white/60">Growth</span>
-                  </div>
-                  <div className="text-2xl font-bold text-green-400">
-                    {aiInsights.predictedGrowth.toFixed(0)}%
-                  </div>
-                  <Progress value={aiInsights.predictedGrowth} className="h-1 mt-2 bg-white/10" />
-                </Card>
-
-                <Card className="p-3 bg-white/5 backdrop-blur-md border-blue-500/30 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Award className="w-4 h-4 text-blue-400" />
-                    <span className="text-xs text-white/60">Quality</span>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-400">
-                    {aiInsights.audienceQuality.toFixed(0)}%
-                  </div>
-                  <Progress value={aiInsights.audienceQuality} className="h-1 mt-2 bg-white/10" />
-                </Card>
-              </div>
-
-              {aiInsights.topInfluencer && (
-                <Card className="p-3 bg-yellow-500/10 backdrop-blur-md border-yellow-500/40 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Target className="w-5 h-5 text-yellow-500" />
-                    <div>
-                      <p className="text-xs text-white/60 mb-1">Top Influencer</p>
-                      <p className="font-medium text-sm text-white">@{aiInsights.topInfluencer.profiles.username}</p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-            </div>
-          )}
 
           {/* Search */}
           {likes.length > 3 && (
@@ -311,7 +221,7 @@ export const EnhancedLikesDialog = ({
                         
                         <div className="relative flex-1 min-w-0">
                           <p className="font-semibold truncate text-white group-hover:text-purple-300 transition-colors">
-                            {getAbbreviatedName(like.profiles.full_name)}
+                            {like.profiles.full_name || like.profiles.username}
                           </p>
                           <p className="text-sm text-white/60 truncate">
                             @{like.profiles.username}
