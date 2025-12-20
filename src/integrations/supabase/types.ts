@@ -14740,6 +14740,14 @@ export type Database = {
         Args: { other_user_id: string }
         Returns: string
       }
+      wasabi_is_admin: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      wasabi_is_member: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
