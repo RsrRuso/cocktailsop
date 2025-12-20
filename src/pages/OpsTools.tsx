@@ -422,7 +422,7 @@ const OpsTools = () => {
     communication: [
       {
         name: "Wasabi",
-        description: "WhatsApp-style team messaging",
+        description: "Team messaging",
         details: "Full-featured team chat with text, voice, media sharing, group chats, reactions, read receipts, and real-time messaging. Perfect for restaurant and bar team communication.",
         icon: MessageCircle,
         gradient: "from-green-600 to-emerald-500",
