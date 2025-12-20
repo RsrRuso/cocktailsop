@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Calculator, BookOpen, FileText, Lock, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper } from "lucide-react";
+import { Calculator, BookOpen, FileText, Lock, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -195,20 +195,36 @@ const Tools = () => {
         {/* Tools Grid */}
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-3">Business & Networking</h3>
-          <button
-            onClick={() => window.location.href = '/business-hub'}
-            className="glass-hover rounded-2xl p-6 text-left space-y-3 w-full"
-          >
-            <div className="w-12 h-12 rounded-xl glass flex items-center justify-center glow-primary">
-              <Users className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Business Hub</h3>
-              <p className="text-sm text-muted-foreground">
-                Connect investors with innovative business ideas
-              </p>
-            </div>
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => window.location.href = '/business-hub'}
+              className="glass-hover rounded-2xl p-6 text-left space-y-3 w-full"
+            >
+              <div className="w-12 h-12 rounded-xl glass flex items-center justify-center glow-primary">
+                <Users className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Business Hub</h3>
+                <p className="text-sm text-muted-foreground">
+                  Connect investors with innovative business ideas
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => window.location.href = '/wasabi-chat'}
+              className="glass-hover rounded-2xl p-6 text-left space-y-3 w-full"
+            >
+              <div className="w-12 h-12 rounded-xl glass flex items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Wasabi Chat</h3>
+                <p className="text-sm text-muted-foreground">
+                  Smart messaging with voice, video & media sharing
+                </p>
+              </div>
+            </button>
+          </div>
         </div>
 
         <div>
