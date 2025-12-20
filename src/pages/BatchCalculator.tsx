@@ -4536,30 +4536,44 @@ const BatchCalculator = () => {
                       </Button>
                     </div>
                     {(() => {
-                      // Calculate advanced producer metrics
+                      // Calculate advanced producer metrics - GROUP BY USER ID to prevent duplicates
                       const producerMetrics = productions.reduce((acc, prod) => {
-                        const name = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
-                        if (!acc[name]) {
-                          acc[name] = { 
+                        // Use user_id as the key for proper deduplication, fallback to name/email for anonymous
+                        const key = prod.produced_by_user_id || prod.produced_by_email || prod.produced_by_name || 'unknown';
+                        const displayName = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
+                        
+                        if (!acc[key]) {
+                          acc[key] = { 
                             count: 0, 
                             liters: 0, 
                             serves: 0,
                             recipes: new Set<string>(),
                             dates: [] as string[],
-                            batches: [] as { date: Date; liters: number }[]
+                            batches: [] as { date: Date; liters: number }[],
+                            // Track the most recent name for display
+                            latestName: displayName,
+                            latestDate: new Date(prod.production_date)
                           };
                         }
-                        acc[name].count += 1;
-                        acc[name].liters += prod.target_liters;
-                        acc[name].serves += prod.target_serves || 0;
-                        acc[name].recipes.add(prod.batch_name);
-                        acc[name].dates.push(new Date(prod.production_date).toDateString());
-                        acc[name].batches.push({ date: new Date(prod.production_date), liters: prod.target_liters });
+                        
+                        // Update display name if this production is more recent
+                        const prodDate = new Date(prod.production_date);
+                        if (prodDate > acc[key].latestDate) {
+                          acc[key].latestName = displayName;
+                          acc[key].latestDate = prodDate;
+                        }
+                        
+                        acc[key].count += 1;
+                        acc[key].liters += prod.target_liters;
+                        acc[key].serves += prod.target_serves || 0;
+                        acc[key].recipes.add(prod.batch_name);
+                        acc[key].dates.push(new Date(prod.production_date).toDateString());
+                        acc[key].batches.push({ date: new Date(prod.production_date), liters: prod.target_liters });
                         return acc;
-                      }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: string[]; batches: { date: Date; liters: number }[] }>);
+                      }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: string[]; batches: { date: Date; liters: number }[]; latestName: string; latestDate: Date }>);
                       
                       // Calculate rankings and achievements
-                      const rankings = Object.entries(producerMetrics).map(([name, stats]) => {
+                      const rankings = Object.entries(producerMetrics).map(([key, stats]) => {
                         // Calculate consistency (standard deviation of batch sizes)
                         const avgBatch = stats.liters / stats.count;
                         const variance = stats.batches.reduce((sum, b) => sum + Math.pow(b.liters - avgBatch, 2), 0) / stats.count;
@@ -4596,7 +4610,9 @@ const BatchCalculator = () => {
                         if (consistencyScore >= 90) achievements.push('🎖️ Consistent');
                         
                         return {
-                          name,
+                          // Use latestName for display instead of the key (user_id)
+                          name: stats.latestName,
+                          key, // Keep key for React key prop
                           ...stats,
                           recipeCount: stats.recipes.size,
                           avgBatch,
@@ -4642,7 +4658,7 @@ const BatchCalculator = () => {
                           {/* Full Leaderboard */}
                           <div className="space-y-2">
                             {byVolume.map((producer, index) => (
-                              <div key={producer.name} className="p-3 bg-muted/20 rounded-lg">
+                              <div key={producer.key} className="p-3 bg-muted/20 rounded-lg">
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center gap-2">
                                     <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
