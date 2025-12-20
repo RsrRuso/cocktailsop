@@ -145,12 +145,17 @@ const StoreManagement = () => {
     };
     
     window.addEventListener('storage', handleStorageChange);
-    // Also check on mount and when returning to this page
-    const interval = setInterval(handleStorageChange, 500);
+    // Check on visibility change (when user returns to tab) instead of polling
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleStorageChange();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

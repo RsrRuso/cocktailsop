@@ -199,12 +199,17 @@ export default function LiveOpsDashboard({ outletId, outletName }: LiveOpsDashbo
       )
       .subscribe();
 
-    // Refresh every 30 seconds for wait time updates
-    const interval = setInterval(fetchData, 30000);
+    // Realtime handles updates - only refresh on visibility change for wait times
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [outletId]);
 

@@ -35,10 +35,16 @@ const POMasterItems = () => {
       setCurrency(newCurrency);
     };
     window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(handleStorageChange, 500);
+    // Check on visibility change instead of polling
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleStorageChange();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
