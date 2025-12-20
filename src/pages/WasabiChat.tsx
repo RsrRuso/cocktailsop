@@ -119,22 +119,49 @@ const WasabiChat = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast.error('Please sign in to use chat');
+        navigate('/auth');
+        setLoading(false);
+        return;
+      }
       setCurrentUserId(user.id);
+
+      // Guard: user must be a member of this conversation
+      const { data: membership, error: membershipError } = await supabase
+        .from('wasabi_members')
+        .select('id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membershipError) throw membershipError;
+      if (!membership) {
+        toast.error("You don't have access to this chat");
+        navigate('/wasabi');
+        setLoading(false);
+        return;
+      }
 
       const { data: conv, error } = await supabase
         .from('wasabi_conversations')
         .select('*')
         .eq('id', conversationId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!conv) {
+        toast.error('Chat not found');
+        navigate('/wasabi');
+        setLoading(false);
+        return;
+      }
 
       let info: ChatInfo = {
         id: conv.id,
         name: conv.name,
         is_group: conv.is_group,
-        avatar_url: conv.avatar_url
+        avatar_url: conv.avatar_url,
       };
 
       if (!conv.is_group) {
@@ -143,14 +170,14 @@ const WasabiChat = () => {
           .select('user_id')
           .eq('conversation_id', conversationId)
           .neq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (otherMember) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('id, username, full_name, avatar_url')
             .eq('id', otherMember.user_id)
-            .single();
+            .maybeSingle();
           info.other_user = profile || undefined;
         }
       } else {
@@ -162,16 +189,38 @@ const WasabiChat = () => {
       }
 
       setChatInfo(info);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching chat info:', error);
-      toast.error('Failed to load chat');
+      const msg = String(error?.message || error);
+      toast.error(msg.includes('row-level security') ? "You don't have access to this chat" : 'Failed to load chat');
     }
-  }, [conversationId]);
+  }, [conversationId, navigate]);
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) return;
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // If user isn't a member, don't try to load messages (avoids confusing RLS errors)
+      const { data: membership, error: membershipError } = await supabase
+        .from('wasabi_members')
+        .select('id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membershipError) throw membershipError;
+      if (!membership) {
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('wasabi_messages')
         .select('*')
@@ -187,7 +236,7 @@ const WasabiChat = () => {
             .from('profiles')
             .select('username, full_name, avatar_url')
             .eq('id', msg.sender_id)
-            .single();
+            .maybeSingle();
 
           const { data: reactions } = await supabase
             .from('wasabi_reactions')
@@ -200,13 +249,13 @@ const WasabiChat = () => {
               .from('wasabi_messages')
               .select('id, content, message_type, sender_id')
               .eq('id', msg.reply_to_id)
-              .single();
+              .maybeSingle();
             if (replyData) {
               const { data: replySender } = await supabase
                 .from('profiles')
                 .select('username, full_name')
                 .eq('id', replyData.sender_id)
-                .single();
+                .maybeSingle();
               replyTo = { ...replyData, sender: replySender } as Message;
             }
           }
@@ -215,22 +264,19 @@ const WasabiChat = () => {
             ...msg,
             sender: profile,
             reactions: reactions || [],
-            reply_to: replyTo
+            reply_to: replyTo,
           };
         })
       );
 
       setMessages(messagesWithDetails);
-      
+
       // Update last read
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('wasabi_members')
-          .update({ last_read_at: new Date().toISOString() })
-          .eq('conversation_id', conversationId)
-          .eq('user_id', user.id);
-      }
+      await supabase
+        .from('wasabi_members')
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -239,6 +285,8 @@ const WasabiChat = () => {
   }, [conversationId]);
 
   useEffect(() => {
+    if (!conversationId) return;
+
     fetchChatInfo();
     fetchMessages();
 
@@ -247,20 +295,20 @@ const WasabiChat = () => {
       .channel(`wasabi-chat-${conversationId}`)
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'wasabi_messages',
-          filter: `conversation_id=eq.${conversationId}`
+          filter: `conversation_id=eq.${conversationId}`,
         },
         () => fetchMessages()
       )
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'wasabi_reactions'
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wasabi_reactions',
         },
         () => fetchMessages()
       )
@@ -278,6 +326,11 @@ const WasabiChat = () => {
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUserId || !conversationId) return;
 
+    if (!navigator.onLine) {
+      toast.error("You're offline", { description: 'Reconnect to send messages' });
+      return;
+    }
+
     setSending(true);
     try {
       const { error } = await supabase
@@ -287,7 +340,7 @@ const WasabiChat = () => {
           sender_id: currentUserId,
           content: newMessage.trim(),
           message_type: 'text',
-          reply_to_id: replyingTo?.id || null
+          reply_to_id: replyingTo?.id || null,
         });
 
       if (error) throw error;
@@ -298,12 +351,17 @@ const WasabiChat = () => {
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
 
-      setNewMessage("");
+      setNewMessage('');
       setReplyingTo(null);
       inputRef.current?.focus();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      const msg = String(error?.message || error);
+      toast.error(
+        msg.includes('row-level security')
+          ? "You can't send messages in this chat"
+          : 'Failed to send message'
+      );
     } finally {
       setSending(false);
     }
