@@ -100,8 +100,29 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data: { user: profile } } = await supabase.auth.getUser();
-      const producedByEmail = profile?.email || '';
+      const producedByEmail = user.email || '';
+      
+      // Always fetch the profile name to ensure producer name is captured
+      let producedByName = '';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (profile) {
+        producedByName = profile.full_name || profile.username || '';
+      }
+      
+      // If still no name, extract from email
+      if (!producedByName && producedByEmail) {
+        const emailName = producedByEmail.split('@')[0];
+        producedByName = emailName
+          .replace(/[._]/g, ' ')
+          .split(' ')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+      }
 
       const { data: productionData, error: productionError } = await supabase
         .from('batch_productions')
@@ -109,6 +130,8 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           ...production,
           user_id: user.id,
           produced_by_email: producedByEmail,
+          produced_by_name: production.produced_by_name || producedByName,
+          produced_by_user_id: user.id,
         }])
         .select()
         .single();

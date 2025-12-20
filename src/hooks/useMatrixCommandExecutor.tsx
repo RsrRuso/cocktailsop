@@ -243,6 +243,30 @@ export function useMatrixCommandExecutor() {
           const targetServings = servings || 10;
           const targetLiters = liters || 5;
 
+          // Always get producer name from profile
+          let producedByName = '';
+          const producedByEmail = user?.email || '';
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, username')
+            .eq('id', user?.id)
+            .maybeSingle();
+          
+          if (profile) {
+            producedByName = profile.full_name || profile.username || '';
+          }
+          
+          // Fallback: extract name from email if no profile name
+          if (!producedByName && producedByEmail) {
+            const emailName = producedByEmail.split('@')[0];
+            producedByName = emailName
+              .replace(/[._]/g, ' ')
+              .split(' ')
+              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+          }
+
           const { error } = await supabase.from('batch_productions').insert({
             user_id: user?.id,
             recipe_id: recipe.id,
@@ -250,7 +274,9 @@ export function useMatrixCommandExecutor() {
             target_serves: targetServings,
             target_liters: targetLiters,
             production_date: new Date().toISOString().split('T')[0],
-            produced_by_user_id: user?.id
+            produced_by_user_id: user?.id,
+            produced_by_email: producedByEmail,
+            produced_by_name: producedByName,
           });
 
           if (error) throw error;
