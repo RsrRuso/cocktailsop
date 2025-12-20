@@ -14109,6 +14109,255 @@ export type Database = {
         }
         Relationships: []
       }
+      wasabi_conversations: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_group: boolean | null
+          last_message_at: string | null
+          name: string | null
+          pinned: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_group?: boolean | null
+          last_message_at?: string | null
+          name?: string | null
+          pinned?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_group?: boolean | null
+          last_message_at?: string | null
+          name?: string | null
+          pinned?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wasabi_members: {
+        Row: {
+          archived: boolean | null
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          muted: boolean | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean | null
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          muted?: boolean | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          archived?: boolean | null
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          muted?: boolean | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wasabi_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wasabi_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          forwarded_from_id: string | null
+          id: string
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          media_name: string | null
+          media_size: number | null
+          media_type: string | null
+          media_url: string | null
+          message_type: string | null
+          reply_to_id: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          forwarded_from_id?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          media_name?: string | null
+          media_size?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          forwarded_from_id?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          media_name?: string | null
+          media_size?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wasabi_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wasabi_messages_forwarded_from_id_fkey"
+            columns: ["forwarded_from_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wasabi_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wasabi_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wasabi_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wasabi_read_receipts: {
+        Row: {
+          delivered_at: string | null
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          delivered_at?: string | null
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          delivered_at?: string | null
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wasabi_read_receipts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wasabi_starred: {
+        Row: {
+          id: string
+          message_id: string
+          starred_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          starred_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          starred_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wasabi_starred_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "wasabi_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_schedules: {
         Row: {
           created_at: string | null
