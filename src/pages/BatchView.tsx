@@ -95,14 +95,26 @@ const BatchView = () => {
         yPos += 20;
         doc.setFontSize(11);
 
-        // Producer
+        // Producer - always show a name, extract from email if needed
         doc.setTextColor(147, 197, 253);
         doc.setFont('helvetica', 'bold');
         doc.text('PRODUCER', 25, yPos);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(13);
-        const producer = prod.produced_by_name || prod.produced_by_email || 'N/A';
+        
+        // Get producer name - fallback to extracting name from email
+        let producer = prod.produced_by_name;
+        if (!producer && prod.produced_by_email) {
+          // Extract name from email (e.g., "john.doe@email.com" -> "John Doe")
+          const emailName = prod.produced_by_email.split('@')[0];
+          producer = emailName
+            .replace(/[._]/g, ' ')
+            .split(' ')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        }
+        if (!producer) producer = 'Unknown Producer';
         doc.text(producer.length > 45 ? producer.substring(0, 45) + '...' : producer, 25, yPos + 7);
         
         yPos += 20;
