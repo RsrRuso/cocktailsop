@@ -4377,21 +4377,29 @@ const BatchCalculator = () => {
                       </Button>
                     </div>
                     {(() => {
+                      // Group by user_id to prevent duplicates for same user with different names
                       const producerStats = productions.reduce((acc, prod) => {
-                        const name = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
-                        if (!acc[name]) {
-                          acc[name] = { count: 0, liters: 0, serves: 0, recipes: new Set<string>(), dates: [] as Date[], avgBatchSize: 0 };
+                        const key = prod.produced_by_user_id || prod.produced_by_email || prod.produced_by_name || 'unknown';
+                        const displayName = prod.produced_by_name || prod.produced_by_email?.split('@')[0] || 'Unknown';
+                        if (!acc[key]) {
+                          acc[key] = { count: 0, liters: 0, serves: 0, recipes: new Set<string>(), dates: [] as Date[], avgBatchSize: 0, latestName: displayName, latestDate: new Date(prod.production_date) };
                         }
-                        acc[name].count += 1;
-                        acc[name].liters += prod.target_liters;
-                        acc[name].serves += prod.target_serves || 0;
-                        acc[name].recipes.add(prod.batch_name);
-                        acc[name].dates.push(new Date(prod.production_date));
+                        // Update display name if this production is more recent
+                        const prodDate = new Date(prod.production_date);
+                        if (prodDate > acc[key].latestDate) {
+                          acc[key].latestName = displayName;
+                          acc[key].latestDate = prodDate;
+                        }
+                        acc[key].count += 1;
+                        acc[key].liters += prod.target_liters;
+                        acc[key].serves += prod.target_serves || 0;
+                        acc[key].recipes.add(prod.batch_name);
+                        acc[key].dates.push(new Date(prod.production_date));
                         return acc;
-                      }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: Date[]; avgBatchSize: number }>);
+                      }, {} as Record<string, { count: number; liters: number; serves: number; recipes: Set<string>; dates: Date[]; avgBatchSize: number; latestName: string; latestDate: Date }>);
                       
                       const sortedProducers = Object.entries(producerStats)
-                        .map(([name, stats]) => ({ name, ...stats, avgBatchSize: stats.liters / stats.count, recipeCount: stats.recipes.size }))
+                        .map(([key, stats]) => ({ key, name: stats.latestName, ...stats, avgBatchSize: stats.liters / stats.count, recipeCount: stats.recipes.size }))
                         .sort((a, b) => b.liters - a.liters);
                       
                       const topProducer = sortedProducers[0];
@@ -4411,7 +4419,7 @@ const BatchCalculator = () => {
                           {sortedProducers.slice(1).map((producer, index) => {
                             const contribution = totalVolume > 0 ? (producer.liters / totalVolume) * 100 : 0;
                             return (
-                              <div key={producer.name} className="p-2 bg-muted/20 rounded-lg flex items-center gap-2">
+                              <div key={producer.key} className="p-2 bg-muted/20 rounded-lg flex items-center gap-2">
                                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                                   index === 0 ? 'bg-slate-400 text-white' : index === 1 ? 'bg-amber-700 text-white' : 'bg-muted text-foreground'
                                 }`}>
