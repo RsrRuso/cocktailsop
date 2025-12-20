@@ -1297,13 +1297,14 @@ const BatchCalculator = () => {
                 bottles: data.bottles,
                 bottleSize: data.bottleSize,
               });
-            }
 
-            if (data.leftoverMl > 0) {
-              overallRequiredMlItems.push({
-                name,
-                mlNeeded: data.leftoverMl,
-              });
+              // Only count "Required ML" as extra when at least one full bottle was used.
+              if (data.leftoverMl > 0) {
+                overallRequiredMlItems.push({
+                  name,
+                  mlNeeded: data.leftoverMl,
+                });
+              }
             }
           } else {
             // No bottle size - show total ML as required
@@ -1669,7 +1670,9 @@ const BatchCalculator = () => {
             bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
             leftoverMl = scaledMl % matchingSpirit.bottle_size_ml;
             batchTotalBottles += bottles;
-            batchTotalLeftoverMl += leftoverMl;
+
+            // "Extra ML" is only the remainder beyond at least one full bottle.
+            if (bottles > 0) batchTotalLeftoverMl += leftoverMl;
           }
           
           ingredientDetails.push({
@@ -1762,7 +1765,7 @@ const BatchCalculator = () => {
               doc.setFont("helvetica", "normal");
               
               doc.setTextColor(...amber);
-              doc.text(ing.leftoverMl > 0 ? `${ing.leftoverMl.toFixed(0)}` : '-', 160, yPos + 1.5);
+              doc.text(ing.bottles > 0 && ing.leftoverMl > 0 ? `${ing.leftoverMl.toFixed(0)}` : '-', 160, yPos + 1.5);
             }
             
             yPos += 3;
@@ -1883,6 +1886,7 @@ const BatchCalculator = () => {
               
               const bottles = bottleSize ? Math.floor(totalMl / bottleSize) : 0;
               const leftoverMl = bottleSize ? totalMl % bottleSize : 0;
+              const extraMl = bottles > 0 ? leftoverMl : 0;
               
               batchTotalBottles += bottles;
               batchTotalMl += totalMl;
@@ -1901,7 +1905,7 @@ const BatchCalculator = () => {
               doc.setFont("helvetica", "normal");
               
               doc.setTextColor(...amber);
-              doc.text(leftoverMl > 0 ? `${leftoverMl.toFixed(0)} ml` : '-', 160, yPos + 1.5);
+              doc.text(extraMl > 0 ? `${extraMl.toFixed(0)} ml` : '-', 160, yPos + 1.5);
               
               yPos += 3;
               ingredientIndex++;
