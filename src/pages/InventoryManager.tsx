@@ -769,35 +769,43 @@ const InventoryManager = () => {
     const toStoreId = formData.get("toStoreId") as string;
     const quantity = parseFloat(formData.get("quantity") as string);
 
-    const { data: sourceInv, error: sourceError } = await supabase
+    // Get ALL available inventory entries for this item in source store
+    const { data: sourceInventories, error: sourceError } = await supabase
       .from("fifo_inventory")
       .select("*")
       .eq("item_id", itemId)
       .eq("store_id", fromStoreId)
-      .order("expiration_date", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .eq("status", "available")
+      .gt("quantity", 0)
+      .order("expiration_date", { ascending: true });
 
     if (sourceError) {
       toast.error("Failed to fetch source inventory");
       return;
     }
 
-    if (!sourceInv) {
+    if (!sourceInventories || sourceInventories.length === 0) {
       toast.error("No inventory found for this item in the selected source store");
       return;
     }
 
+    // Calculate total available quantity across all FIFO entries
+    const totalAvailable = sourceInventories.reduce((sum, inv) => sum + inv.quantity, 0);
+
     // Prevent same-store transfers
-    if (sourceInv.store_id === toStoreId) {
+    if (sourceInventories[0].store_id === toStoreId) {
       toast.error("Cannot transfer to the same store");
       return;
     }
 
-    if (quantity > sourceInv.quantity) {
-      toast.error(`Cannot transfer ${quantity} items. Only ${sourceInv.quantity} available.`);
+    if (quantity > totalAvailable) {
+      toast.error(`Cannot transfer ${quantity} items. Only ${totalAvailable} available.`);
       return;
     }
+
+    // Use FIFO: take from oldest entries first
+    let remainingToTransfer = quantity;
+    const sourceInv = sourceInventories[0]; // Primary entry for transfer record
 
     const { data: transfer, error: transferError } = await supabase
       .from("fifo_transfers")
@@ -820,52 +828,57 @@ const InventoryManager = () => {
       return;
     }
 
-    const remainingQty = sourceInv.quantity - quantity;
-
-    await supabase
-      .from("fifo_inventory")
-      .update({
-        quantity: remainingQty,
-        status: remainingQty <= 0 ? "transferred" : "available"
-      })
-      .eq("id", sourceInv.id);
-
-    const { data: destInv, error: destError } = await supabase
-      .from("fifo_inventory")
-      .select("*")
-      .eq("store_id", toStoreId)
-      .eq("item_id", sourceInv.item_id)
-      .eq("expiration_date", sourceInv.expiration_date)
-      .maybeSingle();
-
-    if (destError) {
-      toast.error("Failed to fetch destination inventory");
-      return;
-    }
-
-    if (destInv) {
+    // Deduct from FIFO entries (oldest first)
+    for (const inv of sourceInventories) {
+      if (remainingToTransfer <= 0) break;
+      
+      const deductAmount = Math.min(inv.quantity, remainingToTransfer);
+      const newQty = inv.quantity - deductAmount;
+      
       await supabase
         .from("fifo_inventory")
         .update({
-          quantity: (destInv.quantity || 0) + quantity,
-          status: "available",
-          // If a row was previously created without workspace_id, fix it on transfer
-          workspace_id: currentWorkspace?.id || (destInv as any).workspace_id || null,
+          quantity: newQty,
+          status: newQty <= 0 ? "transferred" : "available"
         })
-        .eq("id", destInv.id);
-    } else {
-      await supabase.from("fifo_inventory").insert({
-        user_id: user.id,
-        workspace_id: currentWorkspace?.id || null,
-        store_id: toStoreId,
-        item_id: sourceInv.item_id,
-        quantity: quantity,
-        expiration_date: sourceInv.expiration_date,
-        received_date: new Date().toISOString(),
-        batch_number: sourceInv.batch_number,
-        status: "available"
-      });
+        .eq("id", inv.id);
+      
+      // Add to destination
+      const { data: destInv } = await supabase
+        .from("fifo_inventory")
+        .select("*")
+        .eq("store_id", toStoreId)
+        .eq("item_id", inv.item_id)
+        .eq("expiration_date", inv.expiration_date)
+        .maybeSingle();
+
+      if (destInv) {
+        await supabase
+          .from("fifo_inventory")
+          .update({
+            quantity: (destInv.quantity || 0) + deductAmount,
+            status: "available",
+            workspace_id: currentWorkspace?.id || (destInv as any).workspace_id || null,
+          })
+          .eq("id", destInv.id);
+      } else {
+        await supabase.from("fifo_inventory").insert({
+          user_id: user.id,
+          workspace_id: currentWorkspace?.id || null,
+          store_id: toStoreId,
+          item_id: inv.item_id,
+          quantity: deductAmount,
+          expiration_date: inv.expiration_date,
+          received_date: new Date().toISOString(),
+          batch_number: inv.batch_number,
+          status: "available"
+        });
+      }
+      
+      remainingToTransfer -= deductAmount;
     }
+
+    const remainingQty = totalAvailable - quantity;
 
     await supabase.from("fifo_activity_log").insert({
       user_id: user.id,
