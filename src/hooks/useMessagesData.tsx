@@ -52,7 +52,7 @@ const setStoredCache = (userId: string, data: Conversation[]) => {
   } catch {}
 };
 
-const CACHE_TIME = 60 * 1000; // 1 minute
+const CACHE_TIME = 10 * 60 * 1000; // 10 minutes for instant loads
 
 export const useMessagesData = (userId: string | null) => {
   // Initialize from any available cache immediately
@@ -64,10 +64,13 @@ export const useMessagesData = (userId: string | null) => {
     }
     return [];
   });
+  // INSTANT: Never show loading if we have ANY cache
   const [isLoading, setIsLoading] = useState(() => {
     if (conversationsCache?.userId === userId) return false;
     if (userId && getStoredCache(userId)) return false;
-    return true;
+    // Even if cache is stale, don't show loading - we'll refresh in background
+    const anyCache = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
+    return !anyCache;
   });
   const isMounted = useRef(true);
 

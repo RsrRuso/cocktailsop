@@ -43,8 +43,8 @@ interface Reel {
 
 // Cache for feed data - persisted across navigations (module-level singleton)
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
-const CACHE_TIME = 600000; // 10 minutes for instant loads
-const INITIAL_LIMIT = 4; // Reduced for faster first paint
+const CACHE_TIME = 30 * 60 * 1000; // 30 minutes for instant loads - aggressive caching
+const INITIAL_LIMIT = 6; // Balanced for faster first paint
 
 // Aggressive localStorage cache for instant cold starts
 const STORAGE_KEY = 'feed_cache_v2';
@@ -113,7 +113,8 @@ export const useFeedData = (selectedRegion: string | null) => {
   
   const [posts, setPosts] = useState<Post[]>(() => hasValidCache ? feedCache!.posts : []);
   const [reels, setReels] = useState<Reel[]>(() => hasValidCache ? feedCache!.reels : []);
-  const [isLoading, setIsLoading] = useState(!hasValidCache); // Instant if cached
+  // INSTANT: Never show loading if we have ANY cache, even if stale
+  const [isLoading, setIsLoading] = useState(() => !feedCache && !loadFromStorage());
 
   const fetchPosts = useCallback(async () => {
     try {
