@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Calculator, BookOpen, FileText, Lock, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, MessageCircle } from "lucide-react";
+import { Calculator, BookOpen, FileText, Lock, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, MessageCircle, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -221,6 +221,20 @@ const Tools = () => {
                 <h3 className="font-semibold">Wasabi Chat</h3>
                 <p className="text-sm text-muted-foreground">
                   Smart messaging with voice, video & media sharing
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => window.location.href = '/promo-reels'}
+              className="glass-hover rounded-2xl p-6 text-left space-y-3 w-full"
+            >
+              <div className="w-12 h-12 rounded-xl glass flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600">
+                <Video className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Promo Reels</h3>
+                <p className="text-sm text-muted-foreground">
+                  Download promotional videos for platform tools
                 </p>
               </div>
             </button>
