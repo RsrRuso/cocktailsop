@@ -134,6 +134,81 @@ export type Database = {
           },
         ]
       }
+      asset_registry: {
+        Row: {
+          asset_name: string
+          brand: string | null
+          category: string | null
+          condition: string | null
+          created_at: string
+          id: string
+          location: string | null
+          model: string | null
+          notes: string | null
+          project_id: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          serial_number: string | null
+          updated_at: string
+          user_id: string
+          vendor_id: string | null
+          warranty_expiry: string | null
+        }
+        Insert: {
+          asset_name: string
+          brand?: string | null
+          category?: string | null
+          condition?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          model?: string | null
+          notes?: string | null
+          project_id?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          serial_number?: string | null
+          updated_at?: string
+          user_id: string
+          vendor_id?: string | null
+          warranty_expiry?: string | null
+        }
+        Update: {
+          asset_name?: string
+          brand?: string | null
+          category?: string | null
+          condition?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          model?: string | null
+          notes?: string | null
+          project_id?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          serial_number?: string | null
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string | null
+          warranty_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_registry_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_registry_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_logs: {
         Row: {
           error_message: string | null
@@ -7814,6 +7889,71 @@ export type Database = {
           },
         ]
       }
+      licenses_compliance: {
+        Row: {
+          cost: number | null
+          created_at: string
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuing_authority: string | null
+          license_name: string
+          license_number: string | null
+          license_type: string
+          notes: string | null
+          project_id: string | null
+          renewal_reminder_days: number | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
+          license_name: string
+          license_number?: string | null
+          license_type: string
+          notes?: string | null
+          project_id?: string | null
+          renewal_reminder_days?: number | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
+          license_name?: string
+          license_number?: string | null
+          license_type?: string
+          notes?: string | null
+          project_id?: string | null
+          renewal_reminder_days?: number | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licenses_compliance_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       livestream_comments: {
         Row: {
           content: string
@@ -8584,6 +8724,156 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      menu_builder_items: {
+        Row: {
+          allergens: string[] | null
+          category_id: string
+          cost: number | null
+          created_at: string
+          description: string | null
+          dietary_tags: string[] | null
+          food_cost_percentage: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          prep_time_minutes: number | null
+          price: number | null
+          recipe_id: string | null
+          sort_order: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allergens?: string[] | null
+          category_id: string
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          dietary_tags?: string[] | null
+          food_cost_percentage?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          prep_time_minutes?: number | null
+          price?: number | null
+          recipe_id?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allergens?: string[] | null
+          category_id?: string
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          dietary_tags?: string[] | null
+          food_cost_percentage?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          prep_time_minutes?: number | null
+          price?: number | null
+          recipe_id?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_builder_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_categories: {
+        Row: {
+          created_at: string
+          department_id: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "menu_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          project_id: string | null
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          project_id?: string | null
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          project_id?: string | null
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_departments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       menu_import_batches: {
         Row: {
@@ -9370,6 +9660,120 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      org_departments: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          head_name: string | null
+          head_title: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          project_id: string | null
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          head_name?: string | null
+          head_title?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          project_id?: string | null
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          head_name?: string | null
+          head_title?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          project_id?: string | null
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_departments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_departments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_positions: {
+        Row: {
+          created_at: string
+          department_id: string
+          headcount: number | null
+          id: string
+          is_filled: boolean | null
+          level: number | null
+          reports_to: string | null
+          requirements: string | null
+          salary_range_max: number | null
+          salary_range_min: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          headcount?: number | null
+          id?: string
+          is_filled?: boolean | null
+          level?: number | null
+          reports_to?: string | null
+          requirements?: string | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          headcount?: number | null
+          id?: string
+          is_filled?: boolean | null
+          level?: number | null
+          reports_to?: string | null
+          requirements?: string | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_positions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "org_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_positions_reports_to_fkey"
+            columns: ["reports_to"]
+            isOneToOne: false
+            referencedRelation: "org_positions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       password_reset_tokens: {
         Row: {
@@ -10181,6 +10585,152 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pre_opening_milestones: {
+        Row: {
+          created_at: string
+          department: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          name: string
+          project_id: string
+          sort_order: number | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          name: string
+          project_id: string
+          sort_order?: number | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          sort_order?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_opening_milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pre_opening_projects: {
+        Row: {
+          budget: number | null
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          name: string
+          status: string
+          target_opening_date: string | null
+          updated_at: string
+          user_id: string
+          venue_type: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          status?: string
+          target_opening_date?: string | null
+          updated_at?: string
+          user_id: string
+          venue_type?: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          status?: string
+          target_opening_date?: string | null
+          updated_at?: string
+          user_id?: string
+          venue_type?: string
+        }
+        Relationships: []
+      }
+      pre_opening_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          department: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          milestone_id: string | null
+          priority: string | null
+          project_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          milestone_id?: string | null
+          priority?: string | null
+          project_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          milestone_id?: string | null
+          priority?: string | null
+          project_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_opening_tasks_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_opening_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -12264,6 +12814,115 @@ export type Database = {
           },
         ]
       }
+      sop_library: {
+        Row: {
+          approver: string | null
+          author: string | null
+          category: string | null
+          content: string
+          created_at: string
+          department: string | null
+          effective_date: string | null
+          id: string
+          project_id: string | null
+          review_date: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          approver?: string | null
+          author?: string | null
+          category?: string | null
+          content: string
+          created_at?: string
+          department?: string | null
+          effective_date?: string | null
+          id?: string
+          project_id?: string | null
+          review_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          approver?: string | null
+          author?: string | null
+          category?: string | null
+          content?: string
+          created_at?: string
+          department?: string | null
+          effective_date?: string | null
+          id?: string
+          project_id?: string | null
+          review_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sop_library_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sop_steps: {
+        Row: {
+          created_at: string
+          critical_point: boolean | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          image_url: string | null
+          sop_id: string
+          step_number: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          critical_point?: boolean | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          image_url?: string | null
+          sop_id: string
+          step_number: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          critical_point?: boolean | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          image_url?: string | null
+          sop_id?: string
+          step_number?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sop_steps_sop_id_fkey"
+            columns: ["sop_id"]
+            isOneToOne: false
+            referencedRelation: "sop_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spot_check_items: {
         Row: {
           actual_quantity: number | null
@@ -14093,6 +14752,113 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendor_contracts: {
+        Row: {
+          contract_name: string
+          created_at: string
+          document_url: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string | null
+          terms: string | null
+          value: number | null
+          vendor_id: string
+        }
+        Insert: {
+          contract_name: string
+          created_at?: string
+          document_url?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string | null
+          terms?: string | null
+          value?: number | null
+          vendor_id: string
+        }
+        Update: {
+          contract_name?: string
+          created_at?: string
+          document_url?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string | null
+          terms?: string | null
+          value?: number | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_contracts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          address: string | null
+          category: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          lead_time_days: number | null
+          minimum_order: number | null
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          rating: number | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_time_days?: number | null
+          minimum_order?: number | null
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rating?: number | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_time_days?: number | null
+          minimum_order?: number | null
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rating?: number | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       venue_admin_activity: {
         Row: {
