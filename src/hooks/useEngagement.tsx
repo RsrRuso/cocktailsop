@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 type ContentType = 'post' | 'reel' | 'event' | 'story';
 
@@ -148,6 +149,15 @@ export const useEngagement = (
   ) => {
     if (!userId) {
       toast.error(`Please login to ${type}`);
+      return;
+    }
+
+    // Rate limit check for scalability
+    const rateLimitAction = type === 'like' ? 'like-action' : type === 'save' ? 'like-action' : 'like-action';
+    const { allowed, retryAfter } = checkRateLimit(rateLimitAction, userId);
+    if (!allowed) {
+      const seconds = Math.ceil((retryAfter || 60000) / 1000);
+      toast.error('Slow down!', { description: `Please wait ${seconds} seconds.` });
       return;
     }
 
