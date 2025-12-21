@@ -439,327 +439,641 @@ const AnimatedPresentation = ({
 
   // Mock UI drawing functions
   const drawInventoryUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    const cols = 4;
+    const cols = 3;
     const rows = 3;
-    const itemW = (w - 15) / cols;
-    const itemH = (h - 30) / rows;
+    const gap = 8;
+    const itemW = (w - gap * (cols + 1)) / cols;
+    const itemH = (h - 40 - gap * (rows + 1)) / rows;
     
-    // Header
-    ctx.fillStyle = reel.gradientFrom;
+    // Header with gradient
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 18 * scale, 4);
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('📦 Inventory Dashboard', x + 12, y + 19);
+    
+    // Item count badge
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.roundRect(x + w - 50, y + 6, 40, 16, 8);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${8 * scale}px system-ui`;
-    ctx.fillText('Inventory', x + 8, y + 12 * scale);
+    ctx.font = `bold ${11}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.fillText('12 items', x + w - 30, y + 18);
+    ctx.textAlign = 'left';
     
-    // Grid items
+    // Grid items with product names
+    const products = ['🍷 Wine', '🍺 Beer', '🥃 Whiskey', '🍸 Gin', '🍹 Rum', '🧊 Ice', '🍋 Citrus', '🌿 Herbs', '🥤 Mixers'];
+    
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const itemX = x + col * (itemW + 4);
-        const itemY = y + 22 * scale + row * (itemH + 4);
-        const animDelay = (row * cols + col) * 5;
-        const itemProgress = Math.max(0, Math.min(1, (frame - animDelay) / 20));
+        const idx = row * cols + col;
+        const itemX = x + gap + col * (itemW + gap);
+        const itemY = y + 36 + row * (itemH + gap);
+        const animDelay = idx * 4;
+        const itemProgress = Math.max(0, Math.min(1, (frame - animDelay) / 15));
         
         ctx.globalAlpha = itemProgress;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        
+        // Card background with border
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
         ctx.beginPath();
-        ctx.roundRect(itemX, itemY, itemW, itemH, 4);
+        ctx.roundRect(itemX, itemY, itemW, itemH, 6);
         ctx.fill();
         
-        // Item icon placeholder
-        ctx.fillStyle = reel.gradientFrom;
-        ctx.globalAlpha = itemProgress * 0.6;
-        ctx.beginPath();
-        ctx.arc(itemX + itemW/2, itemY + itemH/2 - 4, 6 * scale, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
         
-        // Stock bar
+        // Product name
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${11}px system-ui`;
+        ctx.fillText(products[idx] || 'Item', itemX + 6, itemY + 16);
+        
+        // Stock quantity
+        const stockQty = Math.floor(20 + Math.sin(frame * 0.02 + idx) * 15);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = `${10}px system-ui`;
+        ctx.fillText(`Qty: ${stockQty}`, itemX + 6, itemY + 30);
+        
+        // Stock level bar with label
         const stockLevel = (Math.sin(frame * 0.02 + col + row) + 1) / 2;
-        ctx.fillStyle = stockLevel > 0.3 ? '#22c55e' : '#ef4444';
-        ctx.globalAlpha = itemProgress;
+        const barY = itemY + itemH - 14;
+        
+        // Bar background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
-        ctx.roundRect(itemX + 2, itemY + itemH - 6, (itemW - 4) * stockLevel, 3, 1);
+        ctx.roundRect(itemX + 4, barY, itemW - 8, 8, 4);
         ctx.fill();
+        
+        // Bar fill
+        ctx.fillStyle = stockLevel > 0.5 ? '#22c55e' : stockLevel > 0.3 ? '#f59e0b' : '#ef4444';
+        ctx.beginPath();
+        ctx.roundRect(itemX + 4, barY, (itemW - 8) * stockLevel, 8, 4);
+        ctx.fill();
+        
         ctx.globalAlpha = 1;
       }
     }
   };
 
   const drawCalculatorUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Header with gradient
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('🧮 Batch Calculator', x + 12, y + 19);
+    
     // Recipe card
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w * 0.6, h, 6);
+    ctx.roundRect(x, y + 34, w * 0.58, h - 40, 8);
     ctx.fill();
     
     // Animated multiplier
     const multiplier = 1 + Math.sin(frame * 0.03) * 0.5;
     
     // Ingredients list with scaling animation
-    const ingredients = ['Spirit', 'Citrus', 'Sweet', 'Bitter'];
+    const ingredients = [
+      { name: '🥃 Spirit Base', amount: 60 },
+      { name: '🍋 Fresh Citrus', amount: 30 },
+      { name: '🍯 Sweetener', amount: 20 },
+      { name: '🌿 Bitters', amount: 5 }
+    ];
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${11}px system-ui`;
+    ctx.fillText('Ingredients', x + 10, y + 50);
+    
     ingredients.forEach((ing, i) => {
-      const ingY = y + 12 + i * (h / 5);
-      const barWidth = (w * 0.5 - 20) * (0.3 + (i * 0.15)) * multiplier;
+      const ingY = y + 60 + i * ((h - 70) / 5);
+      const scaledAmount = Math.round(ing.amount * multiplier);
+      const barWidth = (w * 0.48 - 20) * (ing.amount / 60) * multiplier;
       
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.font = `${7 * scale}px system-ui`;
-      ctx.fillText(ing, x + 8, ingY + 8);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${11}px system-ui`;
+      ctx.fillText(ing.name, x + 10, ingY + 12);
       
-      ctx.fillStyle = reel.gradientFrom;
+      // Amount badge
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath();
+      ctx.roundRect(x + w * 0.35, ingY + 2, 40, 16, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${10}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`${scaledAmount}ml`, x + w * 0.35 + 20, ingY + 14);
+      ctx.textAlign = 'left';
+      
+      // Animated bar
+      const gradient = ctx.createLinearGradient(x + 10, ingY, x + 10 + barWidth, ingY);
+      gradient.addColorStop(0, reel.gradientFrom);
+      gradient.addColorStop(1, reel.gradientTo);
+      ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.8;
       ctx.beginPath();
-      ctx.roundRect(x + 8, ingY + 12, Math.min(barWidth, w * 0.5 - 20), 6, 2);
+      ctx.roundRect(x + 10, ingY + 18, Math.min(barWidth, w * 0.48 - 20), 8, 4);
       ctx.fill();
       ctx.globalAlpha = 1;
     });
     
-    // Batch size indicator
+    // Batch size indicator panel
     ctx.fillStyle = reel.gradientTo;
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.65, y, w * 0.35, h * 0.4, 6);
+    ctx.roundRect(x + w * 0.62, y + 34, w * 0.38, h * 0.45, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14 * scale}px system-ui`;
+    ctx.font = `bold ${28}px system-ui`;
     ctx.textAlign = 'center';
-    ctx.fillText(`${(multiplier * 10).toFixed(0)}L`, x + w * 0.82, y + h * 0.25);
-    ctx.font = `${7 * scale}px system-ui`;
-    ctx.fillText('Batch Size', x + w * 0.82, y + h * 0.35);
+    ctx.fillText(`${(multiplier * 10).toFixed(0)}L`, x + w * 0.81, y + 70);
+    ctx.font = `${12}px system-ui`;
+    ctx.fillText('Total Batch', x + w * 0.81, y + 90);
+    
+    // Serves indicator
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.roundRect(x + w * 0.62, y + h * 0.55, w * 0.38, h * 0.38, 8);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${20}px system-ui`;
+    ctx.fillText(`${Math.round(multiplier * 100)}`, x + w * 0.81, y + h * 0.75);
+    ctx.font = `${11}px system-ui`;
+    ctx.fillText('Servings', x + w * 0.81, y + h * 0.85);
     ctx.textAlign = 'left';
   };
 
   const drawScheduleUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('📅 Staff Schedule', x + 12, y + 19);
+    
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const dayWidth = w / 7;
     
-    // Day headers
+    // Day headers with background
     days.forEach((day, i) => {
       const isActive = Math.floor(frame / 30) % 7 === i;
-      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.3)';
-      ctx.font = `bold ${8 * scale}px system-ui`;
+      const dayX = x + dayWidth * i;
+      
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.beginPath();
+      ctx.roundRect(dayX + 1, y + 32, dayWidth - 2, 20, 4);
+      ctx.fill();
+      
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${10}px system-ui`;
       ctx.textAlign = 'center';
-      ctx.fillText(day, x + dayWidth * i + dayWidth / 2, y + 12);
+      ctx.fillText(day, dayX + dayWidth / 2, y + 46);
     });
     
-    // Shift blocks
+    // Shift blocks with staff names
     const shifts = [
-      { day: 0, start: 0.2, end: 0.5, color: '#22c55e' },
-      { day: 1, start: 0.3, end: 0.7, color: '#3b82f6' },
-      { day: 2, start: 0.1, end: 0.4, color: '#f59e0b' },
-      { day: 3, start: 0.4, end: 0.8, color: '#22c55e' },
-      { day: 4, start: 0.2, end: 0.6, color: '#ec4899' },
-      { day: 5, start: 0.5, end: 0.9, color: '#8b5cf6' },
+      { day: 0, start: 0.15, end: 0.45, color: '#22c55e', name: 'Alex' },
+      { day: 1, start: 0.25, end: 0.65, color: '#3b82f6', name: 'Sam' },
+      { day: 2, start: 0.1, end: 0.35, color: '#f59e0b', name: 'Kim' },
+      { day: 3, start: 0.35, end: 0.75, color: '#22c55e', name: 'Alex' },
+      { day: 4, start: 0.2, end: 0.55, color: '#ec4899', name: 'Jo' },
+      { day: 5, start: 0.45, end: 0.85, color: '#8b5cf6', name: 'Pat' },
+      { day: 6, start: 0.3, end: 0.7, color: '#3b82f6', name: 'Sam' },
     ];
     
     shifts.forEach((shift, i) => {
-      const shiftDelay = i * 8;
-      const appear = Math.min(1, Math.max(0, (frame - shiftDelay) / 15));
+      const shiftDelay = i * 6;
+      const appear = Math.min(1, Math.max(0, (frame - shiftDelay) / 12));
       
       ctx.globalAlpha = appear;
       ctx.fillStyle = shift.color;
-      const shiftX = x + shift.day * dayWidth + 2;
-      const shiftY = y + 18 + shift.start * (h - 25);
-      const shiftH = (shift.end - shift.start) * (h - 25);
+      const shiftX = x + shift.day * dayWidth + 3;
+      const shiftY = y + 56 + shift.start * (h - 62);
+      const shiftH = (shift.end - shift.start) * (h - 62);
       
       ctx.beginPath();
-      ctx.roundRect(shiftX, shiftY, dayWidth - 4, shiftH, 3);
+      ctx.roundRect(shiftX, shiftY, dayWidth - 6, shiftH, 5);
       ctx.fill();
+      
+      // Staff name on shift
+      if (shiftH > 20) {
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${9}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.fillText(shift.name, shiftX + (dayWidth - 6) / 2, shiftY + shiftH / 2 + 3);
+      }
+      
       ctx.globalAlpha = 1;
     });
     ctx.textAlign = 'left';
   };
 
   const drawRecipeUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    // Cocktail glass illustration
-    const glassX = x + w * 0.15;
-    const glassY = y + h * 0.1;
-    const glassW = w * 0.25;
-    const glassH = h * 0.6;
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
     
-    // Glass shape
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('🍸 Cocktail Recipe', x + 12, y + 19);
+    
+    // Cocktail glass illustration - larger
+    const glassX = x + 12;
+    const glassY = y + 38;
+    const glassW = w * 0.32;
+    const glassH = h * 0.55;
+    
+    // Glass background
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(glassX - 8, glassY - 4, glassW + 16, glassH + 20, 8);
+    ctx.fill();
+    
+    // Glass shape - martini style
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(glassX, glassY);
     ctx.lineTo(glassX + glassW, glassY);
-    ctx.lineTo(glassX + glassW * 0.7, glassY + glassH * 0.7);
-    ctx.lineTo(glassX + glassW * 0.5, glassY + glassH);
-    ctx.lineTo(glassX + glassW * 0.3, glassY + glassH * 0.7);
+    ctx.lineTo(glassX + glassW * 0.55, glassY + glassH * 0.65);
+    ctx.lineTo(glassX + glassW * 0.55, glassY + glassH);
+    ctx.lineTo(glassX + glassW * 0.35, glassY + glassH);
+    ctx.lineTo(glassX + glassW * 0.45, glassY + glassH * 0.65);
     ctx.closePath();
     ctx.stroke();
     
     // Liquid fill animation
-    const fillLevel = (Math.sin(frame * 0.02) + 1) / 2 * 0.6 + 0.2;
-    const gradient = ctx.createLinearGradient(glassX, glassY + glassH * (1 - fillLevel), glassX, glassY + glassH * 0.7);
+    const fillLevel = (Math.sin(frame * 0.02) + 1) / 2 * 0.5 + 0.3;
+    const gradient = ctx.createLinearGradient(glassX, glassY, glassX, glassY + glassH * 0.6);
     gradient.addColorStop(0, reel.gradientFrom);
     gradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.7;
+    ctx.globalAlpha = 0.8;
     ctx.beginPath();
-    ctx.moveTo(glassX + 4, glassY + glassH * (1 - fillLevel) * 0.8);
-    ctx.lineTo(glassX + glassW - 4, glassY + glassH * (1 - fillLevel) * 0.8);
-    ctx.lineTo(glassX + glassW * 0.68, glassY + glassH * 0.68);
-    ctx.lineTo(glassX + glassW * 0.32, glassY + glassH * 0.68);
+    ctx.moveTo(glassX + 6, glassY + (1 - fillLevel) * glassH * 0.5);
+    ctx.lineTo(glassX + glassW - 6, glassY + (1 - fillLevel) * glassH * 0.5);
+    ctx.lineTo(glassX + glassW * 0.53, glassY + glassH * 0.58);
+    ctx.lineTo(glassX + glassW * 0.47, glassY + glassH * 0.58);
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 1;
     
-    // Recipe steps
-    const steps = ['Shake', 'Strain', 'Garnish'];
+    // Recipe steps panel
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.roundRect(x + w * 0.42, y + 34, w * 0.56, h - 40, 8);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${12}px system-ui`;
+    ctx.fillText('Method', x + w * 0.47, y + 52);
+    
+    const steps = [
+      { icon: '🧊', text: 'Add ice to shaker' },
+      { icon: '🥃', text: 'Pour ingredients' },
+      { icon: '🔄', text: 'Shake 15 seconds' },
+      { icon: '🍸', text: 'Strain into glass' }
+    ];
+    
     steps.forEach((step, i) => {
-      const stepY = y + 8 + i * (h / 4);
-      const isActive = Math.floor(frame / 40) % 3 === i;
+      const stepY = y + 62 + i * ((h - 75) / 4.5);
+      const isActive = Math.floor(frame / 35) % 4 === i;
+      const animDelay = i * 8;
+      const appear = Math.min(1, Math.max(0, (frame - animDelay) / 15));
       
-      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.2)';
+      ctx.globalAlpha = appear;
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
       ctx.beginPath();
-      ctx.roundRect(x + w * 0.45, stepY, w * 0.52, h / 5 - 4, 4);
+      ctx.roundRect(x + w * 0.44, stepY, w * 0.52, 24, 6);
       ctx.fill();
       
       ctx.fillStyle = '#fff';
-      ctx.font = `${7 * scale}px system-ui`;
-      ctx.fillText(`${i + 1}. ${step}`, x + w * 0.5, stepY + h / 10);
+      ctx.font = `${11}px system-ui`;
+      ctx.fillText(`${step.icon} ${step.text}`, x + w * 0.48, stepY + 16);
+      ctx.globalAlpha = 1;
     });
   };
 
   const drawTemperatureUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    // Temperature gauges
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('🌡️ Temperature Monitor', x + 12, y + 19);
+    
+    // Temperature gauges with equipment icons
     const gauges = [
-      { label: 'Fridge 1', temp: 3 + Math.sin(frame * 0.02) * 0.5, target: 4, ok: true },
-      { label: 'Freezer', temp: -18 + Math.sin(frame * 0.025) * 1, target: -18, ok: true },
-      { label: 'Walk-in', temp: 5 + Math.sin(frame * 0.03) * 2, target: 4, ok: false },
+      { label: 'Fridge 1', icon: '❄️', temp: 2.6 + Math.sin(frame * 0.02) * 0.5, target: 4, ok: true },
+      { label: 'Freezer', icon: '🧊', temp: -18.9 + Math.sin(frame * 0.025) * 1, target: -18, ok: true },
+      { label: 'Walk-in', icon: '🚪', temp: 4.9 + Math.sin(frame * 0.03) * 2, target: 4, ok: false },
     ];
     
-    const gaugeH = (h - 20) / 3;
+    const gaugeH = (h - 40) / 3;
     
     gauges.forEach((gauge, i) => {
-      const gaugeY = y + 5 + i * gaugeH;
+      const gaugeY = y + 34 + i * (gaugeH + 4);
+      const animDelay = i * 10;
+      const appear = Math.min(1, Math.max(0, (frame - animDelay) / 20));
       
-      // Gauge background
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.globalAlpha = appear;
+      
+      // Gauge card with border
+      ctx.fillStyle = gauge.ok ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
       ctx.beginPath();
-      ctx.roundRect(x, gaugeY, w, gaugeH - 6, 4);
+      ctx.roundRect(x, gaugeY, w, gaugeH - 2, 8);
       ctx.fill();
       
-      // Label
-      ctx.fillStyle = '#fff';
-      ctx.font = `${7 * scale}px system-ui`;
-      ctx.fillText(gauge.label, x + 6, gaugeY + 12);
+      ctx.strokeStyle = gauge.ok ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
       
-      // Temperature display
+      // Icon and Label
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${13}px system-ui`;
+      ctx.fillText(`${gauge.icon} ${gauge.label}`, x + 10, gaugeY + 20);
+      
+      // Status badge
       ctx.fillStyle = gauge.ok ? '#22c55e' : '#ef4444';
-      ctx.font = `bold ${12 * scale}px system-ui`;
+      ctx.beginPath();
+      ctx.roundRect(x + 10, gaugeY + gaugeH - 24, gauge.ok ? 40 : 55, 16, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${10}px system-ui`;
+      ctx.fillText(gauge.ok ? '✓ OK' : '⚠ Alert', x + 15, gaugeY + gaugeH - 12);
+      
+      // Large Temperature display
+      ctx.fillStyle = gauge.ok ? '#22c55e' : '#ef4444';
+      ctx.font = `bold ${22}px system-ui`;
       ctx.textAlign = 'right';
-      ctx.fillText(`${gauge.temp.toFixed(1)}°C`, x + w - 6, gaugeY + gaugeH / 2 + 4);
+      ctx.fillText(`${gauge.temp.toFixed(1)}°C`, x + w - 12, gaugeY + gaugeH / 2 + 8);
+      
+      // Target temp
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = `${10}px system-ui`;
+      ctx.fillText(`Target: ${gauge.target}°C`, x + w - 12, gaugeY + gaugeH - 10);
       ctx.textAlign = 'left';
       
-      // Status indicator
-      ctx.beginPath();
-      ctx.arc(x + w - 45, gaugeY + gaugeH / 2, 4, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = 1;
     });
   };
 
   const drawChartUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    // BCG Matrix quadrants
-    const quadSize = Math.min(w, h) * 0.45;
-    const matrixX = x + (w - quadSize * 2) / 2;
-    const matrixY = y + 8;
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('📊 Menu Analytics', x + 12, y + 19);
+    
+    // BCG Matrix quadrants with labels
+    const quadSize = (Math.min(w, h - 36) - 8) / 2;
+    const matrixX = x + 4;
+    const matrixY = y + 36;
     
     const quadrants = [
-      { label: '★', color: '#22c55e', items: 3 },
-      { label: '?', color: '#f59e0b', items: 2 },
-      { label: '🐕', color: '#ef4444', items: 4 },
-      { label: '🐄', color: '#3b82f6', items: 5 },
+      { label: '⭐ Stars', color: '#22c55e', items: 3, desc: 'High profit' },
+      { label: '❓ Question', color: '#f59e0b', items: 2, desc: 'Growth potential' },
+      { label: '🐄 Cash Cows', color: '#3b82f6', items: 5, desc: 'Steady income' },
+      { label: '🐕 Dogs', color: '#ef4444', items: 4, desc: 'Review items' },
     ];
     
     quadrants.forEach((quad, i) => {
-      const qx = matrixX + (i % 2) * quadSize;
-      const qy = matrixY + Math.floor(i / 2) * quadSize;
+      const qx = matrixX + (i % 2) * (quadSize + 4);
+      const qy = matrixY + Math.floor(i / 2) * (quadSize + 4);
+      const animDelay = i * 8;
+      const appear = Math.min(1, Math.max(0, (frame - animDelay) / 15));
       
+      ctx.globalAlpha = appear;
+      
+      // Quadrant background
       ctx.fillStyle = quad.color;
-      ctx.globalAlpha = 0.3;
+      ctx.globalAlpha = appear * 0.25;
       ctx.beginPath();
-      ctx.roundRect(qx + 1, qy + 1, quadSize - 2, quadSize - 2, 4);
+      ctx.roundRect(qx, qy, quadSize, quadSize, 8);
       ctx.fill();
-      ctx.globalAlpha = 1;
       
-      // Animated dots representing items
-      for (let j = 0; j < quad.items; j++) {
-        const dotX = qx + 8 + (j % 3) * 12 + Math.sin(frame * 0.03 + j) * 3;
-        const dotY = qy + 12 + Math.floor(j / 3) * 12 + Math.cos(frame * 0.03 + j) * 3;
+      // Border
+      ctx.strokeStyle = quad.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = appear * 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = appear;
+      
+      // Label
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${11}px system-ui`;
+      ctx.fillText(quad.label, qx + 8, qy + 18);
+      
+      // Item count
+      ctx.fillStyle = quad.color;
+      ctx.beginPath();
+      ctx.roundRect(qx + quadSize - 28, qy + 6, 22, 16, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${10}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`${quad.items}`, qx + quadSize - 17, qy + 18);
+      ctx.textAlign = 'left';
+      
+      // Animated dots representing menu items
+      for (let j = 0; j < Math.min(quad.items, 4); j++) {
+        const dotX = qx + 12 + (j % 2) * 20 + Math.sin(frame * 0.03 + j) * 3;
+        const dotY = qy + 30 + Math.floor(j / 2) * 16 + Math.cos(frame * 0.03 + j) * 3;
         ctx.fillStyle = '#fff';
+        ctx.globalAlpha = appear * 0.8;
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+        ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
         ctx.fill();
       }
+      
+      ctx.globalAlpha = 1;
     });
   };
 
   const drawCRMUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('👥 Sales Pipeline', x + 12, y + 19);
+    
     // Pipeline stages
-    const stages = ['Lead', 'Contact', 'Proposal', 'Won'];
-    const stageW = (w - 12) / 4;
+    const stages = [
+      { name: '📥 Leads', count: 12, color: '#f59e0b' },
+      { name: '📞 Contact', count: 8, color: '#3b82f6' },
+      { name: '📋 Proposal', count: 5, color: '#8b5cf6' },
+      { name: '✅ Won', count: 3, color: '#22c55e' }
+    ];
+    const stageW = (w - 16) / 4;
     
     stages.forEach((stage, i) => {
-      const stageX = x + 2 + i * (stageW + 2);
+      const stageX = x + 4 + i * (stageW + 3);
       const isActive = Math.floor(frame / 25) % 4 === i;
+      const animDelay = i * 6;
+      const appear = Math.min(1, Math.max(0, (frame - animDelay) / 12));
       
-      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.globalAlpha = appear;
+      
+      // Stage column
+      ctx.fillStyle = isActive ? stage.color : 'rgba(255, 255, 255, 0.12)';
       ctx.beginPath();
-      ctx.roundRect(stageX, y, stageW, h, 4);
+      ctx.roundRect(stageX, y + 34, stageW, h - 40, 6);
       ctx.fill();
       
+      // Stage header
       ctx.fillStyle = '#fff';
-      ctx.font = `${6 * scale}px system-ui`;
+      ctx.font = `bold ${10}px system-ui`;
       ctx.textAlign = 'center';
-      ctx.fillText(stage, stageX + stageW / 2, y + 10);
+      ctx.fillText(stage.name, stageX + stageW / 2, y + 50);
+      
+      // Count badge
+      ctx.fillStyle = stage.color;
+      ctx.beginPath();
+      ctx.roundRect(stageX + stageW / 2 - 12, y + 55, 24, 16, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${10}px system-ui`;
+      ctx.fillText(`${stage.count}`, stageX + stageW / 2, y + 67);
       
       // Deal cards
-      const dealCount = 4 - i;
+      const dealCount = Math.min(4 - i + 1, 3);
       for (let j = 0; j < dealCount; j++) {
-        const dealY = y + 16 + j * 14;
+        const dealY = y + 78 + j * 22;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.beginPath();
-        ctx.roundRect(stageX + 2, dealY, stageW - 4, 10, 2);
+        ctx.roundRect(stageX + 3, dealY, stageW - 6, 18, 4);
         ctx.fill();
+        
+        // Deal value
+        ctx.fillStyle = '#fff';
+        ctx.font = `${9}px system-ui`;
+        ctx.fillText(`$${(j + 1) * 2}k`, stageX + stageW / 2, dealY + 12);
       }
+      
+      ctx.globalAlpha = 1;
     });
     ctx.textAlign = 'left';
   };
 
   const drawPOSUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    // Order items
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w * 0.55, h, 4);
+    ctx.roundRect(x, y, w, 28, 6);
     ctx.fill();
     
-    // Menu items grid
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('🍽️ Point of Sale', x + 12, y + 19);
+    
+    // Menu items panel
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y + 34, w * 0.58, h - 40, 8);
+    ctx.fill();
+    
+    // Menu items grid with names
+    const menuItems = ['🍔 Burger', '🍕 Pizza', '🥗 Salad', '🍟 Fries', '🍺 Beer', '🍷 Wine'];
     for (let i = 0; i < 6; i++) {
-      const itemX = x + 4 + (i % 2) * (w * 0.27);
-      const itemY = y + 4 + Math.floor(i / 2) * (h / 3.5);
-      const isSelected = i === Math.floor(frame / 20) % 6;
+      const itemX = x + 6 + (i % 2) * (w * 0.28);
+      const itemY = y + 40 + Math.floor(i / 2) * ((h - 54) / 3.2);
+      const isSelected = i === Math.floor(frame / 18) % 6;
+      const animDelay = i * 4;
+      const appear = Math.min(1, Math.max(0, (frame - animDelay) / 12));
       
+      ctx.globalAlpha = appear;
       ctx.fillStyle = isSelected ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
       ctx.beginPath();
-      ctx.roundRect(itemX, itemY, w * 0.24, h / 4 - 4, 3);
+      ctx.roundRect(itemX, itemY, w * 0.26, (h - 54) / 3.5, 6);
       ctx.fill();
+      
+      // Item name
+      ctx.fillStyle = '#fff';
+      ctx.font = `${10}px system-ui`;
+      ctx.fillText(menuItems[i], itemX + 6, itemY + 16);
+      
+      // Price
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `bold ${9}px system-ui`;
+      ctx.fillText(`$${8 + i * 3}`, itemX + 6, itemY + 28);
+      
+      ctx.globalAlpha = 1;
     }
     
     // Total panel
     ctx.fillStyle = reel.gradientTo;
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.58, y, w * 0.42, h * 0.4, 4);
+    ctx.roundRect(x + w * 0.61, y + 34, w * 0.39, h * 0.4, 8);
     ctx.fill();
     
-    const total = 45 + Math.floor(frame / 20) * 12;
+    const total = 45 + Math.floor(frame / 18) * 8;
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14 * scale}px system-ui`;
+    ctx.font = `bold ${24}px system-ui`;
     ctx.textAlign = 'center';
-    ctx.fillText(`$${total}`, x + w * 0.79, y + h * 0.2);
-    ctx.font = `${7 * scale}px system-ui`;
-    ctx.fillText('Total', x + w * 0.79, y + h * 0.32);
+    ctx.fillText(`$${total}`, x + w * 0.805, y + 68);
+    ctx.font = `${11}px system-ui`;
+    ctx.fillText('Order Total', x + w * 0.805, y + 88);
+    
+    // Items count
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.roundRect(x + w * 0.61, y + h * 0.48, w * 0.39, h * 0.45, 8);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${18}px system-ui`;
+    ctx.fillText(`${Math.floor(frame / 18) % 6 + 1}`, x + w * 0.805, y + h * 0.68);
+    ctx.font = `${10}px system-ui`;
+    ctx.fillText('Items', x + w * 0.805, y + h * 0.78);
     ctx.textAlign = 'left';
   };
 
@@ -802,91 +1116,169 @@ const AnimatedPresentation = ({
   };
 
   const drawMusicUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    // Waveform visualization
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h * 0.4, 4);
+    ctx.roundRect(x, y, w, 28, 6);
     ctx.fill();
     
-    // Animated waveform bars
-    const barCount = 30;
-    const barW = (w - 10) / barCount;
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('🎵 Music Box', x + 12, y + 19);
+    
+    // Waveform visualization panel
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.beginPath();
+    ctx.roundRect(x, y + 34, w, h * 0.35, 8);
+    ctx.fill();
+    
+    // Animated waveform bars - larger and more visible
+    const barCount = 20;
+    const barW = (w - 20) / barCount;
     
     for (let i = 0; i < barCount; i++) {
-      const barH = (Math.sin(frame * 0.08 + i * 0.3) + 1) * (h * 0.15) + 4;
-      const barX = x + 5 + i * barW;
-      const barY = y + h * 0.2 - barH / 2;
+      const barH = (Math.sin(frame * 0.08 + i * 0.4) + 1) * (h * 0.12) + 8;
+      const barX = x + 10 + i * barW;
+      const barY = y + 34 + h * 0.175 - barH / 2;
       
       const gradient = ctx.createLinearGradient(barX, barY, barX, barY + barH);
       gradient.addColorStop(0, reel.gradientFrom);
       gradient.addColorStop(1, reel.gradientTo);
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.roundRect(barX, barY, barW - 1, barH, 1);
+      ctx.roundRect(barX, barY, barW - 3, barH, 3);
       ctx.fill();
     }
     
-    // Track list
-    for (let i = 0; i < 3; i++) {
-      const trackY = y + h * 0.45 + i * (h * 0.18);
+    // Track list with song info
+    const tracks = [
+      { name: '🎤 Summer Vibes', artist: 'DJ Max', duration: '3:24' },
+      { name: '🎸 Rock Anthem', artist: 'The Band', duration: '4:12' },
+      { name: '🎹 Piano Dreams', artist: 'Luna', duration: '2:58' }
+    ];
+    
+    tracks.forEach((track, i) => {
+      const trackY = y + h * 0.42 + i * ((h - h * 0.48) / 3.2);
       const isPlaying = i === Math.floor(frame / 50) % 3;
+      const animDelay = i * 8;
+      const appear = Math.min(1, Math.max(0, (frame - animDelay) / 15));
       
+      ctx.globalAlpha = appear;
       ctx.fillStyle = isPlaying ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)';
       ctx.beginPath();
-      ctx.roundRect(x, trackY, w, h * 0.16, 3);
+      ctx.roundRect(x, trackY, w, (h - h * 0.48) / 3.5, 6);
       ctx.fill();
       
+      // Play indicator
       if (isPlaying) {
         ctx.fillStyle = reel.gradientFrom;
         ctx.beginPath();
-        ctx.arc(x + 12, trackY + h * 0.08, 4, 0, Math.PI * 2);
+        ctx.arc(x + 16, trackY + 16, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(x + 14, trackY + 12);
+        ctx.lineTo(x + 20, trackY + 16);
+        ctx.lineTo(x + 14, trackY + 20);
+        ctx.closePath();
         ctx.fill();
       }
-    }
+      
+      // Track info
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${11}px system-ui`;
+      ctx.fillText(track.name, x + 32, trackY + 14);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = `${9}px system-ui`;
+      ctx.fillText(track.artist, x + 32, trackY + 26);
+      
+      // Duration
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.textAlign = 'right';
+      ctx.fillText(track.duration, x + w - 10, trackY + 18);
+      ctx.textAlign = 'left';
+      
+      ctx.globalAlpha = 1;
+    });
   };
 
   const drawChatUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
-    // Chat messages
+    // Header
+    const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
+    headerGradient.addColorStop(0, reel.gradientFrom);
+    headerGradient.addColorStop(1, reel.gradientTo);
+    ctx.fillStyle = headerGradient;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 28, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('💬 Messages', x + 12, y + 19);
+    
+    // Online indicator
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.arc(x + w - 20, y + 14, 5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Chat messages with content
     const messages = [
-      { sent: false, width: 0.6 },
-      { sent: true, width: 0.5 },
-      { sent: false, width: 0.7 },
-      { sent: true, width: 0.4 },
+      { sent: false, text: 'Hey! How are you? 👋', width: 0.65 },
+      { sent: true, text: "I'm great, thanks! 😊", width: 0.55 },
+      { sent: false, text: 'Ready for the meeting?', width: 0.6 },
+      { sent: true, text: 'Yes, see you there! 🎉', width: 0.5 },
     ];
     
-    let msgY = y + 5;
+    let msgY = y + 38;
     messages.forEach((msg, i) => {
-      const delay = i * 15;
-      const appear = Math.min(1, Math.max(0, (frame - delay) / 20));
+      const delay = i * 12;
+      const appear = Math.min(1, Math.max(0, (frame - delay) / 15));
       const msgW = w * msg.width;
-      const msgX = msg.sent ? x + w - msgW - 5 : x + 5;
+      const msgX = msg.sent ? x + w - msgW - 8 : x + 8;
       
       ctx.globalAlpha = appear;
+      
+      // Message bubble
       ctx.fillStyle = msg.sent ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
       ctx.beginPath();
-      ctx.roundRect(msgX, msgY, msgW * appear, 16, 8);
+      ctx.roundRect(msgX, msgY, msgW * appear, 28, 12);
       ctx.fill();
-      ctx.globalAlpha = 1;
       
-      msgY += 22;
+      // Message text
+      if (appear > 0.5) {
+        ctx.fillStyle = '#fff';
+        ctx.font = `${11}px system-ui`;
+        ctx.fillText(msg.text, msgX + 10, msgY + 18);
+      }
+      
+      ctx.globalAlpha = 1;
+      msgY += 34;
     });
     
     // Input field
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.beginPath();
-    ctx.roundRect(x, y + h - 20, w, 16, 8);
+    ctx.roundRect(x + 4, y + h - 30, w - 8, 24, 12);
     ctx.fill();
     
-    // Typing indicator
-    if (frame % 60 < 30) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      for (let i = 0; i < 3; i++) {
-        const dotY = y + h - 12 + Math.sin(frame * 0.15 + i * 0.5) * 2;
-        ctx.beginPath();
-        ctx.arc(x + 10 + i * 8, dotY, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `${11}px system-ui`;
+    ctx.fillText('Type a message...', x + 16, y + h - 14);
+    
+    // Send button
+    ctx.fillStyle = reel.gradientFrom;
+    ctx.beginPath();
+    ctx.roundRect(x + w - 40, y + h - 28, 32, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `${10}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.fillText('Send', x + w - 24, y + h - 14);
+    ctx.textAlign = 'left';
   };
 
   const drawGenericUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number, progress: number) => {
