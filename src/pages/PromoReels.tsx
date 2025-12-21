@@ -1,20 +1,25 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { 
   Download, Play, Pause, Volume2, VolumeX, Share2, 
-  Sparkles, TrendingUp, Package, Calculator, Calendar,
+  Sparkles, Package, Calculator, Calendar,
   ChefHat, Thermometer, BarChart3, Users, Briefcase,
   Music, Video, Camera, MessageSquare, ShoppingCart,
-  Zap, Star, Eye, Heart, BookOpen, Globe, Map
+  Eye, Map, X
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface PromoReel {
   id: string;
@@ -25,10 +30,19 @@ interface PromoReel {
   duration: string;
   views: number;
   downloads: number;
-  videoUrl: string;
   thumbnailGradient: string;
   features: string[];
+  demoVideo: string; // Using sample video URLs
 }
+
+// Sample video URLs for demo - these are free stock videos
+const SAMPLE_VIDEOS = [
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+];
 
 const promoReels: PromoReel[] = [
   {
@@ -37,12 +51,12 @@ const promoReels: PromoReel[] = [
     description: "Track stock levels, receive items, and manage transfers with QR scanning",
     category: "Operations",
     icon: <Package className="w-6 h-6" />,
-    duration: "0:30",
+    duration: "0:15",
     views: 12500,
     downloads: 3200,
-    videoUrl: "/promo/inventory.mp4",
     thumbnailGradient: "from-blue-500 to-cyan-500",
-    features: ["QR Code Scanning", "Real-time Stock", "Transfer Tracking"]
+    features: ["QR Code Scanning", "Real-time Stock", "Transfer Tracking"],
+    demoVideo: SAMPLE_VIDEOS[0]
   },
   {
     id: "batch-calculator",
@@ -50,12 +64,12 @@ const promoReels: PromoReel[] = [
     description: "Scale recipes and track production with precision calculations",
     category: "Production",
     icon: <Calculator className="w-6 h-6" />,
-    duration: "0:25",
+    duration: "0:15",
     views: 8900,
     downloads: 2100,
-    videoUrl: "/promo/batch.mp4",
     thumbnailGradient: "from-purple-500 to-pink-500",
-    features: ["Recipe Scaling", "Batch Tracking", "QR Generation"]
+    features: ["Recipe Scaling", "Batch Tracking", "QR Generation"],
+    demoVideo: SAMPLE_VIDEOS[1]
   },
   {
     id: "staff-scheduling",
@@ -63,12 +77,12 @@ const promoReels: PromoReel[] = [
     description: "Create weekly schedules and assign stations effortlessly",
     category: "Team",
     icon: <Calendar className="w-6 h-6" />,
-    duration: "0:28",
+    duration: "0:15",
     views: 7600,
     downloads: 1800,
-    videoUrl: "/promo/scheduling.mp4",
     thumbnailGradient: "from-green-500 to-emerald-500",
-    features: ["Drag & Drop", "Station Assignment", "PDF Export"]
+    features: ["Drag & Drop", "Station Assignment", "PDF Export"],
+    demoVideo: SAMPLE_VIDEOS[2]
   },
   {
     id: "cocktail-sop",
@@ -76,12 +90,12 @@ const promoReels: PromoReel[] = [
     description: "Create and manage standardized cocktail recipes with photos",
     category: "Recipes",
     icon: <ChefHat className="w-6 h-6" />,
-    duration: "0:32",
+    duration: "0:15",
     views: 15200,
     downloads: 4500,
-    videoUrl: "/promo/cocktail.mp4",
     thumbnailGradient: "from-orange-500 to-red-500",
-    features: ["Photo Recipes", "Cost Tracking", "Taste Profiles"]
+    features: ["Photo Recipes", "Cost Tracking", "Taste Profiles"],
+    demoVideo: SAMPLE_VIDEOS[3]
   },
   {
     id: "temperature-log",
@@ -89,12 +103,12 @@ const promoReels: PromoReel[] = [
     description: "Track equipment temperatures for health compliance",
     category: "Compliance",
     icon: <Thermometer className="w-6 h-6" />,
-    duration: "0:22",
+    duration: "0:15",
     views: 5400,
     downloads: 1200,
-    videoUrl: "/promo/temperature.mp4",
     thumbnailGradient: "from-cyan-500 to-blue-500",
-    features: ["Compliance Ready", "Alert System", "Export Logs"]
+    features: ["Compliance Ready", "Alert System", "Export Logs"],
+    demoVideo: SAMPLE_VIDEOS[4]
   },
   {
     id: "menu-engineering",
@@ -102,12 +116,12 @@ const promoReels: PromoReel[] = [
     description: "BCG matrix analysis for menu profitability optimization",
     category: "Analytics",
     icon: <BarChart3 className="w-6 h-6" />,
-    duration: "0:35",
+    duration: "0:15",
     views: 9800,
     downloads: 2800,
-    videoUrl: "/promo/menu.mp4",
     thumbnailGradient: "from-violet-500 to-purple-500",
-    features: ["BCG Matrix", "AI Suggestions", "Profit Analysis"]
+    features: ["BCG Matrix", "AI Suggestions", "Profit Analysis"],
+    demoVideo: SAMPLE_VIDEOS[0]
   },
   {
     id: "crm",
@@ -115,12 +129,12 @@ const promoReels: PromoReel[] = [
     description: "Manage customers, leads, and deals in one place",
     category: "Business",
     icon: <Users className="w-6 h-6" />,
-    duration: "0:30",
+    duration: "0:15",
     views: 11200,
     downloads: 3100,
-    videoUrl: "/promo/crm.mp4",
     thumbnailGradient: "from-pink-500 to-rose-500",
-    features: ["Lead Pipeline", "Deal Tracking", "Activity Log"]
+    features: ["Lead Pipeline", "Deal Tracking", "Activity Log"],
+    demoVideo: SAMPLE_VIDEOS[1]
   },
   {
     id: "lab-ops",
@@ -128,12 +142,12 @@ const promoReels: PromoReel[] = [
     description: "Complete restaurant & bar management system",
     category: "Operations",
     icon: <Briefcase className="w-6 h-6" />,
-    duration: "0:40",
+    duration: "0:15",
     views: 18500,
     downloads: 5200,
-    videoUrl: "/promo/labops.mp4",
     thumbnailGradient: "from-amber-500 to-orange-500",
-    features: ["Mobile POS", "KDS System", "Real-time Analytics"]
+    features: ["Mobile POS", "KDS System", "Real-time Analytics"],
+    demoVideo: SAMPLE_VIDEOS[2]
   },
   {
     id: "reels-editor",
@@ -141,12 +155,12 @@ const promoReels: PromoReel[] = [
     description: "Create stunning video content with pro editing tools",
     category: "Content",
     icon: <Video className="w-6 h-6" />,
-    duration: "0:28",
+    duration: "0:15",
     views: 22100,
     downloads: 6800,
-    videoUrl: "/promo/reels.mp4",
     thumbnailGradient: "from-red-500 to-pink-500",
-    features: ["Pro Filters", "Music Library", "Export HD"]
+    features: ["Pro Filters", "Music Library", "Export HD"],
+    demoVideo: SAMPLE_VIDEOS[3]
   },
   {
     id: "music-box",
@@ -154,12 +168,12 @@ const promoReels: PromoReel[] = [
     description: "Upload and share your music with the community",
     category: "Content",
     icon: <Music className="w-6 h-6" />,
-    duration: "0:25",
+    duration: "0:15",
     views: 14300,
     downloads: 4100,
-    videoUrl: "/promo/music.mp4",
     thumbnailGradient: "from-indigo-500 to-violet-500",
-    features: ["Audio Upload", "Trending Charts", "Playlist Creation"]
+    features: ["Audio Upload", "Trending Charts", "Playlist Creation"],
+    demoVideo: SAMPLE_VIDEOS[4]
   },
   {
     id: "stories",
@@ -167,12 +181,12 @@ const promoReels: PromoReel[] = [
     description: "Share moments with beautiful stories and posts",
     category: "Social",
     icon: <Camera className="w-6 h-6" />,
-    duration: "0:20",
+    duration: "0:15",
     views: 28700,
     downloads: 8200,
-    videoUrl: "/promo/stories.mp4",
     thumbnailGradient: "from-yellow-500 to-orange-500",
-    features: ["Story Editor", "Filters", "Engagement Stats"]
+    features: ["Story Editor", "Filters", "Engagement Stats"],
+    demoVideo: SAMPLE_VIDEOS[0]
   },
   {
     id: "messaging",
@@ -180,12 +194,12 @@ const promoReels: PromoReel[] = [
     description: "Connect with others through instant messaging",
     category: "Social",
     icon: <MessageSquare className="w-6 h-6" />,
-    duration: "0:22",
+    duration: "0:15",
     views: 19400,
     downloads: 5600,
-    videoUrl: "/promo/messaging.mp4",
     thumbnailGradient: "from-teal-500 to-cyan-500",
-    features: ["Group Chats", "Media Sharing", "Voice Notes"]
+    features: ["Group Chats", "Media Sharing", "Voice Notes"],
+    demoVideo: SAMPLE_VIDEOS[1]
   },
   {
     id: "shop",
@@ -193,12 +207,12 @@ const promoReels: PromoReel[] = [
     description: "Buy and sell products in the integrated marketplace",
     category: "Commerce",
     icon: <ShoppingCart className="w-6 h-6" />,
-    duration: "0:30",
+    duration: "0:15",
     views: 16800,
     downloads: 4700,
-    videoUrl: "/promo/shop.mp4",
     thumbnailGradient: "from-emerald-500 to-teal-500",
-    features: ["Easy Checkout", "Seller Dashboard", "Order Tracking"]
+    features: ["Easy Checkout", "Seller Dashboard", "Order Tracking"],
+    demoVideo: SAMPLE_VIDEOS[2]
   },
   {
     id: "live-map",
@@ -206,12 +220,12 @@ const promoReels: PromoReel[] = [
     description: "Discover venues and events near you with real-time data",
     category: "Discovery",
     icon: <Map className="w-6 h-6" />,
-    duration: "0:26",
+    duration: "0:15",
     views: 13200,
     downloads: 3800,
-    videoUrl: "/promo/map.mp4",
     thumbnailGradient: "from-lime-500 to-green-500",
-    features: ["Real-time Updates", "Venue Details", "Directions"]
+    features: ["Real-time Updates", "Venue Details", "Directions"],
+    demoVideo: SAMPLE_VIDEOS[3]
   },
   {
     id: "wasabi-ai",
@@ -219,44 +233,225 @@ const promoReels: PromoReel[] = [
     description: "Your intelligent assistant for hospitality operations",
     category: "AI",
     icon: <Sparkles className="w-6 h-6" />,
-    duration: "0:35",
+    duration: "0:15",
     views: 24600,
     downloads: 7100,
-    videoUrl: "/promo/wasabi.mp4",
     thumbnailGradient: "from-fuchsia-500 to-purple-500",
-    features: ["Smart Assistant", "Tool Navigation", "Task Automation"]
+    features: ["Smart Assistant", "Tool Navigation", "Task Automation"],
+    demoVideo: SAMPLE_VIDEOS[4]
   }
 ];
 
 const categories = ["All", "Operations", "Content", "Social", "Business", "AI", "Commerce", "Discovery"];
 
+function VideoPlayer({ reel, onClose }: { reel: PromoReel; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
+  }, []);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const progress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      setProgress(progress);
+    }
+  };
+
+  const handleDownload = async () => {
+    toast.loading("Preparing download...");
+    
+    try {
+      const response = await fetch(reel.demoVideo);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reel.id}-promo-reel.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.dismiss();
+      toast.success("Download started!");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Download failed. Try right-clicking the video.");
+    }
+  };
+
+  return (
+    <div className="relative w-full max-w-md mx-auto">
+      {/* Video */}
+      <div className="relative aspect-[9/16] bg-black rounded-xl overflow-hidden">
+        <video
+          ref={videoRef}
+          src={reel.demoVideo}
+          className="w-full h-full object-cover"
+          loop
+          playsInline
+          onTimeUpdate={handleTimeUpdate}
+          onClick={togglePlay}
+        />
+
+        {/* Overlay Info */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+
+        {/* Top Bar */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
+          <Badge className={`bg-gradient-to-r ${reel.thumbnailGradient} text-white border-0`}>
+            {reel.category}
+          </Badge>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="text-white hover:bg-white/20"
+            onClick={onClose}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="absolute top-16 left-4 right-4">
+          <div className="w-full h-1 bg-white/30 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Center Play/Pause */}
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+              onClick={togglePlay}
+            >
+              <Play className="w-8 h-8 ml-1" />
+            </Button>
+          </div>
+        )}
+
+        {/* Bottom Info */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="flex items-end justify-between">
+            <div className="flex-1 mr-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${reel.thumbnailGradient} flex items-center justify-center`}>
+                  {reel.icon}
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-lg">{reel.title}</h3>
+                  <p className="text-white/70 text-xs">{reel.duration}</p>
+                </div>
+              </div>
+              <p className="text-white/90 text-sm line-clamp-2">{reel.description}</p>
+              
+              <div className="flex flex-wrap gap-1 mt-2">
+                {reel.features.map((feature, i) => (
+                  <Badge key={i} variant="secondary" className="bg-white/20 text-white text-[10px] border-0">
+                    {feature}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Side Actions */}
+            <div className="flex flex-col gap-3">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-white hover:bg-white/20"
+                onClick={toggleMute}
+              >
+                {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-white hover:bg-white/20"
+                onClick={handleDownload}
+              >
+                <Download className="w-6 h-6" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-white hover:bg-white/20"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.origin + `/promo/${reel.id}`);
+                  toast.success("Link copied!");
+                }}
+              >
+                <Share2 className="w-6 h-6" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PromoReels() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
+  const [selectedReel, setSelectedReel] = useState<PromoReel | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const hoverVideoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
 
   const filteredReels = activeCategory === "All" 
     ? promoReels 
     : promoReels.filter(r => r.category === activeCategory);
 
   const handleDownload = async (reel: PromoReel) => {
-    toast.loading(`Preparing ${reel.title} promo reel for download...`);
+    toast.loading(`Preparing ${reel.title} promo reel...`);
     
-    // Simulate download preparation
-    setTimeout(() => {
-      // Create a downloadable link
-      const link = document.createElement('a');
-      link.href = reel.videoUrl;
-      link.download = `${reel.id}-promo-reel.mp4`;
-      link.target = '_blank';
+    try {
+      const response = await fetch(reel.demoVideo);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reel.id}-promo-reel.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
-      // For demo purposes, show success
       toast.dismiss();
-      toast.success(`${reel.title} promo reel ready!`, {
-        description: "Right-click the video and select 'Save video as...' to download",
-        duration: 5000
-      });
-    }, 1500);
+      toast.success(`${reel.title} downloaded!`);
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Download failed. Try opening the video first.");
+    }
   };
 
   const handleShare = async (reel: PromoReel) => {
@@ -276,24 +471,19 @@ export default function PromoReels() {
     }
   };
 
-  const toggleMute = (id: string) => {
-    setMutedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
   const formatNumber = (num: number) => {
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + 'K';
     }
     return num.toString();
   };
+
+  // Handle hover video playback
+  useEffect(() => {
+    if (hoveredId && hoverVideoRefs.current[hoveredId]) {
+      hoverVideoRefs.current[hoveredId]?.play();
+    }
+  }, [hoveredId]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -356,7 +546,7 @@ export default function PromoReels() {
         </ScrollArea>
 
         {/* Reels Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           <AnimatePresence mode="popLayout">
             {filteredReels.map((reel, index) => (
               <motion.div
@@ -364,95 +554,79 @@ export default function PromoReels() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: index * 0.03 }}
               >
-                <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
+                <Card 
+                  className="overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  onMouseEnter={() => setHoveredId(reel.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  onClick={() => setSelectedReel(reel)}
+                >
                   {/* Video Preview */}
-                  <div className={`relative aspect-[9/16] max-h-[280px] bg-gradient-to-br ${reel.thumbnailGradient}`}>
-                    {/* Placeholder Preview */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
+                  <div className={`relative aspect-[9/16] bg-gradient-to-br ${reel.thumbnailGradient}`}>
+                    {/* Hover Video */}
+                    {hoveredId === reel.id && (
+                      <video
+                        ref={(el) => { hoverVideoRefs.current[reel.id] = el; }}
+                        src={reel.demoVideo}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        muted
+                        loop
+                        playsInline
+                      />
+                    )}
+                    
+                    {/* Static Preview */}
+                    <div className={`absolute inset-0 flex flex-col items-center justify-center text-white p-3 transition-opacity ${hoveredId === reel.id ? 'opacity-0' : 'opacity-100'}`}>
+                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
                         {reel.icon}
                       </div>
-                      <h3 className="font-bold text-lg text-center">{reel.title}</h3>
-                      <p className="text-white/80 text-xs text-center mt-1 line-clamp-2">
-                        {reel.description}
-                      </p>
-                      
-                      {/* Features */}
-                      <div className="flex flex-wrap gap-1 mt-3 justify-center">
-                        {reel.features.map((feature, i) => (
-                          <Badge 
-                            key={i} 
-                            variant="secondary" 
-                            className="bg-white/20 text-white text-[10px] border-0"
-                          >
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
+                      <h3 className="font-bold text-sm text-center line-clamp-2">{reel.title}</h3>
                     </div>
 
-                    {/* Overlay Controls */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
-                        onClick={() => setPlayingId(playingId === reel.id ? null : reel.id)}
-                      >
-                        {playingId === reel.id ? (
-                          <Pause className="w-6 h-6" />
-                        ) : (
-                          <Play className="w-6 h-6 ml-1" />
-                        )}
-                      </Button>
+                    {/* Play Button Overlay on Hover */}
+                    <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${hoveredId === reel.id ? 'opacity-100' : 'opacity-0'}`}>
+                      <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                        <Play className="w-5 h-5 text-white ml-0.5" />
+                      </div>
                     </div>
 
                     {/* Duration Badge */}
-                    <Badge 
-                      className="absolute bottom-2 right-2 bg-black/60 text-white text-xs"
-                    >
+                    <Badge className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px]">
                       {reel.duration}
                     </Badge>
 
                     {/* Category Badge */}
-                    <Badge 
-                      className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-xs border-0"
-                    >
+                    <Badge className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] border-0">
                       {reel.category}
                     </Badge>
                   </div>
 
                   {/* Info */}
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <h4 className="font-semibold text-sm truncate">{reel.title}</h4>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {reel.description}
-                        </p>
-                      </div>
-                    </div>
-
+                  <CardContent className="p-2">
+                    <h4 className="font-semibold text-xs truncate">{reel.title}</h4>
+                    
                     {/* Stats */}
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
+                      <div className="flex items-center gap-0.5">
                         <Eye className="w-3 h-3" />
                         {formatNumber(reel.views)}
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <Download className="w-3 h-3" />
                         {formatNumber(reel.downloads)}
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
+                    {/* Quick Actions */}
+                    <div className="flex gap-1 mt-2">
                       <Button
                         size="sm"
-                        className="flex-1 h-8 text-xs"
-                        onClick={() => handleDownload(reel)}
+                        className="flex-1 h-7 text-[10px]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(reel);
+                        }}
                       >
                         <Download className="w-3 h-3 mr-1" />
                         Download
@@ -460,8 +634,11 @@ export default function PromoReels() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleShare(reel)}
+                        className="h-7 w-7 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShare(reel);
+                        }}
                       >
                         <Share2 className="w-3 h-3" />
                       </Button>
@@ -483,43 +660,43 @@ export default function PromoReels() {
 
         {/* How to Use Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
           className="mt-12 mb-8"
         >
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Zap className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold">How to Use Promo Reels</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                    1
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                How to Use Promo Reels
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="font-bold text-primary">1</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-sm">Download</h4>
-                    <p className="text-xs text-muted-foreground">Click download to save the promo reel to your device</p>
+                    <p className="font-medium">Click to Preview</p>
+                    <p className="text-muted-foreground text-xs">Tap any reel to watch the full video</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                    2
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="font-bold text-primary">2</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-sm">Customize</h4>
-                    <p className="text-xs text-muted-foreground">Add your branding or voiceover if desired</p>
+                    <p className="font-medium">Download HD Video</p>
+                    <p className="text-muted-foreground text-xs">Click download button to save</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                    3
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="font-bold text-primary">3</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-sm">Share</h4>
-                    <p className="text-xs text-muted-foreground">Post on Instagram, TikTok, YouTube Shorts & more</p>
+                    <p className="font-medium">Share Everywhere</p>
+                    <p className="text-muted-foreground text-xs">Post on Instagram, TikTok, YouTube</p>
                   </div>
                 </div>
               </div>
@@ -527,6 +704,15 @@ export default function PromoReels() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Video Player Dialog */}
+      <Dialog open={!!selectedReel} onOpenChange={() => setSelectedReel(null)}>
+        <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
+          {selectedReel && (
+            <VideoPlayer reel={selectedReel} onClose={() => setSelectedReel(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
