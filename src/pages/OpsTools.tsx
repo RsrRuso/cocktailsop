@@ -453,6 +453,16 @@ const OpsTools = () => {
     ],
     management: [
       {
+        name: "Register Venue",
+        description: "Create a verified SpecVerse business account",
+        details: "Register your bar, restaurant, or hospitality venue. Get verified, manage staff, and unlock business features.",
+        icon: Building2,
+        gradient: "from-amber-500 to-orange-600",
+        premium: false,
+        path: "/venue-register",
+        featured: true,
+      },
+      {
         name: "GM-Command Suite",
         description: "One-Click Executive Intelligence Dashboard",
         details: "AI-powered leadership dashboard with financial command panel, inventory automation, staff performance engine, approval workflows, risk radar, and opportunity finder.",
