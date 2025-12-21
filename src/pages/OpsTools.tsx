@@ -453,6 +453,16 @@ const OpsTools = () => {
     ],
     management: [
       {
+        name: "Pre-Opening Package",
+        description: "Complete venue launch toolkit",
+        details: "All-in-one pre-opening management: checklists, vendor database, org chart, SOP library, menu builder, licenses & asset registry.",
+        icon: Building2,
+        gradient: "from-rose-600 to-pink-500",
+        premium: false,
+        path: "/pre-opening",
+        featured: true,
+      },
+      {
         name: "Register Venue",
         description: "Create a verified SpecVerse business account",
         details: "Register your bar, restaurant, or hospitality venue. Get verified, manage staff, and unlock business features.",
