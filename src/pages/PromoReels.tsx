@@ -321,10 +321,219 @@ const promoReels: PromoReel[] = [
       { label: "Accuracy", value: "98%" },
       { label: "Speed", value: "10x" }
     ]
+  },
+  {
+    id: "analytics-dashboard",
+    title: "Analytics Dashboard",
+    description: "Real-time insights and performance metrics at your fingertips",
+    category: "Analytics",
+    icon: <TrendingUp className="w-6 h-6" />,
+    duration: "0:42",
+    views: 31200,
+    downloads: 8900,
+    thumbnailGradient: "from-sky-500 to-indigo-500",
+    gradientFrom: "#0ea5e9",
+    gradientTo: "#6366f1",
+    features: ["Live Metrics", "Custom Reports", "Data Export", "Team Sharing"],
+    stats: [
+      { label: "Data Points", value: "10M+" },
+      { label: "Refresh", value: "Real-time" },
+      { label: "Reports", value: "Unlimited" }
+    ]
+  },
+  {
+    id: "security-hub",
+    title: "Security Hub",
+    description: "Enterprise-grade security and access control management",
+    category: "Security",
+    icon: <Shield className="w-6 h-6" />,
+    duration: "0:38",
+    views: 18900,
+    downloads: 5400,
+    thumbnailGradient: "from-slate-600 to-zinc-800",
+    gradientFrom: "#475569",
+    gradientTo: "#27272a",
+    features: ["2FA Auth", "Role Management", "Audit Logs", "Encryption"],
+    stats: [
+      { label: "Protected", value: "100%" },
+      { label: "Uptime", value: "99.99%" },
+      { label: "Compliance", value: "SOC2" }
+    ]
+  },
+  {
+    id: "automation-studio",
+    title: "Automation Studio",
+    description: "Build powerful workflows and automate repetitive tasks",
+    category: "AI",
+    icon: <Zap className="w-6 h-6" />,
+    duration: "0:55",
+    views: 27800,
+    downloads: 7600,
+    thumbnailGradient: "from-yellow-400 to-amber-600",
+    gradientFrom: "#facc15",
+    gradientTo: "#d97706",
+    features: ["Visual Builder", "Webhooks", "Triggers", "API Integrations"],
+    stats: [
+      { label: "Workflows", value: "500+" },
+      { label: "Actions/Day", value: "1M+" },
+      { label: "Templates", value: "100+" }
+    ]
+  },
+  {
+    id: "livestream",
+    title: "Live Streaming",
+    description: "Go live and connect with your audience in real-time",
+    category: "Content",
+    icon: <Video className="w-6 h-6" />,
+    duration: "0:48",
+    views: 42100,
+    downloads: 12300,
+    thumbnailGradient: "from-red-600 to-rose-500",
+    gradientFrom: "#dc2626",
+    gradientTo: "#f43f5e",
+    features: ["HD Streaming", "Live Chat", "Donations", "Replays"],
+    stats: [
+      { label: "Streams", value: "100K+" },
+      { label: "Quality", value: "1080p" },
+      { label: "Latency", value: "<1s" }
+    ]
+  },
+  {
+    id: "explore-feed",
+    title: "Explore & Discover",
+    description: "AI-powered content discovery tailored to your interests",
+    category: "Discovery",
+    icon: <Eye className="w-6 h-6" />,
+    duration: "0:35",
+    views: 56700,
+    downloads: 15200,
+    thumbnailGradient: "from-gradient-start to-gradient-end",
+    gradientFrom: "#7c3aed",
+    gradientTo: "#db2777",
+    features: ["AI Recommendations", "Trending", "Categories", "Save Collections"],
+    stats: [
+      { label: "Content", value: "Infinite" },
+      { label: "Accuracy", value: "95%" },
+      { label: "Daily Users", value: "1M+" }
+    ]
+  },
+  {
+    id: "team-collab",
+    title: "Team Collaboration",
+    description: "Work together seamlessly with your entire team",
+    category: "Team",
+    icon: <Users className="w-6 h-6" />,
+    duration: "0:45",
+    views: 23400,
+    downloads: 6700,
+    thumbnailGradient: "from-blue-600 to-purple-600",
+    gradientFrom: "#2563eb",
+    gradientTo: "#9333ea",
+    features: ["Shared Workspace", "Real-time Sync", "Comments", "Permissions"],
+    stats: [
+      { label: "Teams", value: "50K+" },
+      { label: "Productivity", value: "+40%" },
+      { label: "Collaboration", value: "Seamless" }
+    ]
+  },
+  {
+    id: "recipe-vault",
+    title: "Recipe Vault",
+    description: "Store, organize and share your secret recipes securely",
+    category: "Recipes",
+    icon: <ChefHat className="w-6 h-6" />,
+    duration: "0:40",
+    views: 19800,
+    downloads: 5100,
+    thumbnailGradient: "from-amber-500 to-red-600",
+    gradientFrom: "#f59e0b",
+    gradientTo: "#dc2626",
+    features: ["Secure Storage", "Version History", "Sharing Controls", "Print Ready"],
+    stats: [
+      { label: "Recipes", value: "250K+" },
+      { label: "Security", value: "Bank-grade" },
+      { label: "Formats", value: "10+" }
+    ]
+  },
+  {
+    id: "pour-cost",
+    title: "Pour Cost Analysis",
+    description: "Track and optimize your beverage costs in real-time",
+    category: "Analytics",
+    icon: <BarChart3 className="w-6 h-6" />,
+    duration: "0:38",
+    views: 14600,
+    downloads: 4200,
+    thumbnailGradient: "from-green-600 to-teal-500",
+    gradientFrom: "#16a34a",
+    gradientTo: "#14b8a6",
+    features: ["Cost Tracking", "Variance Reports", "Alerts", "Profit Margins"],
+    stats: [
+      { label: "Savings", value: "25%" },
+      { label: "Accuracy", value: "99.5%" },
+      { label: "ROI", value: "10x" }
+    ]
+  },
+  {
+    id: "events-manager",
+    title: "Events Manager",
+    description: "Plan, promote and manage events with ease",
+    category: "Business",
+    icon: <Calendar className="w-6 h-6" />,
+    duration: "0:50",
+    views: 21300,
+    downloads: 5800,
+    thumbnailGradient: "from-pink-500 to-violet-600",
+    gradientFrom: "#ec4899",
+    gradientTo: "#7c3aed",
+    features: ["Event Creation", "Ticketing", "RSVPs", "Promotion Tools"],
+    stats: [
+      { label: "Events", value: "100K+" },
+      { label: "Attendees", value: "5M+" },
+      { label: "Success Rate", value: "98%" }
+    ]
+  },
+  {
+    id: "knowledge-base",
+    title: "Knowledge Base",
+    description: "Centralized documentation and training resources",
+    category: "Team",
+    icon: <Briefcase className="w-6 h-6" />,
+    duration: "0:42",
+    views: 12800,
+    downloads: 3600,
+    thumbnailGradient: "from-cyan-600 to-blue-700",
+    gradientFrom: "#0891b2",
+    gradientTo: "#1d4ed8",
+    features: ["Documentation", "Training Modules", "Search", "Version Control"],
+    stats: [
+      { label: "Articles", value: "10K+" },
+      { label: "Search", value: "Instant" },
+      { label: "Training Time", value: "-50%" }
+    ]
+  },
+  {
+    id: "notifications",
+    title: "Smart Notifications",
+    description: "Stay informed with intelligent, personalized alerts",
+    category: "Productivity",
+    icon: <Sparkles className="w-6 h-6" />,
+    duration: "0:32",
+    views: 35200,
+    downloads: 9400,
+    thumbnailGradient: "from-orange-500 to-yellow-500",
+    gradientFrom: "#f97316",
+    gradientTo: "#eab308",
+    features: ["Smart Filters", "Priority Inbox", "Do Not Disturb", "Custom Rules"],
+    stats: [
+      { label: "Noise Reduction", value: "70%" },
+      { label: "Response Time", value: "-45%" },
+      { label: "Customization", value: "100%" }
+    ]
   }
 ];
 
-const categories = ["All", "Operations", "Content", "Social", "Business", "AI", "Commerce", "Discovery"];
+const categories = ["All", "Operations", "Content", "Social", "Business", "AI", "Commerce", "Discovery", "Analytics", "Team", "Recipes", "Security", "Productivity"];
 
 // Interactive Animated Canvas Presentation Component
 const AnimatedPresentation = ({ 
