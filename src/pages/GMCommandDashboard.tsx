@@ -393,92 +393,152 @@ const GMCommandDashboard = () => {
 
           {/* Pre-Opening Tab */}
           <TabsContent value="preopening" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-violet-500" />
-                  Pre-Opening Venue Tools
-                </CardTitle>
-                <CardDescription>Complete automation for opening new venues</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {[
-                    { name: 'Pre-Opening Checklist', icon: ClipboardCheck, path: '/pre-opening-checklist', color: 'from-violet-600 to-purple-500' },
-                    { name: 'Vendor Database', icon: Package, path: '/vendor-database', color: 'from-emerald-600 to-teal-500' },
-                    { name: 'Org Chart Builder', icon: Users, path: '/org-chart', color: 'from-blue-600 to-cyan-500' },
-                    { name: 'SOP Library', icon: FileText, path: '/sop-library', color: 'from-orange-600 to-amber-500' },
-                    { name: 'Menu Builder Pro', icon: UtensilsCrossed, path: '/menu-builder', color: 'from-pink-600 to-rose-500' },
-                    { name: 'License & Compliance', icon: Shield, path: '/licenses-compliance', color: 'from-red-600 to-orange-500' },
-                    { name: 'Asset Registry', icon: Boxes, path: '/asset-registry', color: 'from-indigo-600 to-blue-500' },
-                    { name: 'Budget Planner', icon: DollarSign, path: '/budget-planner', color: 'from-green-600 to-emerald-500' },
-                    { name: 'Recruitment Tracker', icon: UserPlus, path: '/recruitment-tracker', color: 'from-cyan-600 to-blue-500' },
-                    { name: 'Training Program', icon: GraduationCap, path: '/training-program', color: 'from-amber-600 to-orange-500' },
-                    { name: 'Floor Plan Designer', icon: LayoutDashboard, path: '/floor-plan-designer', color: 'from-slate-600 to-gray-500' },
-                    { name: 'Opening Inventory', icon: ShoppingCart, path: '/opening-inventory', color: 'from-lime-600 to-green-500' },
-                    { name: 'Tech Stack Setup', icon: Cpu, path: '/tech-stack-setup', color: 'from-fuchsia-600 to-pink-500' },
-                    { name: 'Marketing Launch', icon: Megaphone, path: '/marketing-launch', color: 'from-rose-600 to-red-500' },
-                    { name: 'Soft Opening Planner', icon: CalendarCheck, path: '/soft-opening-planner', color: 'from-violet-600 to-indigo-500' },
-                    { name: 'Utilities Tracker', icon: Zap, path: '/utilities-tracker', color: 'from-yellow-600 to-amber-500' },
-                    { name: 'Insurance Manager', icon: FileCheck, path: '/insurance-manager', color: 'from-teal-600 to-cyan-500' },
-                    { name: 'Uniform Manager', icon: Shirt, path: '/uniform-manager', color: 'from-purple-600 to-violet-500' },
-                    { name: 'Health & Safety Audit', icon: HeartPulse, path: '/health-safety-audit', color: 'from-red-600 to-rose-500' },
-                  ].map((tool) => (
-                    <Button
-                      key={tool.path}
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-2 group hover:border-primary/50"
-                      onClick={() => navigate(tool.path)}
-                    >
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${tool.color} group-hover:scale-110 transition-transform`}>
-                        <tool.icon className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-xs text-center leading-tight">{tool.name}</span>
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Card className="bg-gradient-to-br from-violet-500/10 to-purple-600/10 border-violet-500/20">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-3xl font-bold text-violet-600">19</p>
-                  <p className="text-xs text-muted-foreground">Core Tools</p>
+                  <p className="text-2xl font-bold text-violet-600">19</p>
+                  <p className="text-xs text-muted-foreground">Total Tools</p>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-emerald-500/10 to-green-600/10 border-emerald-500/20">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-3xl font-bold text-emerald-600">8</p>
-                  <p className="text-xs text-muted-foreground">Venue Types</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-600/10 border-blue-500/20">
-                <CardContent className="pt-4 text-center">
-                  <p className="text-3xl font-bold text-blue-600">∞</p>
-                  <p className="text-xs text-muted-foreground">Automations</p>
+                  <p className="text-2xl font-bold text-emerald-600">12</p>
+                  <p className="text-xs text-muted-foreground">Active</p>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-amber-500/10 to-orange-600/10 border-amber-500/20">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-3xl font-bold text-amber-600">100%</p>
-                  <p className="text-xs text-muted-foreground">Integrated</p>
+                  <p className="text-2xl font-bold text-amber-600">5</p>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-600/10 border-blue-500/20">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold text-blue-600">78%</p>
+                  <p className="text-xs text-muted-foreground">Progress</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-pink-500/10 to-rose-600/10 border-pink-500/20">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold text-pink-600">24</p>
+                  <p className="text-xs text-muted-foreground">Team Actions</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* CTA */}
+            {/* Reports Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { name: 'Pre-Opening Checklist', icon: ClipboardCheck, path: '/pre-opening-checklist', color: 'from-violet-600 to-purple-500', progress: 85, items: 42, completed: 36, status: 'active', engagement: 156, lastUpdate: '2 hours ago' },
+                { name: 'Vendor Database', icon: Package, path: '/vendor-database', color: 'from-emerald-600 to-teal-500', progress: 92, items: 28, completed: 26, status: 'active', engagement: 89, lastUpdate: '1 day ago' },
+                { name: 'Org Chart Builder', icon: Users, path: '/org-chart', color: 'from-blue-600 to-cyan-500', progress: 100, items: 8, completed: 8, status: 'completed', engagement: 45, lastUpdate: '3 days ago' },
+                { name: 'SOP Library', icon: FileText, path: '/sop-library', color: 'from-orange-600 to-amber-500', progress: 65, items: 24, completed: 16, status: 'active', engagement: 234, lastUpdate: '5 hours ago' },
+                { name: 'Menu Builder Pro', icon: UtensilsCrossed, path: '/menu-builder', color: 'from-pink-600 to-rose-500', progress: 78, items: 56, completed: 44, status: 'active', engagement: 312, lastUpdate: '30 mins ago' },
+                { name: 'License & Compliance', icon: Shield, path: '/licenses-compliance', color: 'from-red-600 to-orange-500', progress: 45, items: 12, completed: 5, status: 'attention', engagement: 67, lastUpdate: '1 week ago' },
+                { name: 'Asset Registry', icon: Boxes, path: '/asset-registry', color: 'from-indigo-600 to-blue-500', progress: 88, items: 156, completed: 137, status: 'active', engagement: 178, lastUpdate: '4 hours ago' },
+                { name: 'Budget Planner', icon: DollarSign, path: '/budget-planner', color: 'from-green-600 to-emerald-500', progress: 72, items: 18, completed: 13, status: 'active', engagement: 95, lastUpdate: '1 day ago' },
+                { name: 'Recruitment Tracker', icon: UserPlus, path: '/recruitment-tracker', color: 'from-cyan-600 to-blue-500', progress: 60, items: 32, completed: 19, status: 'active', engagement: 287, lastUpdate: '3 hours ago' },
+                { name: 'Training Program', icon: GraduationCap, path: '/training-program', color: 'from-amber-600 to-orange-500', progress: 35, items: 48, completed: 17, status: 'pending', engagement: 412, lastUpdate: '6 hours ago' },
+                { name: 'Floor Plan Designer', icon: LayoutDashboard, path: '/floor-plan-designer', color: 'from-slate-600 to-gray-500', progress: 100, items: 4, completed: 4, status: 'completed', engagement: 56, lastUpdate: '2 weeks ago' },
+                { name: 'Opening Inventory', icon: ShoppingCart, path: '/opening-inventory', color: 'from-lime-600 to-green-500', progress: 55, items: 245, completed: 135, status: 'active', engagement: 189, lastUpdate: '2 hours ago' },
+                { name: 'Tech Stack Setup', icon: Cpu, path: '/tech-stack-setup', color: 'from-fuchsia-600 to-pink-500', progress: 90, items: 15, completed: 14, status: 'active', engagement: 78, lastUpdate: '5 days ago' },
+                { name: 'Marketing Launch', icon: Megaphone, path: '/marketing-launch', color: 'from-rose-600 to-red-500', progress: 25, items: 20, completed: 5, status: 'pending', engagement: 145, lastUpdate: '1 day ago' },
+                { name: 'Soft Opening Planner', icon: CalendarCheck, path: '/soft-opening-planner', color: 'from-violet-600 to-indigo-500', progress: 15, items: 16, completed: 2, status: 'pending', engagement: 34, lastUpdate: '3 days ago' },
+                { name: 'Utilities Tracker', icon: Zap, path: '/utilities-tracker', color: 'from-yellow-600 to-amber-500', progress: 80, items: 8, completed: 6, status: 'active', engagement: 23, lastUpdate: '1 week ago' },
+                { name: 'Insurance Manager', icon: FileCheck, path: '/insurance-manager', color: 'from-teal-600 to-cyan-500', progress: 50, items: 6, completed: 3, status: 'attention', engagement: 18, lastUpdate: '2 weeks ago' },
+                { name: 'Uniform Manager', icon: Shirt, path: '/uniform-manager', color: 'from-purple-600 to-violet-500', progress: 40, items: 35, completed: 14, status: 'pending', engagement: 67, lastUpdate: '4 days ago' },
+                { name: 'Health & Safety Audit', icon: HeartPulse, path: '/health-safety-audit', color: 'from-red-600 to-rose-500', progress: 30, items: 52, completed: 16, status: 'attention', engagement: 89, lastUpdate: '2 days ago' },
+              ].map((tool) => (
+                <Card 
+                  key={tool.path} 
+                  className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group overflow-hidden"
+                  onClick={() => navigate(tool.path)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${tool.color} group-hover:scale-110 transition-transform`}>
+                          <tool.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm">{tool.name}</h3>
+                          <p className="text-xs text-muted-foreground">{tool.lastUpdate}</p>
+                        </div>
+                      </div>
+                      <Badge 
+                        variant={tool.status === 'completed' ? 'default' : tool.status === 'attention' ? 'destructive' : 'secondary'}
+                        className="text-[10px]"
+                      >
+                        {tool.status === 'completed' ? '✓ Done' : tool.status === 'attention' ? '! Action' : tool.status === 'pending' ? 'Pending' : 'Active'}
+                      </Badge>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium">{tool.progress}%</span>
+                      </div>
+                      <Progress value={tool.progress} className="h-2" />
+                    </div>
+
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="p-2 rounded-lg bg-muted/50">
+                        <p className="text-sm font-bold">{tool.items}</p>
+                        <p className="text-[10px] text-muted-foreground">Items</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-muted/50">
+                        <p className="text-sm font-bold text-emerald-600">{tool.completed}</p>
+                        <p className="text-[10px] text-muted-foreground">Done</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-muted/50">
+                        <div className="flex items-center justify-center gap-1">
+                          <Activity className="w-3 h-3 text-primary" />
+                          <p className="text-sm font-bold">{tool.engagement}</p>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Engagement</p>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full mt-3 gap-2 text-xs group-hover:bg-primary group-hover:text-primary-foreground"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View Report
+                      <ChevronRight className="w-3 h-3 ml-auto" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Quick Actions Bar */}
             <Card className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
               <CardContent className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-bold text-lg">Ready to open a new venue?</h3>
-                  <p className="text-white/80 text-sm">Start with our comprehensive pre-opening checklist</p>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-white/20">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Pre-Opening Command Center</h3>
+                    <p className="text-white/80 text-sm">Full automation suite for venue launches</p>
+                  </div>
                 </div>
-                <Button variant="secondary" onClick={() => navigate('/pre-opening')} className="gap-2">
-                  <Building2 className="w-4 h-4" />
-                  Open Package
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => navigate('/pre-opening')} className="gap-2">
+                    <Package className="w-4 h-4" />
+                    Full Package
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2 border-white/30 text-white hover:bg-white/20 hover:text-white">
+                    <Download className="w-4 h-4" />
+                    Export All
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
