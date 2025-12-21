@@ -270,7 +270,9 @@ const ClaimEmployment = () => {
               <p className="text-sm text-muted-foreground">Verify your work history</p>
             </div>
           </div>
-          <Badge variant="outline">Step {step} of 3</Badge>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/employment-help")}>
+            Help
+          </Button>
         </div>
       </div>
 

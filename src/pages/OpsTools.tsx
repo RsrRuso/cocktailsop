@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft, Building2, MessageCircle, Video, Megaphone } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft, Building2, MessageCircle, Video, Megaphone, HelpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -461,6 +461,26 @@ const OpsTools = () => {
         premium: false,
         path: "/venue-register",
         featured: true,
+      },
+      {
+        name: "Claim Employment",
+        description: "Verify your work history at venues",
+        details: "Submit employment claims to get verified badges on your profile. Upload proof documents for faster approval.",
+        icon: Briefcase,
+        gradient: "from-emerald-500 to-teal-600",
+        premium: false,
+        path: "/claim-employment",
+        featured: true,
+      },
+      {
+        name: "Employment Help",
+        description: "Guidelines & Help Center",
+        details: "Learn how the employment verification system works for staff and venues. FAQs and best practices.",
+        icon: HelpCircle,
+        gradient: "from-blue-500 to-cyan-600",
+        premium: false,
+        path: "/employment-help",
+        featured: false,
       },
       {
         name: "GM-Command Suite",
