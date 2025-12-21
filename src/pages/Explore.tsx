@@ -6,6 +6,8 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useVerifiedUsers } from "@/hooks/useVerifiedUsers";
 
 // Memoized Post Grid Item - minimal, no rounded corners like Instagram
 const PostGridItem = memo(({ post, onClick }: { post: any; onClick: () => void }) => (
@@ -43,27 +45,42 @@ const PostGridItem = memo(({ post, onClick }: { post: any; onClick: () => void }
 PostGridItem.displayName = 'PostGridItem';
 
 // Memoized Profile Item - clean, minimal
-const ProfileItem = memo(({ profile, onClick }: { profile: any; onClick: () => void }) => (
-  <div
-    className="py-3 px-4 flex items-center gap-3 cursor-pointer active:bg-neutral-100 dark:active:bg-neutral-900 transition-colors"
-    onClick={onClick}
-  >
-    {profile.avatar_url ? (
-      <img src={profile.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover border border-neutral-200 dark:border-neutral-700" loading="lazy" />
-    ) : (
-      <div className="w-11 h-11 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400 font-medium text-base">
-        {profile.username?.[0]?.toUpperCase()}
+const ProfileItem = memo(
+  ({
+    profile,
+    isVerified,
+    onClick,
+  }: {
+    profile: any;
+    isVerified: boolean;
+    onClick: () => void;
+  }) => (
+    <div
+      className="py-3 px-4 flex items-center gap-3 cursor-pointer active:bg-neutral-100 dark:active:bg-neutral-900 transition-colors"
+      onClick={onClick}
+    >
+      {profile.avatar_url ? (
+        <img
+          src={profile.avatar_url}
+          alt=""
+          className="w-11 h-11 rounded-full object-cover border border-neutral-200 dark:border-neutral-700"
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-11 h-11 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400 font-medium text-base">
+          {profile.username?.[0]?.toUpperCase()}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm text-foreground truncate flex items-center gap-1">
+          {profile.username}
+          {isVerified && <VerifiedBadge size="xs" />}
+        </p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">{profile.full_name}</p>
       </div>
-    )}
-    <div className="flex-1 min-w-0">
-      <p className="font-semibold text-sm text-foreground truncate flex items-center gap-1">
-        {profile.username}
-        {profile.is_verified && <VerifiedBadge size="xs" />}
-      </p>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">{profile.full_name}</p>
     </div>
-  </div>
-));
+  )
+);
 
 ProfileItem.displayName = 'ProfileItem';
 
@@ -75,26 +92,50 @@ const Explore = () => {
   const [activeTab, setActiveTab] = useState<"top" | "accounts">("top");
   const [isLoading, setIsLoading] = useState(true);
 
+  const { isVerified } = useVerifiedUsers(profiles.map((p) => p.id));
+
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
-      const [postsRes, profilesRes] = await Promise.all([
-        supabase
-          .from("posts")
-          .select("id, content, media_urls, like_count, comment_count")
-          .order("like_count", { ascending: false })
-          .limit(24),
-        supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url, follower_count, is_verified")
-          .order("follower_count", { ascending: false })
-          .limit(30)
-      ]);
-      
-      if (postsRes.data) setPosts(postsRes.data);
-      if (profilesRes.data) setProfiles(profilesRes.data);
-      setIsLoading(false);
+      setIsLoading(true);
+      try {
+        const [postsRes, profilesRes] = await Promise.all([
+          supabase
+            .from("posts")
+            .select("id, content, media_urls, like_count, comment_count")
+            .order("like_count", { ascending: false })
+            .limit(24),
+          supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, follower_count")
+            .order("follower_count", { ascending: false })
+            .limit(30),
+        ]);
+
+        if (postsRes.error) throw postsRes.error;
+        if (profilesRes.error) throw profilesRes.error;
+
+        if (!cancelled) {
+          setPosts(postsRes.data ?? []);
+          setProfiles(profilesRes.data ?? []);
+        }
+      } catch (error: any) {
+        console.error("Explore fetch error:", error);
+        toast.error("Couldn’t load Explore. Please try again.");
+        if (!cancelled) {
+          setPosts([]);
+          setProfiles([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     };
+
     fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filteredPosts = useMemo(() => {
@@ -198,7 +239,12 @@ const Explore = () => {
               </div>
             ) : (
               filteredProfiles.map((profile) => (
-                <ProfileItem key={profile.id} profile={profile} onClick={() => handleProfileClick(profile.id)} />
+                <ProfileItem
+                  key={profile.id}
+                  profile={profile}
+                  isVerified={isVerified(profile.id)}
+                  onClick={() => handleProfileClick(profile.id)}
+                />
               ))
             )}
           </div>
