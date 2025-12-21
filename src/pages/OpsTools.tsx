@@ -483,6 +483,16 @@ const OpsTools = () => {
         featured: false,
       },
       {
+        name: "My Venues",
+        description: "Manage your registered venues",
+        details: "Access your venue dashboards to manage outlets, verify staff claims, add admins, and track verification status.",
+        icon: Building2,
+        gradient: "from-purple-500 to-indigo-600",
+        premium: false,
+        path: "/profile#venues",
+        featured: true,
+      },
+      {
         name: "GM-Command Suite",
         description: "One-Click Executive Intelligence Dashboard",
         details: "AI-powered leadership dashboard with financial command panel, inventory automation, staff performance engine, approval workflows, risk radar, and opportunity finder.",
