@@ -147,6 +147,8 @@ const MatrixAI = lazy(() => import("@/pages/MatrixAI"));
 const LiveMap = lazy(() => import("@/pages/LiveMap"));
 const BarIntelligenceMap = lazy(() => import("@/pages/BarIntelligenceMap"));
 const VenueDetail = lazy(() => import("@/pages/VenueDetail"));
+const VenueRegistration = lazy(() => import("@/pages/VenueRegistration"));
+const VenueDashboard = lazy(() => import("@/pages/VenueDashboard"));
 const Automations = lazy(() => import("@/pages/Automations"));
 const FinancialReportsHub = lazy(() => import("@/pages/FinancialReportsHub"));
 const ProfitLossReport = lazy(() => import("@/pages/reports/ProfitLossReport"));
@@ -363,6 +365,8 @@ const AppContent = () => {
           <Route path="/map" element={<LiveMap />} />
           <Route path="/bar-intelligence" element={<BarIntelligenceMap />} />
           <Route path="/venue/:venueId" element={<VenueDetail />} />
+          <Route path="/venue-register" element={<VenueRegistration />} />
+          <Route path="/venue-dashboard/:venueId" element={<VenueDashboard />} />
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />

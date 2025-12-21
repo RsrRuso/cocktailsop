@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ProfileMembershipDoors } from "@/components/ProfileMembershipDoors";
+import { MyVenuesCard } from "@/components/venue/MyVenuesCard";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 
@@ -235,8 +236,13 @@ const Profile = () => {
         </div>
 
         {/* Membership Doors - No lazy load for instant display */}
-        <div className="mt-2 mb-8">
+        <div className="mt-2 mb-4">
           <ProfileMembershipDoors userId={user.id} />
+        </div>
+        
+        {/* My Venues */}
+        <div className="mb-8">
+          <MyVenuesCard />
         </div>
         {/* Tab Icons */}
         <div className="mt-3 flex border-t border-white/10">
