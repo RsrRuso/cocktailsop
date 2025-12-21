@@ -128,3 +128,6 @@ verify_jwt = false
 
 [functions.batch-staff-production-ingredients]
 verify_jwt = false
+
+[functions.send-gm-invitation]
+verify_jwt = true

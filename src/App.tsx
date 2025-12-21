@@ -149,6 +149,7 @@ const BarIntelligenceMap = lazy(() => import("@/pages/BarIntelligenceMap"));
 const VenueDetail = lazy(() => import("@/pages/VenueDetail"));
 const VenueRegistration = lazy(() => import("@/pages/VenueRegistration"));
 const VenueDashboard = lazy(() => import("@/pages/VenueDashboard"));
+const GMInvitationConfirm = lazy(() => import("@/pages/GMInvitationConfirm"));
 const ClaimEmployment = lazy(() => import("@/pages/ClaimEmployment"));
 const EmploymentHelpCenter = lazy(() => import("@/pages/EmploymentHelpCenter"));
 const Automations = lazy(() => import("@/pages/Automations"));
@@ -369,6 +370,7 @@ const AppContent = () => {
           <Route path="/venue/:venueId" element={<VenueDetail />} />
           <Route path="/venue-register" element={<VenueRegistration />} />
           <Route path="/venue-dashboard/:venueId" element={<VenueDashboard />} />
+          <Route path="/gm-invitation/:token" element={<GMInvitationConfirm />} />
           <Route path="/claim-employment" element={<ClaimEmployment />} />
           <Route path="/employment-help" element={<EmploymentHelpCenter />} />
           <Route path="/install" element={<Install />} />
