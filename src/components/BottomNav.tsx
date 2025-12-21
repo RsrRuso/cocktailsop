@@ -3,6 +3,7 @@ import { Home, Search, MapPin, Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
+import svLogo from "@/assets/sv-logo.png";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -72,10 +73,18 @@ const BottomNav = () => {
               }
             }}
             className={`p-2 transition-all ${
-              isActive("/home") ? "text-white" : "text-white/80"
+              isActive("/home") ? "scale-110" : "opacity-80"
             }`}
           >
-            <Home className={`w-7 h-7 ${isActive("/home") ? "fill-current" : ""}`} />
+            <img 
+              src={svLogo} 
+              alt="Home" 
+              className={`w-7 h-7 rounded-md object-contain ${isActive("/home") ? "ring-2 ring-primary" : ""}`}
+              style={{
+                filter: 'sepia(15%) saturate(1.2) hue-rotate(-5deg)',
+                boxShadow: isActive("/home") ? '0 0 10px rgba(234, 179, 8, 0.4)' : 'none'
+              }}
+            />
           </button>
 
           <button
