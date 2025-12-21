@@ -1556,79 +1556,183 @@ function PresentationPlayer({ reel, onClose }: { reel: PromoReel; onClose: () =>
   const [isPlaying, setIsPlaying] = useState(true);
 
   const handleDownload = async () => {
-    toast.loading("Generating video...");
+    toast.loading("Generating Instagram Reel...");
     
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = 720;
-      canvas.height = 1280;
+      // Instagram Reels optimal resolution: 1080x1920 (9:16 aspect ratio)
+      canvas.width = 1080;
+      canvas.height = 1920;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('No context');
 
+      // Try MP4 first (better Instagram compatibility), fallback to WebM
+      let mimeType = 'video/webm';
+      let fileExt = 'webm';
+      
+      if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/mp4';
+        fileExt = 'mp4';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
+        mimeType = 'video/webm;codecs=h264';
+        fileExt = 'webm';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        mimeType = 'video/webm;codecs=vp9';
+        fileExt = 'webm';
+      }
+
       const stream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(stream, { 
-        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-          ? 'video/webm;codecs=vp9' 
-          : 'video/webm' 
-      });
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8000000 });
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${reel.id}-promo.webm`;
+        a.download = `${reel.id}-instagram-reel.${fileExt}`;
         a.click();
         URL.revokeObjectURL(url);
         toast.dismiss();
-        toast.success("Video downloaded!");
+        toast.success(`Instagram Reel downloaded! (1080x1920, ${fileExt.toUpperCase()})`);
       };
 
       recorder.start();
 
       let frame = 0;
-      const totalFrames = 150; // 5 seconds at 30fps
+      const totalFrames = 270; // 9 seconds at 30fps (ideal for Instagram)
       
       const drawFrame = () => {
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        // Animated gradient background
+        const gradientAngle = frame * 0.008;
+        const gx1 = canvas.width / 2 + Math.cos(gradientAngle) * canvas.width;
+        const gy1 = canvas.height / 2 + Math.sin(gradientAngle) * canvas.height;
+        const gx2 = canvas.width / 2 - Math.cos(gradientAngle) * canvas.width;
+        const gy2 = canvas.height / 2 - Math.sin(gradientAngle) * canvas.height;
+        
+        const gradient = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
         gradient.addColorStop(0, reel.gradientFrom);
-        gradient.addColorStop(1, reel.gradientTo);
+        gradient.addColorStop(0.5, reel.gradientTo);
+        gradient.addColorStop(1, reel.gradientFrom);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Particles
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        for (let i = 0; i < 15; i++) {
-          const x = (Math.sin(frame * 0.02 + i) * 0.5 + 0.5) * canvas.width;
-          const y = (Math.cos(frame * 0.015 + i * 0.5) * 0.5 + 0.5) * canvas.height;
+        // Animated particles
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        for (let i = 0; i < 25; i++) {
+          const x = (Math.sin(frame * 0.015 + i * 0.8) * 0.4 + 0.5) * canvas.width;
+          const y = (Math.cos(frame * 0.012 + i * 0.5) * 0.4 + 0.5) * canvas.height;
+          const size = 3 + Math.sin(frame * 0.05 + i) * 2;
           ctx.beginPath();
-          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.arc(x, y, size, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // Title
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 48px system-ui';
+        // Category badge
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        const categoryText = reel.category.toUpperCase();
+        ctx.font = 'bold 24px system-ui';
+        const categoryWidth = ctx.measureText(categoryText).width + 40;
+        ctx.beginPath();
+        ctx.roundRect(canvas.width / 2 - categoryWidth / 2, canvas.height * 0.12, categoryWidth, 48, 24);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
-        ctx.fillText(reel.title, canvas.width / 2, canvas.height * 0.35);
+        ctx.fillText(categoryText, canvas.width / 2, canvas.height * 0.12 + 32);
 
-        ctx.font = '24px system-ui';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.fillText(reel.description.slice(0, 50) + '...', canvas.width / 2, canvas.height * 0.42);
+        // Title with shadow
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 72px system-ui';
+        ctx.fillText(reel.title, canvas.width / 2, canvas.height * 0.22);
+        ctx.shadowBlur = 0;
 
-        // Stats
-        const statsY = canvas.height * 0.75;
-        reel.stats.forEach((stat, index) => {
-          const x = (canvas.width / 4) * (index + 1);
-          ctx.font = 'bold 36px system-ui';
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(stat.value, x, statsY);
-          ctx.font = '16px system-ui';
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          ctx.fillText(stat.label, x, statsY + 28);
+        // Description with word wrap
+        ctx.font = '32px system-ui';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        const words = reel.description.split(' ');
+        let line = '';
+        let lineY = canvas.height * 0.28;
+        const maxWidth = canvas.width * 0.85;
+        
+        words.forEach((word) => {
+          const testLine = line + word + ' ';
+          if (ctx.measureText(testLine).width > maxWidth && line !== '') {
+            ctx.fillText(line.trim(), canvas.width / 2, lineY);
+            line = word + ' ';
+            lineY += 40;
+          } else {
+            line = testLine;
+          }
         });
+        ctx.fillText(line.trim(), canvas.width / 2, lineY);
+
+        // Animated feature pills
+        const featuresStartY = canvas.height * 0.38;
+        const visibleFeatures = Math.min(4, Math.floor(frame / 20) + 1);
+        
+        reel.features.slice(0, visibleFeatures).forEach((feature, index) => {
+          const y = featuresStartY + index * 60;
+          const slideIn = Math.min(1, (frame - index * 20) / 15);
+          const bounce = Math.sin(frame * 0.04 + index) * 3;
+          
+          ctx.globalAlpha = slideIn;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+          ctx.font = '28px system-ui';
+          const textWidth = ctx.measureText(feature).width;
+          ctx.beginPath();
+          ctx.roundRect(canvas.width / 2 - textWidth / 2 - 40, y - 20 + bounce, textWidth + 80, 50, 25);
+          ctx.fill();
+          
+          // Checkmark
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(canvas.width / 2 - textWidth / 2 - 16, y + 5 + bounce, 10, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(feature, canvas.width / 2 + 8, y + 10 + bounce);
+          ctx.globalAlpha = 1;
+        });
+
+        // Stats at bottom with animation
+        const statsY = canvas.height * 0.85;
+        const statsSpacing = canvas.width / (reel.stats.length + 1);
+        
+        reel.stats.forEach((stat, index) => {
+          const x = statsSpacing * (index + 1);
+          const appear = Math.min(1, Math.max(0, (frame - 80 - index * 12) / 20));
+          const bounce = Math.sin(frame * 0.03 + index) * 4;
+          
+          ctx.globalAlpha = appear;
+          
+          // Stat background
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+          ctx.beginPath();
+          ctx.roundRect(x - 70, statsY - 35 + bounce, 140, 90, 16);
+          ctx.fill();
+          
+          // Stat value
+          ctx.font = 'bold 44px system-ui';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(stat.value, x, statsY + 10 + bounce);
+          
+          // Stat label
+          ctx.font = '22px system-ui';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+          ctx.fillText(stat.label, x, statsY + 40 + bounce);
+          
+          ctx.globalAlpha = 1;
+        });
+
+        // Platform branding
+        ctx.font = 'bold 24px system-ui';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillText('✨ SV Platform', canvas.width / 2, canvas.height - 60);
+
+        ctx.textAlign = 'left';
 
         frame++;
         if (frame < totalFrames) {
