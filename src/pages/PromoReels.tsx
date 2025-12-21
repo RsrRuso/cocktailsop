@@ -325,7 +325,7 @@ const promoReels: PromoReel[] = [
 
 const categories = ["All", "Operations", "Content", "Social", "Business", "AI", "Commerce", "Discovery"];
 
-// Animated Canvas Presentation Component
+// Interactive Animated Canvas Presentation Component
 const AnimatedPresentation = ({ 
   reel, 
   isPlaying, 
@@ -338,65 +338,683 @@ const AnimatedPresentation = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const frameRef = useRef(0);
+  const mouseRef = useRef({ x: 0, y: 0, active: false });
+  const particlesRef = useRef<Array<{x: number; y: number; vx: number; vy: number; size: number; alpha: number}>>([]);
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, frame: number) => {
-    // Clear and draw gradient background
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
+  // Initialize particles
+  useEffect(() => {
+    const width = isFullscreen ? 720 : 270;
+    const height = isFullscreen ? 1280 : 480;
+    particlesRef.current = Array.from({ length: 25 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      size: Math.random() * 3 + 1,
+      alpha: Math.random() * 0.5 + 0.2
+    }));
+  }, [isFullscreen]);
+
+  const drawMockUI = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, frame: number) => {
+    const scale = isFullscreen ? 1 : 0.4;
+    const centerX = width / 2;
+    
+    // Draw mock phone/tablet frame
+    const mockWidth = width * 0.85;
+    const mockHeight = height * 0.35;
+    const mockX = (width - mockWidth) / 2;
+    const mockY = height * 0.48;
+    
+    // Device shadow
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(mockX + 5, mockY + 5, mockWidth, mockHeight, 12 * scale);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+    // Device frame
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.roundRect(mockX, mockY, mockWidth, mockHeight, 12 * scale);
+    ctx.fill();
+    
+    // Screen area
+    const screenPadding = 6 * scale;
+    ctx.fillStyle = '#0f0f1a';
+    ctx.beginPath();
+    ctx.roundRect(mockX + screenPadding, mockY + screenPadding, mockWidth - screenPadding * 2, mockHeight - screenPadding * 2, 8 * scale);
+    ctx.fill();
+    
+    // Draw tool-specific mock UI based on reel.id
+    const screenX = mockX + screenPadding + 8;
+    const screenY = mockY + screenPadding + 8;
+    const screenW = mockWidth - screenPadding * 2 - 16;
+    const screenH = mockHeight - screenPadding * 2 - 16;
+    
+    // Animated progress indicator
+    const progress = (Math.sin(frame * 0.03) + 1) / 2;
+    
+    switch (reel.id) {
+      case 'inventory':
+        // Draw inventory grid
+        drawInventoryUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'batch-calculator':
+        drawCalculatorUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'staff-scheduling':
+        drawScheduleUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'cocktail-sop':
+        drawRecipeUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'temperature-log':
+        drawTemperatureUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'menu-engineering':
+        drawChartUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'crm':
+        drawCRMUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'lab-ops':
+        drawPOSUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'reels-editor':
+        drawVideoEditorUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'music-box':
+        drawMusicUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      case 'messaging':
+        drawChatUI(ctx, screenX, screenY, screenW, screenH, frame, scale);
+        break;
+      default:
+        drawGenericUI(ctx, screenX, screenY, screenW, screenH, frame, scale, progress);
+    }
+  }, [reel.id, isFullscreen]);
+
+  // Mock UI drawing functions
+  const drawInventoryUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    const cols = 4;
+    const rows = 3;
+    const itemW = (w - 15) / cols;
+    const itemH = (h - 30) / rows;
+    
+    // Header
+    ctx.fillStyle = reel.gradientFrom;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, 18 * scale, 4);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${8 * scale}px system-ui`;
+    ctx.fillText('Inventory', x + 8, y + 12 * scale);
+    
+    // Grid items
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const itemX = x + col * (itemW + 4);
+        const itemY = y + 22 * scale + row * (itemH + 4);
+        const animDelay = (row * cols + col) * 5;
+        const itemProgress = Math.max(0, Math.min(1, (frame - animDelay) / 20));
+        
+        ctx.globalAlpha = itemProgress;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.roundRect(itemX, itemY, itemW, itemH, 4);
+        ctx.fill();
+        
+        // Item icon placeholder
+        ctx.fillStyle = reel.gradientFrom;
+        ctx.globalAlpha = itemProgress * 0.6;
+        ctx.beginPath();
+        ctx.arc(itemX + itemW/2, itemY + itemH/2 - 4, 6 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Stock bar
+        const stockLevel = (Math.sin(frame * 0.02 + col + row) + 1) / 2;
+        ctx.fillStyle = stockLevel > 0.3 ? '#22c55e' : '#ef4444';
+        ctx.globalAlpha = itemProgress;
+        ctx.beginPath();
+        ctx.roundRect(itemX + 2, itemY + itemH - 6, (itemW - 4) * stockLevel, 3, 1);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+  };
+
+  const drawCalculatorUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Recipe card
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w * 0.6, h, 6);
+    ctx.fill();
+    
+    // Animated multiplier
+    const multiplier = 1 + Math.sin(frame * 0.03) * 0.5;
+    
+    // Ingredients list with scaling animation
+    const ingredients = ['Spirit', 'Citrus', 'Sweet', 'Bitter'];
+    ingredients.forEach((ing, i) => {
+      const ingY = y + 12 + i * (h / 5);
+      const barWidth = (w * 0.5 - 20) * (0.3 + (i * 0.15)) * multiplier;
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = `${7 * scale}px system-ui`;
+      ctx.fillText(ing, x + 8, ingY + 8);
+      
+      ctx.fillStyle = reel.gradientFrom;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.roundRect(x + 8, ingY + 12, Math.min(barWidth, w * 0.5 - 20), 6, 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+    
+    // Batch size indicator
+    ctx.fillStyle = reel.gradientTo;
+    ctx.beginPath();
+    ctx.roundRect(x + w * 0.65, y, w * 0.35, h * 0.4, 6);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14 * scale}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`${(multiplier * 10).toFixed(0)}L`, x + w * 0.82, y + h * 0.25);
+    ctx.font = `${7 * scale}px system-ui`;
+    ctx.fillText('Batch Size', x + w * 0.82, y + h * 0.35);
+    ctx.textAlign = 'left';
+  };
+
+  const drawScheduleUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const dayWidth = w / 7;
+    
+    // Day headers
+    days.forEach((day, i) => {
+      const isActive = Math.floor(frame / 30) % 7 === i;
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.3)';
+      ctx.font = `bold ${8 * scale}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText(day, x + dayWidth * i + dayWidth / 2, y + 12);
+    });
+    
+    // Shift blocks
+    const shifts = [
+      { day: 0, start: 0.2, end: 0.5, color: '#22c55e' },
+      { day: 1, start: 0.3, end: 0.7, color: '#3b82f6' },
+      { day: 2, start: 0.1, end: 0.4, color: '#f59e0b' },
+      { day: 3, start: 0.4, end: 0.8, color: '#22c55e' },
+      { day: 4, start: 0.2, end: 0.6, color: '#ec4899' },
+      { day: 5, start: 0.5, end: 0.9, color: '#8b5cf6' },
+    ];
+    
+    shifts.forEach((shift, i) => {
+      const shiftDelay = i * 8;
+      const appear = Math.min(1, Math.max(0, (frame - shiftDelay) / 15));
+      
+      ctx.globalAlpha = appear;
+      ctx.fillStyle = shift.color;
+      const shiftX = x + shift.day * dayWidth + 2;
+      const shiftY = y + 18 + shift.start * (h - 25);
+      const shiftH = (shift.end - shift.start) * (h - 25);
+      
+      ctx.beginPath();
+      ctx.roundRect(shiftX, shiftY, dayWidth - 4, shiftH, 3);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+    ctx.textAlign = 'left';
+  };
+
+  const drawRecipeUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Cocktail glass illustration
+    const glassX = x + w * 0.15;
+    const glassY = y + h * 0.1;
+    const glassW = w * 0.25;
+    const glassH = h * 0.6;
+    
+    // Glass shape
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(glassX, glassY);
+    ctx.lineTo(glassX + glassW, glassY);
+    ctx.lineTo(glassX + glassW * 0.7, glassY + glassH * 0.7);
+    ctx.lineTo(glassX + glassW * 0.5, glassY + glassH);
+    ctx.lineTo(glassX + glassW * 0.3, glassY + glassH * 0.7);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Liquid fill animation
+    const fillLevel = (Math.sin(frame * 0.02) + 1) / 2 * 0.6 + 0.2;
+    const gradient = ctx.createLinearGradient(glassX, glassY + glassH * (1 - fillLevel), glassX, glassY + glassH * 0.7);
     gradient.addColorStop(0, reel.gradientFrom);
     gradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // Animated particles
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-    for (let i = 0; i < 15; i++) {
-      const x = (Math.sin(frame * 0.02 + i) * 0.5 + 0.5) * width;
-      const y = (Math.cos(frame * 0.015 + i * 0.5) * 0.5 + 0.5) * height;
-      const size = 2 + Math.sin(frame * 0.05 + i) * 2;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(glassX + 4, glassY + glassH * (1 - fillLevel) * 0.8);
+    ctx.lineTo(glassX + glassW - 4, glassY + glassH * (1 - fillLevel) * 0.8);
+    ctx.lineTo(glassX + glassW * 0.68, glassY + glassH * 0.68);
+    ctx.lineTo(glassX + glassW * 0.32, glassY + glassH * 0.68);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    
+    // Recipe steps
+    const steps = ['Shake', 'Strain', 'Garnish'];
+    steps.forEach((step, i) => {
+      const stepY = y + 8 + i * (h / 4);
+      const isActive = Math.floor(frame / 40) % 3 === i;
+      
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.2)';
       ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.roundRect(x + w * 0.45, stepY, w * 0.52, h / 5 - 4, 4);
+      ctx.fill();
+      
+      ctx.fillStyle = '#fff';
+      ctx.font = `${7 * scale}px system-ui`;
+      ctx.fillText(`${i + 1}. ${step}`, x + w * 0.5, stepY + h / 10);
+    });
+  };
+
+  const drawTemperatureUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Temperature gauges
+    const gauges = [
+      { label: 'Fridge 1', temp: 3 + Math.sin(frame * 0.02) * 0.5, target: 4, ok: true },
+      { label: 'Freezer', temp: -18 + Math.sin(frame * 0.025) * 1, target: -18, ok: true },
+      { label: 'Walk-in', temp: 5 + Math.sin(frame * 0.03) * 2, target: 4, ok: false },
+    ];
+    
+    const gaugeH = (h - 20) / 3;
+    
+    gauges.forEach((gauge, i) => {
+      const gaugeY = y + 5 + i * gaugeH;
+      
+      // Gauge background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.roundRect(x, gaugeY, w, gaugeH - 6, 4);
+      ctx.fill();
+      
+      // Label
+      ctx.fillStyle = '#fff';
+      ctx.font = `${7 * scale}px system-ui`;
+      ctx.fillText(gauge.label, x + 6, gaugeY + 12);
+      
+      // Temperature display
+      ctx.fillStyle = gauge.ok ? '#22c55e' : '#ef4444';
+      ctx.font = `bold ${12 * scale}px system-ui`;
+      ctx.textAlign = 'right';
+      ctx.fillText(`${gauge.temp.toFixed(1)}°C`, x + w - 6, gaugeY + gaugeH / 2 + 4);
+      ctx.textAlign = 'left';
+      
+      // Status indicator
+      ctx.beginPath();
+      ctx.arc(x + w - 45, gaugeY + gaugeH / 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  };
+
+  const drawChartUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // BCG Matrix quadrants
+    const quadSize = Math.min(w, h) * 0.45;
+    const matrixX = x + (w - quadSize * 2) / 2;
+    const matrixY = y + 8;
+    
+    const quadrants = [
+      { label: '★', color: '#22c55e', items: 3 },
+      { label: '?', color: '#f59e0b', items: 2 },
+      { label: '🐕', color: '#ef4444', items: 4 },
+      { label: '🐄', color: '#3b82f6', items: 5 },
+    ];
+    
+    quadrants.forEach((quad, i) => {
+      const qx = matrixX + (i % 2) * quadSize;
+      const qy = matrixY + Math.floor(i / 2) * quadSize;
+      
+      ctx.fillStyle = quad.color;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.roundRect(qx + 1, qy + 1, quadSize - 2, quadSize - 2, 4);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      
+      // Animated dots representing items
+      for (let j = 0; j < quad.items; j++) {
+        const dotX = qx + 8 + (j % 3) * 12 + Math.sin(frame * 0.03 + j) * 3;
+        const dotY = qy + 12 + Math.floor(j / 3) * 12 + Math.cos(frame * 0.03 + j) * 3;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  };
+
+  const drawCRMUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Pipeline stages
+    const stages = ['Lead', 'Contact', 'Proposal', 'Won'];
+    const stageW = (w - 12) / 4;
+    
+    stages.forEach((stage, i) => {
+      const stageX = x + 2 + i * (stageW + 2);
+      const isActive = Math.floor(frame / 25) % 4 === i;
+      
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.beginPath();
+      ctx.roundRect(stageX, y, stageW, h, 4);
+      ctx.fill();
+      
+      ctx.fillStyle = '#fff';
+      ctx.font = `${6 * scale}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText(stage, stageX + stageW / 2, y + 10);
+      
+      // Deal cards
+      const dealCount = 4 - i;
+      for (let j = 0; j < dealCount; j++) {
+        const dealY = y + 16 + j * 14;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.beginPath();
+        ctx.roundRect(stageX + 2, dealY, stageW - 4, 10, 2);
+        ctx.fill();
+      }
+    });
+    ctx.textAlign = 'left';
+  };
+
+  const drawPOSUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Order items
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w * 0.55, h, 4);
+    ctx.fill();
+    
+    // Menu items grid
+    for (let i = 0; i < 6; i++) {
+      const itemX = x + 4 + (i % 2) * (w * 0.27);
+      const itemY = y + 4 + Math.floor(i / 2) * (h / 3.5);
+      const isSelected = i === Math.floor(frame / 20) % 6;
+      
+      ctx.fillStyle = isSelected ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.beginPath();
+      ctx.roundRect(itemX, itemY, w * 0.24, h / 4 - 4, 3);
       ctx.fill();
     }
-
-    // Central icon circle with pulse effect
-    const centerX = width / 2;
-    const centerY = height * 0.25;
-    const baseRadius = Math.min(width, height) * (isFullscreen ? 0.12 : 0.15);
-    const pulseRadius = baseRadius + Math.sin(frame * 0.05) * 5;
-
-    // Glow effect
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    
+    // Total panel
+    ctx.fillStyle = reel.gradientTo;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+    ctx.roundRect(x + w * 0.58, y, w * 0.42, h * 0.4, 4);
+    ctx.fill();
+    
+    const total = 45 + Math.floor(frame / 20) * 12;
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${14 * scale}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`$${total}`, x + w * 0.79, y + h * 0.2);
+    ctx.font = `${7 * scale}px system-ui`;
+    ctx.fillText('Total', x + w * 0.79, y + h * 0.32);
+    ctx.textAlign = 'left';
+  };
+
+  const drawVideoEditorUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Preview area
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h * 0.55, 4);
+    ctx.fill();
+    
+    // Playing indicator
+    const playProgress = (frame % 100) / 100;
+    ctx.fillStyle = reel.gradientFrom;
+    ctx.fillRect(x, y + h * 0.52, w * playProgress, 3);
+    
+    // Timeline tracks
+    const tracks = 3;
+    const trackH = (h * 0.4) / tracks;
+    
+    for (let i = 0; i < tracks; i++) {
+      const trackY = y + h * 0.58 + i * trackH;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.roundRect(x, trackY, w, trackH - 2, 2);
+      ctx.fill();
+      
+      // Clips on timeline
+      const clipCount = 2 + i;
+      for (let j = 0; j < clipCount; j++) {
+        const clipX = x + (w / clipCount) * j + 2;
+        const clipW = (w / clipCount) - 4;
+        ctx.fillStyle = ['#22c55e', '#3b82f6', '#f59e0b'][i];
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.roundRect(clipX, trackY + 2, clipW, trackH - 6, 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+  };
+
+  const drawMusicUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Waveform visualization
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h * 0.4, 4);
+    ctx.fill();
+    
+    // Animated waveform bars
+    const barCount = 30;
+    const barW = (w - 10) / barCount;
+    
+    for (let i = 0; i < barCount; i++) {
+      const barH = (Math.sin(frame * 0.08 + i * 0.3) + 1) * (h * 0.15) + 4;
+      const barX = x + 5 + i * barW;
+      const barY = y + h * 0.2 - barH / 2;
+      
+      const gradient = ctx.createLinearGradient(barX, barY, barX, barY + barH);
+      gradient.addColorStop(0, reel.gradientFrom);
+      gradient.addColorStop(1, reel.gradientTo);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW - 1, barH, 1);
+      ctx.fill();
+    }
+    
+    // Track list
+    for (let i = 0; i < 3; i++) {
+      const trackY = y + h * 0.45 + i * (h * 0.18);
+      const isPlaying = i === Math.floor(frame / 50) % 3;
+      
+      ctx.fillStyle = isPlaying ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)';
+      ctx.beginPath();
+      ctx.roundRect(x, trackY, w, h * 0.16, 3);
+      ctx.fill();
+      
+      if (isPlaying) {
+        ctx.fillStyle = reel.gradientFrom;
+        ctx.beginPath();
+        ctx.arc(x + 12, trackY + h * 0.08, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+
+  const drawChatUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
+    // Chat messages
+    const messages = [
+      { sent: false, width: 0.6 },
+      { sent: true, width: 0.5 },
+      { sent: false, width: 0.7 },
+      { sent: true, width: 0.4 },
+    ];
+    
+    let msgY = y + 5;
+    messages.forEach((msg, i) => {
+      const delay = i * 15;
+      const appear = Math.min(1, Math.max(0, (frame - delay) / 20));
+      const msgW = w * msg.width;
+      const msgX = msg.sent ? x + w - msgW - 5 : x + 5;
+      
+      ctx.globalAlpha = appear;
+      ctx.fillStyle = msg.sent ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.beginPath();
+      ctx.roundRect(msgX, msgY, msgW * appear, 16, 8);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      
+      msgY += 22;
+    });
+    
+    // Input field
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y + h - 20, w, 16, 8);
+    ctx.fill();
+    
+    // Typing indicator
+    if (frame % 60 < 30) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      for (let i = 0; i < 3; i++) {
+        const dotY = y + h - 12 + Math.sin(frame * 0.15 + i * 0.5) * 2;
+        ctx.beginPath();
+        ctx.arc(x + 10 + i * 8, dotY, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+
+  const drawGenericUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number, progress: number) => {
+    // Generic dashboard UI
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h * 0.3, 4);
+    ctx.fill();
+    
+    // Animated progress bar
+    ctx.fillStyle = reel.gradientFrom;
+    ctx.beginPath();
+    ctx.roundRect(x + 8, y + h * 0.15, (w - 16) * progress, 8, 3);
+    ctx.fill();
+    
+    // Stats cards
+    for (let i = 0; i < 3; i++) {
+      const cardX = x + (w / 3) * i + 2;
+      const cardY = y + h * 0.4;
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.roundRect(cardX, cardY, w / 3 - 4, h * 0.55, 4);
+      ctx.fill();
+    }
+  };
+
+  const draw = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, frame: number) => {
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Animated gradient background
+    const gradientAngle = frame * 0.005;
+    const gx1 = width / 2 + Math.cos(gradientAngle) * width;
+    const gy1 = height / 2 + Math.sin(gradientAngle) * height;
+    const gx2 = width / 2 - Math.cos(gradientAngle) * width;
+    const gy2 = height / 2 - Math.sin(gradientAngle) * height;
+    
+    const gradient = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+    gradient.addColorStop(0, reel.gradientFrom);
+    gradient.addColorStop(0.5, reel.gradientTo);
+    gradient.addColorStop(1, reel.gradientFrom);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Update and draw particles
+    particlesRef.current.forEach((particle) => {
+      if (isPlaying) {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        
+        // Mouse interaction
+        if (mouseRef.current.active) {
+          const dx = mouseRef.current.x - particle.x;
+          const dy = mouseRef.current.y - particle.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            particle.vx += dx * 0.001;
+            particle.vy += dy * 0.001;
+          }
+        }
+        
+        // Boundaries
+        if (particle.x < 0 || particle.x > width) particle.vx *= -1;
+        if (particle.y < 0 || particle.y > height) particle.vy *= -1;
+      }
+      
+      ctx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Draw connecting lines between nearby particles
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    particlesRef.current.forEach((p1, i) => {
+      particlesRef.current.slice(i + 1).forEach((p2) => {
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 80) {
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      });
+    });
+
+    const scale = isFullscreen ? 1 : 0.38;
+    const centerX = width / 2;
+
+    // Category badge with glow
+    const badgeY = height * 0.06;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = reel.gradientFrom;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    const categoryText = reel.category.toUpperCase();
+    ctx.font = `bold ${10 * scale / 0.38}px system-ui`;
+    const categoryWidth = ctx.measureText(categoryText).width + 20;
+    ctx.beginPath();
+    ctx.roundRect(centerX - categoryWidth / 2, badgeY - 8, categoryWidth, 18 * scale / 0.38, 10);
     ctx.fill();
     ctx.shadowBlur = 0;
-
-    // Title
+    
     ctx.fillStyle = '#ffffff';
-    ctx.font = `bold ${isFullscreen ? '28px' : '16px'} system-ui, -apple-system, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(reel.title, centerX, height * 0.42);
+    ctx.fillText(categoryText, centerX, badgeY + 4);
 
-    // Category badge
-    ctx.font = `${isFullscreen ? '14px' : '10px'} system-ui`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.fillText(reel.category.toUpperCase(), centerX, height * 0.38);
+    // Title with shadow
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.font = `bold ${isFullscreen ? 32 : 16}px system-ui`;
+    ctx.fillText(reel.title, centerX, height * 0.13);
+    ctx.shadowBlur = 0;
 
-    // Description - word wrap
-    ctx.font = `${isFullscreen ? '16px' : '11px'} system-ui`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    // Description with line wrap
+    ctx.font = `${isFullscreen ? 16 : 10}px system-ui`;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     const words = reel.description.split(' ');
     let line = '';
-    let lineY = height * 0.50;
+    let lineY = height * 0.18;
     const maxWidth = width * 0.85;
-    const lineHeight = isFullscreen ? 22 : 14;
+    const lineHeight = isFullscreen ? 22 : 13;
     
     words.forEach((word) => {
       const testLine = line + word + ' ';
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && line !== '') {
+      if (ctx.measureText(testLine).width > maxWidth && line !== '') {
         ctx.fillText(line.trim(), centerX, lineY);
         line = word + ' ';
         lineY += lineHeight;
@@ -406,58 +1024,76 @@ const AnimatedPresentation = ({
     });
     ctx.fillText(line.trim(), centerX, lineY);
 
-    // Features with animated checkmarks
-    const featuresStartY = height * 0.62;
-    const visibleFeatures = Math.min(4, Math.floor(frame / 20) + 1);
+    // Animated features with icons
+    const featuresStartY = height * 0.28;
+    const visibleFeatures = Math.min(4, Math.floor(frame / 15) + 1);
     
     reel.features.slice(0, visibleFeatures).forEach((feature, index) => {
-      const y = featuresStartY + index * (isFullscreen ? 28 : 18);
-      const slideIn = Math.min(1, (frame - index * 20) / 15);
-      const offsetX = (1 - slideIn) * 50;
+      const y = featuresStartY + index * (isFullscreen ? 32 : 18);
+      const slideIn = Math.min(1, (frame - index * 15) / 12);
+      const bounce = Math.sin(frame * 0.06 + index) * 2;
       
       ctx.globalAlpha = slideIn;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      
+      // Feature pill background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.font = `${isFullscreen ? 13 : 9}px system-ui`;
       const textWidth = ctx.measureText(feature).width;
       ctx.beginPath();
-      ctx.roundRect(centerX - textWidth / 2 - 10 - offsetX, y - (isFullscreen ? 14 : 10), textWidth + 20, isFullscreen ? 24 : 16, 8);
+      ctx.roundRect(centerX - textWidth / 2 - 18, y - (isFullscreen ? 12 : 9) + bounce, textWidth + 36, isFullscreen ? 26 : 18, 12);
+      ctx.fill();
+      
+      // Checkmark
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(centerX - textWidth / 2 - 8, y + bounce, isFullscreen ? 6 : 4, 0, Math.PI * 2);
       ctx.fill();
       
       ctx.fillStyle = '#ffffff';
-      ctx.font = `${isFullscreen ? '13px' : '9px'} system-ui`;
-      ctx.fillText('✓ ' + feature, centerX - offsetX, y);
+      ctx.fillText(feature, centerX + 6, y + 3 + bounce);
       ctx.globalAlpha = 1;
     });
 
-    // Stats at bottom with bounce animation
-    const statsY = height * 0.88;
+    // Draw mock UI
+    drawMockUI(ctx, width, height, frame);
+
+    // Stats at bottom with counters
+    const statsY = height * 0.89;
     const statsSpacing = width / (reel.stats.length + 1);
     
     reel.stats.forEach((stat, index) => {
       const x = statsSpacing * (index + 1);
-      const bounce = Math.sin(frame * 0.04 + index * 0.8) * 3;
-      const appear = Math.min(1, Math.max(0, (frame - 60 - index * 10) / 20));
+      const appear = Math.min(1, Math.max(0, (frame - 50 - index * 8) / 15));
+      const bounce = Math.sin(frame * 0.04 + index) * 2;
       
       ctx.globalAlpha = appear;
       
+      // Stat background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.beginPath();
+      ctx.roundRect(x - 35, statsY - (isFullscreen ? 20 : 12) + bounce, 70, isFullscreen ? 45 : 28, 8);
+      ctx.fill();
+      
       // Stat value
-      ctx.font = `bold ${isFullscreen ? '22px' : '14px'} system-ui`;
+      ctx.font = `bold ${isFullscreen ? 22 : 13}px system-ui`;
       ctx.fillStyle = '#ffffff';
       ctx.fillText(stat.value, x, statsY + bounce);
       
       // Stat label
-      ctx.font = `${isFullscreen ? '11px' : '8px'} system-ui`;
+      ctx.font = `${isFullscreen ? 11 : 7}px system-ui`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.fillText(stat.label, x, statsY + (isFullscreen ? 18 : 12) + bounce);
+      ctx.fillText(stat.label, x, statsY + (isFullscreen ? 16 : 10) + bounce);
       
       ctx.globalAlpha = 1;
     });
 
     // Platform branding
-    ctx.font = `bold ${isFullscreen ? '12px' : '8px'} system-ui`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('Platform Showcase', centerX, height - (isFullscreen ? 20 : 10));
+    ctx.font = `bold ${isFullscreen ? 12 : 8}px system-ui`;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText('✨ SV Platform', centerX, height - (isFullscreen ? 25 : 12));
 
-  }, [reel, isFullscreen]);
+    ctx.textAlign = 'left';
+  }, [reel, isFullscreen, drawMockUI]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -465,6 +1101,23 @@ const AnimatedPresentation = ({
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Mouse/touch events for interactivity
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      mouseRef.current.x = (clientX - rect.left) * (canvas.width / rect.width);
+      mouseRef.current.y = (clientY - rect.top) * (canvas.height / rect.height);
+    };
+    
+    const handleEnter = () => { mouseRef.current.active = true; };
+    const handleLeave = () => { mouseRef.current.active = false; };
+
+    canvas.addEventListener('mousemove', handleMove);
+    canvas.addEventListener('touchmove', handleMove);
+    canvas.addEventListener('mouseenter', handleEnter);
+    canvas.addEventListener('mouseleave', handleLeave);
 
     const animate = () => {
       if (isPlaying) {
@@ -480,6 +1133,10 @@ const AnimatedPresentation = ({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      canvas.removeEventListener('mousemove', handleMove);
+      canvas.removeEventListener('touchmove', handleMove);
+      canvas.removeEventListener('mouseenter', handleEnter);
+      canvas.removeEventListener('mouseleave', handleLeave);
     };
   }, [isPlaying, draw]);
 
@@ -488,7 +1145,7 @@ const AnimatedPresentation = ({
       ref={canvasRef}
       width={isFullscreen ? 720 : 270}
       height={isFullscreen ? 1280 : 480}
-      className="w-full h-full object-cover"
+      className="w-full h-full object-cover cursor-pointer"
     />
   );
 };
