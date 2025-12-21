@@ -3808,6 +3808,36 @@ export type Database = {
           },
         ]
       }
+      hr_department_members: {
+        Row: {
+          can_approve_transfers: boolean | null
+          created_at: string
+          department: string | null
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_approve_transfers?: boolean | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_approve_transfers?: boolean | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       idea_interests: {
         Row: {
           created_at: string | null
@@ -13959,6 +13989,41 @@ export type Database = {
           },
         ]
       }
+      venue_admin_activity: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          venue_id: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          venue_id: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_admin_activity_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_admins: {
         Row: {
           accepted_at: string | null
@@ -14059,6 +14124,122 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "venue_outlets_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_ownership_history: {
+        Row: {
+          hr_approver_id: string | null
+          id: string
+          new_owner_id: string
+          previous_owner_id: string | null
+          transfer_reason: string | null
+          transfer_request_id: string | null
+          transferred_at: string
+          venue_id: string
+        }
+        Insert: {
+          hr_approver_id?: string | null
+          id?: string
+          new_owner_id: string
+          previous_owner_id?: string | null
+          transfer_reason?: string | null
+          transfer_request_id?: string | null
+          transferred_at?: string
+          venue_id: string
+        }
+        Update: {
+          hr_approver_id?: string | null
+          id?: string
+          new_owner_id?: string
+          previous_owner_id?: string | null
+          transfer_reason?: string | null
+          transfer_request_id?: string | null
+          transferred_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_ownership_history_transfer_request_id_fkey"
+            columns: ["transfer_request_id"]
+            isOneToOne: false
+            referencedRelation: "venue_ownership_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_ownership_history_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_ownership_requests: {
+        Row: {
+          additional_notes: string | null
+          authorization_letter_url: string | null
+          business_registration: string | null
+          completed_at: string | null
+          created_at: string
+          current_owner_id: string | null
+          hr_decision_reason: string | null
+          hr_notes: string | null
+          hr_reviewed_at: string | null
+          hr_reviewer_id: string | null
+          id: string
+          proof_documents: string[] | null
+          request_type: string
+          requester_id: string
+          status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          authorization_letter_url?: string | null
+          business_registration?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_owner_id?: string | null
+          hr_decision_reason?: string | null
+          hr_notes?: string | null
+          hr_reviewed_at?: string | null
+          hr_reviewer_id?: string | null
+          id?: string
+          proof_documents?: string[] | null
+          request_type: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          additional_notes?: string | null
+          authorization_letter_url?: string | null
+          business_registration?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_owner_id?: string | null
+          hr_decision_reason?: string | null
+          hr_notes?: string | null
+          hr_reviewed_at?: string | null
+          hr_reviewer_id?: string | null
+          id?: string
+          proof_documents?: string[] | null
+          request_type?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_ownership_requests_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -14913,6 +15094,16 @@ export type Database = {
         Returns: boolean
       }
       has_task_manager_access: { Args: { _user_id: string }; Returns: boolean }
+      hr_review_ownership_request: {
+        Args: {
+          p_decision: string
+          p_hr_user_id: string
+          p_notes?: string
+          p_reason?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
@@ -14957,6 +15148,10 @@ export type Database = {
         Returns: number
       }
       notify_friends_birthday: { Args: never; Returns: undefined }
+      process_hr_approved_transfer: {
+        Args: { p_hr_user_id: string; p_request_id: string }
+        Returns: Json
+      }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       refresh_music_popularity: { Args: never; Returns: undefined }
       restore_batch_inventory: {
