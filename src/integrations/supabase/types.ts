@@ -3375,6 +3375,56 @@ export type Database = {
           },
         ]
       }
+      floor_plan_layouts: {
+        Row: {
+          area_type: string | null
+          canvas_data: Json | null
+          created_at: string | null
+          dimensions: Json | null
+          id: string
+          layout_name: string
+          notes: string | null
+          project_id: string | null
+          total_capacity: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          area_type?: string | null
+          canvas_data?: Json | null
+          created_at?: string | null
+          dimensions?: Json | null
+          id?: string
+          layout_name: string
+          notes?: string | null
+          project_id?: string | null
+          total_capacity?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          area_type?: string | null
+          canvas_data?: Json | null
+          created_at?: string | null
+          dimensions?: Json | null
+          id?: string
+          layout_name?: string
+          notes?: string | null
+          project_id?: string | null
+          total_capacity?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_plan_layouts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -4085,6 +4135,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      insurance_policies: {
+        Row: {
+          coverage_amount: number | null
+          created_at: string | null
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          notes: string | null
+          payment_frequency: string | null
+          policy_number: string | null
+          policy_type: string
+          premium_amount: number | null
+          project_id: string | null
+          provider_name: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coverage_amount?: number | null
+          created_at?: string | null
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_frequency?: string | null
+          policy_number?: string | null
+          policy_type: string
+          premium_amount?: number | null
+          project_id?: string | null
+          provider_name?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coverage_amount?: number | null
+          created_at?: string | null
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_frequency?: string | null
+          policy_number?: string | null
+          policy_type?: string
+          premium_amount?: number | null
+          project_id?: string | null
+          provider_name?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_policies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       internal_emails: {
         Row: {
@@ -8148,6 +8263,74 @@ export type Database = {
           },
         ]
       }
+      marketing_campaigns: {
+        Row: {
+          actual_spend: number | null
+          budget: number | null
+          campaign_name: string
+          campaign_type: string | null
+          channel: string | null
+          created_at: string | null
+          end_date: string | null
+          goals: string | null
+          id: string
+          kpis: Json | null
+          notes: string | null
+          project_id: string | null
+          start_date: string | null
+          status: string | null
+          target_audience: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actual_spend?: number | null
+          budget?: number | null
+          campaign_name: string
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          goals?: string | null
+          id?: string
+          kpis?: Json | null
+          notes?: string | null
+          project_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_audience?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actual_spend?: number | null
+          budget?: number | null
+          campaign_name?: string
+          campaign_type?: string | null
+          channel?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          goals?: string | null
+          id?: string
+          kpis?: Json | null
+          notes?: string | null
+          project_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_audience?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       master_spirits: {
         Row: {
           bottle_size_ml: number
@@ -9540,6 +9723,75 @@ export type Database = {
           },
         ]
       }
+      opening_inventory: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          delivery_date: string | null
+          id: string
+          item_name: string
+          notes: string | null
+          opening_quantity: number | null
+          order_status: string | null
+          par_level: number | null
+          project_id: string | null
+          supplier_id: string | null
+          unit: string | null
+          unit_cost: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          id?: string
+          item_name: string
+          notes?: string | null
+          opening_quantity?: number | null
+          order_status?: string | null
+          par_level?: number | null
+          project_id?: string | null
+          supplier_id?: string | null
+          unit?: string | null
+          unit_cost?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          id?: string
+          item_name?: string
+          notes?: string | null
+          opening_quantity?: number | null
+          order_status?: string | null
+          par_level?: number | null
+          project_id?: string | null
+          supplier_id?: string | null
+          unit?: string | null
+          unit_cost?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_inventory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_inventory_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -10589,6 +10841,68 @@ export type Database = {
           },
         ]
       }
+      pre_opening_budgets: {
+        Row: {
+          actual_amount: number | null
+          budget_type: string | null
+          category: string
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          estimated_amount: number | null
+          id: string
+          notes: string | null
+          payment_status: string | null
+          project_id: string | null
+          subcategory: string | null
+          updated_at: string | null
+          user_id: string
+          variance: number | null
+        }
+        Insert: {
+          actual_amount?: number | null
+          budget_type?: string | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_amount?: number | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          project_id?: string | null
+          subcategory?: string | null
+          updated_at?: string | null
+          user_id: string
+          variance?: number | null
+        }
+        Update: {
+          actual_amount?: number | null
+          budget_type?: string | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_amount?: number | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          project_id?: string | null
+          subcategory?: string | null
+          updated_at?: string | null
+          user_id?: string
+          variance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_opening_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_opening_milestones: {
         Row: {
           created_at: string
@@ -11484,6 +11798,133 @@ export type Database = {
         }
         Relationships: []
       }
+      recruitment_candidates: {
+        Row: {
+          candidate_name: string
+          created_at: string | null
+          email: string | null
+          id: string
+          interview_date: string | null
+          notes: string | null
+          phone: string | null
+          position_id: string | null
+          rating: number | null
+          resume_url: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          candidate_name: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          interview_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          position_id?: string | null
+          rating?: number | null
+          resume_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          candidate_name?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          interview_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          position_id?: string | null
+          rating?: number | null
+          resume_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_candidates_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_positions: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          description: string | null
+          employment_type: string | null
+          id: string
+          position_title: string
+          positions_filled: number | null
+          positions_needed: number | null
+          posted_date: string | null
+          priority: string | null
+          project_id: string | null
+          requirements: string[] | null
+          salary_range_max: number | null
+          salary_range_min: number | null
+          status: string | null
+          target_hire_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          employment_type?: string | null
+          id?: string
+          position_title: string
+          positions_filled?: number | null
+          positions_needed?: number | null
+          posted_date?: string | null
+          priority?: string | null
+          project_id?: string | null
+          requirements?: string[] | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string | null
+          target_hire_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          employment_type?: string | null
+          id?: string
+          position_title?: string
+          positions_filled?: number | null
+          positions_needed?: number | null
+          posted_date?: string | null
+          priority?: string | null
+          project_id?: string | null
+          requirements?: string[] | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string | null
+          target_hire_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_positions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reel_comments: {
         Row: {
           content: string
@@ -11805,6 +12246,71 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_audit_items: {
+        Row: {
+          category: string
+          corrective_action: string | null
+          created_at: string | null
+          description: string | null
+          document_url: string | null
+          due_date: string | null
+          id: string
+          inspection_date: string | null
+          inspector_name: string | null
+          is_compliant: boolean | null
+          item_name: string
+          notes: string | null
+          priority: string | null
+          project_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          corrective_action?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_url?: string | null
+          due_date?: string | null
+          id?: string
+          inspection_date?: string | null
+          inspector_name?: string | null
+          is_compliant?: boolean | null
+          item_name: string
+          notes?: string | null
+          priority?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          corrective_action?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_url?: string | null
+          due_date?: string | null
+          id?: string
+          inspection_date?: string | null
+          inspector_name?: string | null
+          is_compliant?: boolean | null
+          item_name?: string
+          notes?: string | null
+          priority?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_audit_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -12810,6 +13316,74 @@ export type Database = {
             columns: ["sku_id"]
             isOneToOne: false
             referencedRelation: "smart_pourer_skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      soft_opening_events: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          end_time: string | null
+          event_date: string | null
+          event_name: string
+          event_type: string | null
+          feedback_collected: boolean | null
+          guest_count: number | null
+          id: string
+          lessons_learned: string | null
+          menu_type: string | null
+          notes: string | null
+          project_id: string | null
+          start_time: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          end_time?: string | null
+          event_date?: string | null
+          event_name: string
+          event_type?: string | null
+          feedback_collected?: boolean | null
+          guest_count?: number | null
+          id?: string
+          lessons_learned?: string | null
+          menu_type?: string | null
+          notes?: string | null
+          project_id?: string | null
+          start_time?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          end_time?: string | null
+          event_date?: string | null
+          event_name?: string
+          event_type?: string | null
+          feedback_collected?: boolean | null
+          guest_count?: number | null
+          id?: string
+          lessons_learned?: string | null
+          menu_type?: string | null
+          notes?: string | null
+          project_id?: string | null
+          start_time?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soft_opening_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -14189,6 +14763,68 @@ export type Database = {
         }
         Relationships: []
       }
+      tech_stack_items: {
+        Row: {
+          category: string
+          contract_end: string | null
+          contract_start: string | null
+          created_at: string | null
+          id: string
+          item_name: string
+          login_credentials: Json | null
+          monthly_cost: number | null
+          notes: string | null
+          project_id: string | null
+          setup_cost: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          vendor: string | null
+        }
+        Insert: {
+          category: string
+          contract_end?: string | null
+          contract_start?: string | null
+          created_at?: string | null
+          id?: string
+          item_name: string
+          login_credentials?: Json | null
+          monthly_cost?: number | null
+          notes?: string | null
+          project_id?: string | null
+          setup_cost?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          vendor?: string | null
+        }
+        Update: {
+          category?: string
+          contract_end?: string | null
+          contract_start?: string | null
+          created_at?: string | null
+          id?: string
+          item_name?: string
+          login_credentials?: Json | null
+          monthly_cost?: number | null
+          notes?: string | null
+          project_id?: string | null
+          setup_cost?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_stack_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       temperature_logs: {
         Row: {
           created_at: string | null
@@ -14310,6 +14946,106 @@ export type Database = {
         }
         Relationships: []
       }
+      training_assignments: {
+        Row: {
+          completion_date: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          program_id: string | null
+          score: number | null
+          start_date: string | null
+          status: string | null
+          trainee_email: string | null
+          trainee_name: string
+          user_id: string
+        }
+        Insert: {
+          completion_date?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          program_id?: string | null
+          score?: number | null
+          start_date?: string | null
+          status?: string | null
+          trainee_email?: string | null
+          trainee_name: string
+          user_id: string
+        }
+        Update: {
+          completion_date?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          program_id?: string | null
+          score?: number | null
+          start_date?: string | null
+          status?: string | null
+          trainee_email?: string | null
+          trainee_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_assignments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_programs: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          description: string | null
+          duration_hours: number | null
+          id: string
+          is_mandatory: boolean | null
+          materials_url: string | null
+          program_name: string
+          project_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_mandatory?: boolean | null
+          materials_url?: string | null
+          program_name: string
+          project_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_mandatory?: boolean | null
+          materials_url?: string | null
+          program_name?: string
+          project_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_programs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transfer_qr_codes: {
         Row: {
           created_at: string
@@ -14419,6 +15155,71 @@ export type Database = {
             columns: ["transferred_by"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uniform_items: {
+        Row: {
+          created_at: string | null
+          delivery_date: string | null
+          department: string | null
+          id: string
+          item_name: string
+          notes: string | null
+          order_status: string | null
+          position: string | null
+          project_id: string | null
+          quantity_ordered: number | null
+          quantity_received: number | null
+          sizes_needed: Json | null
+          supplier: string | null
+          unit_cost: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_date?: string | null
+          department?: string | null
+          id?: string
+          item_name: string
+          notes?: string | null
+          order_status?: string | null
+          position?: string | null
+          project_id?: string | null
+          quantity_ordered?: number | null
+          quantity_received?: number | null
+          sizes_needed?: Json | null
+          supplier?: string | null
+          unit_cost?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_date?: string | null
+          department?: string | null
+          id?: string
+          item_name?: string
+          notes?: string | null
+          order_status?: string | null
+          position?: string | null
+          project_id?: string | null
+          quantity_ordered?: number | null
+          quantity_received?: number | null
+          sizes_needed?: Json | null
+          supplier?: string | null
+          unit_cost?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uniform_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -14692,6 +15493,68 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "creator_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      utilities_accounts: {
+        Row: {
+          account_number: string | null
+          activation_date: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          deposit_amount: number | null
+          id: string
+          monthly_estimate: number | null
+          notes: string | null
+          project_id: string | null
+          provider_name: string | null
+          setup_status: string | null
+          updated_at: string | null
+          user_id: string
+          utility_type: string
+        }
+        Insert: {
+          account_number?: string | null
+          activation_date?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          id?: string
+          monthly_estimate?: number | null
+          notes?: string | null
+          project_id?: string | null
+          provider_name?: string | null
+          setup_status?: string | null
+          updated_at?: string | null
+          user_id: string
+          utility_type: string
+        }
+        Update: {
+          account_number?: string | null
+          activation_date?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          id?: string
+          monthly_estimate?: number | null
+          notes?: string | null
+          project_id?: string | null
+          provider_name?: string | null
+          setup_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          utility_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utilities_accounts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "pre_opening_projects"
             referencedColumns: ["id"]
           },
         ]
