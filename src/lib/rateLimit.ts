@@ -35,12 +35,15 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   'upload-image': { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
   'upload-video': { maxRequests: 10, windowMs: 60 * 1000 }, // 10 per minute
   'upload-reel': { maxRequests: 5, windowMs: 60 * 1000 }, // 5 per minute
+  'upload-audio': { maxRequests: 10, windowMs: 60 * 1000 }, // 10 per minute
+  'upload-document': { maxRequests: 20, windowMs: 60 * 1000 }, // 20 per minute
   
   // Social actions - prevent spam
   'post-create': { maxRequests: 10, windowMs: 60 * 1000 }, // 10 per minute
   'comment-create': { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
   'like-action': { maxRequests: 100, windowMs: 60 * 1000 }, // 100 per minute
   'follow-action': { maxRequests: 50, windowMs: 60 * 1000 }, // 50 per minute
+  'share-action': { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
   'message-send': { maxRequests: 60, windowMs: 60 * 1000 }, // 60 per minute
   
   // Story/reel creation - resource heavy

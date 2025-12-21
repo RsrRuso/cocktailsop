@@ -143,6 +143,14 @@ export default function MusicBox() {
       return;
     }
 
+    // Rate limit uploads
+    const { checkRateLimit } = await import('@/lib/rateLimit');
+    const { allowed } = checkRateLimit('upload-audio');
+    if (!allowed) {
+      toast.error("Upload limit reached. Please wait a minute.");
+      return;
+    }
+
     setUploading(true);
     try {
       // Upload file to storage

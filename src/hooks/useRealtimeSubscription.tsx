@@ -16,12 +16,12 @@ export const useRealtimeSubscription = ({
   filter,
   event = '*',
   onUpdate,
-  debounceMs = 1000,
+  debounceMs = 2000, // Increased default to 2 seconds for scaling
 }: SubscriptionOptions) => {
   const debounceRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
-  // Use a longer default debounce (2 seconds) to batch rapid updates
-  const effectiveDebounceMs = debounceMs || 2000;
+  // Use a longer default debounce (2 seconds) to batch rapid updates and reduce re-renders
+  const effectiveDebounceMs = Math.max(debounceMs, 1500); // Minimum 1.5s debounce
 
   useEffect(() => {
     isMountedRef.current = true;

@@ -63,12 +63,17 @@ Protects expensive operations:
 | Image Upload | 30 | 1 min |
 | Video Upload | 10 | 1 min |
 | Reel Upload | 5 | 1 min |
+| Audio Upload | 10 | 1 min |
+| Document Upload | 20 | 1 min |
 | Post Create | 10 | 1 min |
 | Comment Create | 30 | 1 min |
 | Like Action | 100 | 1 min |
 | Follow Action | 50 | 1 min |
+| Share Action | 30 | 1 min |
 | Message Send | 60 | 1 min |
 | Search | 30 | 1 min |
+| Story Create | 20 | 1 min |
+| Reel Create | 5 | 1 min |
 
 **Usage:**
 ```typescript
