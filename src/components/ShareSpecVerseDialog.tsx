@@ -662,27 +662,58 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
           </ScrollArea>
         ) : selectedTool && (
           <ScrollArea className="h-[65vh] px-3 pb-3">
-            {/* Preview card with gradient */}
-            <div className={`p-3 rounded-xl bg-gradient-to-br ${selectedTool.gradient} text-white`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">{selectedTool.emoji}</span>
-                <div>
-                  <h3 className="font-bold text-sm">{selectedTool.name}</h3>
-                  <p className="text-[10px] text-white/70">{selectedTool.tagline}</p>
+            {/* Header with tool info */}
+            <div className={`p-4 rounded-xl bg-gradient-to-br ${selectedTool.gradient} text-white mb-3`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                  {selectedTool.icon}
                 </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg">{selectedTool.name}</h3>
+                  <p className="text-xs text-white/80">{selectedTool.tagline}</p>
+                </div>
+                <span className="text-2xl">{selectedTool.emoji}</span>
               </div>
-              
-              <div className="bg-black/30 rounded-md p-2 mb-2">
-                <p className="text-[11px] leading-relaxed">❌ {selectedTool.problem}</p>
+            </div>
+
+            {/* THE PROBLEM Section */}
+            <div className="bg-gradient-to-br from-red-950/40 to-red-900/20 border border-red-500/30 rounded-xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <span className="text-red-400 text-lg">❌</span>
+                </div>
+                <h4 className="font-bold text-red-400 text-sm uppercase tracking-wide">The Problem</h4>
               </div>
-              
-              <div className="bg-black/30 rounded-md p-2 mb-2">
-                <p className="text-[11px] leading-relaxed">✅ {selectedTool.solution}</p>
+              <p className="text-sm text-foreground/90 leading-relaxed">{selectedTool.problem}</p>
+            </div>
+
+            {/* THE SOLUTION Section */}
+            <div className="bg-gradient-to-br from-green-950/40 to-green-900/20 border border-green-500/30 rounded-xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <span className="text-green-400 text-lg">✅</span>
+                </div>
+                <h4 className="font-bold text-green-400 text-sm uppercase tracking-wide">Our Solution</h4>
               </div>
-              
-              <div className="space-y-0.5">
-                {selectedTool.benefits.map((b, i) => (
-                  <p key={i} className="text-[10px] text-white/90">✓ {b}</p>
+              <p className="text-sm text-foreground/90 leading-relaxed">{selectedTool.solution}</p>
+            </div>
+
+            {/* KEY BENEFITS Section */}
+            <div className="bg-gradient-to-br from-amber-950/40 to-yellow-900/20 border border-amber-500/30 rounded-xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <span className="text-amber-400 text-lg">✨</span>
+                </div>
+                <h4 className="font-bold text-amber-400 text-sm uppercase tracking-wide">Key Benefits</h4>
+              </div>
+              <div className="space-y-2.5">
+                {selectedTool.benefits.map((benefit, i) => (
+                  <div key={i} className="flex items-start gap-2.5 bg-black/20 rounded-lg p-2.5">
+                    <div className="w-5 h-5 rounded-full bg-green-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-green-400 text-xs font-bold">✓</span>
+                    </div>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{benefit}</p>
+                  </div>
                 ))}
               </div>
             </div>
