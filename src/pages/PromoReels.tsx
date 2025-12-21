@@ -19,6 +19,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import svLogo from "@/assets/sv-logo.png";
+import PromoVideoReel from "@/components/landing/PromoVideoReel";
 
 interface PromoReel {
   id: string;
@@ -2180,36 +2181,56 @@ export default function PromoReels() {
             Download promotional videos for our platform tools. Share them on social media to grow your audience!
           </p>
           
-          {/* Promo Ads Studio Link */}
-          <motion.a
+        </motion.div>
+
+        {/* Featured Promo Video Reel - Same as Landing Page */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <PromoVideoReel />
+        </motion.div>
+
+        {/* Promo Ads Studio Link */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex justify-center mb-6"
+        >
+          <a
             href="/promo-ads"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
-            title="Create Promo Ads"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-blue-600 text-white rounded-full text-sm font-medium hover:opacity-90 transition-opacity shadow-lg"
           >
-            <Video className="w-5 h-5 text-white" />
-          </motion.a>
+            <Video className="w-4 h-4" />
+            Create Promo Ads for Social Media
+          </a>
+        </motion.div>
           
-          {/* Stats */}
-          <div className="flex items-center justify-center gap-6 mt-6">
-            <div className="text-center">
-              <div className="text-xl font-bold text-primary">{promoReels.length}</div>
-              <div className="text-xs text-muted-foreground">Promo Reels</div>
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="flex items-center justify-center gap-6 mb-8"
+        >
+          <div className="text-center">
+            <div className="text-xl font-bold text-primary">{promoReels.length}</div>
+            <div className="text-xs text-muted-foreground">Promo Reels</div>
+          </div>
+          <div className="w-px h-8 bg-border" />
+          <div className="text-center">
+            <div className="text-xl font-bold text-primary">
+              {formatNumber(promoReels.reduce((acc, r) => acc + r.downloads, 0))}
             </div>
-            <div className="w-px h-8 bg-border" />
-            <div className="text-center">
-              <div className="text-xl font-bold text-primary">
-                {formatNumber(promoReels.reduce((acc, r) => acc + r.downloads, 0))}
-              </div>
-              <div className="text-xs text-muted-foreground">Downloads</div>
-            </div>
-            <div className="w-px h-8 bg-border" />
-            <div className="text-center">
-              <div className="text-xl font-bold text-primary">HD</div>
-              <div className="text-xs text-muted-foreground">Quality</div>
-            </div>
+            <div className="text-xs text-muted-foreground">Downloads</div>
+          </div>
+          <div className="w-px h-8 bg-border" />
+          <div className="text-center">
+            <div className="text-xl font-bold text-primary">HD</div>
+            <div className="text-xs text-muted-foreground">Quality</div>
           </div>
         </motion.div>
 
