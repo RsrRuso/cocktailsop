@@ -19,7 +19,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import svLogo from "@/assets/sv-logo.png";
-import PromoVideoReel from "@/components/landing/PromoVideoReel";
+import ToolsPromoVideoReel from "@/components/promo/ToolsPromoVideoReel";
 
 interface PromoReel {
   id: string;
@@ -2190,7 +2190,7 @@ export default function PromoReels() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <PromoVideoReel />
+          <ToolsPromoVideoReel />
         </motion.div>
 
         {/* Promo Ads Studio Link */}
