@@ -37,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MatrixBrainLogo } from "@/components/MatrixBrainLogo";
 import { MatrixAIButton } from "@/components/MatrixAIButton";
 import ShareSpecVerseDialog from "@/components/ShareSpecVerseDialog";
+import SVLogo from "@/components/SVLogo";
 
 interface TopNavProps {
   isVisible?: boolean;
@@ -275,16 +276,17 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-transparent">
-          {/* Left section - SpecVerse Brand with Dropdown */}
+          {/* Left section - SpecVerse Brand with Logo and Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 onClick={lightTap}
-                className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
-              <span className="text-3xl sm:text-4xl font-instagram text-foreground tracking-tight">
-                SpecVerse
-              </span>
+                <SVLogo size="sm" clickable={false} />
+                <span className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight">
+                  SpecVerse
+                </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>

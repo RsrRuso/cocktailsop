@@ -18,6 +18,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import svLogo from "@/assets/sv-logo.png";
 
 interface PromoReel {
   id: string;
@@ -1449,10 +1450,16 @@ export default function PromoReels() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center py-8"
         >
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <Video className="w-5 h-5 text-primary-foreground" />
-            </div>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <img 
+              src={svLogo} 
+              alt="SpecVerse" 
+              className="w-12 h-12 rounded-xl shadow-lg"
+              style={{
+                filter: 'sepia(15%) saturate(1.2) hue-rotate(-5deg)',
+                boxShadow: '0 0 20px rgba(234, 179, 8, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3)'
+              }}
+            />
             <h1 className="text-2xl font-bold">Promo Reels</h1>
           </div>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
