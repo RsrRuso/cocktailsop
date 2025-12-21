@@ -377,8 +377,13 @@ const AppContent = () => {
 
           {/* HR */}
           <Route path="/hr" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/HR" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/hrdashboard" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/hr_dashboard" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/human-resources" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/humanresources" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/hr-management" element={<Navigate to="/hr-dashboard" replace />} />
           <Route path="/hr-dashboard/*" element={<HRDashboard />} />
-
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
