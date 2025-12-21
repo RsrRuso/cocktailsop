@@ -2097,12 +2097,61 @@ export type Database = {
         }
         Relationships: []
       }
+      employment_claim_proofs: {
+        Row: {
+          claim_id: string
+          file_name: string | null
+          file_url: string
+          id: string
+          proof_type: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          claim_id: string
+          file_name?: string | null
+          file_url: string
+          id?: string
+          proof_type: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          claim_id?: string
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          proof_type?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employment_claim_proofs_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "employment_verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employment_verifications: {
         Row: {
+          claim_status: string | null
           created_at: string | null
+          department: string | null
+          edited_data: Json | null
+          edits_accepted: boolean | null
+          employment_type: string | null
           end_date: string | null
           id: string
+          is_current: boolean | null
+          original_data: Json | null
+          outlet_id: string | null
           position: string
+          proof_documents: string[] | null
+          reference_contact: string | null
+          reference_name: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
           start_date: string
           status: string
           user_id: string
@@ -2111,10 +2160,24 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          claim_status?: string | null
           created_at?: string | null
+          department?: string | null
+          edited_data?: Json | null
+          edits_accepted?: boolean | null
+          employment_type?: string | null
           end_date?: string | null
           id?: string
+          is_current?: boolean | null
+          original_data?: Json | null
+          outlet_id?: string | null
           position: string
+          proof_documents?: string[] | null
+          reference_contact?: string | null
+          reference_name?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
           start_date: string
           status?: string
           user_id: string
@@ -2123,10 +2186,24 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          claim_status?: string | null
           created_at?: string | null
+          department?: string | null
+          edited_data?: Json | null
+          edits_accepted?: boolean | null
+          employment_type?: string | null
           end_date?: string | null
           id?: string
+          is_current?: boolean | null
+          original_data?: Json | null
+          outlet_id?: string | null
           position?: string
+          proof_documents?: string[] | null
+          reference_contact?: string | null
+          reference_name?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
           start_date?: string
           status?: string
           user_id?: string
@@ -2135,6 +2212,13 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "employment_verifications_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "venue_outlets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "employment_verifications_venue_id_fkey"
             columns: ["venue_id"]
@@ -13875,51 +13959,256 @@ export type Database = {
           },
         ]
       }
+      venue_admins: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          department: string | null
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          is_primary: boolean | null
+          outlet_id: string | null
+          role: string
+          user_id: string
+          venue_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_primary?: boolean | null
+          outlet_id?: string | null
+          role?: string
+          user_id: string
+          venue_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_primary?: boolean | null
+          outlet_id?: string | null
+          role?: string
+          user_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_admins_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "venue_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_admins_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_outlets: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_headquarters: boolean | null
+          name: string
+          phone: string | null
+          updated_at: string | null
+          venue_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_headquarters?: boolean | null
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+          venue_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_headquarters?: boolean | null
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_outlets_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_verification_attempts: {
+        Row: {
+          attempted_by: string
+          code: string | null
+          created_at: string | null
+          document_url: string | null
+          email_sent_to: string | null
+          expires_at: string | null
+          id: string
+          method: string
+          phone_sent_to: string | null
+          social_code: string | null
+          status: string | null
+          venue_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempted_by: string
+          code?: string | null
+          created_at?: string | null
+          document_url?: string | null
+          email_sent_to?: string | null
+          expires_at?: string | null
+          id?: string
+          method: string
+          phone_sent_to?: string | null
+          social_code?: string | null
+          status?: string | null
+          venue_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempted_by?: string
+          code?: string | null
+          created_at?: string | null
+          document_url?: string | null
+          email_sent_to?: string | null
+          expires_at?: string | null
+          id?: string
+          method?: string
+          phone_sent_to?: string | null
+          social_code?: string | null
+          status?: string | null
+          venue_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_verification_attempts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           address: string | null
+          brand_name: string | null
+          business_type: string | null
           city: string
           contact_email: string | null
           country: string
           created_at: string | null
           created_by: string | null
+          description: string | null
+          email_domain: string | null
           id: string
+          instagram: string | null
+          is_venue_account: boolean | null
+          logo_url: string | null
           name: string
           owner_id: string | null
+          phone: string | null
           region: string
           show_contact_email: boolean | null
           type: string
+          verification_code: string | null
+          verification_expires_at: string | null
+          verification_method: string | null
+          verification_status: string | null
           verified: boolean | null
+          verified_at: string | null
+          website: string | null
         }
         Insert: {
           address?: string | null
+          brand_name?: string | null
+          business_type?: string | null
           city: string
           contact_email?: string | null
           country?: string
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
+          email_domain?: string | null
           id?: string
+          instagram?: string | null
+          is_venue_account?: boolean | null
+          logo_url?: string | null
           name: string
           owner_id?: string | null
+          phone?: string | null
           region: string
           show_contact_email?: boolean | null
           type: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+          verification_method?: string | null
+          verification_status?: string | null
           verified?: boolean | null
+          verified_at?: string | null
+          website?: string | null
         }
         Update: {
           address?: string | null
+          brand_name?: string | null
+          business_type?: string | null
           city?: string
           contact_email?: string | null
           country?: string
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
+          email_domain?: string | null
           id?: string
+          instagram?: string | null
+          is_venue_account?: boolean | null
+          logo_url?: string | null
           name?: string
           owner_id?: string | null
+          phone?: string | null
           region?: string
           show_contact_email?: boolean | null
           type?: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+          verification_method?: string | null
+          verification_status?: string | null
           verified?: boolean | null
+          verified_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -14517,6 +14806,7 @@ export type Database = {
       }
       generate_certificate_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
+      generate_verification_code: { Args: never; Returns: string }
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
         Returns: number
@@ -14760,7 +15050,17 @@ export type Database = {
         | "seller"
         | "buyer"
       badge_level: "bronze" | "silver" | "gold" | "platinum"
+      claim_status:
+        | "draft"
+        | "sent"
+        | "under_review"
+        | "approved"
+        | "approved_with_edits"
+        | "rejected"
+        | "disputed"
+        | "expired"
       creator_role: "creator" | "pro_creator" | "venue_admin" | "moderator"
+      department_type: "bar" | "floor" | "kitchen" | "management" | "other"
       equipment_type:
         | "fridge"
         | "freezer"
@@ -14824,6 +15124,17 @@ export type Database = {
         | "consultant"
         | "founder_of_specverse"
       subscription_status: "trial" | "active" | "expired" | "cancelled"
+      venue_admin_role:
+        | "owner_admin"
+        | "hr_admin"
+        | "outlet_manager"
+        | "bar_manager"
+      venue_verification_method:
+        | "domain_email"
+        | "phone"
+        | "social_web"
+        | "document"
+      venue_verification_status: "unverified" | "pending" | "verified"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -14962,7 +15273,18 @@ export const Constants = {
         "buyer",
       ],
       badge_level: ["bronze", "silver", "gold", "platinum"],
+      claim_status: [
+        "draft",
+        "sent",
+        "under_review",
+        "approved",
+        "approved_with_edits",
+        "rejected",
+        "disputed",
+        "expired",
+      ],
       creator_role: ["creator", "pro_creator", "venue_admin", "moderator"],
+      department_type: ["bar", "floor", "kitchen", "management", "other"],
       equipment_type: [
         "fridge",
         "freezer",
@@ -15034,6 +15356,19 @@ export const Constants = {
         "founder_of_specverse",
       ],
       subscription_status: ["trial", "active", "expired", "cancelled"],
+      venue_admin_role: [
+        "owner_admin",
+        "hr_admin",
+        "outlet_manager",
+        "bar_manager",
+      ],
+      venue_verification_method: [
+        "domain_email",
+        "phone",
+        "social_web",
+        "document",
+      ],
+      venue_verification_status: ["unverified", "pending", "verified"],
     },
   },
 } as const
