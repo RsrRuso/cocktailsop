@@ -858,69 +858,36 @@ export default function PromoReels() {
                   onMouseLeave={() => setHoveredId(null)}
                   onClick={() => setSelectedReel(reel)}
                 >
-                  {/* Video Preview with Content Description */}
-                  <div className={`relative aspect-[9/16] bg-gradient-to-br ${reel.thumbnailGradient} overflow-hidden`}>
-                    {/* Background Pattern for visual interest */}
-                    <div className="absolute inset-0 opacity-20">
-                      <div className="absolute top-4 right-4 w-24 h-24 rounded-full border-2 border-white/30" />
-                      <div className="absolute bottom-8 left-2 w-16 h-16 rounded-full border border-white/20" />
-                      <div className="absolute top-1/3 left-1/4 w-8 h-8 rounded-lg bg-white/10 rotate-12" />
-                    </div>
-
-                    {/* Content Description - Always Visible */}
-                    <div className="absolute inset-0 flex flex-col text-white p-3">
-                      {/* Top Section - Icon & Title */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-                          {reel.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-sm leading-tight">{reel.title}</h3>
-                          <Badge className="bg-white/20 text-white text-[8px] border-0 mt-0.5 px-1.5 py-0">
-                            {reel.category}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-white/90 text-[11px] leading-relaxed mb-3 flex-1">
-                        {reel.description}
-                      </p>
-
-                      {/* Features List */}
-                      <div className="space-y-1.5 mb-3">
-                        {reel.features.map((feature, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-[10px] text-white/80">
-                            <div className="w-1 h-1 rounded-full bg-white/60" />
-                            <span>{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Bottom Stats */}
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="flex items-center gap-2 text-[10px] text-white/70">
-                          <div className="flex items-center gap-0.5">
-                            <Eye className="w-3 h-3" />
-                            {formatNumber(reel.views)}
-                          </div>
-                          <div className="flex items-center gap-0.5">
-                            <Download className="w-3 h-3" />
-                            {formatNumber(reel.downloads)}
-                          </div>
-                        </div>
-                        <Badge className="bg-black/40 text-white text-[9px] border-0">
-                          {reel.duration}
-                        </Badge>
-                      </div>
-                    </div>
+                  {/* Animated Canvas Preview */}
+                  <div className="relative aspect-[9/16] overflow-hidden">
+                    <AnimatedPresentation 
+                      reel={reel} 
+                      isPlaying={hoveredId === reel.id}
+                      isFullscreen={false}
+                    />
 
                     {/* Hover Play Overlay */}
-                    <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-200 ${hoveredId === reel.id ? 'opacity-100' : 'opacity-0'}`}>
-                      <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                        <Play className="w-6 h-6 text-white ml-0.5" fill="white" />
+                    <div className={`absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity duration-200 ${hoveredId === reel.id ? 'opacity-100' : 'opacity-0'}`}>
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                        <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
                       </div>
-                      <span className="absolute bottom-4 text-white text-xs font-medium">Tap to Preview</span>
+                    </div>
+
+                    {/* Duration Badge */}
+                    <Badge className="absolute bottom-2 right-2 bg-black/60 text-white text-[9px] border-0">
+                      {reel.duration}
+                    </Badge>
+
+                    {/* Stats Overlay */}
+                    <div className="absolute bottom-2 left-2 flex items-center gap-2 text-[9px] text-white/80">
+                      <div className="flex items-center gap-0.5 bg-black/40 px-1.5 py-0.5 rounded">
+                        <Eye className="w-3 h-3" />
+                        {formatNumber(reel.views)}
+                      </div>
+                      <div className="flex items-center gap-0.5 bg-black/40 px-1.5 py-0.5 rounded">
+                        <Download className="w-3 h-3" />
+                        {formatNumber(reel.downloads)}
+                      </div>
                     </div>
                   </div>
 
