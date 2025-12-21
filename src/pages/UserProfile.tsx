@@ -366,6 +366,15 @@ const UserProfile = () => {
   };
 
   const handleFollow = async () => {
+    // Rate limit follow actions
+    const { checkRateLimit } = await import('@/lib/rateLimit');
+    const { toast: sonnerToast } = await import('sonner');
+    const { allowed } = checkRateLimit('follow-action');
+    if (!allowed) {
+      sonnerToast.error("Slow down! Too many follow actions. Try again shortly.");
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
