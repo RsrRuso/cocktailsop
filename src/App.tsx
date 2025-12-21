@@ -150,6 +150,7 @@ const VenueDetail = lazy(() => import("@/pages/VenueDetail"));
 const VenueRegistration = lazy(() => import("@/pages/VenueRegistration"));
 const VenueDashboard = lazy(() => import("@/pages/VenueDashboard"));
 const ClaimEmployment = lazy(() => import("@/pages/ClaimEmployment"));
+const EmploymentHelpCenter = lazy(() => import("@/pages/EmploymentHelpCenter"));
 const Automations = lazy(() => import("@/pages/Automations"));
 const FinancialReportsHub = lazy(() => import("@/pages/FinancialReportsHub"));
 const ProfitLossReport = lazy(() => import("@/pages/reports/ProfitLossReport"));
@@ -369,6 +370,7 @@ const AppContent = () => {
           <Route path="/venue-register" element={<VenueRegistration />} />
           <Route path="/venue-dashboard/:venueId" element={<VenueDashboard />} />
           <Route path="/claim-employment" element={<ClaimEmployment />} />
+          <Route path="/employment-help" element={<EmploymentHelpCenter />} />
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
