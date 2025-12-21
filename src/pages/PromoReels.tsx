@@ -441,9 +441,9 @@ const AnimatedPresentation = ({
   const drawInventoryUI = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, frame: number, scale: number) => {
     const cols = 3;
     const rows = 3;
-    const gap = 8;
+    const gap = 6;
     const itemW = (w - gap * (cols + 1)) / cols;
-    const itemH = (h - 40 - gap * (rows + 1)) / rows;
+    const itemH = (h - 45 - gap * (rows + 1)) / rows;
     
     // Header with gradient
     const headerGradient = ctx.createLinearGradient(x, y, x + w, y);
@@ -451,64 +451,64 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('📦 Inventory Dashboard', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('📦 Inventory', x + 12, y + 22);
     
     // Item count badge
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.beginPath();
-    ctx.roundRect(x + w - 50, y + 6, 40, 16, 8);
+    ctx.roundRect(x + w - 55, y + 7, 45, 20, 10);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${11}px system-ui`;
+    ctx.font = `bold ${12}px system-ui`;
     ctx.textAlign = 'center';
-    ctx.fillText('12 items', x + w - 30, y + 18);
+    ctx.fillText('12', x + w - 32, y + 21);
     ctx.textAlign = 'left';
     
     // Grid items with product names
-    const products = ['🍷 Wine', '🍺 Beer', '🥃 Whiskey', '🍸 Gin', '🍹 Rum', '🧊 Ice', '🍋 Citrus', '🌿 Herbs', '🥤 Mixers'];
+    const products = ['🍷 Wine', '🍺 Beer', '🥃 Whisky', '🍸 Gin', '🍹 Rum', '🧊 Ice', '🍋 Citrus', '🌿 Herbs', '🥤 Mixer'];
     
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const idx = row * cols + col;
         const itemX = x + gap + col * (itemW + gap);
-        const itemY = y + 36 + row * (itemH + gap);
+        const itemY = y + 40 + row * (itemH + gap);
         const animDelay = idx * 4;
         const itemProgress = Math.max(0, Math.min(1, (frame - animDelay) / 15));
         
         ctx.globalAlpha = itemProgress;
         
         // Card background with border
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.beginPath();
         ctx.roundRect(itemX, itemY, itemW, itemH, 6);
         ctx.fill();
         
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
         
-        // Product name
+        // Product name - LARGER and BOLDER
         ctx.fillStyle = '#fff';
-        ctx.font = `bold ${11}px system-ui`;
-        ctx.fillText(products[idx] || 'Item', itemX + 6, itemY + 16);
+        ctx.font = `bold ${13}px system-ui`;
+        ctx.fillText(products[idx] || 'Item', itemX + 5, itemY + 18);
         
-        // Stock quantity
+        // Stock quantity - LARGER
         const stockQty = Math.floor(20 + Math.sin(frame * 0.02 + idx) * 15);
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = `${10}px system-ui`;
-        ctx.fillText(`Qty: ${stockQty}`, itemX + 6, itemY + 30);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = `bold ${12}px system-ui`;
+        ctx.fillText(`${stockQty}`, itemX + 5, itemY + 34);
         
-        // Stock level bar with label
+        // Stock level bar
         const stockLevel = (Math.sin(frame * 0.02 + col + row) + 1) / 2;
-        const barY = itemY + itemH - 14;
+        const barY = itemY + itemH - 12;
         
         // Bar background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.beginPath();
         ctx.roundRect(itemX + 4, barY, itemW - 8, 8, 4);
         ctx.fill();
@@ -531,17 +531,17 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('🧮 Batch Calculator', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('🧮 Batch Calculator', x + 12, y + 22);
     
     // Recipe card
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.beginPath();
-    ctx.roundRect(x, y + 34, w * 0.58, h - 40, 8);
+    ctx.roundRect(x, y + 38, w * 0.58, h - 44, 8);
     ctx.fill();
     
     // Animated multiplier
@@ -549,34 +549,34 @@ const AnimatedPresentation = ({
     
     // Ingredients list with scaling animation
     const ingredients = [
-      { name: '🥃 Spirit Base', amount: 60 },
-      { name: '🍋 Fresh Citrus', amount: 30 },
-      { name: '🍯 Sweetener', amount: 20 },
+      { name: '🥃 Spirit', amount: 60 },
+      { name: '🍋 Citrus', amount: 30 },
+      { name: '🍯 Sweet', amount: 20 },
       { name: '🌿 Bitters', amount: 5 }
     ];
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${11}px system-ui`;
-    ctx.fillText('Ingredients', x + 10, y + 50);
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('Ingredients', x + 10, y + 58);
     
     ingredients.forEach((ing, i) => {
-      const ingY = y + 60 + i * ((h - 70) / 5);
+      const ingY = y + 68 + i * ((h - 80) / 5);
       const scaledAmount = Math.round(ing.amount * multiplier);
       const barWidth = (w * 0.48 - 20) * (ing.amount / 60) * multiplier;
       
       ctx.fillStyle = '#fff';
-      ctx.font = `${11}px system-ui`;
-      ctx.fillText(ing.name, x + 10, ingY + 12);
+      ctx.font = `bold ${13}px system-ui`;
+      ctx.fillText(ing.name, x + 10, ingY + 14);
       
       // Amount badge
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
       ctx.beginPath();
-      ctx.roundRect(x + w * 0.35, ingY + 2, 40, 16, 8);
+      ctx.roundRect(x + w * 0.32, ingY + 2, 48, 18, 9);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${10}px system-ui`;
+      ctx.font = `bold ${12}px system-ui`;
       ctx.textAlign = 'center';
-      ctx.fillText(`${scaledAmount}ml`, x + w * 0.35 + 20, ingY + 14);
+      ctx.fillText(`${scaledAmount}ml`, x + w * 0.32 + 24, ingY + 15);
       ctx.textAlign = 'left';
       
       // Animated bar
@@ -586,7 +586,7 @@ const AnimatedPresentation = ({
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.8;
       ctx.beginPath();
-      ctx.roundRect(x + 10, ingY + 18, Math.min(barWidth, w * 0.48 - 20), 8, 4);
+      ctx.roundRect(x + 10, ingY + 22, Math.min(barWidth, w * 0.48 - 20), 8, 4);
       ctx.fill();
       ctx.globalAlpha = 1;
     });
@@ -594,27 +594,27 @@ const AnimatedPresentation = ({
     // Batch size indicator panel
     ctx.fillStyle = reel.gradientTo;
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.62, y + 34, w * 0.38, h * 0.45, 8);
+    ctx.roundRect(x + w * 0.62, y + 38, w * 0.38, h * 0.42, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${28}px system-ui`;
+    ctx.font = `bold ${32}px system-ui`;
     ctx.textAlign = 'center';
-    ctx.fillText(`${(multiplier * 10).toFixed(0)}L`, x + w * 0.81, y + 70);
-    ctx.font = `${12}px system-ui`;
-    ctx.fillText('Total Batch', x + w * 0.81, y + 90);
+    ctx.fillText(`${(multiplier * 10).toFixed(0)}L`, x + w * 0.81, y + 78);
+    ctx.font = `bold ${13}px system-ui`;
+    ctx.fillText('Total Batch', x + w * 0.81, y + 98);
     
     // Serves indicator
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.62, y + h * 0.55, w * 0.38, h * 0.38, 8);
+    ctx.roundRect(x + w * 0.62, y + h * 0.52, w * 0.38, h * 0.42, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${20}px system-ui`;
+    ctx.font = `bold ${24}px system-ui`;
     ctx.fillText(`${Math.round(multiplier * 100)}`, x + w * 0.81, y + h * 0.75);
-    ctx.font = `${11}px system-ui`;
-    ctx.fillText('Servings', x + w * 0.81, y + h * 0.85);
+    ctx.font = `bold ${12}px system-ui`;
+    ctx.fillText('Servings', x + w * 0.81, y + h * 0.87);
     ctx.textAlign = 'left';
   };
 
@@ -625,14 +625,14 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('📅 Staff Schedule', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('📅 Schedule', x + 12, y + 22);
     
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const dayWidth = w / 7;
     
     // Day headers with background
@@ -640,15 +640,15 @@ const AnimatedPresentation = ({
       const isActive = Math.floor(frame / 30) % 7 === i;
       const dayX = x + dayWidth * i;
       
-      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.18)';
       ctx.beginPath();
-      ctx.roundRect(dayX + 1, y + 32, dayWidth - 2, 20, 4);
+      ctx.roundRect(dayX + 1, y + 36, dayWidth - 2, 22, 4);
       ctx.fill();
       
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${10}px system-ui`;
+      ctx.font = `bold ${12}px system-ui`;
       ctx.textAlign = 'center';
-      ctx.fillText(day, dayX + dayWidth / 2, y + 46);
+      ctx.fillText(day, dayX + dayWidth / 2, y + 51);
     });
     
     // Shift blocks with staff names
@@ -668,20 +668,20 @@ const AnimatedPresentation = ({
       
       ctx.globalAlpha = appear;
       ctx.fillStyle = shift.color;
-      const shiftX = x + shift.day * dayWidth + 3;
-      const shiftY = y + 56 + shift.start * (h - 62);
-      const shiftH = (shift.end - shift.start) * (h - 62);
+      const shiftX = x + shift.day * dayWidth + 2;
+      const shiftY = y + 62 + shift.start * (h - 68);
+      const shiftH = (shift.end - shift.start) * (h - 68);
       
       ctx.beginPath();
-      ctx.roundRect(shiftX, shiftY, dayWidth - 6, shiftH, 5);
+      ctx.roundRect(shiftX, shiftY, dayWidth - 4, shiftH, 5);
       ctx.fill();
       
-      // Staff name on shift
-      if (shiftH > 20) {
+      // Staff name on shift - LARGER
+      if (shiftH > 24) {
         ctx.fillStyle = '#fff';
-        ctx.font = `bold ${9}px system-ui`;
+        ctx.font = `bold ${11}px system-ui`;
         ctx.textAlign = 'center';
-        ctx.fillText(shift.name, shiftX + (dayWidth - 6) / 2, shiftY + shiftH / 2 + 3);
+        ctx.fillText(shift.name, shiftX + (dayWidth - 4) / 2, shiftY + shiftH / 2 + 4);
       }
       
       ctx.globalAlpha = 1;
@@ -696,28 +696,28 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('🍸 Cocktail Recipe', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('🍸 Recipe', x + 12, y + 22);
     
     // Cocktail glass illustration - larger
     const glassX = x + 12;
-    const glassY = y + 38;
+    const glassY = y + 42;
     const glassW = w * 0.32;
-    const glassH = h * 0.55;
+    const glassH = h * 0.52;
     
     // Glass background
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
     ctx.beginPath();
     ctx.roundRect(glassX - 8, glassY - 4, glassW + 16, glassH + 20, 8);
     ctx.fill();
     
     // Glass shape - martini style
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(glassX, glassY);
     ctx.lineTo(glassX + glassW, glassY);
@@ -734,7 +734,7 @@ const AnimatedPresentation = ({
     gradient.addColorStop(0, reel.gradientFrom);
     gradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.8;
+    ctx.globalAlpha = 0.85;
     ctx.beginPath();
     ctx.moveTo(glassX + 6, glassY + (1 - fillLevel) * glassH * 0.5);
     ctx.lineTo(glassX + glassW - 6, glassY + (1 - fillLevel) * glassH * 0.5);
@@ -745,37 +745,37 @@ const AnimatedPresentation = ({
     ctx.globalAlpha = 1;
     
     // Recipe steps panel
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.42, y + 34, w * 0.56, h - 40, 8);
+    ctx.roundRect(x + w * 0.42, y + 38, w * 0.56, h - 44, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${12}px system-ui`;
-    ctx.fillText('Method', x + w * 0.47, y + 52);
+    ctx.font = `bold ${14}px system-ui`;
+    ctx.fillText('Method', x + w * 0.47, y + 56);
     
     const steps = [
-      { icon: '🧊', text: 'Add ice to shaker' },
-      { icon: '🥃', text: 'Pour ingredients' },
-      { icon: '🔄', text: 'Shake 15 seconds' },
-      { icon: '🍸', text: 'Strain into glass' }
+      { icon: '🧊', text: 'Add ice' },
+      { icon: '🥃', text: 'Pour spirit' },
+      { icon: '🔄', text: 'Shake 15s' },
+      { icon: '🍸', text: 'Strain' }
     ];
     
     steps.forEach((step, i) => {
-      const stepY = y + 62 + i * ((h - 75) / 4.5);
+      const stepY = y + 66 + i * ((h - 80) / 4.5);
       const isActive = Math.floor(frame / 35) % 4 === i;
       const animDelay = i * 8;
       const appear = Math.min(1, Math.max(0, (frame - animDelay) / 15));
       
       ctx.globalAlpha = appear;
-      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.fillStyle = isActive ? reel.gradientFrom : 'rgba(255, 255, 255, 0.18)';
       ctx.beginPath();
-      ctx.roundRect(x + w * 0.44, stepY, w * 0.52, 24, 6);
+      ctx.roundRect(x + w * 0.44, stepY, w * 0.52, 26, 6);
       ctx.fill();
       
       ctx.fillStyle = '#fff';
-      ctx.font = `${11}px system-ui`;
-      ctx.fillText(`${step.icon} ${step.text}`, x + w * 0.48, stepY + 16);
+      ctx.font = `bold ${12}px system-ui`;
+      ctx.fillText(`${step.icon} ${step.text}`, x + w * 0.48, stepY + 18);
       ctx.globalAlpha = 1;
     });
   };
@@ -787,12 +787,12 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('🌡️ Temperature Monitor', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('🌡️ Temperature', x + 12, y + 22);
     
     // Temperature gauges with equipment icons
     const gauges = [
@@ -801,49 +801,49 @@ const AnimatedPresentation = ({
       { label: 'Walk-in', icon: '🚪', temp: 4.9 + Math.sin(frame * 0.03) * 2, target: 4, ok: false },
     ];
     
-    const gaugeH = (h - 40) / 3;
+    const gaugeH = (h - 45) / 3;
     
     gauges.forEach((gauge, i) => {
-      const gaugeY = y + 34 + i * (gaugeH + 4);
+      const gaugeY = y + 38 + i * (gaugeH + 3);
       const animDelay = i * 10;
       const appear = Math.min(1, Math.max(0, (frame - animDelay) / 20));
       
       ctx.globalAlpha = appear;
       
       // Gauge card with border
-      ctx.fillStyle = gauge.ok ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+      ctx.fillStyle = gauge.ok ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
       ctx.beginPath();
       ctx.roundRect(x, gaugeY, w, gaugeH - 2, 8);
       ctx.fill();
       
-      ctx.strokeStyle = gauge.ok ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+      ctx.strokeStyle = gauge.ok ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)';
       ctx.lineWidth = 2;
       ctx.stroke();
       
-      // Icon and Label
+      // Icon and Label - MUCH LARGER
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${13}px system-ui`;
-      ctx.fillText(`${gauge.icon} ${gauge.label}`, x + 10, gaugeY + 20);
+      ctx.font = `bold ${15}px system-ui`;
+      ctx.fillText(`${gauge.icon} ${gauge.label}`, x + 10, gaugeY + 22);
       
-      // Status badge
+      // Status badge - LARGER
       ctx.fillStyle = gauge.ok ? '#22c55e' : '#ef4444';
       ctx.beginPath();
-      ctx.roundRect(x + 10, gaugeY + gaugeH - 24, gauge.ok ? 40 : 55, 16, 8);
+      ctx.roundRect(x + 10, gaugeY + gaugeH - 26, gauge.ok ? 45 : 55, 18, 9);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${10}px system-ui`;
-      ctx.fillText(gauge.ok ? '✓ OK' : '⚠ Alert', x + 15, gaugeY + gaugeH - 12);
+      ctx.font = `bold ${11}px system-ui`;
+      ctx.fillText(gauge.ok ? '✓ OK' : '⚠ Alert', x + 16, gaugeY + gaugeH - 13);
       
-      // Large Temperature display
+      // Large Temperature display - BIGGER
       ctx.fillStyle = gauge.ok ? '#22c55e' : '#ef4444';
-      ctx.font = `bold ${22}px system-ui`;
+      ctx.font = `bold ${26}px system-ui`;
       ctx.textAlign = 'right';
-      ctx.fillText(`${gauge.temp.toFixed(1)}°C`, x + w - 12, gaugeY + gaugeH / 2 + 8);
+      ctx.fillText(`${gauge.temp.toFixed(1)}°C`, x + w - 10, gaugeY + gaugeH / 2 + 10);
       
-      // Target temp
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.font = `${10}px system-ui`;
-      ctx.fillText(`Target: ${gauge.target}°C`, x + w - 12, gaugeY + gaugeH - 10);
+      // Target temp - LARGER
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = `${12}px system-ui`;
+      ctx.fillText(`Target: ${gauge.target}°C`, x + w - 10, gaugeY + gaugeH - 8);
       ctx.textAlign = 'left';
       
       ctx.globalAlpha = 1;
@@ -857,23 +857,23 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('📊 Menu Analytics', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('📊 Analytics', x + 12, y + 22);
     
     // BCG Matrix quadrants with labels
-    const quadSize = (Math.min(w, h - 36) - 8) / 2;
+    const quadSize = (Math.min(w, h - 42) - 8) / 2;
     const matrixX = x + 4;
-    const matrixY = y + 36;
+    const matrixY = y + 40;
     
     const quadrants = [
-      { label: '⭐ Stars', color: '#22c55e', items: 3, desc: 'High profit' },
-      { label: '❓ Question', color: '#f59e0b', items: 2, desc: 'Growth potential' },
-      { label: '🐄 Cash Cows', color: '#3b82f6', items: 5, desc: 'Steady income' },
-      { label: '🐕 Dogs', color: '#ef4444', items: 4, desc: 'Review items' },
+      { label: '⭐ Stars', color: '#22c55e', items: 3 },
+      { label: '❓ Question', color: '#f59e0b', items: 2 },
+      { label: '🐄 Cows', color: '#3b82f6', items: 5 },
+      { label: '🐕 Dogs', color: '#ef4444', items: 4 },
     ];
     
     quadrants.forEach((quad, i) => {
@@ -886,42 +886,42 @@ const AnimatedPresentation = ({
       
       // Quadrant background
       ctx.fillStyle = quad.color;
-      ctx.globalAlpha = appear * 0.25;
+      ctx.globalAlpha = appear * 0.3;
       ctx.beginPath();
       ctx.roundRect(qx, qy, quadSize, quadSize, 8);
       ctx.fill();
       
       // Border
       ctx.strokeStyle = quad.color;
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = appear * 0.6;
+      ctx.lineWidth = 2.5;
+      ctx.globalAlpha = appear * 0.7;
       ctx.stroke();
       ctx.globalAlpha = appear;
       
-      // Label
+      // Label - LARGER
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${11}px system-ui`;
-      ctx.fillText(quad.label, qx + 8, qy + 18);
+      ctx.font = `bold ${13}px system-ui`;
+      ctx.fillText(quad.label, qx + 8, qy + 20);
       
-      // Item count
+      // Item count badge - LARGER
       ctx.fillStyle = quad.color;
       ctx.beginPath();
-      ctx.roundRect(qx + quadSize - 28, qy + 6, 22, 16, 8);
+      ctx.roundRect(qx + quadSize - 32, qy + 6, 26, 20, 10);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${10}px system-ui`;
+      ctx.font = `bold ${12}px system-ui`;
       ctx.textAlign = 'center';
-      ctx.fillText(`${quad.items}`, qx + quadSize - 17, qy + 18);
+      ctx.fillText(`${quad.items}`, qx + quadSize - 19, qy + 20);
       ctx.textAlign = 'left';
       
       // Animated dots representing menu items
       for (let j = 0; j < Math.min(quad.items, 4); j++) {
-        const dotX = qx + 12 + (j % 2) * 20 + Math.sin(frame * 0.03 + j) * 3;
-        const dotY = qy + 30 + Math.floor(j / 2) * 16 + Math.cos(frame * 0.03 + j) * 3;
+        const dotX = qx + 14 + (j % 2) * 22 + Math.sin(frame * 0.03 + j) * 3;
+        const dotY = qy + 35 + Math.floor(j / 2) * 18 + Math.cos(frame * 0.03 + j) * 3;
         ctx.fillStyle = '#fff';
-        ctx.globalAlpha = appear * 0.8;
+        ctx.globalAlpha = appear * 0.85;
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
+        ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
         ctx.fill();
       }
       
@@ -936,24 +936,24 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('👥 Sales Pipeline', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('👥 Pipeline', x + 12, y + 22);
     
     // Pipeline stages
     const stages = [
-      { name: '📥 Leads', count: 12, color: '#f59e0b' },
-      { name: '📞 Contact', count: 8, color: '#3b82f6' },
-      { name: '📋 Proposal', count: 5, color: '#8b5cf6' },
+      { name: '📥 Lead', count: 12, color: '#f59e0b' },
+      { name: '📞 Call', count: 8, color: '#3b82f6' },
+      { name: '📋 Prop', count: 5, color: '#8b5cf6' },
       { name: '✅ Won', count: 3, color: '#22c55e' }
     ];
-    const stageW = (w - 16) / 4;
+    const stageW = (w - 12) / 4;
     
     stages.forEach((stage, i) => {
-      const stageX = x + 4 + i * (stageW + 3);
+      const stageX = x + 3 + i * (stageW + 2);
       const isActive = Math.floor(frame / 25) % 4 === i;
       const animDelay = i * 6;
       const appear = Math.min(1, Math.max(0, (frame - animDelay) / 12));
@@ -961,39 +961,39 @@ const AnimatedPresentation = ({
       ctx.globalAlpha = appear;
       
       // Stage column
-      ctx.fillStyle = isActive ? stage.color : 'rgba(255, 255, 255, 0.12)';
+      ctx.fillStyle = isActive ? stage.color : 'rgba(255, 255, 255, 0.15)';
       ctx.beginPath();
-      ctx.roundRect(stageX, y + 34, stageW, h - 40, 6);
+      ctx.roundRect(stageX, y + 38, stageW, h - 44, 6);
       ctx.fill();
       
-      // Stage header
+      // Stage header - LARGER
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${10}px system-ui`;
+      ctx.font = `bold ${11}px system-ui`;
       ctx.textAlign = 'center';
-      ctx.fillText(stage.name, stageX + stageW / 2, y + 50);
+      ctx.fillText(stage.name, stageX + stageW / 2, y + 56);
       
-      // Count badge
+      // Count badge - LARGER
       ctx.fillStyle = stage.color;
       ctx.beginPath();
-      ctx.roundRect(stageX + stageW / 2 - 12, y + 55, 24, 16, 8);
+      ctx.roundRect(stageX + stageW / 2 - 14, y + 62, 28, 20, 10);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${10}px system-ui`;
-      ctx.fillText(`${stage.count}`, stageX + stageW / 2, y + 67);
+      ctx.font = `bold ${12}px system-ui`;
+      ctx.fillText(`${stage.count}`, stageX + stageW / 2, y + 76);
       
       // Deal cards
       const dealCount = Math.min(4 - i + 1, 3);
       for (let j = 0; j < dealCount; j++) {
-        const dealY = y + 78 + j * 22;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        const dealY = y + 88 + j * 24;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
         ctx.beginPath();
-        ctx.roundRect(stageX + 3, dealY, stageW - 6, 18, 4);
+        ctx.roundRect(stageX + 3, dealY, stageW - 6, 20, 5);
         ctx.fill();
         
-        // Deal value
+        // Deal value - LARGER
         ctx.fillStyle = '#fff';
-        ctx.font = `${9}px system-ui`;
-        ctx.fillText(`$${(j + 1) * 2}k`, stageX + stageW / 2, dealY + 12);
+        ctx.font = `bold ${11}px system-ui`;
+        ctx.fillText(`$${(j + 1) * 2}k`, stageX + stageW / 2, dealY + 14);
       }
       
       ctx.globalAlpha = 1;
@@ -1008,43 +1008,43 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('🍽️ Point of Sale', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('🍽️ POS', x + 12, y + 22);
     
     // Menu items panel
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.beginPath();
-    ctx.roundRect(x, y + 34, w * 0.58, h - 40, 8);
+    ctx.roundRect(x, y + 38, w * 0.58, h - 44, 8);
     ctx.fill();
     
-    // Menu items grid with names
+    // Menu items grid with names - LARGER text
     const menuItems = ['🍔 Burger', '🍕 Pizza', '🥗 Salad', '🍟 Fries', '🍺 Beer', '🍷 Wine'];
     for (let i = 0; i < 6; i++) {
       const itemX = x + 6 + (i % 2) * (w * 0.28);
-      const itemY = y + 40 + Math.floor(i / 2) * ((h - 54) / 3.2);
+      const itemY = y + 44 + Math.floor(i / 2) * ((h - 58) / 3.2);
       const isSelected = i === Math.floor(frame / 18) % 6;
       const animDelay = i * 4;
       const appear = Math.min(1, Math.max(0, (frame - animDelay) / 12));
       
       ctx.globalAlpha = appear;
-      ctx.fillStyle = isSelected ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.fillStyle = isSelected ? reel.gradientFrom : 'rgba(255, 255, 255, 0.18)';
       ctx.beginPath();
-      ctx.roundRect(itemX, itemY, w * 0.26, (h - 54) / 3.5, 6);
+      ctx.roundRect(itemX, itemY, w * 0.26, (h - 58) / 3.3, 6);
       ctx.fill();
       
-      // Item name
+      // Item name - LARGER
       ctx.fillStyle = '#fff';
-      ctx.font = `${10}px system-ui`;
-      ctx.fillText(menuItems[i], itemX + 6, itemY + 16);
+      ctx.font = `bold ${12}px system-ui`;
+      ctx.fillText(menuItems[i], itemX + 5, itemY + 18);
       
-      // Price
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = `bold ${9}px system-ui`;
-      ctx.fillText(`$${8 + i * 3}`, itemX + 6, itemY + 28);
+      // Price - LARGER
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = `bold ${11}px system-ui`;
+      ctx.fillText(`$${8 + i * 3}`, itemX + 5, itemY + 34);
       
       ctx.globalAlpha = 1;
     }
@@ -1052,28 +1052,28 @@ const AnimatedPresentation = ({
     // Total panel
     ctx.fillStyle = reel.gradientTo;
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.61, y + 34, w * 0.39, h * 0.4, 8);
+    ctx.roundRect(x + w * 0.61, y + 38, w * 0.39, h * 0.4, 8);
     ctx.fill();
     
     const total = 45 + Math.floor(frame / 18) * 8;
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${24}px system-ui`;
+    ctx.font = `bold ${28}px system-ui`;
     ctx.textAlign = 'center';
-    ctx.fillText(`$${total}`, x + w * 0.805, y + 68);
-    ctx.font = `${11}px system-ui`;
-    ctx.fillText('Order Total', x + w * 0.805, y + 88);
+    ctx.fillText(`$${total}`, x + w * 0.805, y + 74);
+    ctx.font = `bold ${12}px system-ui`;
+    ctx.fillText('Total', x + w * 0.805, y + 92);
     
     // Items count
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath();
-    ctx.roundRect(x + w * 0.61, y + h * 0.48, w * 0.39, h * 0.45, 8);
+    ctx.roundRect(x + w * 0.61, y + h * 0.5, w * 0.39, h * 0.42, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${18}px system-ui`;
-    ctx.fillText(`${Math.floor(frame / 18) % 6 + 1}`, x + w * 0.805, y + h * 0.68);
-    ctx.font = `${10}px system-ui`;
-    ctx.fillText('Items', x + w * 0.805, y + h * 0.78);
+    ctx.font = `bold ${22}px system-ui`;
+    ctx.fillText(`${Math.floor(frame / 18) % 6 + 1}`, x + w * 0.805, y + h * 0.72);
+    ctx.font = `bold ${12}px system-ui`;
+    ctx.fillText('Items', x + w * 0.805, y + h * 0.84);
     ctx.textAlign = 'left';
   };
 
@@ -1122,27 +1122,27 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('🎵 Music Box', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('🎵 Music', x + 12, y + 22);
     
     // Waveform visualization panel
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.beginPath();
-    ctx.roundRect(x, y + 34, w, h * 0.35, 8);
+    ctx.roundRect(x, y + 38, w, h * 0.32, 8);
     ctx.fill();
     
     // Animated waveform bars - larger and more visible
-    const barCount = 20;
-    const barW = (w - 20) / barCount;
+    const barCount = 18;
+    const barW = (w - 16) / barCount;
     
     for (let i = 0; i < barCount; i++) {
-      const barH = (Math.sin(frame * 0.08 + i * 0.4) + 1) * (h * 0.12) + 8;
-      const barX = x + 10 + i * barW;
-      const barY = y + 34 + h * 0.175 - barH / 2;
+      const barH = (Math.sin(frame * 0.08 + i * 0.4) + 1) * (h * 0.1) + 10;
+      const barX = x + 8 + i * barW;
+      const barY = y + 38 + h * 0.16 - barH / 2;
       
       const gradient = ctx.createLinearGradient(barX, barY, barX, barY + barH);
       gradient.addColorStop(0, reel.gradientFrom);
@@ -1153,7 +1153,7 @@ const AnimatedPresentation = ({
       ctx.fill();
     }
     
-    // Track list with song info
+    // Track list with song info - LARGER text
     const tracks = [
       { name: '🎤 Summer Vibes', artist: 'DJ Max', duration: '3:24' },
       { name: '🎸 Rock Anthem', artist: 'The Band', duration: '4:12' },
@@ -1161,44 +1161,45 @@ const AnimatedPresentation = ({
     ];
     
     tracks.forEach((track, i) => {
-      const trackY = y + h * 0.42 + i * ((h - h * 0.48) / 3.2);
+      const trackY = y + h * 0.42 + i * ((h - h * 0.48) / 3.1);
       const isPlaying = i === Math.floor(frame / 50) % 3;
       const animDelay = i * 8;
       const appear = Math.min(1, Math.max(0, (frame - animDelay) / 15));
       
       ctx.globalAlpha = appear;
-      ctx.fillStyle = isPlaying ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)';
+      ctx.fillStyle = isPlaying ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.1)';
       ctx.beginPath();
-      ctx.roundRect(x, trackY, w, (h - h * 0.48) / 3.5, 6);
+      ctx.roundRect(x, trackY, w, (h - h * 0.48) / 3.3, 8);
       ctx.fill();
       
       // Play indicator
       if (isPlaying) {
         ctx.fillStyle = reel.gradientFrom;
         ctx.beginPath();
-        ctx.arc(x + 16, trackY + 16, 8, 0, Math.PI * 2);
+        ctx.arc(x + 18, trackY + 18, 10, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.moveTo(x + 14, trackY + 12);
-        ctx.lineTo(x + 20, trackY + 16);
-        ctx.lineTo(x + 14, trackY + 20);
+        ctx.moveTo(x + 15, trackY + 13);
+        ctx.lineTo(x + 23, trackY + 18);
+        ctx.lineTo(x + 15, trackY + 23);
         ctx.closePath();
         ctx.fill();
       }
       
-      // Track info
+      // Track info - LARGER
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${11}px system-ui`;
-      ctx.fillText(track.name, x + 32, trackY + 14);
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.font = `${9}px system-ui`;
-      ctx.fillText(track.artist, x + 32, trackY + 26);
+      ctx.font = `bold ${13}px system-ui`;
+      ctx.fillText(track.name, x + 36, trackY + 16);
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.font = `${11}px system-ui`;
+      ctx.fillText(track.artist, x + 36, trackY + 30);
       
-      // Duration
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      // Duration - LARGER
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `bold ${11}px system-ui`;
       ctx.textAlign = 'right';
-      ctx.fillText(track.duration, x + w - 10, trackY + 18);
+      ctx.fillText(track.duration, x + w - 12, trackY + 22);
       ctx.textAlign = 'left';
       
       ctx.globalAlpha = 1;
@@ -1212,28 +1213,28 @@ const AnimatedPresentation = ({
     headerGradient.addColorStop(1, reel.gradientTo);
     ctx.fillStyle = headerGradient;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, 28, 6);
+    ctx.roundRect(x, y, w, 32, 8);
     ctx.fill();
     
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${14}px system-ui`;
-    ctx.fillText('💬 Messages', x + 12, y + 19);
+    ctx.font = `bold ${16}px system-ui`;
+    ctx.fillText('💬 Messages', x + 12, y + 22);
     
     // Online indicator
     ctx.fillStyle = '#22c55e';
     ctx.beginPath();
-    ctx.arc(x + w - 20, y + 14, 5, 0, Math.PI * 2);
+    ctx.arc(x + w - 20, y + 16, 6, 0, Math.PI * 2);
     ctx.fill();
     
-    // Chat messages with content
+    // Chat messages with content - LARGER
     const messages = [
-      { sent: false, text: 'Hey! How are you? 👋', width: 0.65 },
-      { sent: true, text: "I'm great, thanks! 😊", width: 0.55 },
-      { sent: false, text: 'Ready for the meeting?', width: 0.6 },
-      { sent: true, text: 'Yes, see you there! 🎉', width: 0.5 },
+      { sent: false, text: 'Hey! 👋', width: 0.45 },
+      { sent: true, text: "Great! 😊", width: 0.4 },
+      { sent: false, text: 'Ready?', width: 0.35 },
+      { sent: true, text: 'Yes! 🎉', width: 0.35 },
     ];
     
-    let msgY = y + 38;
+    let msgY = y + 42;
     messages.forEach((msg, i) => {
       const delay = i * 12;
       const appear = Math.min(1, Math.max(0, (frame - delay) / 15));
@@ -1243,41 +1244,41 @@ const AnimatedPresentation = ({
       ctx.globalAlpha = appear;
       
       // Message bubble
-      ctx.fillStyle = msg.sent ? reel.gradientFrom : 'rgba(255, 255, 255, 0.15)';
+      ctx.fillStyle = msg.sent ? reel.gradientFrom : 'rgba(255, 255, 255, 0.18)';
       ctx.beginPath();
-      ctx.roundRect(msgX, msgY, msgW * appear, 28, 12);
+      ctx.roundRect(msgX, msgY, msgW * appear, 30, 14);
       ctx.fill();
       
-      // Message text
+      // Message text - LARGER
       if (appear > 0.5) {
         ctx.fillStyle = '#fff';
-        ctx.font = `${11}px system-ui`;
-        ctx.fillText(msg.text, msgX + 10, msgY + 18);
+        ctx.font = `bold ${13}px system-ui`;
+        ctx.fillText(msg.text, msgX + 12, msgY + 20);
       }
       
       ctx.globalAlpha = 1;
-      msgY += 34;
+      msgY += 36;
     });
     
     // Input field
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
     ctx.beginPath();
-    ctx.roundRect(x + 4, y + h - 30, w - 8, 24, 12);
+    ctx.roundRect(x + 4, y + h - 34, w - 8, 28, 14);
     ctx.fill();
     
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = `${11}px system-ui`;
-    ctx.fillText('Type a message...', x + 16, y + h - 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = `${12}px system-ui`;
+    ctx.fillText('Type...', x + 16, y + h - 16);
     
     // Send button
     ctx.fillStyle = reel.gradientFrom;
     ctx.beginPath();
-    ctx.roundRect(x + w - 40, y + h - 28, 32, 20, 10);
+    ctx.roundRect(x + w - 48, y + h - 32, 40, 24, 12);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = `${10}px system-ui`;
+    ctx.font = `bold ${11}px system-ui`;
     ctx.textAlign = 'center';
-    ctx.fillText('Send', x + w - 24, y + h - 14);
+    ctx.fillText('Send', x + w - 28, y + h - 16);
     ctx.textAlign = 'left';
   };
 
