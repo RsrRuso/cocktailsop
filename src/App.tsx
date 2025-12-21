@@ -185,6 +185,7 @@ const FifoPinAccess = lazy(() => import("@/pages/FifoPinAccess"));
 const FifoActivityLog = lazy(() => import("@/pages/FifoActivityLog"));
 const StoreManagementPinAccess = lazy(() => import("@/pages/StoreManagementPinAccess"));
 const CampaignPayment = lazy(() => import("@/pages/CampaignPayment"));
+const HRDashboard = lazy(() => import("@/pages/HRDashboard"));
 
 // Studio & Content Creation
 const Studio = lazy(() => import("./pages/Studio"));
@@ -373,6 +374,7 @@ const AppContent = () => {
           <Route path="/gm-invitation/:token" element={<GMInvitationConfirm />} />
           <Route path="/claim-employment" element={<ClaimEmployment />} />
           <Route path="/employment-help" element={<EmploymentHelpCenter />} />
+          <Route path="/hr-dashboard" element={<HRDashboard />} />
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
