@@ -374,7 +374,11 @@ const AppContent = () => {
           <Route path="/gm-invitation/:token" element={<GMInvitationConfirm />} />
           <Route path="/claim-employment" element={<ClaimEmployment />} />
           <Route path="/employment-help" element={<EmploymentHelpCenter />} />
-          <Route path="/hr-dashboard" element={<HRDashboard />} />
+
+          {/* HR */}
+          <Route path="/hr" element={<Navigate to="/hr-dashboard" replace />} />
+          <Route path="/hr-dashboard/*" element={<HRDashboard />} />
+
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
