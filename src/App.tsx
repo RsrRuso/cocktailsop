@@ -196,6 +196,18 @@ const SOPLibrary = lazy(() => import("@/pages/SOPLibrary"));
 const MenuBuilder = lazy(() => import("@/pages/MenuBuilder"));
 const LicensesCompliance = lazy(() => import("@/pages/LicensesCompliance"));
 const AssetRegistry = lazy(() => import("@/pages/AssetRegistry"));
+const BudgetPlanner = lazy(() => import("@/pages/BudgetPlanner"));
+const RecruitmentTracker = lazy(() => import("@/pages/RecruitmentTracker"));
+const TrainingProgram = lazy(() => import("@/pages/TrainingProgram"));
+const FloorPlanDesigner = lazy(() => import("@/pages/FloorPlanDesigner"));
+const OpeningInventory = lazy(() => import("@/pages/OpeningInventory"));
+const TechStackSetup = lazy(() => import("@/pages/TechStackSetup"));
+const MarketingLaunch = lazy(() => import("@/pages/MarketingLaunch"));
+const SoftOpeningPlanner = lazy(() => import("@/pages/SoftOpeningPlanner"));
+const UtilitiesTracker = lazy(() => import("@/pages/UtilitiesTracker"));
+const InsuranceManager = lazy(() => import("@/pages/InsuranceManager"));
+const UniformManager = lazy(() => import("@/pages/UniformManager"));
+const HealthSafetyAudit = lazy(() => import("@/pages/HealthSafetyAudit"));
 
 // Studio & Content Creation
 const Studio = lazy(() => import("./pages/Studio"));
@@ -444,6 +456,18 @@ const AppContent = () => {
           <Route path="/menu-builder" element={<MenuBuilder />} />
           <Route path="/licenses-compliance" element={<LicensesCompliance />} />
           <Route path="/asset-registry" element={<AssetRegistry />} />
+          <Route path="/budget-planner" element={<BudgetPlanner />} />
+          <Route path="/recruitment-tracker" element={<RecruitmentTracker />} />
+          <Route path="/training-program" element={<TrainingProgram />} />
+          <Route path="/floor-plan-designer" element={<FloorPlanDesigner />} />
+          <Route path="/opening-inventory" element={<OpeningInventory />} />
+          <Route path="/tech-stack-setup" element={<TechStackSetup />} />
+          <Route path="/marketing-launch" element={<MarketingLaunch />} />
+          <Route path="/soft-opening-planner" element={<SoftOpeningPlanner />} />
+          <Route path="/utilities-tracker" element={<UtilitiesTracker />} />
+          <Route path="/insurance-manager" element={<InsuranceManager />} />
+          <Route path="/uniform-manager" element={<UniformManager />} />
+          <Route path="/health-safety-audit" element={<HealthSafetyAudit />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

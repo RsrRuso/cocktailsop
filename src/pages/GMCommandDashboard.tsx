@@ -7,7 +7,10 @@ import {
   CheckCircle2, XCircle, Clock, ChevronRight, BarChart3,
   Trash2, Play, Eye, BookOpen, Settings, Upload, Database,
   Crown, Wine, UserCheck, Sparkles, ArrowUpRight, ArrowDownRight,
-  Target, Gauge, Activity, Star, Flame, Trophy, AlertCircle
+  Target, Gauge, Activity, Star, Flame, Trophy, AlertCircle,
+  Building2, ClipboardCheck, UserPlus, GraduationCap, LayoutDashboard,
+  ShoppingCart, Cpu, Megaphone, CalendarCheck, FileCheck, Shirt, HeartPulse,
+  Boxes, UtensilsCrossed
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -223,8 +226,12 @@ const GMCommandDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full mb-6">
+          <TabsList className="grid grid-cols-6 w-full mb-6">
             <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+            <TabsTrigger value="preopening" className="text-xs">
+              <Building2 className="w-3 h-3 mr-1" />
+              Pre-Opening
+            </TabsTrigger>
             <TabsTrigger value="approvals" className="text-xs">
               Approvals
               {pendingApprovals.length > 0 && (
@@ -380,6 +387,98 @@ const GMCommandDashboard = () => {
                     <span className="text-xs">Generate Report</span>
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Pre-Opening Tab */}
+          <TabsContent value="preopening" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-violet-500" />
+                  Pre-Opening Venue Tools
+                </CardTitle>
+                <CardDescription>Complete automation for opening new venues</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {[
+                    { name: 'Pre-Opening Checklist', icon: ClipboardCheck, path: '/pre-opening-checklist', color: 'from-violet-600 to-purple-500' },
+                    { name: 'Vendor Database', icon: Package, path: '/vendor-database', color: 'from-emerald-600 to-teal-500' },
+                    { name: 'Org Chart Builder', icon: Users, path: '/org-chart', color: 'from-blue-600 to-cyan-500' },
+                    { name: 'SOP Library', icon: FileText, path: '/sop-library', color: 'from-orange-600 to-amber-500' },
+                    { name: 'Menu Builder Pro', icon: UtensilsCrossed, path: '/menu-builder', color: 'from-pink-600 to-rose-500' },
+                    { name: 'License & Compliance', icon: Shield, path: '/licenses-compliance', color: 'from-red-600 to-orange-500' },
+                    { name: 'Asset Registry', icon: Boxes, path: '/asset-registry', color: 'from-indigo-600 to-blue-500' },
+                    { name: 'Budget Planner', icon: DollarSign, path: '/budget-planner', color: 'from-green-600 to-emerald-500' },
+                    { name: 'Recruitment Tracker', icon: UserPlus, path: '/recruitment-tracker', color: 'from-cyan-600 to-blue-500' },
+                    { name: 'Training Program', icon: GraduationCap, path: '/training-program', color: 'from-amber-600 to-orange-500' },
+                    { name: 'Floor Plan Designer', icon: LayoutDashboard, path: '/floor-plan-designer', color: 'from-slate-600 to-gray-500' },
+                    { name: 'Opening Inventory', icon: ShoppingCart, path: '/opening-inventory', color: 'from-lime-600 to-green-500' },
+                    { name: 'Tech Stack Setup', icon: Cpu, path: '/tech-stack-setup', color: 'from-fuchsia-600 to-pink-500' },
+                    { name: 'Marketing Launch', icon: Megaphone, path: '/marketing-launch', color: 'from-rose-600 to-red-500' },
+                    { name: 'Soft Opening Planner', icon: CalendarCheck, path: '/soft-opening-planner', color: 'from-violet-600 to-indigo-500' },
+                    { name: 'Utilities Tracker', icon: Zap, path: '/utilities-tracker', color: 'from-yellow-600 to-amber-500' },
+                    { name: 'Insurance Manager', icon: FileCheck, path: '/insurance-manager', color: 'from-teal-600 to-cyan-500' },
+                    { name: 'Uniform Manager', icon: Shirt, path: '/uniform-manager', color: 'from-purple-600 to-violet-500' },
+                    { name: 'Health & Safety Audit', icon: HeartPulse, path: '/health-safety-audit', color: 'from-red-600 to-rose-500' },
+                  ].map((tool) => (
+                    <Button
+                      key={tool.path}
+                      variant="outline"
+                      className="h-auto py-4 flex-col gap-2 group hover:border-primary/50"
+                      onClick={() => navigate(tool.path)}
+                    >
+                      <div className={`p-2 rounded-lg bg-gradient-to-br ${tool.color} group-hover:scale-110 transition-transform`}>
+                        <tool.icon className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-xs text-center leading-tight">{tool.name}</span>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-violet-500/10 to-purple-600/10 border-violet-500/20">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-3xl font-bold text-violet-600">19</p>
+                  <p className="text-xs text-muted-foreground">Core Tools</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-emerald-500/10 to-green-600/10 border-emerald-500/20">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-3xl font-bold text-emerald-600">8</p>
+                  <p className="text-xs text-muted-foreground">Venue Types</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-600/10 border-blue-500/20">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-3xl font-bold text-blue-600">∞</p>
+                  <p className="text-xs text-muted-foreground">Automations</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-amber-500/10 to-orange-600/10 border-amber-500/20">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-3xl font-bold text-amber-600">100%</p>
+                  <p className="text-xs text-muted-foreground">Integrated</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* CTA */}
+            <Card className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
+              <CardContent className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-lg">Ready to open a new venue?</h3>
+                  <p className="text-white/80 text-sm">Start with our comprehensive pre-opening checklist</p>
+                </div>
+                <Button variant="secondary" onClick={() => navigate('/pre-opening')} className="gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Open Package
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

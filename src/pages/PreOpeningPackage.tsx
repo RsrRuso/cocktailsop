@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Package, ClipboardCheck, Users, Building2, FileText, 
   UtensilsCrossed, Shield, Boxes, ChevronRight, Sparkles,
-  Hotel, Wine, Coffee, PartyPopper, Truck, Store, ChefHat
+  Hotel, Wine, Coffee, PartyPopper, Truck, Store, ChefHat,
+  DollarSign, UserPlus, GraduationCap, LayoutDashboard,
+  ShoppingCart, Cpu, Megaphone, CalendarCheck, Zap, 
+  FileCheck, Shirt, HeartPulse
 } from "lucide-react";
 
 const venueTypes = [
@@ -84,6 +87,114 @@ const packageTools = [
     icon: Boxes,
     path: '/asset-registry',
     color: 'from-indigo-600 to-blue-500',
+    status: 'ready'
+  },
+  {
+    id: 'budget',
+    name: 'Budget Planner',
+    description: 'CapEx/OpEx budgets, approvals, tracking',
+    icon: DollarSign,
+    path: '/budget-planner',
+    color: 'from-green-600 to-emerald-500',
+    status: 'ready'
+  },
+  {
+    id: 'recruitment',
+    name: 'Recruitment Tracker',
+    description: 'Job posts, candidates, hiring pipeline',
+    icon: UserPlus,
+    path: '/recruitment-tracker',
+    color: 'from-cyan-600 to-blue-500',
+    status: 'ready'
+  },
+  {
+    id: 'training',
+    name: 'Training Program',
+    description: 'Staff training modules and certifications',
+    icon: GraduationCap,
+    path: '/training-program',
+    color: 'from-amber-600 to-orange-500',
+    status: 'ready'
+  },
+  {
+    id: 'floorplan',
+    name: 'Floor Plan Designer',
+    description: 'Layout planning with seating capacity',
+    icon: LayoutDashboard,
+    path: '/floor-plan-designer',
+    color: 'from-slate-600 to-gray-500',
+    status: 'ready'
+  },
+  {
+    id: 'inventory',
+    name: 'Opening Inventory',
+    description: 'Par levels and initial stock planning',
+    icon: ShoppingCart,
+    path: '/opening-inventory',
+    color: 'from-lime-600 to-green-500',
+    status: 'ready'
+  },
+  {
+    id: 'techstack',
+    name: 'Tech Stack Setup',
+    description: 'POS, systems, integrations setup',
+    icon: Cpu,
+    path: '/tech-stack-setup',
+    color: 'from-fuchsia-600 to-pink-500',
+    status: 'ready'
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing Launch',
+    description: 'Campaigns, social media, PR planning',
+    icon: Megaphone,
+    path: '/marketing-launch',
+    color: 'from-rose-600 to-red-500',
+    status: 'ready'
+  },
+  {
+    id: 'softopening',
+    name: 'Soft Opening Planner',
+    description: 'VIP events, friends & family nights',
+    icon: CalendarCheck,
+    path: '/soft-opening-planner',
+    color: 'from-violet-600 to-indigo-500',
+    status: 'ready'
+  },
+  {
+    id: 'utilities',
+    name: 'Utilities Tracker',
+    description: 'Power, water, gas accounts setup',
+    icon: Zap,
+    path: '/utilities-tracker',
+    color: 'from-yellow-600 to-amber-500',
+    status: 'ready'
+  },
+  {
+    id: 'insurance',
+    name: 'Insurance Manager',
+    description: 'Policies, coverage, renewals tracking',
+    icon: FileCheck,
+    path: '/insurance-manager',
+    color: 'from-teal-600 to-cyan-500',
+    status: 'ready'
+  },
+  {
+    id: 'uniforms',
+    name: 'Uniform Manager',
+    description: 'Staff uniforms, sizing, inventory',
+    icon: Shirt,
+    path: '/uniform-manager',
+    color: 'from-purple-600 to-violet-500',
+    status: 'ready'
+  },
+  {
+    id: 'healthsafety',
+    name: 'Health & Safety Audit',
+    description: 'Compliance checklists, inspections',
+    icon: HeartPulse,
+    path: '/health-safety-audit',
+    color: 'from-red-600 to-rose-500',
     status: 'ready'
   },
 ];
@@ -178,7 +289,7 @@ const PreOpeningPackage = () => {
           <CardContent className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <p className="text-3xl font-bold text-violet-600">7</p>
+                <p className="text-3xl font-bold text-violet-600">19</p>
                 <p className="text-sm text-muted-foreground">Core Tools</p>
               </div>
               <div>
