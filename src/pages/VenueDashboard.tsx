@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VenueVerificationWizard } from "@/components/venue/VenueVerificationWizard";
 import { OutletManager } from "@/components/venue/OutletManager";
 import { VenueAdminManager } from "@/components/venue/VenueAdminManager";
+import { VenueClaimsInbox } from "@/components/venue/VenueClaimsInbox";
 import { 
   ArrowLeft, Building2, CheckCircle2, Clock, XCircle, Settings,
   MapPin, Users, Globe, Phone, Instagram, Loader2
@@ -245,9 +246,10 @@ const VenueDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 mb-6">
+          <TabsList className="grid grid-cols-5 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="verification">Verification</TabsTrigger>
+            <TabsTrigger value="claims">Claims</TabsTrigger>
+            <TabsTrigger value="verification">Verify</TabsTrigger>
             <TabsTrigger value="outlets">Outlets</TabsTrigger>
             <TabsTrigger value="admins">Admins</TabsTrigger>
           </TabsList>
@@ -299,6 +301,14 @@ const VenueDashboard = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Claims Tab */}
+          <TabsContent value="claims">
+            <VenueClaimsInbox
+              venueId={venue.id}
+              isAdmin={isAdmin}
+            />
           </TabsContent>
 
           {/* Verification Tab */}
