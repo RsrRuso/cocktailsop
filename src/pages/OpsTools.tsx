@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft, Building2, MessageCircle } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft, Building2, MessageCircle, Video, Megaphone } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -419,6 +419,26 @@ const OpsTools = () => {
         premium: true,
       },
     ],
+    marketing: [
+      {
+        name: "Promo Reels",
+        description: "Promotional videos for platform tools",
+        details: "Browse and download professional promotional reels showcasing all platform tools. Perfect for social media marketing and team training.",
+        icon: Video,
+        gradient: "from-pink-600 to-rose-500",
+        premium: false,
+        path: "/promo-reels",
+        featured: true,
+      },
+      {
+        name: "Social Media Kit",
+        description: "Ready-to-use marketing assets",
+        details: "Download branded templates, logos, and promotional materials for your social media channels and marketing campaigns.",
+        icon: Megaphone,
+        gradient: "from-violet-600 to-purple-500",
+        premium: false,
+      },
+    ],
     communication: [
       {
         name: "Wasabi",
@@ -645,8 +665,15 @@ const OpsTools = () => {
         </div>
 
         {/* Category Tabs */}
-        <Tabs defaultValue="communication" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 glass h-9 p-0.5">
+        <Tabs defaultValue="marketing" className="w-full">
+          <TabsList className="grid w-full grid-cols-6 glass h-9 p-0.5">
+            <TabsTrigger 
+              value="marketing"
+              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-lg py-1.5 text-xs"
+            >
+              <Video className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Promo</span>
+            </TabsTrigger>
             <TabsTrigger 
               value="communication"
               className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-lg py-1.5 text-xs"
@@ -683,6 +710,37 @@ const OpsTools = () => {
               <span className="hidden sm:inline">Manage</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="marketing" className="mt-3">
+            <div className="max-h-[calc(100vh-220px)] overflow-y-auto space-y-2 pr-1">
+              {tools.marketing.map((tool) => {
+                const Icon = tool.icon;
+                return (
+                  <button
+                    key={tool.name}
+                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                    className="w-full glass-hover rounded-xl p-4 text-left relative overflow-hidden border border-pink-500/30 bg-gradient-to-br from-pink-500/10 to-rose-500/10"
+                  >
+                    {(tool as any).featured && (
+                      <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 text-[9px] font-bold text-white">
+                        NEW
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow shrink-0`}>
+                        <Icon className="w-6 h-6 text-white" strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-lg text-pink-500">{tool.name}</h3>
+                        <p className="text-xs text-muted-foreground">{tool.description}</p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-1">{tool.details}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </TabsContent>
 
           <TabsContent value="communication" className="mt-3">
             <div className="max-h-[calc(100vh-220px)] overflow-y-auto space-y-2 pr-1">
