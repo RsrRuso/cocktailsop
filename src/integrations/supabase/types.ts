@@ -3525,6 +3525,111 @@ export type Database = {
           },
         ]
       }
+      gm_invitations: {
+        Row: {
+          benefits_package: Json | null
+          confirmation_device: string | null
+          confirmation_ip: string | null
+          contract_terms: Json
+          created_at: string
+          digital_signature: string | null
+          expires_at: string
+          hr_notes: string | null
+          id: string
+          invitation_token: string
+          outlet_id: string | null
+          policies_accepted: boolean | null
+          position_title: string
+          probation_period_days: number | null
+          recipient_email: string
+          recipient_name: string
+          recipient_user_id: string | null
+          responded_at: string | null
+          salary_details: Json | null
+          sent_at: string | null
+          sent_by: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["gm_invitation_status"]
+          terms_version: string | null
+          updated_at: string
+          venue_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          benefits_package?: Json | null
+          confirmation_device?: string | null
+          confirmation_ip?: string | null
+          contract_terms?: Json
+          created_at?: string
+          digital_signature?: string | null
+          expires_at?: string
+          hr_notes?: string | null
+          id?: string
+          invitation_token?: string
+          outlet_id?: string | null
+          policies_accepted?: boolean | null
+          position_title?: string
+          probation_period_days?: number | null
+          recipient_email: string
+          recipient_name: string
+          recipient_user_id?: string | null
+          responded_at?: string | null
+          salary_details?: Json | null
+          sent_at?: string | null
+          sent_by: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["gm_invitation_status"]
+          terms_version?: string | null
+          updated_at?: string
+          venue_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          benefits_package?: Json | null
+          confirmation_device?: string | null
+          confirmation_ip?: string | null
+          contract_terms?: Json
+          created_at?: string
+          digital_signature?: string | null
+          expires_at?: string
+          hr_notes?: string | null
+          id?: string
+          invitation_token?: string
+          outlet_id?: string | null
+          policies_accepted?: boolean | null
+          position_title?: string
+          probation_period_days?: number | null
+          recipient_email?: string
+          recipient_name?: string
+          recipient_user_id?: string | null
+          responded_at?: string | null
+          salary_details?: Json | null
+          sent_at?: string | null
+          sent_by?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["gm_invitation_status"]
+          terms_version?: string | null
+          updated_at?: string
+          venue_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_invitations_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "venue_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gm_invitations_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gm_opportunities: {
         Row: {
           ai_analysis: string | null
@@ -14941,6 +15046,14 @@ export type Database = {
       }
     }
     Functions: {
+      accept_gm_invitation: {
+        Args: {
+          p_device_info?: string
+          p_digital_signature?: string
+          p_invitation_token: string
+        }
+        Returns: Json
+      }
       archive_old_welcome_messages: { Args: never; Returns: undefined }
       calculate_fifo_priority: {
         Args: { p_expiration_date: string; p_received_date: string }
@@ -15154,6 +15267,10 @@ export type Database = {
       }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       refresh_music_popularity: { Args: never; Returns: undefined }
+      reject_gm_invitation: {
+        Args: { p_invitation_token: string; p_reason?: string }
+        Returns: Json
+      }
       restore_batch_inventory: {
         Args: { p_production_id: string }
         Returns: Json
@@ -15244,6 +15361,7 @@ export type Database = {
         | "manager"
         | "seller"
         | "buyer"
+        | "gm"
       badge_level: "bronze" | "silver" | "gold" | "platinum"
       claim_status:
         | "draft"
@@ -15266,6 +15384,12 @@ export type Database = {
         | "tall_fridge"
         | "chiller"
         | "super_freezer"
+      gm_invitation_status:
+        | "pending"
+        | "accepted"
+        | "rejected"
+        | "expired"
+        | "cancelled"
       lab_ops_movement_type:
         | "purchase"
         | "sale"
@@ -15466,6 +15590,7 @@ export const Constants = {
         "manager",
         "seller",
         "buyer",
+        "gm",
       ],
       badge_level: ["bronze", "silver", "gold", "platinum"],
       claim_status: [
@@ -15490,6 +15615,13 @@ export const Constants = {
         "tall_fridge",
         "chiller",
         "super_freezer",
+      ],
+      gm_invitation_status: [
+        "pending",
+        "accepted",
+        "rejected",
+        "expired",
+        "cancelled",
       ],
       lab_ops_movement_type: [
         "purchase",
