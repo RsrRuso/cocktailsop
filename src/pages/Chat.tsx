@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Send, Plus, Hash, Users, MessageCircle, Search } from "lucide-react";
 import { format } from "date-fns";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 interface Channel {
   id: string;
@@ -162,6 +163,14 @@ export default function Chat() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedChannel || !user) return;
+
+    // Rate limit check for message sending
+    const { allowed, retryAfter } = checkRateLimit('message-send', user.id);
+    if (!allowed) {
+      const seconds = Math.ceil((retryAfter || 60000) / 1000);
+      toast.error('Slow down!', { description: `Please wait ${seconds} seconds.` });
+      return;
+    }
 
     const { error } = await supabase.from("chat_messages").insert({
       channel_id: selectedChannel.id,
