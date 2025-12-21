@@ -187,6 +187,16 @@ const StoreManagementPinAccess = lazy(() => import("@/pages/StoreManagementPinAc
 const CampaignPayment = lazy(() => import("@/pages/CampaignPayment"));
 const HRDashboard = lazy(() => import("@/pages/HRDashboard"));
 
+// Pre-Opening Package
+const PreOpeningPackage = lazy(() => import("@/pages/PreOpeningPackage"));
+const PreOpeningChecklist = lazy(() => import("@/pages/PreOpeningChecklist"));
+const VendorDatabase = lazy(() => import("@/pages/VendorDatabase"));
+const OrgChart = lazy(() => import("@/pages/OrgChart"));
+const SOPLibrary = lazy(() => import("@/pages/SOPLibrary"));
+const MenuBuilder = lazy(() => import("@/pages/MenuBuilder"));
+const LicensesCompliance = lazy(() => import("@/pages/LicensesCompliance"));
+const AssetRegistry = lazy(() => import("@/pages/AssetRegistry"));
+
 // Studio & Content Creation
 const Studio = lazy(() => import("./pages/Studio"));
 const Drafts = lazy(() => import("./pages/Drafts"));
@@ -424,6 +434,16 @@ const AppContent = () => {
           <Route path="/promo-reels" element={<PromoReels />} />
           <Route path="/promo-ads" element={<PromoAds />} />
           <Route path="/presentation" element={<Presentation />} />
+          
+          {/* Pre-Opening Package */}
+          <Route path="/pre-opening" element={<PreOpeningPackage />} />
+          <Route path="/pre-opening-checklist" element={<PreOpeningChecklist />} />
+          <Route path="/vendor-database" element={<VendorDatabase />} />
+          <Route path="/org-chart" element={<OrgChart />} />
+          <Route path="/sop-library" element={<SOPLibrary />} />
+          <Route path="/menu-builder" element={<MenuBuilder />} />
+          <Route path="/licenses-compliance" element={<LicensesCompliance />} />
+          <Route path="/asset-registry" element={<AssetRegistry />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
