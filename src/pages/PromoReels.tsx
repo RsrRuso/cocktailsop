@@ -357,6 +357,12 @@ const AnimatedPresentation = ({
   }, [isFullscreen]);
 
   const drawMockUI = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, frame: number) => {
+    // IMPORTANT: The main presentation uses centered text, so we must isolate
+    // mock-UI text alignment to avoid clipped/misaligned labels.
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
     const scale = isFullscreen ? 1 : 0.4;
     const centerX = width / 2;
     
@@ -435,6 +441,8 @@ const AnimatedPresentation = ({
       default:
         drawGenericUI(ctx, screenX, screenY, screenW, screenH, frame, scale, progress);
     }
+
+    ctx.restore();
   }, [reel.id, isFullscreen]);
 
   // Mock UI drawing functions
