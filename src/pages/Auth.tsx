@@ -187,23 +187,29 @@ const Auth = () => {
   }, [isForgotPassword, isSignUp, email, password, confirmPassword, username, fullName, dateOfBirth, redirectTo, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects - pointer-events-none to prevent blocking inputs */}
-      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50 pointer-events-none" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-30 pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[hsl(220,20%,8%)]">
+      {/* Subtle background glow - pale golden amber */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[hsl(43,70%,45%)]/10 rounded-full blur-[120px] pointer-events-none" />
       
-      <div className="w-full max-w-md glass glow-primary rounded-2xl p-8 space-y-6 relative z-10">
-        <div className="text-center space-y-2">
+      {/* Main card with golden border glow */}
+      <div 
+        className="w-full max-w-md rounded-2xl p-8 space-y-6 relative z-10"
+        style={{
+          background: 'linear-gradient(145deg, hsl(220, 15%, 12%) 0%, hsl(220, 18%, 10%) 100%)',
+          boxShadow: '0 0 60px hsl(43, 70%, 40%, 0.15), 0 0 2px hsl(43, 60%, 50%, 0.4), inset 0 1px 0 hsl(43, 50%, 40%, 0.1)',
+          border: '1px solid hsl(43, 50%, 35%, 0.3)'
+        }}
+      >
+        <div className="text-center space-y-3">
           <img 
             src={svLogo} 
             alt="SV" 
-            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl shadow-lg"
+            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl"
             style={{
-              filter: 'sepia(15%) saturate(1.2) hue-rotate(-5deg)',
-              boxShadow: '0 0 30px rgba(234, 179, 8, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4)'
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px hsl(43, 60%, 45%, 0.2)'
             }}
           />
-          <p className="text-muted-foreground">
+          <p className="text-[hsl(43,40%,65%)] text-base">
             {isSignUp ? "Join the Professional Network for Beverage Industry" : "Sign in to your account"}
           </p>
         </div>
@@ -212,34 +218,34 @@ const Auth = () => {
               {isSignUp && !isForgotPassword && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName" className="text-[hsl(43,35%,70%)]">Full Name</Label>
                     <Input
                       id="fullName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      className="glass"
+                      className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] placeholder:text-[hsl(43,20%,45%)] focus:border-[hsl(43,60%,50%)] focus:ring-[hsl(43,60%,50%)]"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
+                    <Label htmlFor="username" className="text-[hsl(43,35%,70%)]">Username</Label>
                     <Input
                       id="username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
-                      className="glass"
+                      className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] placeholder:text-[hsl(43,20%,45%)] focus:border-[hsl(43,60%,50%)] focus:ring-[hsl(43,60%,50%)]"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Label htmlFor="dateOfBirth" className="text-[hsl(43,35%,70%)]">Date of Birth</Label>
                     <Input
                       id="dateOfBirth"
                       type="date"
                       value={dateOfBirth}
                       onChange={(e) => setDateOfBirth(e.target.value)}
                       required
-                      className="glass"
+                      className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] placeholder:text-[hsl(43,20%,45%)] focus:border-[hsl(43,60%,50%)] focus:ring-[hsl(43,60%,50%)]"
                       max={new Date().toISOString().split('T')[0]}
                     />
                   </div>
@@ -247,44 +253,44 @@ const Auth = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-[hsl(43,35%,70%)]">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="glass"
+                  className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] placeholder:text-[hsl(43,20%,45%)] focus:border-[hsl(43,60%,50%)] focus:ring-[hsl(43,60%,50%)]"
                 />
               </div>
 
               {!isForgotPassword && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="text-[hsl(43,35%,70%)]">Password</Label>
                     <Input
                       id="password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="glass"
+                      className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] placeholder:text-[hsl(43,20%,45%)] focus:border-[hsl(43,60%,50%)] focus:ring-[hsl(43,60%,50%)]"
                       placeholder={isSignUp ? "Create a strong password" : "Enter password"}
                     />
                     {isSignUp && passwordValidation && (
-                      <div className="text-xs space-y-1 mt-2 p-3 glass rounded-lg border border-border/50">
-                        <p className="font-semibold text-foreground mb-1.5">Password strength:</p>
+                      <div className="text-xs space-y-1 mt-2 p-3 rounded-lg border border-[hsl(43,30%,25%)] bg-[hsl(220,15%,12%)]">
+                        <p className="font-semibold text-[hsl(43,40%,70%)] mb-1.5">Password strength:</p>
                         <div className="space-y-1">
-                          <p className={passwordValidation.length ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                          <p className={passwordValidation.length ? "text-green-400 font-medium" : "text-[hsl(43,20%,50%)]"}>
                             {passwordValidation.length ? "✓" : "○"} At least 8 characters
                           </p>
-                          <p className={passwordValidation.uppercase ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                          <p className={passwordValidation.uppercase ? "text-green-400 font-medium" : "text-[hsl(43,20%,50%)]"}>
                             {passwordValidation.uppercase ? "✓" : "○"} One uppercase letter (A-Z)
                           </p>
-                          <p className={passwordValidation.lowercase ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                          <p className={passwordValidation.lowercase ? "text-green-400 font-medium" : "text-[hsl(43,20%,50%)]"}>
                             {passwordValidation.lowercase ? "✓" : "○"} One lowercase letter (a-z)
                           </p>
-                          <p className={passwordValidation.number ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                          <p className={passwordValidation.number ? "text-green-400 font-medium" : "text-[hsl(43,20%,50%)]"}>
                             {passwordValidation.number ? "✓" : "○"} One number (0-9)
                           </p>
                         </div>
@@ -294,7 +300,7 @@ const Auth = () => {
                       <button
                         type="button"
                         onClick={() => setIsForgotPassword(true)}
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        className="text-xs text-[hsl(43,35%,55%)] hover:text-[hsl(43,60%,60%)] transition-colors"
                       >
                         Forgot password?
                       </button>
@@ -303,23 +309,23 @@ const Auth = () => {
 
                   {isSignUp && (
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Label htmlFor="confirmPassword" className="text-[hsl(43,35%,70%)]">Confirm Password</Label>
                       <Input
                         id="confirmPassword"
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        className="glass"
+                        className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] placeholder:text-[hsl(43,20%,45%)] focus:border-[hsl(43,60%,50%)] focus:ring-[hsl(43,60%,50%)]"
                         placeholder="Re-enter your password"
                       />
                       {confirmPassword && !passwordsMatch && (
-                        <p className="text-xs text-red-500 mt-1">
+                        <p className="text-xs text-red-400 mt-1">
                           ⚠️ Passwords don't match
                         </p>
                       )}
                       {passwordsMatch && (
-                        <p className="text-xs text-green-500 mt-1">
+                        <p className="text-xs text-green-400 mt-1">
                           ✓ Passwords match
                         </p>
                       )}
@@ -328,9 +334,14 @@ const Auth = () => {
                 </>
               )}
 
+          {/* Golden yellow button matching SpecVerse branding */}
           <Button
             type="submit"
-            className="w-full glow-primary font-semibold"
+            className="w-full font-semibold text-[hsl(220,20%,10%)] h-12 text-base rounded-xl"
+            style={{
+              background: 'linear-gradient(180deg, hsl(45, 95%, 55%) 0%, hsl(43, 90%, 48%) 100%)',
+              boxShadow: '0 4px 20px hsl(43, 80%, 45%, 0.4), inset 0 1px 0 hsl(50, 100%, 70%, 0.3)'
+            }}
             disabled={loading || (isSignUp && !passwordsMatch)}
           >
             {loading ? (
@@ -347,10 +358,10 @@ const Auth = () => {
           <>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
+                <span className="w-full border-t border-[hsl(43,30%,25%)]" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="glass px-3 py-1 text-muted-foreground rounded-full">
+                <span className="bg-[hsl(220,15%,11%)] px-3 py-1 text-[hsl(43,30%,55%)] rounded-full">
                   Or continue with
                 </span>
               </div>
@@ -362,7 +373,7 @@ const Auth = () => {
                 variant="outline"
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={loading}
-                className="glass hover:glow-primary"
+                className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] hover:bg-[hsl(220,15%,18%)] hover:border-[hsl(43,50%,40%)]"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -378,7 +389,7 @@ const Auth = () => {
                 variant="outline"
                 onClick={() => handleOAuthSignIn('apple')}
                 disabled={loading}
-                className="glass hover:glow-primary"
+                className="bg-[hsl(220,15%,15%)] border-[hsl(43,40%,30%)] text-[hsl(43,30%,85%)] hover:bg-[hsl(220,15%,18%)] hover:border-[hsl(43,50%,40%)]"
               >
                 <Apple className="w-5 h-5 mr-2" />
                 Apple
@@ -392,14 +403,14 @@ const Auth = () => {
           {isForgotPassword ? (
             <button
               onClick={() => setIsForgotPassword(false)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm text-[hsl(43,35%,55%)] hover:text-[hsl(43,60%,65%)] transition-colors"
             >
               Back to sign in
             </button>
           ) : (
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm text-[hsl(43,35%,55%)] hover:text-[hsl(43,60%,65%)] transition-colors"
             >
               {isSignUp
                 ? "Already have an account? Sign in"
