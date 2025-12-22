@@ -1443,6 +1443,143 @@ export type Database = {
           },
         ]
       }
+      community_channel_members: {
+        Row: {
+          channel_id: string | null
+          id: string
+          is_muted: boolean | null
+          joined_at: string | null
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          id?: string
+          is_muted?: boolean | null
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          id?: string
+          is_muted?: boolean | null
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_channel_members_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "community_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_channels: {
+        Row: {
+          avatar_url: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_official: boolean | null
+          is_pinned: boolean | null
+          member_count: number | null
+          name: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_official?: boolean | null
+          is_pinned?: boolean | null
+          member_count?: number | null
+          name: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_official?: boolean | null
+          is_pinned?: boolean | null
+          member_count?: number | null
+          name?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      community_messages: {
+        Row: {
+          channel_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          is_pinned: boolean | null
+          media_type: string | null
+          media_url: string | null
+          reactions: Json | null
+          reply_to: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          reactions?: Json | null
+          reply_to?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          reactions?: Json | null
+          reply_to?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "community_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "community_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           certificate_url: string | null
