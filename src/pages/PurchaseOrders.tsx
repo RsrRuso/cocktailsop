@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw, Film
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
@@ -720,6 +720,14 @@ const PurchaseOrders = () => {
               title="Refresh"
             >
               <RefreshCw className={`w-5 h-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/purchase-order-promo')}
+              title="Promo Video"
+            >
+              <Film className="w-5 h-5 text-muted-foreground" />
             </Button>
             {!staffMode && (
               <Button 
