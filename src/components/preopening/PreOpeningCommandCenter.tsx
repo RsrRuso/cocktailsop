@@ -231,6 +231,90 @@ export const PreOpeningCommandCenter = () => {
         </CardContent>
       </Card>
 
+      {/* Lab Ops Financial Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-green-600/5 border-emerald-500/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
+              Financial Summary (Lab Ops)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-emerald-500">
+                  ${(metrics.financial.totalRevenue / 1000).toFixed(1)}k
+                </p>
+                <p className="text-xs text-muted-foreground">Total Revenue (30d)</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{metrics.financial.totalOrders}</p>
+                <p className="text-xs text-muted-foreground">Total Orders</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-lg font-semibold">${metrics.financial.avgCheck.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Avg Check</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-lg font-semibold text-blue-500">
+                  ${(metrics.financial.beverageRevenue / 1000).toFixed(1)}k
+                </p>
+                <p className="text-xs text-muted-foreground">Beverage Revenue</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-border/50 flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                Discounts: <span className="text-amber-500">${metrics.financial.discounts.toFixed(0)}</span>
+              </span>
+              <span className="text-muted-foreground">
+                Comps: <span className="text-red-500">${metrics.financial.comps.toFixed(0)}</span>
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500/10 to-amber-600/5 border-orange-500/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-orange-500" />
+              Inventory Overview (Lab Ops)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{metrics.inventory.totalItems}</p>
+                <p className="text-xs text-muted-foreground">Total Items</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-emerald-500">{metrics.inventory.activeBottles}</p>
+                <p className="text-xs text-muted-foreground">Active Bottles</p>
+              </div>
+              <div className="space-y-1">
+                <p className={cn("text-lg font-semibold", metrics.inventory.lowStock > 5 ? "text-red-500" : "text-amber-500")}>
+                  {metrics.inventory.lowStock}
+                </p>
+                <p className="text-xs text-muted-foreground">Low Stock</p>
+              </div>
+              <div className="space-y-1">
+                <p className={cn("text-lg font-semibold", metrics.variance.variancePercent > 10 ? "text-red-500" : "text-emerald-500")}>
+                  {metrics.variance.variancePercent.toFixed(1)}%
+                </p>
+                <p className="text-xs text-muted-foreground">Avg Variance</p>
+              </div>
+            </div>
+            {metrics.variance.itemsWithVariance > 0 && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <p className="text-xs text-amber-500">
+                  ⚠️ {metrics.variance.itemsWithVariance} items with &gt;5% variance
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Alerts Section */}
       {metrics.alerts.length > 0 && (
         <Card>
@@ -275,10 +359,10 @@ export const PreOpeningCommandCenter = () => {
         />
         <ModuleCard
           module={moduleConfig[3]}
-          value={metrics.inventory.received}
+          value={metrics.inventory.activeBottles}
           total={metrics.inventory.totalItems}
-          subtext={`$${(metrics.inventory.pendingValue / 1000).toFixed(0)}k pending`}
-          onClick={() => navigate('/opening-inventory')}
+          subtext={`${metrics.inventory.lowStock} low stock`}
+          onClick={() => navigate('/lab-ops')}
         />
         <ModuleCard
           module={moduleConfig[4]}

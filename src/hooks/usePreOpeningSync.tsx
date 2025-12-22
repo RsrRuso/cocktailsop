@@ -11,6 +11,15 @@ export interface PreOpeningMetrics {
     variance: number;
     byCategory: Record<string, number>;
   };
+  financial: {
+    totalRevenue: number;
+    totalOrders: number;
+    avgCheck: number;
+    foodRevenue: number;
+    beverageRevenue: number;
+    discounts: number;
+    comps: number;
+  };
   recruitment: {
     totalPositions: number;
     filled: number;
@@ -26,9 +35,10 @@ export interface PreOpeningMetrics {
   };
   inventory: {
     totalItems: number;
-    ordered: number;
-    received: number;
-    pendingValue: number;
+    activeBottles: number;
+    lowStock: number;
+    totalValue: number;
+    byCategory: Record<string, number>;
   };
   marketing: {
     totalCampaigns: number;
@@ -61,6 +71,11 @@ export interface PreOpeningMetrics {
     readinessScore: number;
     blockers: string[];
   };
+  variance: {
+    totalVariance: number;
+    variancePercent: number;
+    itemsWithVariance: number;
+  };
   overallReadiness: number;
   dependencies: Dependency[];
   alerts: Alert[];
@@ -78,8 +93,8 @@ export interface Alert {
   id: string;
   module: string;
   type: 'warning' | 'critical' | 'info';
-  message: string;
   action?: string;
+  message: string;
 }
 
 export const usePreOpeningSync = () => {
@@ -91,6 +106,58 @@ export const usePreOpeningSync = () => {
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("pre_opening_budgets").select("*").eq("user_id", user.id);
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+
+  // Lab Ops Financial Data - Daily Sales Summary
+  const { data: labOpsSales = [], refetch: refetchLabOpsSales } = useQuery({
+    queryKey: ["sync-labops-sales", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("lab_ops_daily_sales_summary").select("*").order("sales_date", { ascending: false }).limit(30);
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+
+  // Lab Ops Inventory - Bottles
+  const { data: labOpsBottles = [], refetch: refetchLabOpsBottles } = useQuery({
+    queryKey: ["sync-labops-bottles", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("lab_ops_bottles").select("*");
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+
+  // Lab Ops Inventory Items
+  const { data: labOpsInventoryItems = [], refetch: refetchLabOpsInventory } = useQuery({
+    queryKey: ["sync-labops-inventory-items", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("lab_ops_inventory_items").select("*");
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+
+  // Lab Ops Variance
+  const { data: labOpsVariance = [], refetch: refetchLabOpsVariance } = useQuery({
+    queryKey: ["sync-labops-variance", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("lab_ops_bar_variance").select("*").order("period_end", { ascending: false }).limit(30);
       return data || [];
     },
     enabled: !!user,
@@ -180,6 +247,36 @@ export const usePreOpeningSync = () => {
       budgetByCategory[b.category || 'Other'] = (budgetByCategory[b.category || 'Other'] || 0) + Number(b.actual_amount || 0);
     });
 
+    // Lab Ops Financial calculations
+    const totalRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.total_revenue || 0), 0);
+    const totalOrders = labOpsSales.reduce((sum, s) => sum + Number(s.total_orders || 0), 0);
+    const avgCheck = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const foodRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.food_revenue || 0), 0);
+    const beverageRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.beverage_revenue || 0), 0);
+    const discounts = labOpsSales.reduce((sum, s) => sum + Number(s.discount_total || 0), 0);
+    const comps = labOpsSales.reduce((sum, s) => sum + Number(s.comp_total || 0), 0);
+
+    // Lab Ops Inventory calculations
+    const activeBottles = labOpsBottles.filter(b => b.status === 'active').length;
+    const lowStockBottles = labOpsBottles.filter(b => {
+      const currentLevel = Number(b.current_level_ml || 0);
+      const bottleSize = Number(b.bottle_size_ml || 750);
+      return currentLevel < bottleSize * 0.2; // Less than 20% remaining
+    }).length;
+    const inventoryByCategory: Record<string, number> = {};
+    labOpsBottles.forEach(b => {
+      const cat = b.spirit_type || 'Other';
+      inventoryByCategory[cat] = (inventoryByCategory[cat] || 0) + 1;
+    });
+    const totalInventoryValue = labOpsBottles.reduce((sum, b) => sum + Number(b.current_level_ml || 0), 0);
+
+    // Lab Ops Variance calculations
+    const totalVarianceCost = labOpsVariance.reduce((sum, v) => sum + Math.abs(Number(v.variance_cost || 0)), 0);
+    const avgVariancePercent = labOpsVariance.length > 0 
+      ? labOpsVariance.reduce((sum, v) => sum + Math.abs(Number(v.variance_percent || 0)), 0) / labOpsVariance.length 
+      : 0;
+    const itemsWithVariance = labOpsVariance.filter(v => Math.abs(Number(v.variance_percent || 0)) > 5).length;
+
     // Recruitment calculations
     const totalPositions = recruitment.reduce((sum, r) => sum + (r.positions_needed || 0), 0);
     const filledPositions = recruitment.reduce((sum, r) => sum + (r.positions_filled || 0), 0);
@@ -194,13 +291,6 @@ export const usePreOpeningSync = () => {
     // Training calculations (using is_mandatory as a proxy for completion)
     const completedTraining = training.filter(t => t.is_mandatory === false).length;
     const inProgressTraining = training.filter(t => t.is_mandatory === true).length;
-
-    // Inventory calculations (using order_status field)
-    const orderedInventory = inventory.filter(i => i.order_status === 'ordered' || i.order_status === 'received').length;
-    const receivedInventory = inventory.filter(i => i.order_status === 'received').length;
-    const pendingValue = inventory
-      .filter(i => i.order_status !== 'received')
-      .reduce((sum, i) => sum + Number(i.unit_cost || 0) * Number(i.opening_quantity || 0), 0);
 
     // Marketing calculations
     const activeCampaigns = marketing.filter(m => m.status === 'active').length;
@@ -233,6 +323,16 @@ export const usePreOpeningSync = () => {
       dependencies.push({ from: 'Budget', to: 'All', type: 'affects', status: 'critical', message: 'Over budget' });
     }
 
+    // Lab Ops variance alerts
+    if (avgVariancePercent > 10) {
+      alerts.push({ id: 'variance-critical', module: 'Financial', type: 'critical', message: `High variance: ${avgVariancePercent.toFixed(1)}% average` });
+    }
+
+    // Low stock alerts
+    if (lowStockBottles > 0) {
+      alerts.push({ id: 'low-stock', module: 'Inventory', type: 'warning', message: `${lowStockBottles} bottles low on stock` });
+    }
+
     // Recruitment → Training dependency
     if (totalPositions > 0 && filledPositions < totalPositions * 0.5) {
       dependencies.push({ from: 'Recruitment', to: 'Training', type: 'blocks', status: 'warning', message: 'Need more hires before training' });
@@ -245,8 +345,8 @@ export const usePreOpeningSync = () => {
     }
 
     // Inventory → Soft Opening dependency
-    if (inventory.length > 0 && receivedInventory < inventory.length * 0.9) {
-      dependencies.push({ from: 'Inventory', to: 'Soft Opening', type: 'blocks', status: 'warning', message: 'Inventory not fully received' });
+    if (labOpsBottles.length > 0 && lowStockBottles > labOpsBottles.length * 0.3) {
+      dependencies.push({ from: 'Inventory', to: 'Operations', type: 'affects', status: 'warning', message: 'Inventory running low' });
     }
 
     // Insurance required for opening
@@ -260,12 +360,17 @@ export const usePreOpeningSync = () => {
       dependencies.push({ from: 'Marketing', to: 'Soft Opening', type: 'affects', status: 'ok', message: 'Marketing campaigns active' });
     }
 
+    // Financial → Budget dependency
+    if (totalRevenue > 0) {
+      dependencies.push({ from: 'Financial', to: 'Budget', type: 'affects', status: 'ok', message: 'Revenue tracking active' });
+    }
+
     // Calculate overall readiness score
     const scores = [
       budgets.length > 0 ? Math.min(100, budgetTotal > 0 ? ((budgetTotal - budgetSpent) / budgetTotal) * 100 : 0) : 0,
       totalPositions > 0 ? (filledPositions / totalPositions) * 100 : 0,
       training.length > 0 ? (completedTraining / training.length) * 100 : 0,
-      inventory.length > 0 ? (receivedInventory / inventory.length) * 100 : 0,
+      labOpsBottles.length > 0 ? ((labOpsBottles.length - lowStockBottles) / labOpsBottles.length) * 100 : 0,
       insurance.length > 0 ? (activeInsurance / insurance.length) * 100 : 0,
     ].filter(s => s > 0);
 
@@ -275,8 +380,9 @@ export const usePreOpeningSync = () => {
     const blockers: string[] = [];
     if (totalPositions > 0 && filledPositions < totalPositions * 0.8) blockers.push('Staffing below 80%');
     if (training.length > 0 && completedTraining < training.length * 0.8) blockers.push('Training incomplete');
-    if (inventory.length > 0 && receivedInventory < inventory.length * 0.9) blockers.push('Inventory pending');
+    if (labOpsBottles.length > 0 && lowStockBottles > labOpsBottles.length * 0.2) blockers.push('Low inventory stock');
     if (insurance.length > 0 && activeInsurance < insurance.length) blockers.push('Insurance incomplete');
+    if (avgVariancePercent > 15) blockers.push('High variance issues');
 
     return {
       budget: {
@@ -285,6 +391,15 @@ export const usePreOpeningSync = () => {
         remaining: budgetTotal - budgetSpent,
         variance: budgetSpent - budgetTotal,
         byCategory: budgetByCategory,
+      },
+      financial: {
+        totalRevenue,
+        totalOrders,
+        avgCheck,
+        foodRevenue,
+        beverageRevenue,
+        discounts,
+        comps,
       },
       recruitment: {
         totalPositions,
@@ -300,10 +415,11 @@ export const usePreOpeningSync = () => {
         completionRate: training.length > 0 ? (completedTraining / training.length) * 100 : 0,
       },
       inventory: {
-        totalItems: inventory.length,
-        ordered: orderedInventory,
-        received: receivedInventory,
-        pendingValue,
+        totalItems: labOpsBottles.length + labOpsInventoryItems.length,
+        activeBottles,
+        lowStock: lowStockBottles,
+        totalValue: totalInventoryValue,
+        byCategory: inventoryByCategory,
       },
       marketing: {
         totalCampaigns: marketing.length,
@@ -336,11 +452,16 @@ export const usePreOpeningSync = () => {
         readinessScore: overallReadiness,
         blockers,
       },
+      variance: {
+        totalVariance: totalVarianceCost,
+        variancePercent: avgVariancePercent,
+        itemsWithVariance,
+      },
       overallReadiness,
       dependencies,
       alerts,
     };
-  }, [budgets, recruitment, training, inventory, marketing, insurance, softOpening]);
+  }, [budgets, recruitment, training, inventory, marketing, insurance, softOpening, labOpsSales, labOpsBottles, labOpsInventoryItems, labOpsVariance]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -351,8 +472,12 @@ export const usePreOpeningSync = () => {
       refetchMarketing(),
       refetchInsurance(),
       refetchSoftOpening(),
+      refetchLabOpsSales(),
+      refetchLabOpsBottles(),
+      refetchLabOpsInventory(),
+      refetchLabOpsVariance(),
     ]);
-  }, [refetchBudgets, refetchRecruitment, refetchTraining, refetchInventory, refetchMarketing, refetchInsurance, refetchSoftOpening]);
+  }, [refetchBudgets, refetchRecruitment, refetchTraining, refetchInventory, refetchMarketing, refetchInsurance, refetchSoftOpening, refetchLabOpsSales, refetchLabOpsBottles, refetchLabOpsInventory, refetchLabOpsVariance]);
 
   return {
     metrics,
@@ -365,6 +490,10 @@ export const usePreOpeningSync = () => {
       marketing,
       insurance,
       softOpening,
+      labOpsSales,
+      labOpsBottles,
+      labOpsInventoryItems,
+      labOpsVariance,
     },
   };
 };
