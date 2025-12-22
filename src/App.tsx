@@ -1,4 +1,4 @@
-// Cache bust: v2025.06.19.2
+// Cache bust: v2025.12.22.1
 import React, { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
