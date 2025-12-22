@@ -34,7 +34,7 @@ import {
   Package, ClipboardList, BarChart3, Smartphone, ChefHat, Wine,
   DollarSign, TrendingUp, Clock, AlertTriangle, FileText, Trash2,
   Edit, Eye, Send, CreditCard, Percent, Calculator, Receipt,
-  Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
+  Download, Video, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
   Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin
@@ -470,6 +470,16 @@ export default function LabOps() {
                   </SelectContent>
                 </Select>
               )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-lg px-2 sm:px-3 gap-1.5"
+                onClick={() => (window.location.href = "/lab-ops-promo")}
+              >
+                <Video className="h-4 w-4" />
+                <span className="hidden sm:inline">Promo</span>
+              </Button>
               
               <Dialog open={showCreateOutlet} onOpenChange={setShowCreateOutlet}>
                 <DialogTrigger asChild>
