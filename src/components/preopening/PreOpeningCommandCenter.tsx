@@ -16,6 +16,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePreOpeningSync, Dependency, Alert } from "@/hooks/usePreOpeningSync";
 import { cn } from "@/lib/utils";
 
+const moneyCompact = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Number.isFinite(value) ? value : 0);
+
 const moduleConfig = [
   { id: 'budget', name: 'Budget', icon: DollarSign, path: '/budget-planner', color: 'from-emerald-500 to-green-600' },
   { id: 'recruitment', name: 'Recruitment', icon: Users, path: '/recruitment-tracker', color: 'from-blue-500 to-indigo-600' },
@@ -244,7 +252,7 @@ export const PreOpeningCommandCenter = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <p className="text-2xl font-bold text-emerald-500">
-                  ${(metrics.financial.totalRevenue / 1000).toFixed(1)}k
+                  {moneyCompact(metrics.financial.totalRevenue)}
                 </p>
                 <p className="text-xs text-muted-foreground">Total Revenue (30d)</p>
               </div>
@@ -253,12 +261,12 @@ export const PreOpeningCommandCenter = () => {
                 <p className="text-xs text-muted-foreground">Total Orders</p>
               </div>
               <div className="space-y-1">
-                <p className="text-lg font-semibold">${metrics.financial.avgCheck.toFixed(2)}</p>
+                <p className="text-lg font-semibold">{moneyCompact(metrics.financial.avgCheck)}</p>
                 <p className="text-xs text-muted-foreground">Avg Check</p>
               </div>
               <div className="space-y-1">
                 <p className="text-lg font-semibold text-blue-500">
-                  ${(metrics.financial.beverageRevenue / 1000).toFixed(1)}k
+                  {moneyCompact(metrics.financial.beverageRevenue)}
                 </p>
                 <p className="text-xs text-muted-foreground">Beverage Revenue</p>
               </div>

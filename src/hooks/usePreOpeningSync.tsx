@@ -118,7 +118,13 @@ export const usePreOpeningSync = () => {
     queryKey: ["sync-labops-sales", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase.from("lab_ops_sales").select("*").order("sold_at", { ascending: false }).limit(100);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("lab_ops_sales")
+        .select("*")
+        .gte("sold_at", thirtyDaysAgo)
+        .order("sold_at", { ascending: false })
+        .limit(200);
       return data || [];
     },
     enabled: !!user,
