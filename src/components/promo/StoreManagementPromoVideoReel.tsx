@@ -206,7 +206,7 @@ const StoreManagementPromoVideoReel = () => {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full max-w-md mx-auto aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl"
+      className="relative w-full max-w-lg mx-auto aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl"
     >
       {/* Animated Background */}
       <AnimatePresence mode="wait">
@@ -390,7 +390,7 @@ const StoreManagementPromoVideoReel = () => {
         </AnimatePresence>
 
         {/* Bottom CTA */}
-        <div className="space-y-3">
+        <div className="space-y-3 pb-2">
           {/* Feature Badge */}
           <motion.div
             initial={{ scale: 0 }}
@@ -407,7 +407,7 @@ const StoreManagementPromoVideoReel = () => {
           {/* CTA Button */}
           <Button
             onClick={() => navigate("/store-management")}
-            className="w-full py-5 bg-white text-black font-bold text-base rounded-2xl hover:bg-white/90 transition-all shadow-xl"
+            className="w-full py-6 bg-white text-black font-bold text-lg rounded-2xl hover:bg-white/90 transition-all shadow-xl"
           >
             Open Store Management
           </Button>
