@@ -14,10 +14,14 @@ import { toast } from "sonner";
 
 type SceneType = 
   | 'intro' 
+  | 'pin-access'
+  | 'file-upload'
+  | 'file-parsing'
   | 'team-workspace'
   | 'create-order' 
   | 'order-sent'
   | 'receive-delivery' 
+  | 'receive-upload'
   | 'check-items'
   | 'discrepancy-found' 
   | 'excluded-items' 
@@ -36,10 +40,14 @@ interface SceneData {
 
 const SCENES: SceneData[] = [
   { scene: 'intro', title: 'Purchase Orders', subtitle: 'Complete Procurement Management', duration: 2 },
+  { scene: 'pin-access', title: 'PIN Login', subtitle: 'Secure Access via My Space', duration: 3 },
+  { scene: 'file-upload', title: 'Upload Documents', subtitle: 'PDF, Image or Excel', duration: 3 },
+  { scene: 'file-parsing', title: 'Auto-Parsed', subtitle: 'System Extracts Items', duration: 3 },
   { scene: 'team-workspace', title: 'Team Workspace', subtitle: 'Everyone Works Together', duration: 3 },
   { scene: 'create-order', title: 'Create Purchase Order', subtitle: 'Select Items & Quantities', duration: 3 },
   { scene: 'order-sent', title: 'Order Sent to Vendor', subtitle: 'Tracking Enabled', duration: 2 },
-  { scene: 'receive-delivery', title: 'Receive Delivery', subtitle: 'Scan & Verify Items', duration: 3 },
+  { scene: 'receive-delivery', title: 'Receive Delivery', subtitle: 'Delivery Arrived', duration: 2.5 },
+  { scene: 'receive-upload', title: 'Upload Delivery Note', subtitle: 'PDF/Image Auto-Checked', duration: 3 },
   { scene: 'check-items', title: 'Check Each Item', subtitle: 'Quantity & Quality Check', duration: 2.5 },
   { scene: 'discrepancy-found', title: 'Discrepancy Found!', subtitle: 'Missing or Damaged Items', duration: 3 },
   { scene: 'excluded-items', title: 'Excluded Items', subtitle: 'Marked in Red & Deducted', duration: 3.5 },
@@ -115,10 +123,14 @@ export function PurchaseOrderPromoVideo() {
     // Dynamic background based on scene
     const gradients: Record<SceneType, [string, string]> = {
       'intro': ['#1a1a2e', '#0f3460'],
+      'pin-access': ['#1e1e3f', '#2d1b69'],
+      'file-upload': ['#1a2f4e', '#0f2847'],
+      'file-parsing': ['#0d2818', '#1a4731'],
       'team-workspace': ['#16213e', '#1a1a4e'],
       'create-order': ['#1e3a5f', '#0d1b2a'],
       'order-sent': ['#134e5e', '#71b280'],
       'receive-delivery': ['#2d3436', '#000000'],
+      'receive-upload': ['#1a2f4e', '#0f2847'],
       'check-items': ['#232526', '#414345'],
       'discrepancy-found': ['#3d0c02', '#6b1c1c'],
       'excluded-items': ['#4a0e0e', '#1a1a2e'],
@@ -153,6 +165,15 @@ export function PurchaseOrderPromoVideo() {
       case 'intro':
         drawIntroScene(ctx, width, height, sceneProgress);
         break;
+      case 'pin-access':
+        drawPinAccessScene(ctx, width, height, sceneProgress, frame);
+        break;
+      case 'file-upload':
+        drawFileUploadScene(ctx, width, height, sceneProgress, frame);
+        break;
+      case 'file-parsing':
+        drawFileParsingScene(ctx, width, height, sceneProgress, frame);
+        break;
       case 'team-workspace':
         drawTeamWorkspaceScene(ctx, width, height, sceneProgress, frame);
         break;
@@ -164,6 +185,9 @@ export function PurchaseOrderPromoVideo() {
         break;
       case 'receive-delivery':
         drawReceiveDeliveryScene(ctx, width, height, sceneProgress, frame);
+        break;
+      case 'receive-upload':
+        drawReceiveUploadScene(ctx, width, height, sceneProgress, frame);
         break;
       case 'check-items':
         drawCheckItemsScene(ctx, width, height, sceneProgress, frame);
@@ -241,6 +265,335 @@ export function PurchaseOrderPromoVideo() {
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.7})`;
     ctx.font = '16px system-ui';
     ctx.fillText('Complete Procurement Management', w / 2, h * 0.66);
+  };
+
+  const drawPinAccessScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
+    // My Space header
+    ctx.fillStyle = 'rgba(99, 102, 241, 0.3)';
+    ctx.beginPath();
+    ctx.roundRect(30, 40, w - 60, 45, 12);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('👤 My Space → Purchase Orders', w / 2, 68);
+
+    // PIN input box
+    const boxOpacity = Math.min(1, progress * 3);
+    ctx.fillStyle = `rgba(15, 23, 42, ${boxOpacity * 0.95})`;
+    ctx.beginPath();
+    ctx.roundRect(40, 110, w - 80, 200, 16);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(99, 102, 241, ${boxOpacity})`;
+    ctx.font = '36px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔐', w / 2, 160);
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${boxOpacity})`;
+    ctx.font = 'bold 16px system-ui';
+    ctx.fillText('Enter PIN', w / 2, 195);
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${boxOpacity * 0.6})`;
+    ctx.font = '11px system-ui';
+    ctx.fillText('Secure access to Purchase Orders', w / 2, 218);
+
+    // PIN dots appearing
+    const dotCount = Math.min(4, Math.floor(progress * 6));
+    for (let i = 0; i < 4; i++) {
+      const dotX = w / 2 - 45 + i * 30;
+      const dotY = 250;
+      
+      ctx.fillStyle = i < dotCount ? `rgba(99, 102, 241, ${boxOpacity})` : `rgba(255, 255, 255, ${boxOpacity * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Success animation
+    if (progress > 0.8) {
+      const successOpacity = Math.min(1, (progress - 0.8) * 5);
+      const pulse = Math.sin(frame * 0.2) * 0.1 + 0.9;
+
+      ctx.save();
+      ctx.translate(w / 2, 330);
+      ctx.scale(pulse, pulse);
+
+      ctx.fillStyle = `rgba(34, 197, 94, ${successOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(-60, -15, 120, 30, 15);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${successOpacity})`;
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('✓ Access Granted', 0, 4);
+
+      ctx.restore();
+    }
+  };
+
+  const drawFileUploadScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
+    // Upload area
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(30, 50, w - 60, 320, 16);
+    ctx.fill();
+
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(30, 50, w - 60, 45);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('📤 Upload Purchase Order', w / 2, 78);
+
+    // Upload dropzone
+    const dropOpacity = Math.min(1, progress * 2);
+    ctx.setLineDash([8, 8]);
+    ctx.strokeStyle = `rgba(59, 130, 246, ${dropOpacity})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(50, 115, w - 100, 120, 12);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${dropOpacity})`;
+    ctx.font = '40px system-ui';
+    ctx.fillText('📁', w / 2, 160);
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${dropOpacity * 0.8})`;
+    ctx.font = '12px system-ui';
+    ctx.fillText('Drop files here or tap to upload', w / 2, 200);
+
+    // File types
+    const fileTypes = [
+      { icon: '📄', label: 'PDF', color: '#ef4444' },
+      { icon: '🖼️', label: 'Image', color: '#22c55e' },
+      { icon: '📊', label: 'Excel', color: '#3b82f6' },
+    ];
+
+    fileTypes.forEach((type, i) => {
+      const typeProgress = Math.max(0, Math.min(1, (progress - 0.3 - i * 0.15) * 4));
+      const typeX = w / 2 - 90 + i * 90;
+      const typeY = 275;
+
+      ctx.fillStyle = `rgba(30, 41, 59, ${typeProgress})`;
+      ctx.beginPath();
+      ctx.roundRect(typeX - 30, typeY - 20, 60, 55, 8);
+      ctx.fill();
+
+      ctx.strokeStyle = type.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${typeProgress})`;
+      ctx.font = '22px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(type.icon, typeX, typeY + 5);
+
+      ctx.fillStyle = type.color;
+      ctx.font = 'bold 9px system-ui';
+      ctx.fillText(type.label, typeX, typeY + 28);
+    });
+
+    // Uploading animation
+    if (progress > 0.7) {
+      const uploadOpacity = Math.min(1, (progress - 0.7) * 4);
+      const uploadProgress = Math.min(1, (progress - 0.7) * 3);
+
+      ctx.fillStyle = `rgba(59, 130, 246, ${uploadOpacity * 0.2})`;
+      ctx.beginPath();
+      ctx.roundRect(50, 350, w - 100, 25, 8);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(59, 130, 246, ${uploadOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(50, 350, (w - 100) * uploadProgress, 25, 8);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${uploadOpacity})`;
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Uploading... ${Math.floor(uploadProgress * 100)}%`, w / 2, 367);
+    }
+  };
+
+  const drawFileParsingScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
+    // Parsing header
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(30, 50, w - 60, 340, 16);
+    ctx.fill();
+
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(30, 50, w - 60, 45);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('✨ Auto-Parsing Document', w / 2, 78);
+
+    // Document preview (left side)
+    const docOpacity = Math.min(1, progress * 3);
+    ctx.fillStyle = `rgba(30, 41, 59, ${docOpacity})`;
+    ctx.beginPath();
+    ctx.roundRect(40, 110, 100, 130, 8);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${docOpacity})`;
+    ctx.font = '40px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('📄', 90, 165);
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${docOpacity * 0.6})`;
+    ctx.font = '8px system-ui';
+    ctx.fillText('invoice.pdf', 90, 225);
+
+    // Arrow animation
+    if (progress > 0.2) {
+      const arrowOpacity = Math.min(1, (progress - 0.2) * 4);
+      const arrowX = 160 + Math.sin(frame * 0.1) * 5;
+
+      ctx.fillStyle = `rgba(59, 130, 246, ${arrowOpacity})`;
+      ctx.font = '24px system-ui';
+      ctx.fillText('→', arrowX, 175);
+    }
+
+    // Extracted items (right side)
+    const items = ['Vodka Premium 1L', 'Gin London 750ml', 'Triple Sec 700ml', 'Tequila Blanco 1L'];
+    items.forEach((item, i) => {
+      const itemProgress = Math.max(0, Math.min(1, (progress - 0.3 - i * 0.12) * 4));
+      const itemY = 115 + i * 32;
+
+      ctx.fillStyle = `rgba(34, 197, 94, ${itemProgress * 0.2})`;
+      ctx.beginPath();
+      ctx.roundRect(190, itemY, w - 230, 28, 6);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${itemProgress})`;
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(`✓ ${item}`, 200, itemY + 18);
+    });
+
+    // Parsing complete
+    if (progress > 0.8) {
+      const completeOpacity = Math.min(1, (progress - 0.8) * 5);
+
+      ctx.fillStyle = `rgba(34, 197, 94, ${completeOpacity * 0.3})`;
+      ctx.beginPath();
+      ctx.roundRect(40, 270, w - 80, 60, 12);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${completeOpacity})`;
+      ctx.font = 'bold 14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('✅ 4 items extracted', w / 2, 295);
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${completeOpacity * 0.7})`;
+      ctx.font = '11px system-ui';
+      ctx.fillText('Ready for processing', w / 2, 315);
+    }
+
+    // Scanning animation
+    const scanY = 110 + (progress * 130) % 130;
+    ctx.strokeStyle = `rgba(59, 130, 246, ${0.3 + Math.sin(frame * 0.2) * 0.2})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(45, scanY);
+    ctx.lineTo(135, scanY);
+    ctx.stroke();
+  };
+
+  const drawReceiveUploadScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
+    // Header
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(30, 50, w - 60, 340, 16);
+    ctx.fill();
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(30, 50, w - 60, 45);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('📥 Upload Delivery Note', w / 2, 78);
+
+    // Original order (left)
+    const leftOpacity = Math.min(1, progress * 3);
+    ctx.fillStyle = `rgba(30, 41, 59, ${leftOpacity})`;
+    ctx.beginPath();
+    ctx.roundRect(40, 110, 110, 140, 8);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(59, 130, 246, ${leftOpacity})`;
+    ctx.font = 'bold 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('📋 Order', 95, 135);
+
+    const orderItems = ['12× Vodka', '8× Gin', '6× Triple Sec'];
+    orderItems.forEach((item, i) => {
+      ctx.fillStyle = `rgba(255, 255, 255, ${leftOpacity * 0.8})`;
+      ctx.font = '9px system-ui';
+      ctx.fillText(item, 95, 160 + i * 18);
+    });
+
+    // Delivery note (right)
+    const rightOpacity = Math.max(0, Math.min(1, (progress - 0.2) * 3));
+    ctx.fillStyle = `rgba(30, 41, 59, ${rightOpacity})`;
+    ctx.beginPath();
+    ctx.roundRect(w - 150, 110, 110, 140, 8);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(245, 158, 11, ${rightOpacity})`;
+    ctx.font = 'bold 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('📄 Delivery', w - 95, 135);
+
+    const deliveryItems = ['12× Vodka', '6× Gin ⚠️', '6× Triple Sec'];
+    deliveryItems.forEach((item, i) => {
+      const isWarning = item.includes('⚠️');
+      ctx.fillStyle = isWarning ? `rgba(239, 68, 68, ${rightOpacity})` : `rgba(255, 255, 255, ${rightOpacity * 0.8})`;
+      ctx.font = '9px system-ui';
+      ctx.fillText(item, w - 95, 160 + i * 18);
+    });
+
+    // Compare arrow
+    if (progress > 0.4) {
+      const arrowOpacity = Math.min(1, (progress - 0.4) * 3);
+      const arrowY = 180 + Math.sin(frame * 0.15) * 5;
+
+      ctx.fillStyle = `rgba(99, 102, 241, ${arrowOpacity})`;
+      ctx.font = '24px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('⟷', w / 2, arrowY);
+    }
+
+    // Auto-comparison result
+    if (progress > 0.6) {
+      const resultOpacity = Math.min(1, (progress - 0.6) * 3);
+
+      ctx.fillStyle = `rgba(239, 68, 68, ${resultOpacity * 0.2})`;
+      ctx.beginPath();
+      ctx.roundRect(40, 270, w - 80, 70, 12);
+      ctx.fill();
+
+      ctx.strokeStyle = `rgba(239, 68, 68, ${resultOpacity})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${resultOpacity})`;
+      ctx.font = 'bold 13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠️ Discrepancy Detected', w / 2, 295);
+
+      ctx.fillStyle = `rgba(239, 68, 68, ${resultOpacity})`;
+      ctx.font = '11px system-ui';
+      ctx.fillText('Gin: ordered 8, received 6', w / 2, 320);
+    }
   };
 
   const drawTeamWorkspaceScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
