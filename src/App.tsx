@@ -221,6 +221,7 @@ const PostAnalytics = lazy(() => import("./pages/PostAnalytics"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PromoReels = lazy(() => import("./pages/PromoReels"));
 const PromoAds = lazy(() => import("./pages/PromoAds"));
+const PurchaseOrderPromo = lazy(() => import("./pages/PurchaseOrderPromo"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -411,6 +412,7 @@ const AppContent = () => {
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
           <Route path="/lab-ops-promo" element={<LabOpsPromo />} />
+          <Route path="/purchase-order-promo" element={<PurchaseOrderPromo />} />
           <Route path="/live" element={<Livestream />} />
           <Route path="/live/:id" element={<Livestream />} />
           <Route path="/staff-pos" element={<StaffPOS />} />
