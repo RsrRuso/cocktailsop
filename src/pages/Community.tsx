@@ -207,7 +207,7 @@ export default function Community() {
           .in("id", replyIds as string[])
       : { data: [] };
 
-    const replyMap = new Map<string, any>(replyMessages?.map((m) => [m.id, m]) || []);
+    const replyMap = new Map<string, any>(replyMessages?.map((m): [string, any] => [m.id, m]) || []);
 
     const messagesWithProfiles: Message[] = data?.map((msg) => ({
       ...msg,
@@ -674,8 +674,12 @@ export default function Community() {
               {selectedMessageForReaction && (
                 <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50">
                   <EmojiReactionPicker
-                    onSelect={(emoji) => handleReaction(selectedMessageForReaction, emoji)}
-                    onClose={() => setSelectedMessageForReaction(null)}
+                    show={true}
+                    position={{ x: 0, y: 0 }}
+                    onSelect={(emoji) => {
+                      if (emoji) handleReaction(selectedMessageForReaction, emoji);
+                      setSelectedMessageForReaction(null);
+                    }}
                   />
                 </div>
               )}

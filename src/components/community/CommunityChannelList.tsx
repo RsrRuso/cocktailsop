@@ -14,6 +14,8 @@ interface Channel {
   member_count: number;
   is_official: boolean;
   is_pinned: boolean;
+  created_by: string | null;
+  created_at: string;
 }
 
 interface Membership {
