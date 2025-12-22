@@ -113,21 +113,56 @@ export const usePreOpeningSync = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Lab Ops Financial Data - Actual Sales
-  const { data: labOpsSales = [], refetch: refetchLabOpsSales } = useQuery({
-    queryKey: ["sync-labops-sales", user?.id],
+  // Get user's outlets first for Lab Ops queries
+  const { data: userOutlets = [] } = useQuery<string[]>({
+    queryKey: ["sync-user-outlets", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await supabase
-        .from("lab_ops_sales")
-        .select("*")
-        .gte("sold_at", thirtyDaysAgo)
-        .order("sold_at", { ascending: false })
-        .limit(200);
-      return data || [];
+      const outletIds = new Set<string>();
+      
+      // Cast to any to avoid TypeScript deep instantiation issue
+      const client = supabase as any;
+      
+      const { data: ownedData } = await client.from("lab_ops_outlets").select("id").eq("owner_id", user.id);
+      if (ownedData) {
+        for (const o of ownedData) outletIds.add(o.id);
+      }
+      
+      const { data: staffData } = await client.from("lab_ops_staff").select("outlet_id").eq("user_id", user.id);
+      if (staffData) {
+        for (const s of staffData) {
+          if (s.outlet_id) outletIds.add(s.outlet_id);
+        }
+      }
+      
+      return Array.from(outletIds);
     },
     enabled: !!user,
+    staleTime: 60000,
+  });
+
+  // Lab Ops Financial Data - Actual Sales (filtered by user's outlets)
+  const { data: labOpsSales = [], refetch: refetchLabOpsSales } = useQuery({
+    queryKey: ["sync-labops-sales", user?.id, userOutlets],
+    queryFn: async () => {
+      if (!user || userOutlets.length === 0) return [];
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Query each outlet separately to avoid deep type issues
+      const allSales: any[] = [];
+      for (const outletId of userOutlets) {
+        const { data } = await supabase
+          .from("lab_ops_sales")
+          .select("*")
+          .eq("outlet_id", outletId)
+          .gte("sold_at", thirtyDaysAgo)
+          .order("sold_at", { ascending: false })
+          .limit(100);
+        if (data) allSales.push(...data);
+      }
+      return allSales;
+    },
+    enabled: !!user && userOutlets.length > 0,
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
