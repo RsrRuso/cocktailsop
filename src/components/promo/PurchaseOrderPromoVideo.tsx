@@ -218,20 +218,20 @@ export function PurchaseOrderPromoVideo() {
     // Scene title overlay
     const titleOpacity = Math.min(1, sceneProgress * 4) * Math.min(1, (1 - sceneProgress) * 4 + 0.3);
     ctx.fillStyle = `rgba(255, 255, 255, ${titleOpacity})`;
-    ctx.font = 'bold 20px system-ui';
+    ctx.font = 'bold 28px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText(scene.title, width / 2, height - 70);
+    ctx.fillText(scene.title, width / 2, height - 100);
 
     ctx.fillStyle = `rgba(255, 255, 255, ${titleOpacity * 0.7})`;
-    ctx.font = '14px system-ui';
-    ctx.fillText(scene.subtitle, width / 2, height - 48);
+    ctx.font = '18px system-ui';
+    ctx.fillText(scene.subtitle, width / 2, height - 70);
 
     // Progress indicator
-    const progressWidth = width - 40;
+    const progressWidth = width - 60;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.fillRect(20, height - 20, progressWidth, 4);
+    ctx.fillRect(30, height - 30, progressWidth, 6);
     ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
-    ctx.fillRect(20, height - 20, progressWidth * (frame / totalFrames), 4);
+    ctx.fillRect(30, height - 30, progressWidth * (frame / totalFrames), 6);
   }, [totalFrames]);
 
   const drawIntroScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number) => {
@@ -239,17 +239,17 @@ export function PurchaseOrderPromoVideo() {
     const opacity = Math.min(1, progress * 3);
 
     ctx.save();
-    ctx.translate(w / 2, h * 0.4);
+    ctx.translate(w / 2, h * 0.35);
     ctx.scale(scale, scale);
 
     // Logo circle
     ctx.beginPath();
-    ctx.arc(0, 0, 60, 0, Math.PI * 2);
+    ctx.arc(0, 0, 90, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(59, 130, 246, ${opacity * 0.2})`;
     ctx.fill();
 
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.font = 'bold 48px system-ui';
+    ctx.font = 'bold 72px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('📦', 0, 0);
@@ -258,13 +258,13 @@ export function PurchaseOrderPromoVideo() {
 
     // Main title
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.font = 'bold 38px system-ui';
+    ctx.font = 'bold 52px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText('Purchase Orders', w / 2, h * 0.58);
+    ctx.fillText('Purchase Orders', w / 2, h * 0.55);
 
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.7})`;
-    ctx.font = '16px system-ui';
-    ctx.fillText('Complete Procurement Management', w / 2, h * 0.66);
+    ctx.font = '22px system-ui';
+    ctx.fillText('Complete Procurement Management', w / 2, h * 0.62);
   };
 
   const drawPinAccessScene = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
@@ -1379,16 +1379,16 @@ export function PurchaseOrderPromoVideo() {
     const opacity = Math.min(1, progress * 3);
 
     ctx.save();
-    ctx.translate(w / 2, h * 0.4);
+    ctx.translate(w / 2, h * 0.35);
     ctx.scale(scale, scale);
 
     ctx.fillStyle = `rgba(59, 130, 246, ${opacity * 0.2})`;
     ctx.beginPath();
-    ctx.arc(0, 0, 60, 0, Math.PI * 2);
+    ctx.arc(0, 0, 90, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.font = 'bold 48px system-ui';
+    ctx.font = 'bold 72px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('📦', 0, 0);
@@ -1396,13 +1396,13 @@ export function PurchaseOrderPromoVideo() {
     ctx.restore();
 
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.font = 'bold 36px system-ui';
+    ctx.font = 'bold 52px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText('Purchase Orders', w / 2, h * 0.58);
+    ctx.fillText('Purchase Orders', w / 2, h * 0.55);
 
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.7})`;
-    ctx.font = '14px system-ui';
-    ctx.fillText('Powered by SpecVerse', w / 2, h * 0.66);
+    ctx.font = '20px system-ui';
+    ctx.fillText('Powered by SpecVerse', w / 2, h * 0.62);
   };
 
   const playPreview = () => {
@@ -1496,13 +1496,13 @@ export function PurchaseOrderPromoVideo() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Canvas Preview */}
+        {/* Canvas Preview - Reel/Post Size (1080x1920 scaled) */}
         <div className="relative bg-black rounded-xl overflow-hidden">
           <canvas
             ref={canvasRef}
-            width={360}
-            height={480}
-            className="w-full aspect-[3/4]"
+            width={540}
+            height={960}
+            className="w-full aspect-[9/16]"
           />
 
           {/* Scene indicator */}
