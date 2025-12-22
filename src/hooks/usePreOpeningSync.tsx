@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -84,77 +84,90 @@ export interface Alert {
 
 export const usePreOpeningSync = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   // Fetch all pre-opening data
-  const { data: budgets = [] } = useQuery({
-    queryKey: ["sync-budgets"],
+  const { data: budgets = [], refetch: refetchBudgets } = useQuery({
+    queryKey: ["sync-budgets", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("pre_opening_budgets").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: recruitment = [] } = useQuery({
-    queryKey: ["sync-recruitment"],
+  const { data: recruitment = [], refetch: refetchRecruitment } = useQuery({
+    queryKey: ["sync-recruitment", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("recruitment_positions").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: training = [] } = useQuery({
-    queryKey: ["sync-training"],
+  const { data: training = [], refetch: refetchTraining } = useQuery({
+    queryKey: ["sync-training", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("training_programs").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: inventory = [] } = useQuery({
-    queryKey: ["sync-inventory"],
+  const { data: inventory = [], refetch: refetchInventory } = useQuery({
+    queryKey: ["sync-inventory", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("opening_inventory").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: marketing = [] } = useQuery({
-    queryKey: ["sync-marketing"],
+  const { data: marketing = [], refetch: refetchMarketing } = useQuery({
+    queryKey: ["sync-marketing", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("marketing_campaigns").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: insurance = [] } = useQuery({
-    queryKey: ["sync-insurance"],
+  const { data: insurance = [], refetch: refetchInsurance } = useQuery({
+    queryKey: ["sync-insurance", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("insurance_policies").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: softOpening = [] } = useQuery({
-    queryKey: ["sync-soft-opening"],
+  const { data: softOpening = [], refetch: refetchSoftOpening } = useQuery({
+    queryKey: ["sync-soft-opening", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("soft_opening_events").select("*").eq("user_id", user.id);
       return data || [];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   // Calculate synchronized metrics
@@ -329,15 +342,17 @@ export const usePreOpeningSync = () => {
     };
   }, [budgets, recruitment, training, inventory, marketing, insurance, softOpening]);
 
-  const refreshAll = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["sync-budgets"] });
-    queryClient.invalidateQueries({ queryKey: ["sync-recruitment"] });
-    queryClient.invalidateQueries({ queryKey: ["sync-training"] });
-    queryClient.invalidateQueries({ queryKey: ["sync-inventory"] });
-    queryClient.invalidateQueries({ queryKey: ["sync-marketing"] });
-    queryClient.invalidateQueries({ queryKey: ["sync-insurance"] });
-    queryClient.invalidateQueries({ queryKey: ["sync-soft-opening"] });
-  }, [queryClient]);
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      refetchBudgets(),
+      refetchRecruitment(),
+      refetchTraining(),
+      refetchInventory(),
+      refetchMarketing(),
+      refetchInsurance(),
+      refetchSoftOpening(),
+    ]);
+  }, [refetchBudgets, refetchRecruitment, refetchTraining, refetchInventory, refetchMarketing, refetchInsurance, refetchSoftOpening]);
 
   return {
     metrics,
