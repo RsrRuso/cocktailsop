@@ -103,6 +103,7 @@ const MusicBox = lazy(() => import("./pages/MusicBox"));
 const MusicBoxAdmin = lazy(() => import("./pages/MusicBoxAdmin"));
 const Introduction = lazy(() => import("./pages/Introduction"));
 const Chat = lazy(() => import("./pages/Chat"));
+const Community = lazy(() => import("./pages/Community"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Company = lazy(() => import("./pages/Company"));
@@ -284,6 +285,7 @@ const AppContent = () => {
           <Route path="/ops-tools" element={<OpsTools />} />
           <Route path="/wasabi" element={<Wasabi />} />
           <Route path="/wasabi/:conversationId" element={<WasabiChat />} />
+          <Route path="/community" element={<Community />} />
           <Route path="/task-manager" element={<TaskManager />} />
           <Route path="/team-management" element={<TeamManagement />} />
           <Route path="/team-dashboard" element={<TeamDashboard />} />
