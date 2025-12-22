@@ -404,14 +404,6 @@ const StoreManagementPromoVideoReel = () => {
             </div>
           </motion.div>
 
-          {/* CTA Button */}
-          <Button
-            onClick={() => navigate("/store-management")}
-            className="w-full py-6 bg-white text-black font-bold text-lg rounded-2xl hover:bg-white/90 transition-all shadow-xl"
-          >
-            Open Store Management
-          </Button>
-
           {/* Controls */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
