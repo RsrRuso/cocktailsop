@@ -113,12 +113,12 @@ export const usePreOpeningSync = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Lab Ops Financial Data - Daily Sales Summary
+  // Lab Ops Financial Data - Actual Sales
   const { data: labOpsSales = [], refetch: refetchLabOpsSales } = useQuery({
     queryKey: ["sync-labops-sales", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase.from("lab_ops_daily_sales_summary").select("*").order("sales_date", { ascending: false }).limit(30);
+      const { data } = await supabase.from("lab_ops_sales").select("*").order("sold_at", { ascending: false }).limit(100);
       return data || [];
     },
     enabled: !!user,
@@ -247,14 +247,14 @@ export const usePreOpeningSync = () => {
       budgetByCategory[b.category || 'Other'] = (budgetByCategory[b.category || 'Other'] || 0) + Number(b.actual_amount || 0);
     });
 
-    // Lab Ops Financial calculations
-    const totalRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.total_revenue || 0), 0);
-    const totalOrders = labOpsSales.reduce((sum, s) => sum + Number(s.total_orders || 0), 0);
+    // Lab Ops Financial calculations (from actual sales)
+    const totalRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.total_price || 0), 0);
+    const totalOrders = labOpsSales.length;
     const avgCheck = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const foodRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.food_revenue || 0), 0);
-    const beverageRevenue = labOpsSales.reduce((sum, s) => sum + Number(s.beverage_revenue || 0), 0);
-    const discounts = labOpsSales.reduce((sum, s) => sum + Number(s.discount_total || 0), 0);
-    const comps = labOpsSales.reduce((sum, s) => sum + Number(s.comp_total || 0), 0);
+    const foodRevenue = 0; // No food tracking in lab_ops_sales
+    const beverageRevenue = totalRevenue; // All sales are beverage
+    const discounts = 0;
+    const comps = 0;
 
     // Lab Ops Inventory calculations
     const activeBottles = labOpsBottles.filter(b => b.status === 'active').length;
