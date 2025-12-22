@@ -186,6 +186,7 @@ const BatchCalculatorPinAccess = lazy(() => import("@/pages/BatchCalculatorPinAc
 const FifoPinAccess = lazy(() => import("@/pages/FifoPinAccess"));
 const FifoActivityLog = lazy(() => import("@/pages/FifoActivityLog"));
 const StoreManagementPinAccess = lazy(() => import("@/pages/StoreManagementPinAccess"));
+const StoreManagementTrainingGuide = lazy(() => import("@/pages/StoreManagementTrainingGuide"));
 const CampaignPayment = lazy(() => import("@/pages/CampaignPayment"));
 const HRDashboard = lazy(() => import("@/pages/HRDashboard"));
 
@@ -319,7 +320,8 @@ const AppContent = () => {
           <Route path="/batch-calculator-pin-access" element={<BatchCalculatorPinAccess />} />
           <Route path="/fifo-pin-access" element={<FifoPinAccess />} />
           <Route path="/fifo-activity-log" element={<FifoActivityLog />} />
-          <Route path="/store-management-pin-access" element={<StoreManagementPinAccess />} />
+<Route path="/store-management-pin-access" element={<StoreManagementPinAccess />} />
+          <Route path="/store-management-training" element={<StoreManagementTrainingGuide />} />
           <Route path="/batch-recipes" element={<BatchRecipes />} />
           <Route path="/batch-qr/:qrId" element={<BatchQRSubmit />} />
           <Route path="/batch-view/:productionId" element={<BatchView />} />
