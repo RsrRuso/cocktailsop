@@ -99,16 +99,19 @@ export const usePushNotifications = () => {
   }, [requestPermission]);
 
   const initializeNotifications = useCallback(async () => {
+    // Never register a Service Worker in dev/preview: it can cache Vite chunks and break module imports.
+    if (!import.meta.env.PROD) return;
+
     // Request permission on initialization
     const hasPermission = await requestPermission();
-    
+
     if (hasPermission) {
       // Register service worker if not already registered
       if ('serviceWorker' in navigator) {
         try {
           const registration = await navigator.serviceWorker.register('/sw.js');
           console.log('Service Worker registered for notifications');
-          
+
           // Set up notification listener
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data.type === 'NOTIFICATION_CLICKED') {
