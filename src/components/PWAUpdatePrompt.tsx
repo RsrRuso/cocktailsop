@@ -2,9 +2,8 @@ import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
-export function PWAUpdatePrompt() {
+function PWAUpdatePromptInner() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -50,3 +49,10 @@ export function PWAUpdatePrompt() {
 
   return null;
 }
+
+export function PWAUpdatePrompt() {
+  // Avoid SW registration in dev/preview to prevent cached Vite chunks breaking module imports.
+  if (!import.meta.env.PROD) return null;
+  return <PWAUpdatePromptInner />;
+}
+
