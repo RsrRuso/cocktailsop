@@ -20,7 +20,7 @@ import {
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
   ExternalLink, BarChart3, Trash2, Activity, Edit, X, Check,
-  Building2, Plus, Download, Smartphone, ArrowLeft, LogOut
+  Building2, Plus, Download, Smartphone, ArrowLeft, LogOut, GraduationCap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1659,6 +1659,15 @@ const StoreManagement = () => {
             )}
             {!isStaffMode && (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/store-management-training')}
+                  className="gap-2 text-xs border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                >
+                  <GraduationCap className="w-3 h-3" />
+                  Training
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
