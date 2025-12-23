@@ -7,9 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { 
   ChefHat, Check, ArrowLeft, RefreshCw, 
-  Volume2, VolumeX, Timer, AlertTriangle, Flame, User
+  Volume2, VolumeX, Timer, AlertTriangle, Flame, User, Settings, Users
 } from "lucide-react";
 import { differenceInMinutes, format } from "date-fns";
+import { QuickTableAssignment, StationConfiguration } from "@/components/kds";
 
 interface OrderItem {
   id: string;
@@ -50,6 +51,8 @@ export default function KitchenKDS() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedOutlet, setSelectedOutlet] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"new" | "completed">("new");
+  const [tableAssignmentOpen, setTableAssignmentOpen] = useState(false);
+  const [stationConfigOpen, setStationConfigOpen] = useState(false);
 
   useEffect(() => {
     const outletId = localStorage.getItem('lab_ops_outlet_id');
@@ -322,6 +325,24 @@ export default function KitchenKDS() {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
+              size="sm"
+              onClick={() => setTableAssignmentOpen(true)}
+              className="text-white hover:bg-white/20"
+            >
+              <Users className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Tables</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStationConfigOpen(true)}
+              className="text-white hover:bg-white/20"
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Stations</span>
+            </Button>
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => setSoundEnabled(!soundEnabled)}
               className="text-white hover:bg-white/20"
@@ -510,6 +531,24 @@ export default function KitchenKDS() {
           </div>
         )}
       </div>
+
+      {/* Configuration Dialogs */}
+      {selectedOutlet && (
+        <>
+          <QuickTableAssignment
+            open={tableAssignmentOpen}
+            onClose={() => setTableAssignmentOpen(false)}
+            outletId={selectedOutlet}
+            onSave={() => fetchOrders(selectedOutlet)}
+          />
+          <StationConfiguration
+            open={stationConfigOpen}
+            onClose={() => setStationConfigOpen(false)}
+            outletId={selectedOutlet}
+            onStationsChange={() => fetchOrders(selectedOutlet)}
+          />
+        </>
+      )}
     </div>
   );
 }

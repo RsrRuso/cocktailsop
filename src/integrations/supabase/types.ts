@@ -7827,6 +7827,7 @@ export type Database = {
           allocation: string | null
           archived_at: string | null
           assigned_staff_id: string | null
+          assigned_to: string | null
           capacity: number | null
           created_at: string | null
           floor_plan_id: string | null
@@ -7852,6 +7853,7 @@ export type Database = {
           allocation?: string | null
           archived_at?: string | null
           assigned_staff_id?: string | null
+          assigned_to?: string | null
           capacity?: number | null
           created_at?: string | null
           floor_plan_id?: string | null
@@ -7877,6 +7879,7 @@ export type Database = {
           allocation?: string | null
           archived_at?: string | null
           assigned_staff_id?: string | null
+          assigned_to?: string | null
           capacity?: number | null
           created_at?: string | null
           floor_plan_id?: string | null
@@ -7902,6 +7905,13 @@ export type Database = {
           {
             foreignKeyName: "lab_ops_tables_assigned_staff_id_fkey"
             columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_tables_assigned_to_fkey"
+            columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "lab_ops_staff"
             referencedColumns: ["id"]
