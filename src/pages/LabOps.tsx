@@ -4352,13 +4352,15 @@ function StaffModule({ outletId, outletName, isOwnerOrManager }: { outletId: str
                         {member.pin_code ? "Edit" : "Set"}
                       </Button>
                       {isOwnerOrManager && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => deleteStaff(member.id)}
+                          aria-label={`Remove ${member.full_name || "staff member"}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
+                          Remove
                         </Button>
                       )}
                     </>
