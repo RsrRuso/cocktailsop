@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,9 +14,11 @@ import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { AvatarCropper } from "@/components/AvatarCropper";
 import { CoverPhotoCropper } from "@/components/CoverPhotoCropper";
+import { smartUpload } from "@/lib/uploadUtils";
 
 const EditProfile = () => {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [tempAvatarUrl, setTempAvatarUrl] = useState<string>("");
@@ -28,12 +31,14 @@ const EditProfile = () => {
   const [showCoverCropper, setShowCoverCropper] = useState(false);
   const [croppedCoverBlob, setCroppedCoverBlob] = useState<Blob | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
   // Website icon upload
   const [websiteIconUrl, setWebsiteIconUrl] = useState<string>("");
   const [tempWebsiteIconUrl, setTempWebsiteIconUrl] = useState<string>("");
   const [showWebsiteIconCropper, setShowWebsiteIconCropper] = useState(false);
   const [croppedWebsiteIconBlob, setCroppedWebsiteIconBlob] = useState<Blob | null>(null);
   const websiteIconInputRef = useRef<HTMLInputElement>(null);
+  const initialProfileRef = useRef<any | null>(null);
 
   const [profile, setProfile] = useState({
     username: "",
@@ -68,6 +73,8 @@ const EditProfile = () => {
       .maybeSingle();
 
     if (data) {
+      initialProfileRef.current = data;
+
       setProfile({
         username: data.username || "",
         full_name: data.full_name || "",
@@ -165,91 +172,85 @@ const EditProfile = () => {
 
   const handleSave = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
-    let finalAvatarUrl = avatarUrl;
-    let finalCoverUrl = coverUrl;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
 
-    // Upload avatar and cover if new cropped images exist
-    const processImages = async () => {
-      const updates: any = {
-        username: profile.username,
-        full_name: profile.full_name,
-        bio: profile.bio,
-        region: profile.region,
-        phone: profile.phone,
-        whatsapp: profile.whatsapp,
-        website: profile.website,
-        date_of_birth: profile.date_of_birth || null,
-        show_phone: profile.show_phone,
-        show_whatsapp: profile.show_whatsapp,
-        show_website: profile.show_website,
+      const initial = initialProfileRef.current || {};
+      const patch: Record<string, any> = {};
+
+      const setIfChanged = (key: string, next: any) => {
+        const prev = initial[key];
+        const prevNorm = prev ?? "";
+        const nextNorm = next ?? "";
+        if (prevNorm !== nextNorm) patch[key] = next;
       };
 
-      if (profile.professional_title) {
-        updates.professional_title = profile.professional_title;
-      }
+      setIfChanged("username", profile.username);
+      setIfChanged("full_name", profile.full_name);
+      setIfChanged("bio", profile.bio);
+      setIfChanged("professional_title", profile.professional_title);
+      setIfChanged("region", profile.region);
+      setIfChanged("phone", profile.phone);
+      setIfChanged("whatsapp", profile.whatsapp);
+      setIfChanged("website", profile.website);
 
-      // Process avatar
+      // Date fields: store null when empty
+      const nextDob = profile.date_of_birth ? profile.date_of_birth : null;
+      const prevDob = initial.date_of_birth ? initial.date_of_birth : null;
+      if (prevDob !== nextDob) patch.date_of_birth = nextDob;
+
+      if ((initial.show_phone ?? true) !== profile.show_phone) patch.show_phone = profile.show_phone;
+      if ((initial.show_whatsapp ?? true) !== profile.show_whatsapp) patch.show_whatsapp = profile.show_whatsapp;
+      if ((initial.show_website ?? true) !== profile.show_website) patch.show_website = profile.show_website;
+
+      // Upload cropped images (store URLs only)
+      const uploadBlob = async (bucket: string, blob: Blob, defaultName: string) => {
+        const file = new File([blob], defaultName, { type: blob.type || "image/png" });
+        const result = await smartUpload(bucket, user.id, file);
+        if (result.error || !result.publicUrl) {
+          throw result.error || new Error("Upload failed");
+        }
+        return result.publicUrl;
+      };
+
       if (croppedBlob) {
-        const avatarReader = new FileReader();
-        await new Promise((resolve) => {
-          avatarReader.onloadend = () => {
-            updates.avatar_url = avatarReader.result as string;
-            resolve(null);
-          };
-          avatarReader.readAsDataURL(croppedBlob);
-        });
-      } else {
-        updates.avatar_url = finalAvatarUrl;
+        patch.avatar_url = await uploadBlob("avatars", croppedBlob, "avatar.png");
       }
 
-      // Process cover
       if (croppedCoverBlob) {
-        const coverReader = new FileReader();
-        await new Promise((resolve) => {
-          coverReader.onloadend = () => {
-            updates.cover_url = coverReader.result as string;
-            resolve(null);
-          };
-          coverReader.readAsDataURL(croppedCoverBlob);
-        });
-      } else {
-        updates.cover_url = finalCoverUrl;
+        patch.cover_url = await uploadBlob("covers", croppedCoverBlob, "cover.jpg");
       }
 
-      // Process website icon
       if (croppedWebsiteIconBlob) {
-        const iconReader = new FileReader();
-        await new Promise((resolve) => {
-          iconReader.onloadend = () => {
-            updates.website_icon_url = iconReader.result as string;
-            resolve(null);
-          };
-          iconReader.readAsDataURL(croppedWebsiteIconBlob);
-        });
-      } else {
-        updates.website_icon_url = websiteIconUrl;
+        patch.website_icon_url = await uploadBlob("avatars", croppedWebsiteIconBlob, "website-icon.png");
       }
 
-      return updates;
-    };
+      if (Object.keys(patch).length === 0) {
+        toast.message("No changes to save");
+        return;
+      }
 
-    const updates = await processImages();
+      const { error } = await supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", user.id);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update(updates)
-      .eq("id", user.id);
+      if (error) throw error;
 
-    if (error) {
-      toast.error("Failed to update profile");
-    } else {
+      await refreshProfile();
       toast.success("Profile updated successfully!");
       navigate("/profile");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to update profile");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
