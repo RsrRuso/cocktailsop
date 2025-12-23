@@ -45,6 +45,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Outlet {
   id: string;
+  user_id: string;
   name: string;
   address: string;
   type: string;
@@ -65,6 +66,7 @@ export default function LabOps() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; username?: string; email?: string; role: string }[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState<{ full_name?: string; username?: string } | null>(null);
+  const [currentUserStaffRole, setCurrentUserStaffRole] = useState<string | null>(null);
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
 
   // Setup presence tracking for the selected outlet
@@ -352,6 +354,28 @@ export default function LabOps() {
       fetchOutlets();
     }
   }, [user]);
+
+  // Fetch current user's staff role for the selected outlet
+  useEffect(() => {
+    const fetchUserStaffRole = async () => {
+      if (!user || !selectedOutlet) {
+        setCurrentUserStaffRole(null);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from("lab_ops_staff")
+        .select("role")
+        .eq("outlet_id", selectedOutlet.id)
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      
+      setCurrentUserStaffRole(data?.role || null);
+    };
+    
+    fetchUserStaffRole();
+  }, [user, selectedOutlet?.id]);
 
   const fetchOutlets = async () => {
     if (!user) return;
@@ -742,7 +766,7 @@ export default function LabOps() {
             </TabsContent>
 
             <TabsContent value="staff">
-              <StaffModule outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
+              <StaffModule outletId={selectedOutlet.id} outletName={selectedOutlet.name} isOwnerOrManager={selectedOutlet.user_id === user?.id || currentUserStaffRole === 'manager'} />
             </TabsContent>
 
             <TabsContent value="live">
@@ -4043,7 +4067,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
 }
 
 // ====================== STAFF MODULE ======================
-function StaffModule({ outletId, outletName }: { outletId: string; outletName: string }) {
+function StaffModule({ outletId, outletName, isOwnerOrManager }: { outletId: string; outletName: string; isOwnerOrManager: boolean }) {
   const [staff, setStaff] = useState<any[]>([]);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -4195,65 +4219,67 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
           <CardTitle className="text-lg">Staff Management</CardTitle>
           <CardDescription className="text-sm">Manage your team members</CardDescription>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={() => setShowInviteDialog(true)}
-          >
-            <Users className="h-4 w-4 mr-1" />
-            Invite
-          </Button>
-          <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
-            <DialogTrigger asChild>
-              <Button size="sm"><UserPlus className="h-4 w-4 mr-1" />Add Staff</Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add Staff Member</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label>Name</Label>
-                <Input value={staffName} onChange={(e) => setStaffName(e.target.value)} />
+        {isOwnerOrManager && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setShowInviteDialog(true)}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              Invite
+            </Button>
+            <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+              <DialogTrigger asChild>
+                <Button size="sm"><UserPlus className="h-4 w-4 mr-1" />Add Staff</Button>
+              </DialogTrigger>
+            <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Staff Member</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label>Name</Label>
+                  <Input value={staffName} onChange={(e) => setStaffName(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input type="email" value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input value={staffPhone} onChange={(e) => setStaffPhone(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Role</Label>
+                  <Select value={staffRole} onValueChange={setStaffRole}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="bartender">Bartender</SelectItem>
+                      <SelectItem value="server">Server</SelectItem>
+                      <SelectItem value="chef">Chef</SelectItem>
+                      <SelectItem value="host">Host</SelectItem>
+                      <SelectItem value="barback">Barback</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>POS PIN (4 digits)</Label>
+                  <Input 
+                    type="password" 
+                    maxLength={4}
+                    value={staffPin} 
+                    onChange={(e) => setStaffPin(e.target.value.replace(/\D/g, ""))} 
+                    placeholder="****"
+                  />
+                </div>
+                <Button onClick={createStaff} className="w-full">Add Staff</Button>
               </div>
-              <div>
-                <Label>Email</Label>
-                <Input type="email" value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} />
-              </div>
-              <div>
-                <Label>Phone</Label>
-                <Input value={staffPhone} onChange={(e) => setStaffPhone(e.target.value)} />
-              </div>
-              <div>
-                <Label>Role</Label>
-                <Select value={staffRole} onValueChange={setStaffRole}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="bartender">Bartender</SelectItem>
-                    <SelectItem value="server">Server</SelectItem>
-                    <SelectItem value="chef">Chef</SelectItem>
-                    <SelectItem value="host">Host</SelectItem>
-                    <SelectItem value="barback">Barback</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>POS PIN (4 digits)</Label>
-                <Input 
-                  type="password" 
-                  maxLength={4}
-                  value={staffPin} 
-                  onChange={(e) => setStaffPin(e.target.value.replace(/\D/g, ""))} 
-                  placeholder="****"
-                />
-              </div>
-              <Button onClick={createStaff} className="w-full">Add Staff</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-        </div>
+            </DialogContent>
+          </Dialog>
+          </div>
+        )}
 
         <InviteLabOpsStaffDialog
           open={showInviteDialog}
@@ -4315,15 +4341,27 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {member.is_active ? (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => setEditingStaff(member)}
-                    >
-                      <Key className="h-3.5 w-3.5" />
-                      {member.pin_code ? "Edit" : "Set"}
-                    </Button>
+                    <>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => setEditingStaff(member)}
+                      >
+                        <Key className="h-3.5 w-3.5" />
+                        {member.pin_code ? "Edit" : "Set"}
+                      </Button>
+                      {isOwnerOrManager && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => deleteStaff(member.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => reactivateStaff(member.id)}>
                       Restore
