@@ -226,17 +226,32 @@ export const useUserMemberships = (userId: string | null) => {
         let ownedLabOpsData: any[] | null = null;
         
         try {
-          const staffResult = await (supabase as any)
+          // First check if user is a staff member
+          const staffResult = await supabase
             .from('lab_ops_staff')
-            .select('outlet_id, role, lab_ops_outlets!inner(id, name)')
+            .select('outlet_id, role')
             .eq('user_id', userId)
             .eq('is_active', true);
           
           console.log('[Lab Ops Staff Query] userId:', userId, 'result:', staffResult.data, 'error:', staffResult.error);
-          labOpsStaffData = staffResult.data;
+          
+          // If staff records found, fetch outlet names separately
+          if (staffResult.data && staffResult.data.length > 0) {
+            const outletIds = staffResult.data.map(s => s.outlet_id);
+            const { data: outlets } = await supabase
+              .from('lab_ops_outlets')
+              .select('id, name')
+              .in('id', outletIds);
+            
+            // Merge outlet names with staff data
+            labOpsStaffData = staffResult.data.map(s => ({
+              ...s,
+              lab_ops_outlets: outlets?.find(o => o.id === s.outlet_id) || null
+            }));
+          }
           
           // lab_ops_outlets uses user_id as owner field, not owner_id
-          const ownedResult = await (supabase as any)
+          const ownedResult = await supabase
             .from('lab_ops_outlets')
             .select('id, name')
             .eq('user_id', userId);
