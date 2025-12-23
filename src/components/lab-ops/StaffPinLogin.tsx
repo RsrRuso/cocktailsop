@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Delete, Smartphone } from "lucide-react";
+import { Loader2, Delete, Smartphone, ArrowLeft } from "lucide-react";
 
 interface StaffMember {
   id: string;
@@ -24,6 +25,7 @@ interface StaffPinLoginProps {
 }
 
 export default function StaffPinLogin({ outlets, onLogin }: StaffPinLoginProps) {
+  const navigate = useNavigate();
   const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
   const [pin, setPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -100,28 +102,39 @@ export default function StaffPinLogin({ outlets, onLogin }: StaffPinLoginProps) 
 
   if (!selectedOutlet) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Smartphone className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Staff POS Login</CardTitle>
-            <p className="text-muted-foreground mt-2">Select your outlet to continue</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {outlets.map(outlet => (
-              <Button
-                key={outlet.id}
-                variant="outline"
-                className="w-full h-14 text-lg justify-start"
-                onClick={() => setSelectedOutlet(outlet)}
-              >
-                {outlet.name}
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex flex-col p-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="self-start mb-4"
+          onClick={() => navigate('/profile')}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        <div className="flex-1 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <Smartphone className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Staff POS Login</CardTitle>
+              <p className="text-muted-foreground mt-2">Select your outlet to continue</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {outlets.map(outlet => (
+                <Button
+                  key={outlet.id}
+                  variant="outline"
+                  className="w-full h-14 text-lg justify-start"
+                  onClick={() => setSelectedOutlet(outlet)}
+                >
+                  {outlet.name}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
