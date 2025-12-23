@@ -26,16 +26,20 @@ export const useNetworkStatus = () => {
 
   const showToast = useCallback((message: string, type: 'warning' | 'success' | 'error') => {
     const now = Date.now();
-    // Prevent toast spam - minimum 5 seconds between toasts
-    if (now - lastToastRef.current < 5000) return;
+    // Prevent toast spam - minimum 3 seconds between toasts
+    if (now - lastToastRef.current < 3000) return;
     lastToastRef.current = now;
     
     if (type === 'warning') {
-      toast.warning(message, { duration: 3000 });
+      toast.warning(message, { duration: 4000 });
     } else if (type === 'success') {
       toast.success(message, { duration: 2000 });
     } else {
-      toast.error(message, { duration: 3000 });
+      // Error (offline) - more prominent with longer duration
+      toast.error(message, { 
+        duration: Infinity, // Stay until dismissed or back online
+        id: 'offline-toast', // Unique ID to prevent duplicates
+      });
     }
   }, []);
 
@@ -55,13 +59,13 @@ export const useNetworkStatus = () => {
     }
   }, []);
 
-  const updateNetworkStatus = useCallback(async (online: boolean) => {
+  const updateNetworkStatus = useCallback(async (online: boolean, immediate = false) => {
     // Clear any pending debounce
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
-    debounceRef.current = setTimeout(async () => {
+    const performUpdate = async () => {
       let connectionInfo: Partial<NetworkStatus> = {
         isOnline: online,
         connectionType: null,
@@ -102,14 +106,23 @@ export const useNetworkStatus = () => {
       // Show appropriate toasts
       if (!online && !wasOfflineRef.current) {
         wasOfflineRef.current = true;
-        showToast('You\'re offline. Using cached data.', 'warning');
+        showToast('You\'re offline. Using cached data.', 'error');
       } else if (online && wasOfflineRef.current) {
         wasOfflineRef.current = false;
+        // Dismiss the offline toast when back online
+        toast.dismiss('offline-toast');
         showToast('Back online!', 'success');
       } else if (online && connectionInfo.isSlowConnection) {
         showToast('Slow connection detected. Some features may be delayed.', 'warning');
       }
-    }, DEBOUNCE_MS);
+    };
+
+    // INSTANT for offline, debounced for online (to prevent flapping)
+    if (!online || immediate) {
+      performUpdate();
+    } else {
+      debounceRef.current = setTimeout(performUpdate, DEBOUNCE_MS);
+    }
   }, [checkConnectionSpeed, showToast]);
 
   useEffect(() => {
