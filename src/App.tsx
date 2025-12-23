@@ -171,6 +171,7 @@ const Livestream = lazy(() => import("@/pages/Livestream"));
 const StaffPOS = lazy(() => import("@/pages/StaffPOS"));
 const StaffInstall = lazy(() => import("@/pages/StaffInstall"));
 const StaffQRAccess = lazy(() => import("@/pages/StaffQRAccess"));
+const LabOpsStaffPinAccess = lazy(() => import("@/pages/LabOpsStaffPinAccess"));
 const BarKDS = lazy(() => import("@/pages/BarKDS"));
 const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
 const ExamCenter = lazy(() => import("@/pages/ExamCenter"));
@@ -424,6 +425,7 @@ const AppContent = () => {
           <Route path="/staff-pos" element={<StaffPOS />} />
           <Route path="/staff-install" element={<StaffInstall />} />
           <Route path="/staff-qr-access" element={<StaffQRAccess />} />
+          <Route path="/lab-ops-staff-pin-access" element={<LabOpsStaffPinAccess />} />
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
           <Route path="/exam-center" element={<ExamCenter />} />
