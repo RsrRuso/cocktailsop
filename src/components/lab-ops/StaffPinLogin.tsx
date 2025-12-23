@@ -106,7 +106,7 @@ export default function StaffPinLogin({ outlets, onLogin }: StaffPinLoginProps) 
             <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Smartphone className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">LAB Ops Staff Login</CardTitle>
+            <CardTitle className="text-2xl">Staff POS Login</CardTitle>
             <p className="text-muted-foreground mt-2">Select your outlet to continue</p>
           </CardHeader>
           <CardContent className="space-y-3">
