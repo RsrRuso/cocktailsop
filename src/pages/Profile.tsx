@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ProfileMembershipDoors } from "@/components/ProfileMembershipDoors";
+import { clearMembershipCache } from "@/hooks/useUserMemberships";
 
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
@@ -35,6 +36,11 @@ const Profile = () => {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showFollowersDialog, setShowFollowersDialog] = useState(false);
   const [showFollowingDialog, setShowFollowingDialog] = useState(false);
+
+  // Clear membership cache on mount to ensure fresh data
+  useEffect(() => {
+    clearMembershipCache();
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;

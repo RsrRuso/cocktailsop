@@ -228,9 +228,11 @@ export const useUserMemberships = (userId: string | null) => {
         try {
           const staffResult = await (supabase as any)
             .from('lab_ops_staff')
-            .select('outlet_id, role, lab_ops_outlets(id, name)')
+            .select('outlet_id, role, lab_ops_outlets!inner(id, name)')
             .eq('user_id', userId)
             .eq('is_active', true);
+          
+          console.log('[Lab Ops Staff Query] userId:', userId, 'result:', staffResult.data, 'error:', staffResult.error);
           labOpsStaffData = staffResult.data;
           
           // lab_ops_outlets uses user_id as owner field, not owner_id
@@ -238,6 +240,8 @@ export const useUserMemberships = (userId: string | null) => {
             .from('lab_ops_outlets')
             .select('id, name')
             .eq('user_id', userId);
+          
+          console.log('[Lab Ops Owned Query] userId:', userId, 'result:', ownedResult.data, 'error:', ownedResult.error);
           ownedLabOpsData = ownedResult.data;
         } catch (e) {
           console.error('Error fetching lab ops memberships:', e);
