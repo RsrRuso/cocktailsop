@@ -12,11 +12,13 @@ const corsHeaders = {
 interface PinNotificationRequest {
   userId: string;
   pin: string;
-  workspaceName: string;
-  workspaceType: "fifo" | "store_management" | "procurement" | "mixologist" | "lab_ops";
+  workspaceName?: string;
+  outletName?: string;
+  workspaceType?: "fifo" | "store_management" | "procurement" | "mixologist" | "lab_ops";
+  isUpdate?: boolean;
 }
 
-const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: string, userName?: string) => {
+const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: string, userName?: string, isUpdate?: boolean) => {
   const workspaceTypeLabel = {
     fifo: "FIFO Workspace",
     store_management: "Store Management",
@@ -24,6 +26,9 @@ const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: str
     mixologist: "Mixologist Group",
     lab_ops: "LAB Ops Outlet"
   }[workspaceType] || "Workspace";
+  
+  const emailTitle = isUpdate ? "Access PIN Updated" : "Access PIN Granted";
+  const emailAction = isUpdate ? "Your PIN has been updated for" : "You've been granted access to";
 
   return `
 <!DOCTYPE html>
@@ -44,7 +49,7 @@ const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: str
                 <span style="font-size: 32px;">🔐</span>
               </div>
               <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">
-                Access PIN Granted
+                ${emailTitle}
               </h1>
               <p style="margin: 8px 0 0 0; color: #888; font-size: 14px;">${workspaceTypeLabel}</p>
             </td>
@@ -55,7 +60,7 @@ const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: str
             <td style="padding: 20px 40px 40px 40px;">
               <p style="margin: 0 0 24px 0; color: #b0b0b0; font-size: 16px; line-height: 1.6;">
                 ${userName ? `Hi ${userName},` : 'Hello,'}<br><br>
-                You've been granted access to <strong style="color: #ffffff;">${workspaceName}</strong>. Use the PIN below for mobile access:
+                ${emailAction} <strong style="color: #ffffff;">${workspaceName}</strong>. Use the PIN below for mobile access:
               </p>
               
               <!-- PIN Display Box -->
@@ -64,7 +69,7 @@ const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: str
                   <td align="center" style="padding: 20px 0;">
                     <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 12px; padding: 4px; display: inline-block;">
                       <div style="background: #1a1a2e; border-radius: 10px; padding: 20px 40px;">
-                        <p style="margin: 0 0 8px 0; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Your PIN Code</p>
+                        <p style="margin: 0 0 8px 0; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">${isUpdate ? 'Your New PIN Code' : 'Your PIN Code'}</p>
                         <p style="margin: 0; font-size: 48px; font-weight: bold; letter-spacing: 12px; color: #f59e0b; font-family: 'Courier New', monospace;">
                           ${pin}
                         </p>
@@ -111,9 +116,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { userId, pin, workspaceName, workspaceType }: PinNotificationRequest = await req.json();
+    const { userId, pin, workspaceName, outletName, workspaceType, isUpdate }: PinNotificationRequest = await req.json();
     
-    console.log(`Sending PIN notification to user: ${userId} for workspace: ${workspaceName}`);
+    // Use outletName for lab_ops, or workspaceName for others
+    const locationName = outletName || workspaceName || "Unknown Location";
+    const resolvedWorkspaceType = workspaceType || (outletName ? "lab_ops" : "fifo");
+    
+    console.log(`Sending PIN notification to user: ${userId} for location: ${locationName}, isUpdate: ${isUpdate}`);
 
     // Initialize Supabase client to get user email
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -132,12 +141,16 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Could not find user email");
     }
 
-    const html = getEmailTemplate(pin, workspaceName, workspaceType, profile.full_name);
+    const html = getEmailTemplate(pin, locationName, resolvedWorkspaceType, profile.full_name, isUpdate);
+
+    const emailSubject = isUpdate 
+      ? `🔐 Your Access PIN Updated - ${locationName}`
+      : `🔐 Your Access PIN for ${locationName}`;
 
     const emailResponse = await resend.emails.send({
       from: "SpecVerse <onboarding@resend.dev>",
       to: [profile.email],
-      subject: `🔐 Your Access PIN for ${workspaceName}`,
+      subject: emailSubject,
       html,
     });
 
@@ -150,17 +163,20 @@ const handler = async (req: Request): Promise<Response> => {
       procurement: "Procurement Workspace",
       mixologist: "Mixologist Group",
       lab_ops: "LAB Ops Outlet"
-    }[workspaceType] || "Workspace";
+    }[resolvedWorkspaceType] || "Workspace";
+
+    const emailTitle = isUpdate ? "Access PIN Updated" : "Access PIN Granted";
+    const emailAction = isUpdate ? "Your PIN has been updated for" : "You've been granted access to";
 
     await supabase.from("internal_emails").insert({
       sender_id: userId, // Self-sent system notification
       recipient_id: userId,
-      subject: `🔐 Access PIN Granted - ${workspaceName}`,
+      subject: `🔐 ${emailTitle} - ${locationName}`,
       body: `<div>
-        <h2 style="color: #f59e0b; margin-bottom: 16px;">Access PIN Granted</h2>
-        <p>You've been granted access to <strong>${workspaceName}</strong> (${workspaceTypeLabel}).</p>
+        <h2 style="color: #f59e0b; margin-bottom: 16px;">${emailTitle}</h2>
+        <p>${emailAction} <strong>${locationName}</strong> (${workspaceTypeLabel}).</p>
         <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0;">
-          <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Your PIN Code</p>
+          <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">${isUpdate ? "Your New PIN Code" : "Your PIN Code"}</p>
           <p style="font-size: 36px; font-weight: bold; letter-spacing: 8px; font-family: monospace; margin: 0;">${pin}</p>
         </div>
         <p style="font-size: 14px; margin-top: 16px;">⚠️ Keep this PIN secure. Do not share it with anyone who shouldn't have access.</p>
