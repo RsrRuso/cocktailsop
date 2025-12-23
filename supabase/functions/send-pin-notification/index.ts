@@ -13,7 +13,7 @@ interface PinNotificationRequest {
   userId: string;
   pin: string;
   workspaceName: string;
-  workspaceType: "fifo" | "store_management" | "procurement" | "mixologist";
+  workspaceType: "fifo" | "store_management" | "procurement" | "mixologist" | "lab_ops";
 }
 
 const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: string, userName?: string) => {
@@ -21,7 +21,8 @@ const getEmailTemplate = (pin: string, workspaceName: string, workspaceType: str
     fifo: "FIFO Workspace",
     store_management: "Store Management",
     procurement: "Procurement Workspace",
-    mixologist: "Mixologist Group"
+    mixologist: "Mixologist Group",
+    lab_ops: "LAB Ops Outlet"
   }[workspaceType] || "Workspace";
 
   return `
@@ -147,7 +148,8 @@ const handler = async (req: Request): Promise<Response> => {
       fifo: "FIFO Workspace",
       store_management: "Store Management",
       procurement: "Procurement Workspace",
-      mixologist: "Mixologist Group"
+      mixologist: "Mixologist Group",
+      lab_ops: "LAB Ops Outlet"
     }[workspaceType] || "Workspace";
 
     await supabase.from("internal_emails").insert({
