@@ -4,7 +4,7 @@ import { preloadUserSpaces } from './useSpaceMembers';
 
 export interface Membership {
   id: string;
-  type: 'workspace' | 'group' | 'team' | 'procurement' | 'fifo';
+  type: 'workspace' | 'group' | 'team' | 'procurement' | 'fifo' | 'labops';
   name: string;
   role?: string;
   route: string;
@@ -181,15 +181,8 @@ export const useUserMemberships = (userId: string | null) => {
       
       try {
         // Fetch ALL membership types in parallel for speed
-        const [
-          workspaceMemberRes, 
-          ownedWorkspacesRes, 
-          groupRes, 
-          ownedGroupsRes,
-          teamRes, 
-          procurementRes,
-          ownedProcurementRes
-        ] = await Promise.all([
+        // Split into two Promise.all to avoid TypeScript deep instantiation issues
+        const [workspaceMemberRes, ownedWorkspacesRes, groupRes, ownedGroupsRes, teamRes] = await Promise.all([
           // Workspaces user is a member of
           supabase
             .from('workspace_members')
@@ -215,17 +208,38 @@ export const useUserMemberships = (userId: string | null) => {
             .from('team_members')
             .select('team_id, role, teams!inner(id, name)')
             .eq('user_id', userId),
-          // Procurement workspaces user is a member of
-          supabase
-            .from('procurement_workspace_members')
-            .select('workspace_id, role, procurement_workspaces!inner(id, name)')
-            .eq('user_id', userId),
-          // Procurement workspaces user owns (in case not in members)
-          supabase
-            .from('procurement_workspaces')
-            .select('id, name')
-            .eq('owner_id', userId),
         ]);
+
+        // Fetch procurement and lab ops memberships
+        const procurementRes = await supabase
+          .from('procurement_workspace_members')
+          .select('workspace_id, role, procurement_workspaces!inner(id, name)')
+          .eq('user_id', userId);
+        
+        const ownedProcurementRes = await supabase
+          .from('procurement_workspaces')
+          .select('id, name')
+          .eq('owner_id', userId);
+        
+        // Fetch Lab Ops data using dynamic approach to avoid TS deep type instantiation
+        let labOpsStaffData: any[] | null = null;
+        let ownedLabOpsData: any[] | null = null;
+        
+        try {
+          const staffResult = await (supabase as any)
+            .from('lab_ops_staff')
+            .select('outlet_id, role, lab_ops_outlets(id, name)')
+            .eq('user_id', userId);
+          labOpsStaffData = staffResult.data;
+          
+          const ownedResult = await (supabase as any)
+            .from('lab_ops_outlets')
+            .select('id, name')
+            .eq('owner_id', userId);
+          ownedLabOpsData = ownedResult.data;
+        } catch (e) {
+          console.error('Error fetching lab ops memberships:', e);
+        }
 
         const allMemberships: Membership[] = [];
         const processedWorkspaceIds = new Set<string>();
@@ -365,6 +379,44 @@ export const useUserMemberships = (userId: string | null) => {
                 route: `/purchase-orders?workspace=${p.id}`,
                 icon: '📦',
                 color: 'from-violet-500/20 to-violet-600/20 border-violet-500/30',
+                memberCount: 0,
+              });
+            }
+          }
+        }
+
+        // Process Lab Ops from staff table
+        const processedLabOpsIds = new Set<string>();
+        if (labOpsStaffData) {
+          for (const l of labOpsStaffData as any[]) {
+            if (l.lab_ops_outlets) {
+              processedLabOpsIds.add(l.outlet_id);
+              allMemberships.push({
+                id: l.outlet_id,
+                type: 'labops',
+                name: l.lab_ops_outlets.name,
+                role: l.role,
+                route: `/lab-ops-staff-pin-access?outlet=${l.outlet_id}`,
+                icon: '🧪',
+                color: 'from-cyan-500/20 to-cyan-600/20 border-cyan-500/30',
+                memberCount: 0,
+              });
+            }
+          }
+        }
+
+        // Add owned Lab Ops outlets not already in staff
+        if (ownedLabOpsData) {
+          for (const l of ownedLabOpsData as any[]) {
+            if (!processedLabOpsIds.has(l.id)) {
+              allMemberships.push({
+                id: l.id,
+                type: 'labops',
+                name: l.name,
+                role: 'owner',
+                route: `/lab-ops-staff-pin-access?outlet=${l.id}`,
+                icon: '🧪',
+                color: 'from-cyan-500/20 to-cyan-600/20 border-cyan-500/30',
                 memberCount: 0,
               });
             }
