@@ -415,7 +415,7 @@ export const useUserMemberships = (userId: string | null) => {
               allMemberships.push({
                 id: l.outlet_id,
                 type: 'labops',
-                name: l.lab_ops_outlets.name,
+                name: 'Staff POS',
                 role: l.role,
                 route: `/lab-ops-staff-pin-access?outlet=${l.outlet_id}`,
                 icon: '🧪',
@@ -433,7 +433,7 @@ export const useUserMemberships = (userId: string | null) => {
               allMemberships.push({
                 id: l.id,
                 type: 'labops',
-                name: l.name,
+                name: 'Staff POS',
                 role: 'owner',
                 route: `/lab-ops-staff-pin-access?outlet=${l.id}`,
                 icon: '🧪',
