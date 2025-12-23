@@ -4117,8 +4117,10 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
       is_active: editingStaff.is_active,
     };
 
+    const pinUpdated = editingStaff.new_pin_code && editingStaff.new_pin_code.length === 4;
+    
     // Only update PIN if a new one is provided
-    if (editingStaff.new_pin_code && editingStaff.new_pin_code.length === 4) {
+    if (pinUpdated) {
       updateData.pin_code = editingStaff.new_pin_code;
     }
 
@@ -4127,9 +4129,28 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
       .update(updateData)
       .eq("id", editingStaff.id);
 
+    // Send internal email notification if PIN was updated
+    if (pinUpdated && editingStaff.user_id) {
+      try {
+        await supabase.functions.invoke('send-pin-notification', {
+          body: {
+            userId: editingStaff.user_id,
+            pin: editingStaff.new_pin_code,
+            outletName: outletName,
+            isUpdate: true
+          }
+        });
+        toast({ title: "Staff updated", description: "PIN notification sent via internal email" });
+      } catch (emailError) {
+        console.error("Error sending PIN notification:", emailError);
+        toast({ title: "Staff updated", description: "Could not send PIN notification" });
+      }
+    } else {
+      toast({ title: "Staff updated" });
+    }
+
     setEditingStaff(null);
     fetchStaff();
-    toast({ title: "Staff updated" });
   };
 
   const toggleStaffStatus = async (staffMember: any) => {
