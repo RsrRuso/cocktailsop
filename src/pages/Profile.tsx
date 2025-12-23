@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign, Link as LinkIcon, BookOpen } from "lucide-react";
+import { Settings, Grid3X3, Bookmark, PlaySquare, Sparkles, Film, LogOut, DollarSign, Link as LinkIcon, BookOpen } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useNavigate } from "react-router-dom";
@@ -70,13 +70,7 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  if (isLoading && !profile) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-white/50" />
-      </div>
-    );
-  }
+  // REMOVED: Loading spinner - render immediately
 
   if (!user) return null;
 
@@ -265,11 +259,7 @@ const Profile = () => {
 
       {/* Feed - Full width outside padded container */}
       <div className="mt-1">
-        <Suspense fallback={
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-white/30" />
-          </div>
-        }>
+        <Suspense fallback={null}>
           {(activeTab === 'posts' || activeTab === 'reels') && <ProfileFeedTab userId={user.id} profile={profile} />}
           {activeTab === 'saved' && <ProfileSavedTab userId={user.id} />}
         </Suspense>
