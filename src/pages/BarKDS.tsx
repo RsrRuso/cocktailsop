@@ -16,6 +16,7 @@ import { RecipeDialog } from "@/components/bar-kds/RecipeDialog";
 import { StationManagement } from "@/components/bar-kds/StationManagement";
 import { BartenderPerformance } from "@/components/bar-kds/BartenderPerformance";
 import { StationConsumption } from "@/components/bar-kds/StationConsumption";
+import { QuickTableAssignment } from "@/components/kds";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
 
 interface StaffMember {
@@ -99,6 +100,7 @@ export default function BarKDS() {
   
   // New state for dialogs
   const [stationManagementOpen, setStationManagementOpen] = useState(false);
+  const [tableAssignmentOpen, setTableAssignmentOpen] = useState(false);
   const [performanceOpen, setPerformanceOpen] = useState(false);
   const [consumptionOpen, setConsumptionOpen] = useState(false);
   const [stations, setStations] = useState<Station[]>([]);
@@ -647,6 +649,14 @@ export default function BarKDS() {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => setTableAssignmentOpen(true)}
+            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+          >
+            <User className="h-3.5 w-3.5 mr-1" /> Tables
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setStationManagementOpen(true)}
             className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
           >
@@ -904,6 +914,16 @@ export default function BarKDS() {
           qty={selectedItem.qty}
           orderId={selectedItem.orderId}
           onComplete={() => markItemComplete(selectedItem.id, selectedItem.orderId)}
+        />
+      )}
+
+      {/* Quick Table Assignment Dialog */}
+      {selectedOutlet && (
+        <QuickTableAssignment
+          open={tableAssignmentOpen}
+          onClose={() => setTableAssignmentOpen(false)}
+          outletId={selectedOutlet}
+          onSave={() => fetchOrders(selectedOutlet)}
         />
       )}
 

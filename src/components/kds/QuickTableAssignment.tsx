@@ -13,14 +13,13 @@ interface Staff {
   id: string;
   full_name: string;
   role: string;
-  assigned_tables: number[];
 }
 
 interface FloorTable {
   id: string;
   table_number: number | null;
   name: string;
-  assigned_to?: string | null;
+  assigned_staff_id?: string | null;
 }
 
 interface QuickTableAssignmentProps {
@@ -52,28 +51,24 @@ export function QuickTableAssignment({ open, onClose, outletId, onSave }: QuickT
           .select("id, full_name, role")
           .eq("outlet_id", outletId)
           .eq("is_active", true)
-          .in("role", ["waiter", "bartender", "server", "manager"]),
+          .in("role", ["waiter", "bartender", "manager", "supervisor"]),
         supabase
           .from("lab_ops_tables")
-          .select("id, table_number, name, assigned_to")
+          .select("id, table_number, name, assigned_staff_id")
           .eq("outlet_id", outletId)
           .order("table_number", { ascending: true })
       ]);
 
-      const staffData = (staffRes.data || []).map(s => ({
-        ...s,
-        assigned_tables: [] as number[]
-      }));
-      setStaff(staffData);
+      setStaff(staffRes.data || []);
       
-      const tableData = tablesRes.data || [];
+      const tableData = (tablesRes.data || []) as FloorTable[];
       setTables(tableData);
       
       // Build initial assignments from tables
       const initialAssignments: Record<number, string | null> = {};
       tableData.forEach(t => {
         if (t.table_number !== null) {
-          initialAssignments[t.table_number] = t.assigned_to || null;
+          initialAssignments[t.table_number] = t.assigned_staff_id || null;
         }
       });
       setAssignments(initialAssignments);
@@ -127,13 +122,13 @@ export function QuickTableAssignment({ open, onClose, outletId, onSave }: QuickT
   const saveAssignments = async () => {
     setIsSaving(true);
     try {
-      // Update each table's assigned_to field
+      // Update each table's assigned_staff_id field
       const updates = tables
         .filter(t => t.table_number !== null)
         .map(t => 
           supabase
             .from("lab_ops_tables")
-            .update({ assigned_to: assignments[t.table_number!] || null })
+            .update({ assigned_staff_id: assignments[t.table_number!] || null })
             .eq("id", t.id)
         );
       
