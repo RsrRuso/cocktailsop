@@ -6,7 +6,7 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { StoriesSkeleton, FeedSkeleton } from "@/components/ui/skeleton-shimmer";
+// Removed skeleton imports - instant render now
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useEngagement } from "@/hooks/useEngagement";
@@ -319,21 +319,7 @@ const Home = () => {
     });
   }, []);
 
-  // Show skeletons ONLY on absolute first load with zero data
-  // Any cached data = instant display
-  const showSkeleton = isLoading && storiesLoading && stories.length === 0 && feed.length === 0;
-  
-  // Render immediately with cached data, never wait
-  if (showSkeleton) {
-    return (
-      <div className="min-h-screen pb-20 pt-16">
-        <TopNav isVisible={showTopNav} />
-        <StoriesSkeleton />
-        <FeedSkeleton />
-        <BottomNav />
-      </div>
-    );
-  }
+  // REMOVED: Skeleton loading state - render immediately, never wait
 
   return (
     <div className="min-h-screen pb-20 pt-16">
