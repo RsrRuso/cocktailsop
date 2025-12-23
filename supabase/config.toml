@@ -131,3 +131,6 @@ verify_jwt = false
 
 [functions.send-gm-invitation]
 verify_jwt = true
+
+[functions.send-pin-notification]
+verify_jwt = false

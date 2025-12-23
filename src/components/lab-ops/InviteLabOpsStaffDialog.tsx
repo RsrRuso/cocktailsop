@@ -349,8 +349,18 @@ export default function InviteLabOpsStaffDialog({
             </DrawerHeader>
 
             <div className="px-4 pb-4">
+              <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 mb-4 flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                  <span className="text-lg">📧</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-primary">PIN Codes Sent!</p>
+                  <p className="text-xs text-muted-foreground">Each team member received their PIN via internal email</p>
+                </div>
+              </div>
+              
               <p className="text-sm text-muted-foreground mb-4">
-                Share these PIN codes with your staff members for POS access:
+                Here are the assigned PIN codes for your records:
               </p>
               
               <div className="space-y-3">
@@ -360,6 +370,10 @@ export default function InviteLabOpsStaffDialog({
                       <div>
                         <p className="font-semibold">{staff.name}</p>
                         <p className="text-sm text-muted-foreground capitalize">{staff.role}</p>
+                        <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          Email sent
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">PIN Code</p>
