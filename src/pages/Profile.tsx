@@ -194,15 +194,23 @@ const Profile = () => {
             <p className="text-sm text-white/70 mt-1 leading-relaxed">{p.bio}</p>
           )}
           
-          {/* Website link */}
+          {/* Website link with custom icon */}
           {profile?.show_website && profile?.website && (
             <a 
               href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-sm text-primary font-medium mt-1"
+              className="flex items-center gap-2 text-sm text-primary font-medium mt-2"
             >
-              <LinkIcon className="w-3.5 h-3.5" />
+              {profile.website_icon_url ? (
+                <img 
+                  src={profile.website_icon_url} 
+                  alt="Website" 
+                  className="w-5 h-5 rounded object-cover"
+                />
+              ) : (
+                <LinkIcon className="w-3.5 h-3.5" />
+              )}
               {profile.website.replace(/^https?:\/\//, '')}
             </a>
           )}
