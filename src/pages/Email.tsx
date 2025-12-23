@@ -412,8 +412,25 @@ const Email = () => {
                 <button onClick={() => deleteEmail(selectedEmail.id)}><Trash2 className="w-5 h-5" strokeWidth={1.5} /></button>
               </div>
               <div className="py-3">
-                <div className="text-sm leading-relaxed [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-2 [&_p]:mb-2" dangerouslySetInnerHTML={{ __html: decodeHtml(selectedEmail.body) }} />
-                <p className="text-xs text-muted-foreground mt-3">{new Date(selectedEmail.created_at).toLocaleString()}</p>
+                <div 
+                  className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none
+                    [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-3 [&_h1]:text-foreground
+                    [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-2 [&_h2]:text-foreground
+                    [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:text-foreground
+                    [&_p]:mb-3 [&_p]:text-foreground/90 [&_p]:leading-relaxed
+                    [&_strong]:font-semibold [&_strong]:text-foreground
+                    [&_div]:text-foreground
+                    [&_*[style*='color']]:!text-inherit
+                    [&>div]:bg-transparent [&>div]:rounded-lg
+                    [&_div[style*='gradient']]:!bg-primary/10 [&_div[style*='gradient']]:border [&_div[style*='gradient']]:border-primary/30 [&_div[style*='gradient']]:rounded-xl [&_div[style*='gradient']]:p-4 [&_div[style*='gradient']]:my-4
+                    [&_p[style*='font-size:_36px']]:text-3xl [&_p[style*='font-size:_36px']]:font-mono [&_p[style*='font-size:_36px']]:font-bold [&_p[style*='font-size:_36px']]:tracking-[0.3em] [&_p[style*='font-size:_36px']]:text-primary [&_p[style*='font-size:_36px']]:text-center
+                    [&_p[style*='font-family:_monospace']]:font-mono [&_p[style*='font-family:_monospace']]:text-primary [&_p[style*='font-family:_monospace']]:text-3xl [&_p[style*='font-family:_monospace']]:tracking-[0.3em] [&_p[style*='font-family:_monospace']]:font-bold [&_p[style*='font-family:_monospace']]:text-center [&_p[style*='font-family:_monospace']]:my-2
+                    [&_p[style*='letter-spacing']]:tracking-widest
+                    [&_p[style*='text-transform:_uppercase']]:uppercase [&_p[style*='text-transform:_uppercase']]:text-xs [&_p[style*='text-transform:_uppercase']]:text-muted-foreground
+                  " 
+                  dangerouslySetInnerHTML={{ __html: decodeHtml(selectedEmail.body) }} 
+                />
+                <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border/30">{new Date(selectedEmail.created_at).toLocaleString()}</p>
               </div>
             </>
           )}

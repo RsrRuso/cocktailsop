@@ -156,14 +156,15 @@ const handler = async (req: Request): Promise<Response> => {
       sender_id: userId, // Self-sent system notification
       recipient_id: userId,
       subject: `🔐 Access PIN Granted - ${workspaceName}`,
-      body: `<div style="font-family: system-ui, sans-serif;">
+      body: `<div>
         <h2 style="color: #f59e0b; margin-bottom: 16px;">Access PIN Granted</h2>
-        <p style="margin-bottom: 12px;">You've been granted access to <strong>${workspaceName}</strong> (${workspaceTypeLabel}).</p>
-        <div style="background: linear-gradient(135deg, #f59e0b20, #d9770620); border: 1px solid #f59e0b40; border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0;">
-          <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Your PIN Code</p>
-          <p style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #f59e0b; margin: 0; font-family: monospace;">${pin}</p>
+        <p>You've been granted access to <strong>${workspaceName}</strong> (${workspaceTypeLabel}).</p>
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0;">
+          <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Your PIN Code</p>
+          <p style="font-size: 36px; font-weight: bold; letter-spacing: 8px; font-family: monospace; margin: 0;">${pin}</p>
         </div>
-        <p style="color: #888; font-size: 14px; margin-top: 16px;">⚠️ Keep this PIN secure. Do not share it with anyone who shouldn't have access.</p>
+        <p style="font-size: 14px; margin-top: 16px;">⚠️ Keep this PIN secure. Do not share it with anyone who shouldn't have access.</p>
+        <p style="font-size: 13px; margin-top: 12px;">Use this PIN to log in via the mobile app or POS terminal.</p>
       </div>`,
       read: false,
       starred: true,
