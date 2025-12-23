@@ -51,17 +51,24 @@ const ProfileFeedTab = ({ userId, profile }: ProfileFeedTabProps) => {
   const reelEngagement = useEngagement('reel', userId, handleReelCountChange);
 
   const fetchData = useCallback(async () => {
-    const [postsRes, reelsRes] = await Promise.all([
-      supabase.from('posts').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-      supabase.from('reels').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20)
-    ]);
-    
-    setPosts(postsRes.data || []);
-    setReels(reelsRes.data || []);
-    setIsLoading(false);
+    try {
+      const [postsRes, reelsRes] = await Promise.all([
+        supabase.from('posts').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+        supabase.from('reels').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20)
+      ]);
+      
+      setPosts(postsRes.data || []);
+      setReels(reelsRes.data || []);
+    } catch (err) {
+      console.error('Error fetching profile feed:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [userId]);
 
   useEffect(() => {
+    if (!userId) return;
+    setIsLoading(true);
     fetchData();
     postEngagement.fetchEngagement();
     reelEngagement.fetchEngagement();
