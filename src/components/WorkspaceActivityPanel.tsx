@@ -35,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface WorkspaceActivityPanelProps {
   workspaceId: string;
-  workspaceType: 'workspace' | 'group' | 'team' | 'procurement' | 'fifo';
+  workspaceType: 'workspace' | 'group' | 'team' | 'procurement' | 'fifo' | 'labops';
 }
 
 const formatDuration = (seconds: number): string => {

@@ -17,7 +17,7 @@ interface SpaceMember {
   profile?: ProfileLite;
 }
 
-type SpaceType = 'workspace' | 'group' | 'team' | 'procurement' | 'fifo';
+type SpaceType = 'workspace' | 'group' | 'team' | 'procurement' | 'fifo' | 'labops';
 
 type MemberRow = {
   id: string;
@@ -72,6 +72,16 @@ const fetchMemberRows = async (spaceId: string, spaceType: SpaceType): Promise<M
       if (error) throw error;
       return (data || []) as MemberRow[];
     }
+    case 'labops': {
+      const { data, error } = await supabase
+        .from('lab_ops_staff')
+        .select('id, user_id, role, created_at')
+        .eq('outlet_id', spaceId)
+        .not('user_id', 'is', null)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data || []).map(d => ({ ...d, joined_at: d.created_at })) as MemberRow[];
+    }
   }
 };
 
@@ -107,6 +117,15 @@ const fetchMemberCount = async (spaceId: string, spaceType: SpaceType): Promise<
         .from('procurement_workspace_members')
         .select('*', { count: 'exact', head: true })
         .eq('workspace_id', spaceId);
+      if (error) throw error;
+      return count || 0;
+    }
+    case 'labops': {
+      const { count, error } = await supabase
+        .from('lab_ops_staff')
+        .select('*', { count: 'exact', head: true })
+        .eq('outlet_id', spaceId)
+        .not('user_id', 'is', null);
       if (error) throw error;
       return count || 0;
     }
