@@ -47,15 +47,25 @@ export default function StaffPinLogin({ outlets, onLogin }: StaffPinLoginProps) 
 
     setIsLoading(true);
     try {
+      // Use secure RPC function for PIN verification (works for unauthenticated users)
       const { data, error } = await supabase
-        .from("lab_ops_staff")
-        .select("id, full_name, role, outlet_id, permissions")
-        .eq("outlet_id", selectedOutlet.id)
-        .eq("pin_code", pin)
-        .eq("is_active", true)
-        .single();
+        .rpc('verify_staff_pin', {
+          p_outlet_id: selectedOutlet.id,
+          p_pin_code: pin
+        });
 
-      if (error || !data) {
+      if (error) {
+        console.error("PIN verification error:", error);
+        toast({ 
+          title: "Verification Failed", 
+          description: "Please check your PIN and try again", 
+          variant: "destructive" 
+        });
+        setPin("");
+        return;
+      }
+
+      if (!data || data.length === 0) {
         toast({ 
           title: "Invalid PIN", 
           description: "Please check your PIN and try again", 
@@ -65,8 +75,15 @@ export default function StaffPinLogin({ outlets, onLogin }: StaffPinLoginProps) 
         return;
       }
 
-      toast({ title: `Welcome, ${data.full_name}!` });
-      onLogin(data as StaffMember, selectedOutlet);
+      const staffData = data[0];
+      toast({ title: `Welcome, ${staffData.staff_name}!` });
+      onLogin({
+        id: staffData.staff_id,
+        full_name: staffData.staff_name,
+        role: staffData.staff_role,
+        outlet_id: selectedOutlet.id,
+        permissions: (staffData.staff_permissions as Record<string, boolean>) || {}
+      }, selectedOutlet);
     } catch (error) {
       console.error("Login error:", error);
       toast({ title: "Login failed", variant: "destructive" });
