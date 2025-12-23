@@ -312,7 +312,7 @@ const Profile = () => {
         onOpenChange={setShowFollowingDialog}
         userId={user.id}
       />
-    </div>
+    </main>
   );
 };
 
