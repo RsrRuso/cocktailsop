@@ -151,7 +151,7 @@ export default function StaffPinLogin({ outlets, onLogin }: StaffPinLoginProps) 
           >
             ← Back
           </Button>
-          <CardTitle className="text-xl">{selectedOutlet.name}</CardTitle>
+          <CardTitle className="text-xl">Staff POS</CardTitle>
           <p className="text-muted-foreground text-sm">Enter your 4-digit PIN</p>
         </CardHeader>
         <CardContent className="space-y-6">
