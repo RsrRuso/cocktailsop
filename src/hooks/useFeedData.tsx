@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { preloadFeedAvatars } from '@/lib/avatarCache';
+
 interface Post {
   id: string;
   user_id: string;
@@ -151,6 +153,9 @@ export const useFeedData = (selectedRegion: string | null) => {
         profiles: profiles?.find(p => p.id === post.user_id) || null
       }));
 
+      // Preload avatars in background for instant display
+      preloadFeedAvatars(postsWithProfiles);
+
       // Filter by region if needed
       const filteredPosts = selectedRegion && selectedRegion !== "All"
         ? postsWithProfiles.filter(p => p.profiles?.region === selectedRegion || p.profiles?.region === "All")
@@ -197,6 +202,9 @@ export const useFeedData = (selectedRegion: string | null) => {
         ...reel,
         profiles: profiles?.find(p => p.id === reel.user_id) || null
       }));
+
+      // Preload avatars in background for instant display
+      preloadFeedAvatars(reelsWithProfiles);
 
       const hydrated = await hydrateReelsMusicTracks(reelsWithProfiles);
 

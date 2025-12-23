@@ -1,8 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, memo, useMemo } from "react";
 import StatusRing from "./StatusRing";
 import { useUserStatus } from "@/hooks/useUserStatus";
+import { getCachedAvatar, preloadAvatar, isAvatarPreloaded } from "@/lib/avatarCache";
 
 interface OptimizedAvatarProps {
   src: string | null | undefined;
@@ -28,28 +29,43 @@ const OptimizedAvatar = memo(({
   showOnlineIndicator = true,
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(() => isAvatarPreloaded(src || ''));
 
   // Only fetch status if explicitly requested
   const { data: status } = useUserStatus(showStatus && userId ? userId : null);
 
-  // If src changes (or initial src arrives late), retry loading
+  // Get cached URL or trigger preload
+  const cachedSrc = useMemo(() => {
+    if (!src) return null;
+    const cached = getCachedAvatar(src);
+    if (cached) return cached;
+    // Trigger background preload
+    preloadAvatar(src).then(() => setIsLoaded(true));
+    return src;
+  }, [src]);
+
+  // If src changes, reset states
   useEffect(() => {
     setImageError(false);
+    setIsLoaded(isAvatarPreloaded(src || ''));
   }, [src]);
 
   // Only render image if src exists and no error
-  const shouldShowImage = !!src && !imageError;
+  const shouldShowImage = !!cachedSrc && !imageError;
 
   const avatar = (
     <Avatar className={className}>
       {shouldShowImage && (
         <AvatarImage
-          key={src}
-          src={src}
+          key={cachedSrc}
+          src={cachedSrc}
           alt={alt}
-          loading="lazy"
+          loading="eager"
           decoding="async"
+          fetchPriority="high"
+          onLoad={() => setIsLoaded(true)}
           onError={() => setImageError(true)}
+          style={{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.15s' }}
         />
       )}
       <AvatarFallback>{fallback || <User className="w-4 h-4" />}</AvatarFallback>

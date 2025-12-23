@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { preloadAvatars } from '@/lib/avatarCache';
 
 interface Story {
   id: string;
@@ -22,8 +23,13 @@ let storiesCache: {
 
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes for instant loads
 
-// Preload media for instant viewing
+// Preload media and avatars for instant viewing
 const preloadStoryMedia = (stories: Story[]) => {
+  // Preload avatars first for instant display
+  const avatarUrls = stories.map(s => s.profiles?.avatar_url).filter(Boolean);
+  preloadAvatars(avatarUrls as string[]);
+
+  // Preload media content
   stories.slice(0, 5).forEach(story => {
     story.media_urls?.slice(0, 2).forEach((url, idx) => {
       const type = story.media_types?.[idx] || 'image';
