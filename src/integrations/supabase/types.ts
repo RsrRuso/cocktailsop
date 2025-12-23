@@ -11393,6 +11393,7 @@ export type Database = {
           user_type: string | null
           username: string
           website: string | null
+          website_icon_url: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -11429,6 +11430,7 @@ export type Database = {
           user_type?: string | null
           username: string
           website?: string | null
+          website_icon_url?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -11465,6 +11467,7 @@ export type Database = {
           user_type?: string | null
           username?: string
           website?: string | null
+          website_icon_url?: string | null
           whatsapp?: string | null
         }
         Relationships: []
