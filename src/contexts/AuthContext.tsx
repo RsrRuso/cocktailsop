@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useRe
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { useTrackPresence } from '@/components/OnlineStatusIndicator';
+import { getCache, setCache } from '@/lib/indexedDBCache';
 
 interface AuthContextType {
   user: User | null;
@@ -51,9 +52,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (data) {
         setProfile(data);
+        // Persist for instant avatar/cover next app start
+        setCache('profiles', userId, data).catch(() => {
+          // ignore cache failures (private mode, quotas, etc.)
+        });
+
+        // Preload critical images
+        if (data.avatar_url) {
+          const img = new Image();
+          img.src = data.avatar_url;
+        }
+        if (data.cover_url) {
+          const img = new Image();
+          img.src = data.cover_url;
+        }
       }
       return data;
     } catch (error) {
@@ -174,6 +189,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          // Load cached profile instantly, then refresh from network
+          try {
+            const cached = await getCache('profiles', session.user.id);
+            if (cached && isMounted) setProfile(cached);
+          } catch {
+            // ignore cache failures
+          }
+
           await fetchProfile(session.user.id);
         }
       } catch (error) {
