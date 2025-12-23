@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { useTrackPresence } from '@/components/OnlineStatusIndicator';
 import { getCache, setCache } from '@/lib/indexedDBCache';
+import { preloadCurrentUserAvatar } from '@/lib/avatarCache';
 
 interface AuthContextType {
   user: User | null;
@@ -60,15 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // ignore cache failures (private mode, quotas, etc.)
         });
 
-        // Preload critical images
-        if (data.avatar_url) {
-          const img = new Image();
-          img.src = data.avatar_url;
-        }
-        if (data.cover_url) {
-          const img = new Image();
-          img.src = data.cover_url;
-        }
+        // Preload critical images immediately using avatar cache
+        preloadCurrentUserAvatar(data.avatar_url, data.cover_url);
       }
       return data;
     } catch (error) {

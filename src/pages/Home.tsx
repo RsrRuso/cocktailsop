@@ -16,6 +16,7 @@ import { useVerifiedUsers } from "@/hooks/useVerifiedUsers";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
 import { Camera, MessageCircle, Music } from "lucide-react";
+import { preloadCurrentUserAvatar, preloadFeedAvatars } from "@/lib/avatarCache";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,13 +112,24 @@ const Home = () => {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showMusicDialog, setShowMusicDialog] = useState(false);
   
-  // Update currentUser when profile changes
+  // Update currentUser when profile changes and preload avatar
   useEffect(() => {
-    if (profile) setCurrentUser(profile);
+    if (profile) {
+      setCurrentUser(profile);
+      // Preload current user avatar immediately
+      preloadCurrentUserAvatar(profile.avatar_url, profile.cover_url);
+    }
   }, [profile]);
 
   // Use cached user ID for hooks
   const { posts, reels, isLoading, refreshFeed, setPosts, setReels } = useFeedData(selectedRegion);
+
+  // Preload feed avatars when data changes
+  useEffect(() => {
+    if (posts.length > 0 || reels.length > 0) {
+      preloadFeedAvatars([...posts, ...reels]);
+    }
+  }, [posts, reels]);
   
   // Unified count change handler for posts
   const handlePostCountChange = useCallback((postId: string, type: 'like' | 'save' | 'repost', delta: number) => {
