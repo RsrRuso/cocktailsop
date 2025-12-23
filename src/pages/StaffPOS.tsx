@@ -128,6 +128,37 @@ export default function StaffPOS() {
   const [assigningStaff, setAssigningStaff] = useState(false);
 
   useEffect(() => {
+    // Check for stored session from PIN access page
+    const storedSession = sessionStorage.getItem("lab_ops_staff_session");
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        // Check if session is still valid (within 8 hours)
+        if (session.timestamp && Date.now() - session.timestamp < 8 * 60 * 60 * 1000) {
+          const staffFromSession: StaffMember = {
+            id: session.staffId,
+            full_name: session.staffName,
+            role: session.staffRole,
+            outlet_id: session.outletId,
+            permissions: session.permissions || {}
+          };
+          const outletFromSession: Outlet = {
+            id: session.outletId,
+            name: session.outletName
+          };
+          // Auto-login with stored session
+          handleStaffLogin(staffFromSession, outletFromSession);
+          setIsLoading(false);
+          return;
+        } else {
+          // Clear expired session
+          sessionStorage.removeItem("lab_ops_staff_session");
+        }
+      } catch (e) {
+        console.error("Error parsing stored session:", e);
+        sessionStorage.removeItem("lab_ops_staff_session");
+      }
+    }
     fetchOutlets();
   }, []);
 
