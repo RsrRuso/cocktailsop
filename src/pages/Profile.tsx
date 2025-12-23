@@ -93,11 +93,18 @@ const Profile = () => {
   const totalPosts = stats.posts + stats.reels;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen bg-background pb-20">
       {/* Cover Background */}
       <div className="relative h-32">
         {p.cover_url ? (
-          <img src={p.cover_url} alt="Cover" className="w-full h-full object-cover" />
+          <img
+            src={p.cover_url}
+            alt={`${p.username} profile cover photo`}
+            className="w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/5" />
         )}
