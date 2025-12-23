@@ -33,7 +33,7 @@ import {
   Store, Plus, Settings, Users, UtensilsCrossed, ShoppingCart, 
   Package, ClipboardList, BarChart3, Smartphone, ChefHat, Wine,
   DollarSign, TrendingUp, Clock, AlertTriangle, FileText, Trash2,
-  Edit, Eye, Send, CreditCard, Percent, Calculator, Receipt,
+  Edit, Eye, EyeOff, Send, CreditCard, Percent, Calculator, Receipt, Key,
   Download, Video, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
@@ -4049,6 +4049,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [showInactiveStaff, setShowInactiveStaff] = useState(false);
+  const [showPinStates, setShowPinStates] = useState<Record<string, boolean>>({});
   
   // Form states
   const [staffName, setStaffName] = useState("");
@@ -4254,35 +4255,54 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
             <p className="text-muted-foreground">{showInactiveStaff ? "No staff members found" : "No active staff members"}</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {staff.map((member) => (
-              <div key={member.id} className={`flex items-center justify-between p-3 rounded-lg gap-3 ${member.is_active ? "bg-muted/50" : "bg-destructive/10 border border-destructive/20"}`}>
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${member.is_active ? "bg-primary/10" : "bg-muted"}`}>
-                    <Users className={`h-5 w-5 ${member.is_active ? "text-primary" : "text-muted-foreground"}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`font-medium truncate ${!member.is_active && "text-muted-foreground"}`}>{member.full_name || 'Unknown'}</p>
-                      <Badge variant={member.is_active ? "default" : "destructive"} className="shrink-0">
-                        {member.is_active ? "Active" : "Removed"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {member.role ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Staff'}
-                    </p>
+              <div key={member.id} className={`flex items-center justify-between p-4 rounded-lg border ${member.is_active ? "bg-card border-border" : "bg-destructive/10 border-destructive/20"}`}>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold ${!member.is_active && "text-muted-foreground"}`}>
+                    {member.full_name || 'Unknown'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {member.role || 'member'}
+                    </Badge>
+                    {member.pin_code ? (
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="text-xs font-mono bg-primary/20 text-primary border-0">
+                          {showPinStates[member.id] ? member.pin_code : "••••"}
+                        </Badge>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-5 w-5"
+                          onClick={() => setShowPinStates(prev => ({ ...prev, [member.id]: !prev[member.id] }))}
+                        >
+                          {showPinStates[member.id] ? (
+                            <EyeOff className="h-3 w-3" />
+                          ) : (
+                            <Eye className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No PIN</span>
+                    )}
+                    {!member.is_active && (
+                      <Badge variant="destructive" className="text-xs">Removed</Badge>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {member.is_active ? (
-                    <>
-                      <Button size="icon" variant="ghost" onClick={() => setEditingStaff(member)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => deleteStaff(member.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => setEditingStaff(member)}
+                    >
+                      <Key className="h-3.5 w-3.5" />
+                      {member.pin_code ? "Edit" : "Set"}
+                    </Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => reactivateStaff(member.id)}>
                       Restore
