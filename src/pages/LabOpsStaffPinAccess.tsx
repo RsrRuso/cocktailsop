@@ -186,7 +186,7 @@ export default function LabOpsStaffPinAccess() {
           <div className="mx-auto w-14 h-14 bg-cyan-500/10 rounded-full flex items-center justify-center mb-3">
             <FlaskConical className="w-7 h-7 text-cyan-500" />
           </div>
-          <CardTitle className="text-xl">{outlet.name}</CardTitle>
+          <CardTitle className="text-xl">Staff POS</CardTitle>
           <p className="text-muted-foreground text-sm">Enter your 4-digit PIN</p>
         </CardHeader>
         
