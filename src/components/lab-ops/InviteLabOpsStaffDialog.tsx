@@ -163,25 +163,52 @@ export default function InviteLabOpsStaffDialog({
 
     try {
       const staffInfo: AddedStaffInfo[] = [];
-      const staffToAdd = Array.from(selectedUsers.entries()).map(([userId, data]) => {
+      const staffToAdd: Array<{ userId: string; name: string; role: StaffRole; pin: string }> = [];
+      
+      Array.from(selectedUsers.entries()).forEach(([userId, data]) => {
         const profile = [...followers, ...following].find(p => p.id === userId);
         const name = profile?.full_name || profile?.username || 'Staff';
         staffInfo.push({ name, pin: data.pin, role: data.role });
-        return {
-          outlet_id: outletId,
-          user_id: userId,
-          full_name: name,
+        staffToAdd.push({
+          userId,
+          name,
           role: data.role as StaffRole,
-          pin_code: data.pin,
-          is_active: true
-        };
+          pin: data.pin
+        });
       });
+
+      const insertData = staffToAdd.map(staff => ({
+        outlet_id: outletId,
+        user_id: staff.userId,
+        full_name: staff.name,
+        role: staff.role,
+        pin_code: staff.pin,
+        is_active: true
+      }));
 
       const { error } = await supabase
         .from('lab_ops_staff')
-        .insert(staffToAdd);
+        .insert(insertData);
 
       if (error) throw error;
+
+      // Send PIN notification emails to all added staff
+      for (const staff of staffToAdd) {
+        try {
+          await supabase.functions.invoke('send-pin-notification', {
+            body: {
+              userId: staff.userId,
+              pin: staff.pin,
+              workspaceName: outletName,
+              workspaceType: 'lab_ops'
+            }
+          });
+          console.log(`PIN notification sent to ${staff.name}`);
+        } catch (notifyError) {
+          console.error(`Failed to send PIN notification to ${staff.name}:`, notifyError);
+          // Don't fail the whole operation if notification fails
+        }
+      }
 
       setAddedStaff(staffInfo);
       setShowConfirmation(true);
