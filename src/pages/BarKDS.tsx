@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +106,7 @@ export default function BarKDS() {
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<string>("all");
   const [myStationId, setMyStationId] = useState<string | null>(null);
+  const hasShownStationToast = useRef(false);
 
   // Fetch outlets for login screen
   useEffect(() => {
@@ -138,17 +139,19 @@ export default function BarKDS() {
     setSelectedOutlet(null);
     setMyStationId(null);
     setSelectedStation("all");
+    hasShownStationToast.current = false; // Reset so toast shows on next login
     localStorage.removeItem('bar_kds_staff_id');
     toast({ title: "Logged out successfully" });
   };
 
   // Auto-select station for logged-in bartender
   useEffect(() => {
-    if (staff && stations.length > 0) {
+    if (staff && stations.length > 0 && !hasShownStationToast.current) {
       const myStation = stations.find(s => s.assigned_bartender_id === staff.id);
       if (myStation) {
         setMyStationId(myStation.id);
         setSelectedStation(myStation.id);
+        hasShownStationToast.current = true;
         toast({ 
           title: `Assigned to ${myStation.name}`,
           description: `You'll only see orders for your station`
