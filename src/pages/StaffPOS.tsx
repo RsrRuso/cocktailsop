@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -78,6 +79,8 @@ interface MenuItem {
 export default function StaffPOS() {
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -128,39 +131,52 @@ export default function StaffPOS() {
   const [assigningStaff, setAssigningStaff] = useState(false);
 
   useEffect(() => {
-    // Check for stored session from PIN access page
-    const storedSession = sessionStorage.getItem("lab_ops_staff_session");
-    if (storedSession) {
-      try {
-        const session = JSON.parse(storedSession);
-        // Check if session is still valid (within 8 hours)
-        if (session.timestamp && Date.now() - session.timestamp < 8 * 60 * 60 * 1000) {
-          const staffFromSession: StaffMember = {
-            id: session.staffId,
-            full_name: session.staffName,
-            role: session.staffRole,
-            outlet_id: session.outletId,
-            permissions: session.permissions || {}
-          };
-          const outletFromSession: Outlet = {
-            id: session.outletId,
-            name: session.outletName
-          };
-          // Auto-login with stored session
-          handleStaffLogin(staffFromSession, outletFromSession);
-          setIsLoading(false);
-          return;
-        } else {
-          // Clear expired session
+    const initSession = async () => {
+      // First check navigation state (coming from KDS)
+      const navState = location.state as { staff?: StaffMember; outlet?: Outlet } | null;
+      if (navState?.staff && navState?.outlet) {
+        handleStaffLogin(navState.staff, navState.outlet);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check for stored session from PIN access page
+      const storedSession = sessionStorage.getItem("lab_ops_staff_session");
+      if (storedSession) {
+        try {
+          const session = JSON.parse(storedSession);
+          // Check if session is still valid (within 8 hours)
+          if (session.timestamp && Date.now() - session.timestamp < 8 * 60 * 60 * 1000) {
+            const staffFromSession: StaffMember = {
+              id: session.staffId,
+              full_name: session.staffName,
+              role: session.staffRole,
+              outlet_id: session.outletId,
+              permissions: session.permissions || {}
+            };
+            const outletFromSession: Outlet = {
+              id: session.outletId,
+              name: session.outletName
+            };
+            // Auto-login with stored session
+            handleStaffLogin(staffFromSession, outletFromSession);
+            setIsLoading(false);
+            return;
+          } else {
+            // Clear expired session
+            sessionStorage.removeItem("lab_ops_staff_session");
+          }
+        } catch (e) {
+          console.error("Error parsing stored session:", e);
           sessionStorage.removeItem("lab_ops_staff_session");
         }
-      } catch (e) {
-        console.error("Error parsing stored session:", e);
-        sessionStorage.removeItem("lab_ops_staff_session");
       }
-    }
-    fetchOutlets();
-  }, []);
+      fetchOutlets();
+    };
+    
+    initSession();
+  }, [location.state]);
+
 
   const fetchOutlets = async () => {
     try {
@@ -179,6 +195,18 @@ export default function StaffPOS() {
   const handleStaffLogin = async (loggedInStaff: StaffMember, selectedOutlet: Outlet) => {
     setStaff(loggedInStaff);
     setOutlet(selectedOutlet);
+    
+    // Store session for seamless navigation between KDS and POS
+    const sessionData = {
+      staffId: loggedInStaff.id,
+      staffName: loggedInStaff.full_name,
+      staffRole: loggedInStaff.role,
+      outletId: selectedOutlet.id,
+      outletName: selectedOutlet.name,
+      permissions: loggedInStaff.permissions,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem("lab_ops_staff_session", JSON.stringify(sessionData));
     
     // Load outlet data including open orders for bill totals
     await Promise.all([
@@ -199,6 +227,13 @@ export default function StaffPOS() {
     
     // Set up team presence tracking
     setupPresenceTracking(selectedOutlet.id, loggedInStaff);
+  };
+
+  // Navigate to KDS without requiring PIN
+  const navigateToKDS = () => {
+    if (staff && outlet) {
+      navigate('/bar-kds', { state: { staff, outlet } });
+    }
   };
   
   const setupPresenceTracking = (outletId: string, staffMember: StaffMember) => {
@@ -1527,7 +1562,7 @@ export default function StaffPOS() {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => window.location.href = '/bar-kds'}
+            onClick={navigateToKDS}
             className="h-8 w-8 shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -1540,7 +1575,7 @@ export default function StaffPOS() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.location.href = '/bar-kds'}
+            onClick={navigateToKDS}
             className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 h-7 text-xs"
           >
             <Wine className="h-3.5 w-3.5 mr-1" />

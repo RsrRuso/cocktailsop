@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +81,8 @@ interface Station {
 }
 
 export default function BarKDS() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -120,9 +123,55 @@ export default function BarKDS() {
     }
   }, [staff, isManager]);
 
-  // Fetch outlets for login screen
+  // Check for session from navigation state or sessionStorage
   useEffect(() => {
-    const fetchOutlets = async () => {
+    const initSession = async () => {
+      // First check navigation state (coming from POS)
+      const navState = location.state as { staff?: StaffMember; outlet?: Outlet } | null;
+      if (navState?.staff && navState?.outlet) {
+        setStaff(navState.staff);
+        setOutlet(navState.outlet);
+        setSelectedOutlet(navState.outlet.id);
+        fetchOrders(navState.outlet.id);
+        fetchStations(navState.outlet.id);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check sessionStorage for existing session
+      const storedSession = sessionStorage.getItem("lab_ops_staff_session");
+      if (storedSession) {
+        try {
+          const session = JSON.parse(storedSession);
+          if (session.timestamp && Date.now() - session.timestamp < 8 * 60 * 60 * 1000) {
+            const staffFromSession: StaffMember = {
+              id: session.staffId,
+              full_name: session.staffName,
+              role: session.staffRole,
+              outlet_id: session.outletId,
+              permissions: session.permissions || {}
+            };
+            const outletFromSession: Outlet = {
+              id: session.outletId,
+              name: session.outletName
+            };
+            setStaff(staffFromSession);
+            setOutlet(outletFromSession);
+            setSelectedOutlet(outletFromSession.id);
+            fetchOrders(outletFromSession.id);
+            fetchStations(outletFromSession.id);
+            setIsLoading(false);
+            return;
+          } else {
+            sessionStorage.removeItem("lab_ops_staff_session");
+          }
+        } catch (e) {
+          console.error("Error parsing stored session:", e);
+          sessionStorage.removeItem("lab_ops_staff_session");
+        }
+      }
+
+      // No session found, fetch outlets for login
       const { data } = await supabase
         .from("lab_ops_outlets")
         .select("id, name")
@@ -130,18 +179,35 @@ export default function BarKDS() {
       setOutlets(data || []);
       setIsLoading(false);
     };
-    fetchOutlets();
-  }, []);
+    
+    initSession();
+  }, [location.state]);
 
   // Handle staff login
   const handleStaffLogin = (staffMember: StaffMember, selectedOutletData: Outlet) => {
     setStaff(staffMember);
     setOutlet(selectedOutletData);
     setSelectedOutlet(selectedOutletData.id);
-    localStorage.setItem('lab_ops_outlet_id', selectedOutletData.id);
-    localStorage.setItem('bar_kds_staff_id', staffMember.id);
+    // Store session for seamless navigation
+    const sessionData = {
+      staffId: staffMember.id,
+      staffName: staffMember.full_name,
+      staffRole: staffMember.role,
+      outletId: selectedOutletData.id,
+      outletName: selectedOutletData.name,
+      permissions: staffMember.permissions,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem("lab_ops_staff_session", JSON.stringify(sessionData));
     fetchOrders(selectedOutletData.id);
     fetchStations(selectedOutletData.id);
+  };
+
+  // Navigate to POS without requiring PIN
+  const navigateToPOS = () => {
+    if (staff && outlet) {
+      navigate('/staff-pos', { state: { staff, outlet } });
+    }
   };
 
   // Handle logout
@@ -151,8 +217,8 @@ export default function BarKDS() {
     setSelectedOutlet(null);
     setMyStationId(null);
     setSelectedStation("all");
-    hasShownStationToast.current = false; // Reset so toast shows on next login
-    localStorage.removeItem('bar_kds_staff_id');
+    hasShownStationToast.current = false;
+    sessionStorage.removeItem("lab_ops_staff_session");
     toast({ title: "Logged out successfully" });
   };
 
@@ -637,7 +703,7 @@ export default function BarKDS() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.location.href = '/staff-pos'}
+              onClick={navigateToPOS}
               className="ml-2 bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-7 text-xs"
             >
               <ShoppingCart className="h-3.5 w-3.5 mr-1" />
