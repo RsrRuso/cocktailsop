@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { usePurchaseOrderMaster } from "@/hooks/usePurchaseOrderMaster";
+import { usePurchaseOrderAnalytics } from "@/hooks/usePurchaseOrderAnalytics";
+import { PurchaseOrderAnalytics } from "@/components/purchase-order/PurchaseOrderAnalytics";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw, Film
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw, Film, BarChart3
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
@@ -110,7 +112,7 @@ const PurchaseOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'active' | 'archive' | 'discrepancies'>('active');
+  const [viewMode, setViewMode] = useState<'active' | 'archive' | 'discrepancies' | 'analytics'>('active');
   const [pasteContent, setPasteContent] = useState("");
   
   // Use staff workspace if in staffMode, otherwise from localStorage
@@ -250,6 +252,27 @@ const PurchaseOrders = () => {
     },
     enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
+
+  // Fetch ALL items for analytics (all orders)
+  const { data: allOrderItems } = useQuery({
+    queryKey: ['all-purchase-order-items', user?.id || 'staff', effectiveWorkspaceId],
+    queryFn: async () => {
+      const orderIds = orders?.map(o => o.id) || [];
+      if (orderIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('purchase_order_items')
+        .select('*')
+        .in('purchase_order_id', orderIds);
+      
+      if (error) throw error;
+      return data as PurchaseOrderItem[];
+    },
+    enabled: hasAccess && !!orders && orders.length > 0
+  });
+
+  // Analytics hook
+  const analytics = usePurchaseOrderAnalytics(orders, allOrderItems);
 
   // Fetch items for selected order
   const { data: orderItems } = useQuery({
@@ -874,25 +897,38 @@ const PurchaseOrders = () => {
           </div>
         </Card>
 
-        {/* Active/Discrepancies/Archive Tabs */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive' | 'discrepancies')} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="active" className="flex items-center gap-2 text-xs">
+        {/* Active/Discrepancies/Archive/Analytics Tabs */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive' | 'discrepancies' | 'analytics')} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="active" className="flex items-center gap-1 text-xs">
               <FileText className="w-3.5 h-3.5" />
-              Active ({activeOrders.length})
+              <span className="hidden sm:inline">Active</span> ({activeOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="discrepancies" className="flex items-center gap-2 text-xs text-destructive">
+            <TabsTrigger value="discrepancies" className="flex items-center gap-1 text-xs text-destructive">
               <Package className="w-3.5 h-3.5" />
-              Issues ({discrepancyOrders.length})
+              <span className="hidden sm:inline">Issues</span> ({discrepancyOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="archive" className="flex items-center gap-2 text-xs">
+            <TabsTrigger value="archive" className="flex items-center gap-1 text-xs">
               <Archive className="w-3.5 h-3.5" />
-              Archive ({archivedOrders.length})
+              <span className="hidden sm:inline">Archive</span> ({archivedOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs text-primary">
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
+        {/* Analytics View */}
+        {viewMode === 'analytics' && (
+          <PurchaseOrderAnalytics 
+            analytics={analytics} 
+            formatCurrency={formatCurrency} 
+          />
+        )}
+
         {/* Orders List */}
+        {viewMode !== 'analytics' && (
         <div className="space-y-3">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -1020,6 +1056,7 @@ const PurchaseOrders = () => {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Create Order Dialog */}
