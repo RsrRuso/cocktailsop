@@ -1298,14 +1298,16 @@ export default function StaffPOS() {
                 </div>
 
                 {/* Print Button - Always visible */}
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => openPrintDialog(selectedOrder)}
-                >
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print KOT / Check
-                </Button>
+                <div className="border-t pt-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-12 text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
+                    onClick={() => openPrintDialog(selectedOrder)}
+                  >
+                    <Printer className="w-5 h-5 mr-2" />
+                    Print KOT / Check
+                  </Button>
+                </div>
 
                 {/* Show payment info for closed orders */}
                 {selectedOrder.status === "closed" && selectedOrder.lab_ops_payments?.[0] && (
