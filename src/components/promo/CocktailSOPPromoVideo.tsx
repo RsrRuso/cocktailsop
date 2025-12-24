@@ -30,16 +30,16 @@ const CocktailSOPPromoVideo = () => {
     metrics: { volume: "120ml", abv: "22.5%", kcal: "185" },
   };
 
-  // Animation scenes
+  // Animation scenes - Extended PDF scene for fuller display
   const scenes = [
-    { start: 0, end: 90, type: "intro" },
-    { start: 90, end: 180, type: "editor" },
-    { start: 180, end: 300, type: "ingredients" },
-    { start: 300, end: 420, type: "profiles" },
-    { start: 420, end: 540, type: "metrics" },
-    { start: 540, end: 660, type: "pdf" },
-    { start: 660, end: 780, type: "features" },
-    { start: 780, end: 900, type: "outro" },
+    { start: 0, end: 80, type: "intro" },
+    { start: 80, end: 160, type: "editor" },
+    { start: 160, end: 260, type: "ingredients" },
+    { start: 260, end: 360, type: "profiles" },
+    { start: 360, end: 460, type: "metrics" },
+    { start: 460, end: 720, type: "pdf" },  // Extended PDF scene (260 frames instead of 120)
+    { start: 720, end: 820, type: "features" },
+    { start: 820, end: 900, type: "outro" },
   ];
 
   const totalFrames = 900;
@@ -477,137 +477,286 @@ const CocktailSOPPromoVideo = () => {
   };
 
   const drawPDF = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
-    // Section title
-    ctx.fillStyle = "rgba(212, 175, 55, 0.9)";
+    // Section title with fade
+    const titleOpacity = Math.min(progress * 3, 1);
+    ctx.fillStyle = `rgba(212, 175, 55, ${0.9 * titleOpacity})`;
     ctx.font = "bold 48px 'Inter', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Export PDF", w / 2, h * 0.06);
+    ctx.fillText("Professional PDF", w / 2, h * 0.05);
 
-    // PDF mockup - vertical phone style
-    const pdfW = w * 0.85;
-    const pdfH = h * 0.70;
+    // PDF mockup - fuller document style
+    const pdfW = w * 0.88;
+    const pdfH = h * 0.82;
     const pdfX = w / 2 - pdfW / 2;
-    const pdfY = h * 0.12;
+    const pdfY = h * 0.09;
 
     // Shadow
-    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     ctx.beginPath();
-    ctx.roundRect(pdfX + 15, pdfY + 15, pdfW, pdfH, 16);
+    ctx.roundRect(pdfX + 12, pdfY + 12, pdfW, pdfH, 20);
     ctx.fill();
 
-    // PDF page
-    const pageProgress = Math.min(progress * 1.5, 1);
+    // PDF page - unfold animation
+    const pageProgress = Math.min(progress * 2, 1);
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.roundRect(pdfX, pdfY, pdfW, pdfH * pageProgress, 16);
+    ctx.roundRect(pdfX, pdfY, pdfW, pdfH * pageProgress, 20);
     ctx.fill();
 
-    if (progress > 0.3) {
-      // PDF header
-      ctx.fillStyle = "#1a1a2e";
+    // PDF Header with brand styling
+    if (progress > 0.08) {
+      const headerOpacity = Math.min((progress - 0.08) * 8, 1);
+      ctx.fillStyle = `rgba(26, 26, 46, ${headerOpacity})`;
       ctx.beginPath();
-      ctx.roundRect(pdfX, pdfY, pdfW, 120, [16, 16, 0, 0]);
+      ctx.roundRect(pdfX, pdfY, pdfW, 140, [20, 20, 0, 0]);
       ctx.fill();
 
-      ctx.fillStyle = "#d4af37";
-      ctx.font = "bold 36px 'Inter', sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText(demoRecipe.name, pdfX + 35, pdfY + 55);
+      // Accent line
+      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
+      ctx.fillRect(pdfX, pdfY + 140, pdfW, 4);
 
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-      ctx.font = "22px 'Inter', sans-serif";
-      ctx.fillText(`${demoRecipe.glass} • ${demoRecipe.technique}`, pdfX + 35, pdfY + 95);
+      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
+      ctx.font = "bold 42px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(demoRecipe.name, pdfX + 40, pdfY + 60);
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * headerOpacity})`;
+      ctx.font = "24px 'Inter', sans-serif";
+      ctx.fillText(`${demoRecipe.glass} • ${demoRecipe.technique}`, pdfX + 40, pdfY + 100);
+
+      // Garnish badge
+      ctx.fillStyle = `rgba(212, 175, 55, ${0.2 * headerOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + pdfW - 200, pdfY + 30, 160, 40, 20);
+      ctx.fill();
+      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
+      ctx.font = "18px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(demoRecipe.garnish, pdfX + pdfW - 120, pdfY + 56);
     }
 
-    if (progress > 0.5) {
-      // Ingredients section
-      ctx.fillStyle = "#333";
-      ctx.font = "bold 26px 'Inter', sans-serif";
-      ctx.fillText("INGREDIENTS", pdfX + 35, pdfY + 170);
+    // Ingredients section
+    if (progress > 0.18) {
+      const ingOpacity = Math.min((progress - 0.18) * 5, 1);
+      ctx.fillStyle = `rgba(51, 51, 51, ${ingOpacity})`;
+      ctx.font = "bold 28px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("INGREDIENTS", pdfX + 40, pdfY + 195);
+
+      // Separator line
+      ctx.fillStyle = `rgba(212, 175, 55, ${0.3 * ingOpacity})`;
+      ctx.fillRect(pdfX + 40, pdfY + 205, pdfW - 80, 2);
 
       demoRecipe.ingredients.forEach((ing, i) => {
-        ctx.fillStyle = "#444";
-        ctx.font = "22px 'Inter', sans-serif";
+        const rowDelay = 0.22 + i * 0.03;
+        const rowOpacity = Math.min((progress - rowDelay) * 8, 1);
+        if (rowOpacity <= 0) return;
+
+        const rowY = pdfY + 245 + i * 50;
+        
+        // Alternating row bg
+        if (i % 2 === 0) {
+          ctx.fillStyle = `rgba(248, 248, 248, ${rowOpacity})`;
+          ctx.fillRect(pdfX + 30, rowY - 25, pdfW - 60, 45);
+        }
+
+        ctx.fillStyle = `rgba(68, 68, 68, ${rowOpacity})`;
+        ctx.font = "24px 'Inter', sans-serif";
         ctx.textAlign = "left";
-        ctx.fillText(`• ${ing.name}`, pdfX + 45, pdfY + 220 + i * 45);
-        ctx.fillStyle = "#666";
+        ctx.fillText(ing.name, pdfX + 50, rowY);
+        
+        ctx.fillStyle = `rgba(212, 175, 55, ${rowOpacity})`;
+        ctx.font = "bold 24px 'Inter', sans-serif";
         ctx.textAlign = "right";
-        ctx.fillText(ing.amount, pdfX + pdfW - 35, pdfY + 220 + i * 45);
-        ctx.textAlign = "left";
+        ctx.fillText(ing.amount, pdfX + pdfW - 150, rowY);
+
+        ctx.fillStyle = `rgba(136, 136, 136, ${rowOpacity})`;
+        ctx.font = "20px 'Inter', sans-serif";
+        ctx.fillText(ing.abv, pdfX + pdfW - 50, rowY);
       });
     }
 
-    if (progress > 0.7) {
+    // Metrics section with cards
+    if (progress > 0.38) {
+      const metricsOpacity = Math.min((progress - 0.38) * 4, 1);
+      
+      ctx.fillStyle = `rgba(51, 51, 51, ${metricsOpacity})`;
+      ctx.font = "bold 28px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("SPECIFICATIONS", pdfX + 40, pdfY + 480);
+
       // Metrics bar
-      ctx.fillStyle = "#f5f5f5";
+      ctx.fillStyle = `rgba(245, 245, 245, ${metricsOpacity})`;
       ctx.beginPath();
-      ctx.roundRect(pdfX + 25, pdfY + 420, pdfW - 50, 100, 12);
+      ctx.roundRect(pdfX + 30, pdfY + 500, pdfW - 60, 90, 16);
       ctx.fill();
 
-      const miniMetrics = [
-        { label: "Vol", value: "120ml" },
-        { label: "ABV", value: "22.5%" },
-        { label: "Kcal", value: "185" },
+      const metrics = [
+        { label: "Volume", value: "120ml", icon: "📏" },
+        { label: "ABV", value: "22.5%", icon: "🍸" },
+        { label: "Calories", value: "185 kcal", icon: "🔥" },
       ];
 
-      miniMetrics.forEach((m, i) => {
-        const mx = pdfX + 80 + i * ((pdfW - 100) / 3);
-        ctx.fillStyle = "#d4af37";
-        ctx.font = "bold 28px 'Inter', sans-serif";
+      metrics.forEach((m, i) => {
+        const mx = pdfX + 90 + i * ((pdfW - 120) / 3);
+        ctx.font = "28px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(m.value, mx, pdfY + 470);
-        ctx.fillStyle = "#888";
-        ctx.font = "18px 'Inter', sans-serif";
-        ctx.fillText(m.label, mx, pdfY + 500);
+        ctx.fillText(m.icon, mx - 40, pdfY + 555);
+        
+        ctx.fillStyle = `rgba(212, 175, 55, ${metricsOpacity})`;
+        ctx.font = "bold 26px 'Inter', sans-serif";
+        ctx.fillText(m.value, mx + 30, pdfY + 545);
+        
+        ctx.fillStyle = `rgba(136, 136, 136, ${metricsOpacity})`;
+        ctx.font = "16px 'Inter', sans-serif";
+        ctx.fillText(m.label, mx + 30, pdfY + 575);
       });
     }
 
-    if (progress > 0.85) {
-      // Mini radar chart
-      const chartX = pdfX + pdfW / 2;
-      const chartY = pdfY + 620;
-      const chartR = 90;
+    // Taste Profile radar chart
+    if (progress > 0.50) {
+      const chartOpacity = Math.min((progress - 0.50) * 3, 1);
+      
+      ctx.fillStyle = `rgba(51, 51, 51, ${chartOpacity})`;
+      ctx.font = "bold 28px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("TASTE PROFILE", pdfX + 40, pdfY + 640);
 
-      ctx.strokeStyle = "#ddd";
-      ctx.lineWidth = 2;
-      for (let i = 1; i <= 3; i++) {
+      const chartX = pdfX + pdfW / 2;
+      const chartY = pdfY + 780;
+      const chartR = 100;
+
+      // Grid circles
+      ctx.strokeStyle = `rgba(221, 221, 221, ${chartOpacity})`;
+      ctx.lineWidth = 1;
+      for (let i = 1; i <= 5; i++) {
         ctx.beginPath();
-        ctx.arc(chartX, chartY, (chartR * i) / 3, 0, Math.PI * 2);
+        ctx.arc(chartX, chartY, (chartR * i) / 5, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      ctx.fillStyle = "rgba(212, 175, 55, 0.3)";
-      ctx.strokeStyle = "#d4af37";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      const vals = [6, 7, 2, 1, 2];
-      vals.forEach((v, i) => {
+      // Axes
+      const labels = ["Sweet", "Bitter", "Sour", "Salty", "Umami"];
+      labels.forEach((label, i) => {
         const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-        const r = (v / 10) * chartR;
-        const px = chartX + Math.cos(angle) * r;
-        const py = chartY + Math.sin(angle) * r;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        const x = chartX + Math.cos(angle) * chartR;
+        const y = chartY + Math.sin(angle) * chartR;
+        
+        ctx.strokeStyle = `rgba(212, 175, 55, ${0.3 * chartOpacity})`;
+        ctx.beginPath();
+        ctx.moveTo(chartX, chartY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        // Labels
+        const labelX = chartX + Math.cos(angle) * (chartR + 35);
+        const labelY = chartY + Math.sin(angle) * (chartR + 35);
+        ctx.fillStyle = `rgba(102, 102, 102, ${chartOpacity})`;
+        ctx.font = "18px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(label, labelX, labelY + 5);
       });
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+
+      // Data polygon with animation
+      const dataProgress = Math.min((progress - 0.55) * 3, 1);
+      if (dataProgress > 0) {
+        ctx.beginPath();
+        const vals = [6, 7, 2, 1, 2];
+        vals.forEach((v, i) => {
+          const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+          const r = (v / 10) * chartR * dataProgress;
+          const px = chartX + Math.cos(angle) * r;
+          const py = chartY + Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+        ctx.fillStyle = `rgba(212, 175, 55, ${0.35 * chartOpacity})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(212, 175, 55, ${chartOpacity})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Data points
+        vals.forEach((v, i) => {
+          const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+          const r = (v / 10) * chartR * dataProgress;
+          const px = chartX + Math.cos(angle) * r;
+          const py = chartY + Math.sin(angle) * r;
+          
+          ctx.beginPath();
+          ctx.arc(px, py, 8, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(212, 175, 55, ${chartOpacity})`;
+          ctx.fill();
+          ctx.strokeStyle = `rgba(255, 255, 255, ${chartOpacity})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      }
     }
 
-    // Download button animation
-    if (progress > 0.9) {
-      const btnOpacity = (progress - 0.9) * 10;
-      const btnY = h * 0.88;
+    // Method section
+    if (progress > 0.65) {
+      const methodOpacity = Math.min((progress - 0.65) * 4, 1);
       
-      ctx.fillStyle = `rgba(212, 175, 55, ${btnOpacity})`;
+      ctx.fillStyle = `rgba(51, 51, 51, ${methodOpacity})`;
+      ctx.font = "bold 28px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("METHOD", pdfX + 40, pdfY + 940);
+
+      const steps = [
+        "1. Add all ingredients to shaker",
+        "2. Add ice and shake vigorously for 15 sec",
+        "3. Double strain into chilled coupe",
+        "4. Garnish with 3 coffee beans"
+      ];
+
+      steps.forEach((step, i) => {
+        const stepOpacity = Math.min((progress - 0.68 - i * 0.02) * 6, 1);
+        if (stepOpacity <= 0) return;
+        
+        ctx.fillStyle = `rgba(68, 68, 68, ${stepOpacity})`;
+        ctx.font = "22px 'Inter', sans-serif";
+        ctx.fillText(step, pdfX + 50, pdfY + 985 + i * 38);
+      });
+    }
+
+    // Footer with additional metrics
+    if (progress > 0.78) {
+      const footerOpacity = Math.min((progress - 0.78) * 5, 1);
+      
+      ctx.fillStyle = `rgba(26, 26, 46, ${footerOpacity})`;
       ctx.beginPath();
-      ctx.roundRect(w / 2 - 150, btnY, 300, 70, 35);
+      ctx.roundRect(pdfX, pdfY + pdfH - 80, pdfW, 80, [0, 0, 20, 20]);
       ctx.fill();
 
-      ctx.fillStyle = `rgba(0, 0, 0, ${btnOpacity})`;
-      ctx.font = "bold 28px 'Inter', sans-serif";
+      ctx.fillStyle = `rgba(212, 175, 55, ${footerOpacity})`;
+      ctx.font = "18px 'Inter', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("📥 Download PDF", w / 2, btnY + 46);
+      ctx.fillText("pH: 3.8  •  Brix: 12°  •  Ratio: 5:3:3:1  •  Allergens: None", w / 2, pdfY + pdfH - 35);
+    }
+
+    // Download success animation
+    if (progress > 0.88) {
+      const successOpacity = Math.min((progress - 0.88) * 8, 1);
+      
+      // Glow effect
+      const glow = ctx.createRadialGradient(w / 2, h * 0.5, 0, w / 2, h * 0.5, 300);
+      glow.addColorStop(0, `rgba(212, 175, 55, ${0.15 * successOpacity})`);
+      glow.addColorStop(1, "transparent");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Checkmark badge
+      ctx.fillStyle = `rgba(212, 175, 55, ${successOpacity})`;
+      ctx.beginPath();
+      ctx.arc(w / 2, h * 0.94, 35, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = `rgba(0, 0, 0, ${successOpacity})`;
+      ctx.font = "bold 36px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("✓", w / 2, h * 0.95 + 5);
     }
   };
 
