@@ -790,28 +790,48 @@ export default function StaffPOS() {
     return printData;
   };
 
-  const openPrintDialog = (order: any, printType?: 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined') => {
-    console.log('Opening print dialog:', { order, printType });
+  const openPrintDialog = (
+    order: any,
+    printType?: 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined'
+  ) => {
+    // Reliable print flow: store a print job in sessionStorage and navigate to a dedicated print page.
+    // (Dialog-based printing was inconsistent in some mobile/PWA contexts.)
     try {
       const printData = prepareOrderForPrint(order);
-      console.log('Prepared print data:', printData);
-      if (!printData || !printData.items || printData.items.length === 0) {
-        toast({ 
-          title: "No items to print", 
+      if (!printData?.items?.length) {
+        toast({
+          title: "No items to print",
           description: "This order has no items to display",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
-      setOrderToPrint(printData);
-      setDefaultPrintType(printType || 'precheck');
-      setPrintDialogOpen(true);
+
+      const jobId =
+        (globalThis.crypto?.randomUUID?.() as string | undefined) ||
+        `job-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+      sessionStorage.setItem(
+        `pos_print_job:${jobId}`,
+        JSON.stringify({
+          order: printData,
+          type: printType || "precheck",
+          createdAt: Date.now(),
+        })
+      );
+
+      const url = `/staff-pos/print?job=${encodeURIComponent(jobId)}`;
+      const newTab = window.open(url, "_blank", "noopener,noreferrer");
+      if (!newTab) {
+        // Popup blocked → fallback to same-tab navigation
+        navigate(url);
+      }
     } catch (error: any) {
-      console.error('Error preparing print data:', error);
-      toast({ 
-        title: "Print error", 
-        description: error.message,
-        variant: "destructive"
+      console.error("Error preparing print job:", error);
+      toast({
+        title: "Print error",
+        description: error?.message || "Failed to prepare print job",
+        variant: "destructive",
       });
     }
   };
