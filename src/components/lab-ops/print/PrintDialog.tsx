@@ -47,65 +47,59 @@ export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaul
 
   if (!order) return null;
 
+  const ensurePrintStyles = () => {
+    const id = "pos-print-style";
+    if (document.getElementById(id)) return;
+
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+@media print {
+  body[data-pos-printing='true'] * {
+    visibility: hidden !important;
+  }
+  body[data-pos-printing='true'] [data-pos-print-area],
+  body[data-pos-printing='true'] [data-pos-print-area] * {
+    visibility: visible !important;
+  }
+  body[data-pos-printing='true'] [data-pos-print-area] {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    padding: 10px !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
+`;
+    document.head.appendChild(style);
+  };
+
   const handleBrowserPrint = () => {
     if (!printRef.current) return;
-    
-    setIsPrinting(true);
-    
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups to print",
-        variant: "destructive"
-      });
-      setIsPrinting(false);
-      return;
-    }
 
-    // Get the preview content
-    const content = printRef.current.innerHTML;
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Print ${selectedType.toUpperCase()}</title>
-          <style>
-            @page {
-              size: 80mm auto;
-              margin: 0;
-            }
-            body {
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-              margin: 0;
-              padding: 10px;
-              width: 80mm;
-            }
-            .receipt {
-              background: white;
-              color: black;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">${content}</div>
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() { window.close(); };
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    
-    setIsPrinting(false);
-    onPrintComplete?.();
-    toast({ title: "Print dialog opened" });
+    // No popups: print the receipt area in-place using @media print.
+    ensurePrintStyles();
+    setIsPrinting(true);
+
+    document.body.setAttribute("data-pos-printing", "true");
+
+    // Must be user-initiated for iOS; this button click is the user gesture.
+    window.print();
+
+    // Cleanup (afterprint is not 100% reliable on all mobile browsers)
+    const cleanup = () => {
+      document.body.removeAttribute("data-pos-printing");
+      setIsPrinting(false);
+      window.removeEventListener("afterprint", cleanup);
+      onPrintComplete?.();
+    };
+
+    window.addEventListener("afterprint", cleanup);
+    window.setTimeout(cleanup, 1500);
+
+    toast({ title: "Print opened" });
   };
 
   const handleBluetoothPrint = async () => {
@@ -294,7 +288,7 @@ export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaul
           <div className="space-y-2">
             <label className="text-sm font-medium">Preview</label>
             <ScrollArea className="h-[500px] border rounded-lg bg-gray-100 p-4">
-              <div ref={printRef}>
+              <div ref={printRef} data-pos-print-area>
                 <KOTPreview order={order} type={selectedType} />
               </div>
             </ScrollArea>
