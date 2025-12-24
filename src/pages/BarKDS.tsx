@@ -440,46 +440,29 @@ export default function BarKDS() {
   };
 
   // Filter orders based on selected station
-  // Uses OR logic: if station has both table AND category filters, 
-  // match orders that satisfy EITHER filter (not both required)
+  // Uses AND logic: orders must match BOTH table AND category filters if both are configured
   const getFilteredOrders = (allOrders: Order[]) => {
     if (selectedStation === "all") return allOrders;
     
     const station = stations.find(s => s.id === selectedStation);
     if (!station) return allOrders;
 
-    const hasTableFilter = station.assigned_tables.length > 0;
-    const hasCategoryFilter = station.category_filter.length > 0;
-
-    // If no filters configured, show all orders
-    if (!hasTableFilter && !hasCategoryFilter) {
-      return allOrders;
-    }
-
     return allOrders.filter(order => {
-      const tableNum = order.table_number || order.table?.table_number;
-      
-      // Check table match
-      const matchesTable = hasTableFilter && tableNum 
-        ? station.assigned_tables.includes(tableNum) 
-        : false;
-      
-      // Check category match - at least one item must match station's category filter
-      const matchesCategory = hasCategoryFilter 
-        ? order.items.some(item => {
-            const categoryId = (item.menu_item as any)?.category?.id;
-            return categoryId && station.category_filter.includes(categoryId);
-          })
-        : false;
+      // Filter by assigned tables if configured
+      if (station.assigned_tables.length > 0) {
+        const tableNum = order.table_number || order.table?.table_number;
+        if (!tableNum || !station.assigned_tables.includes(tableNum)) {
+          return false;
+        }
+      }
 
-      // If both filters exist, use OR logic (match either)
-      // If only one filter exists, must match that filter
-      if (hasTableFilter && hasCategoryFilter) {
-        return matchesTable || matchesCategory;
-      } else if (hasTableFilter) {
-        return matchesTable;
-      } else if (hasCategoryFilter) {
-        return matchesCategory;
+      // Filter by category if configured (must match table filter first)
+      if (station.category_filter.length > 0) {
+        const hasMatchingItem = order.items.some(item => {
+          const categoryId = (item.menu_item as any)?.category?.id;
+          return categoryId && station.category_filter.includes(categoryId);
+        });
+        if (!hasMatchingItem) return false;
       }
 
       return true;
