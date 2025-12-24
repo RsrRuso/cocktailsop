@@ -169,12 +169,12 @@ const LabOps = lazy(() => import("@/pages/LabOps"));
 const LabOpsPromo = lazy(() => import("@/pages/LabOpsPromo"));
 const Livestream = lazy(() => import("@/pages/Livestream"));
 const StaffPOS = lazy(() => import("@/pages/StaffPOS"));
+const StaffPOSPrint = lazy(() => import("@/pages/StaffPOSPrint"));
 const StaffInstall = lazy(() => import("@/pages/StaffInstall"));
 const StaffQRAccess = lazy(() => import("@/pages/StaffQRAccess"));
 const LabOpsStaffPinAccess = lazy(() => import("@/pages/LabOpsStaffPinAccess"));
 const BarKDS = lazy(() => import("@/pages/BarKDS"));
 const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
-const ExamCenter = lazy(() => import("@/pages/ExamCenter"));
 const ExamSession = lazy(() => import("@/pages/ExamSession"));
 const CertificateView = lazy(() => import("@/pages/CertificateView"));
 const IndustryDigest = lazy(() => import("@/pages/IndustryDigest"));
@@ -423,9 +423,9 @@ const AppContent = () => {
           <Route path="/live" element={<Livestream />} />
           <Route path="/live/:id" element={<Livestream />} />
           <Route path="/staff-pos" element={<StaffPOS />} />
+          <Route path="/staff-pos/print" element={<StaffPOSPrint />} />
           <Route path="/staff-install" element={<StaffInstall />} />
           <Route path="/staff-qr-access" element={<StaffQRAccess />} />
-          <Route path="/lab-ops-staff-pin-access" element={<LabOpsStaffPinAccess />} />
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
           <Route path="/exam-center" element={<ExamCenter />} />
