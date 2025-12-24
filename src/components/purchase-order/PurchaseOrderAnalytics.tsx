@@ -9,11 +9,13 @@ import {
   TrendingUp, TrendingDown, Package, DollarSign, Calendar, 
   ShoppingCart, Layers, BarChart3, PieChart, List, ArrowUpRight, 
   ArrowDownRight, Leaf, Wrench, Box, Download, FileSpreadsheet,
-  ChevronDown, ChevronRight, Hash
+  ChevronDown, ChevronRight, Hash, FileText
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import type { AnalyticsSummary, ItemSummary, DateItemDetail } from "@/hooks/usePurchaseOrderAnalytics";
 
@@ -57,6 +59,341 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       toast.success(`Downloaded ${fileName}`);
     } catch (error) {
       toast.error('Failed to download');
+      console.error(error);
+    }
+  };
+
+  // PDF Download helpers
+  const downloadPDF = (title: string, headers: string[], rows: (string | number)[][], fileName: string) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Header
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, 14, 16);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, pageWidth - 14, 16, { align: 'right' });
+      
+      // Table
+      autoTable(doc, {
+        head: [headers],
+        body: rows.map(row => row.map(cell => String(cell))),
+        startY: 30,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+      });
+      
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+      }
+      
+      doc.save(`${fileName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success(`Downloaded ${fileName}.pdf`);
+    } catch (error) {
+      toast.error('Failed to download PDF');
+      console.error(error);
+    }
+  };
+
+  const downloadOverviewPDF = () => {
+    const headers = ['Metric', 'Value'];
+    const rows = [
+      ['Total Orders', analytics.totalOrders],
+      ['Total Spend', analytics.totalAmount.toFixed(2)],
+      ['Average Order Value', analytics.avgOrderValue.toFixed(2)],
+      ['Daily Average', analytics.dailyAverage.toFixed(2)],
+      ['Weekly Trend (%)', analytics.weeklyTrend.toFixed(1)],
+      ['This Month', analytics.monthlyComparison.current.toFixed(2)],
+      ['Last Month', analytics.monthlyComparison.previous.toFixed(2)],
+      ['Monthly Change (%)', analytics.monthlyComparison.change.toFixed(1)],
+      ['Unique Items', analytics.uniqueItems],
+      ['Market Items Count', analytics.marketItems.count],
+      ['Market Items Spend', analytics.marketItems.amount.toFixed(2)],
+      ['Material Items Count', analytics.materialItems.count],
+      ['Material Items Spend', analytics.materialItems.amount.toFixed(2)],
+    ];
+    downloadPDF('Purchase Order Analytics - Overview', headers, rows, 'PO_Analytics_Overview');
+  };
+
+  const downloadTopItemsPDF = () => {
+    const headers = ['#', 'Item Name', 'Code', 'Category', 'Qty', 'Amount', 'Orders', 'Days'];
+    const rows = analytics.topItems.map((item, idx) => [
+      idx + 1,
+      item.item_name,
+      item.item_code || '-',
+      item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
+      item.totalAmount.toFixed(2),
+      item.orderCount,
+      item.purchaseDays
+    ]);
+    downloadPDF('Purchase Order Analytics - Top Items', headers, rows, 'PO_Top_Items');
+  };
+
+  const downloadSuppliersPDF = () => {
+    const headers = ['#', 'Supplier', 'Order Count', 'Total Amount'];
+    const rows = analytics.ordersBySupplier.map((s, idx) => [
+      idx + 1,
+      s.supplier,
+      s.count,
+      s.amount.toFixed(2)
+    ]);
+    downloadPDF('Purchase Order Analytics - Suppliers', headers, rows, 'PO_Suppliers');
+  };
+
+  const downloadMarketItemsPDF = () => {
+    const headers = ['#', 'Item Name', 'Code', 'Qty', 'Amount', 'Orders', 'Days', 'First', 'Last'];
+    const rows = analytics.marketItems.items.map((item, idx) => [
+      idx + 1,
+      item.item_name,
+      item.item_code || '-',
+      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
+      item.totalAmount.toFixed(2),
+      item.orderCount,
+      item.purchaseDays,
+      item.firstPurchaseDate || '-',
+      item.lastPurchaseDate || '-'
+    ]);
+    downloadPDF('Purchase Order Analytics - Market Items', headers, rows, 'PO_Market_Items');
+  };
+
+  const downloadMaterialItemsPDF = () => {
+    const headers = ['#', 'Item Name', 'Code', 'Qty', 'Amount', 'Orders', 'Days', 'First', 'Last'];
+    const rows = analytics.materialItems.items.map((item, idx) => [
+      idx + 1,
+      item.item_name,
+      item.item_code || '-',
+      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
+      item.totalAmount.toFixed(2),
+      item.orderCount,
+      item.purchaseDays,
+      item.firstPurchaseDate || '-',
+      item.lastPurchaseDate || '-'
+    ]);
+    downloadPDF('Purchase Order Analytics - Material Items', headers, rows, 'PO_Material_Items');
+  };
+
+  const downloadAllItemsPDF = () => {
+    const headers = ['#', 'Item Name', 'Code', 'Category', 'Qty', 'Amount', 'Orders', 'Days'];
+    const rows = analytics.topItems.map((item, idx) => [
+      idx + 1,
+      item.item_name,
+      item.item_code || '-',
+      item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
+      item.totalAmount.toFixed(2),
+      item.orderCount,
+      item.purchaseDays
+    ]);
+    downloadPDF('Purchase Order Analytics - All Items', headers, rows, 'PO_All_Items');
+  };
+
+  const downloadOrdersByDatePDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Header
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Purchase Order Analytics - Orders by Date', 14, 16);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, pageWidth - 14, 16, { align: 'right' });
+      
+      let yPos = 35;
+      
+      analytics.ordersByDate.slice().reverse().forEach((dayData) => {
+        if (yPos > doc.internal.pageSize.getHeight() - 60) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        // Date header
+        doc.setFillColor(240, 240, 240);
+        doc.rect(14, yPos - 5, pageWidth - 28, 10, 'F');
+        doc.setTextColor(0);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${format(parseISO(dayData.date), 'EEEE, dd MMM yyyy')}`, 16, yPos + 2);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${dayData.count} orders | ${dayData.items.length} items | Total: ${dayData.amount.toFixed(2)}`, pageWidth - 16, yPos + 2, { align: 'right' });
+        yPos += 12;
+        
+        // Items table for this date
+        if (dayData.items.length > 0) {
+          autoTable(doc, {
+            head: [['Item', 'Code', 'Cat', 'Qty', 'Amount']],
+            body: dayData.items.map(item => [
+              item.item_name,
+              item.item_code || '-',
+              item.category === 'market' ? 'M' : item.category === 'material' ? 'T' : 'O',
+              `${item.quantity} ${item.unit || ''}`,
+              item.amount.toFixed(2)
+            ]),
+            startY: yPos,
+            theme: 'plain',
+            headStyles: { fillColor: [230, 230, 230], textColor: 50, fontStyle: 'bold', fontSize: 8 },
+            styles: { fontSize: 8, cellPadding: 2 },
+            margin: { left: 14, right: 14 },
+          });
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+      });
+      
+      // Footer on all pages
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+      }
+      
+      doc.save(`PO_Orders_By_Date_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('Downloaded Orders by Date PDF');
+    } catch (error) {
+      toast.error('Failed to download PDF');
+      console.error(error);
+    }
+  };
+
+  const downloadFullReportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Cover page
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, pageWidth, 60, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Purchase Order', 14, 30);
+      doc.text('Analytics Report', 14, 42);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${format(new Date(), 'dd MMMM yyyy HH:mm')}`, 14, 55);
+      
+      // Overview section
+      let yPos = 75;
+      doc.setTextColor(0);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Overview Summary', 14, yPos);
+      yPos += 8;
+      
+      autoTable(doc, {
+        body: [
+          ['Total Orders', String(analytics.totalOrders), 'Total Spend', analytics.totalAmount.toFixed(2)],
+          ['Avg Order Value', analytics.avgOrderValue.toFixed(2), 'Daily Average', analytics.dailyAverage.toFixed(2)],
+          ['Market Items', `${analytics.marketItems.count} (${analytics.marketItems.amount.toFixed(2)})`, 
+           'Material Items', `${analytics.materialItems.count} (${analytics.materialItems.amount.toFixed(2)})`],
+        ],
+        startY: yPos,
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 4 },
+        columnStyles: { 0: { fontStyle: 'bold' }, 2: { fontStyle: 'bold' } },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Top Items
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Top 15 Items by Spend', 14, yPos);
+      yPos += 5;
+      
+      autoTable(doc, {
+        head: [['#', 'Item', 'Cat', 'Qty', 'Amount', 'Orders', 'Days']],
+        body: analytics.topItems.slice(0, 15).map((item, idx) => [
+          idx + 1,
+          item.item_name.substring(0, 25),
+          item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+          `${item.totalQuantity.toFixed(1)}`,
+          item.totalAmount.toFixed(2),
+          item.orderCount,
+          item.purchaseDays
+        ]),
+        startY: yPos,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 8, cellPadding: 2 },
+      });
+      
+      // Top Suppliers on new page
+      doc.addPage();
+      yPos = 20;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Top Suppliers', 14, yPos);
+      yPos += 5;
+      
+      autoTable(doc, {
+        head: [['#', 'Supplier', 'Orders', 'Total Amount']],
+        body: analytics.ordersBySupplier.slice(0, 10).map((s, idx) => [
+          idx + 1,
+          s.supplier,
+          s.count,
+          s.amount.toFixed(2)
+        ]),
+        startY: yPos,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 9, cellPadding: 3 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Recent Orders by Date
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Recent Orders Summary', 14, yPos);
+      yPos += 5;
+      
+      autoTable(doc, {
+        head: [['Date', 'Day', 'Orders', 'Items', 'Amount']],
+        body: analytics.ordersByDate.slice().reverse().slice(0, 15).map(d => [
+          format(parseISO(d.date), 'dd MMM yyyy'),
+          format(parseISO(d.date), 'EEE'),
+          d.count,
+          d.items.length,
+          d.amount.toFixed(2)
+        ]),
+        startY: yPos,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 9, cellPadding: 3 },
+      });
+      
+      // Footer on all pages
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+      }
+      
+      doc.save(`PO_Full_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('Downloaded full report PDF');
+    } catch (error) {
+      toast.error('Failed to download PDF');
       console.error(error);
     }
   };
@@ -407,10 +744,16 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       {/* Download Full Report Button */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Purchase Order Analytics</h2>
-        <Button onClick={downloadFullReport} size="sm" className="gap-2">
-          <FileSpreadsheet className="w-4 h-4" />
-          Download Full Report
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={downloadFullReportPDF} variant="outline" size="sm" className="gap-2">
+            <FileText className="w-4 h-4" />
+            PDF
+          </Button>
+          <Button onClick={downloadFullReport} size="sm" className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </Button>
+        </div>
       </div>
 
       {/* Overview Stats */}
@@ -449,9 +792,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
               <Leaf className="w-5 h-5 text-emerald-500" />
               <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Market / Fresh Items</h3>
             </div>
-            <Button variant="ghost" size="sm" onClick={downloadMarketItems} className="h-7 px-2 gap-1 text-emerald-600">
-              <Download className="w-3 h-3" />
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={downloadMarketItemsPDF} className="h-7 w-7 p-0 text-emerald-600">
+                <FileText className="w-3 h-3" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={downloadMarketItems} className="h-7 w-7 p-0 text-emerald-600">
+                <FileSpreadsheet className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -471,9 +819,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
               <Wrench className="w-5 h-5 text-purple-500" />
               <h3 className="font-semibold text-purple-600 dark:text-purple-400">Materials / Supplies</h3>
             </div>
-            <Button variant="ghost" size="sm" onClick={downloadMaterialItems} className="h-7 px-2 gap-1 text-purple-600">
-              <Download className="w-3 h-3" />
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={downloadMaterialItemsPDF} className="h-7 w-7 p-0 text-purple-600">
+                <FileText className="w-3 h-3" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={downloadMaterialItems} className="h-7 w-7 p-0 text-purple-600">
+                <FileSpreadsheet className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -522,10 +875,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                   <TrendingUp className="w-4 h-4 text-primary" />
                   Top Items by Spend
                 </h3>
-                <Button variant="ghost" size="sm" onClick={downloadTopItems} className="h-7 px-2 gap-1">
-                  <Download className="w-3 h-3" />
-                  <span className="text-xs">Export</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={downloadTopItemsPDF} className="h-7 w-7 p-0">
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadTopItems} className="h-7 w-7 p-0">
+                    <FileSpreadsheet className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
               <ScrollArea className="h-[300px]">
                 <div className="space-y-1">
@@ -543,10 +900,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                   <Package className="w-4 h-4 text-primary" />
                   Top Suppliers
                 </h3>
-                <Button variant="ghost" size="sm" onClick={downloadSuppliers} className="h-7 px-2 gap-1">
-                  <Download className="w-3 h-3" />
-                  <span className="text-xs">Export</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={downloadSuppliersPDF} className="h-7 w-7 p-0">
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadSuppliers} className="h-7 w-7 p-0">
+                    <FileSpreadsheet className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
@@ -585,10 +946,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Badge variant="outline" className="border-emerald-500 text-emerald-500">
                   {analytics.marketItems.count} items • {formatCurrency(analytics.marketItems.amount)}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={downloadMarketItems} className="h-7 px-2 gap-1">
-                  <Download className="w-3 h-3" />
-                  <span className="text-xs">Export</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={downloadMarketItemsPDF} className="h-7 w-7 p-0">
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadMarketItems} className="h-7 w-7 p-0">
+                    <FileSpreadsheet className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-3">Click an item to see purchase dates</p>
@@ -617,10 +982,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Badge variant="outline" className="border-purple-500 text-purple-500">
                   {analytics.materialItems.count} items • {formatCurrency(analytics.materialItems.amount)}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={downloadMaterialItems} className="h-7 px-2 gap-1">
-                  <Download className="w-3 h-3" />
-                  <span className="text-xs">Export</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={downloadMaterialItemsPDF} className="h-7 w-7 p-0">
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadMaterialItems} className="h-7 w-7 p-0">
+                    <FileSpreadsheet className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-3">Click an item to see purchase dates</p>
@@ -649,10 +1018,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Badge variant="outline">
                   {analytics.uniqueItems} items • {formatCurrency(analytics.totalAmount)}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={downloadAllItems} className="h-7 px-2 gap-1">
-                  <Download className="w-3 h-3" />
-                  <span className="text-xs">Export</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={downloadAllItemsPDF} className="h-7 w-7 p-0">
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadAllItems} className="h-7 w-7 p-0">
+                    <FileSpreadsheet className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-3">Click an item to see purchase dates</p>
@@ -677,10 +1050,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Badge variant="outline">
                   {analytics.ordersByDate.length} days with orders
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={downloadOrdersByDate} className="h-7 px-2 gap-1">
-                  <Download className="w-3 h-3" />
-                  <span className="text-xs">Export</span>
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={downloadOrdersByDatePDF} className="h-7 w-7 p-0">
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadOrdersByDate} className="h-7 w-7 p-0">
+                    <FileSpreadsheet className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-3">Click a date to see all items ordered that day</p>
