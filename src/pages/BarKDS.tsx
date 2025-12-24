@@ -611,7 +611,7 @@ export default function BarKDS() {
         
         {/* Station Selector - Only managers/owners can see dropdown */}
         <div className="mt-3">
-          {['manager', 'owner', 'admin'].includes(staff.role) ? (
+          {staff && ['manager', 'owner', 'admin'].includes(staff.role.toLowerCase()) ? (
             <Select value={selectedStation} onValueChange={setSelectedStation}>
               <SelectTrigger className="bg-black/30 border-amber-600/50 text-white h-9">
                 <SelectValue>
