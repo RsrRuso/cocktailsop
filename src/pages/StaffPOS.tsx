@@ -1524,10 +1524,28 @@ export default function StaffPOS() {
       {/* Compact Header */}
       <div className="sticky top-0 z-50 bg-card border-b px-2 py-2 flex items-center justify-between gap-1">
         <div className="flex items-center gap-2 min-w-0">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => window.location.href = '/bar-kds'}
+            className="h-8 w-8 shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate">{staff.full_name}</p>
             <p className="text-xs text-muted-foreground truncate">{outlet.name}</p>
           </div>
+          {/* Quick access to Bar KDS */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.location.href = '/bar-kds'}
+            className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 h-7 text-xs"
+          >
+            <Wine className="h-3.5 w-3.5 mr-1" />
+            KDS
+          </Button>
         </div>
         <div className="flex items-center gap-1">
           <TeamPresenceIndicator 
