@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
@@ -34,9 +33,99 @@ type PrintType = 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined';
 export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaultType = 'precheck' }: PrintDialogProps) {
   const [selectedType, setSelectedType] = useState<PrintType>(defaultType);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [autoPrintAttempted, setAutoPrintAttempted] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   
   const { status, connect, disconnect, printRaw, createReceiptData } = useBluetoothPrinter();
+
+  // Generate receipt lines for the current order/type
+  const generateLines = useCallback((): string[] => {
+    if (!order) return [];
+    switch (selectedType) {
+      case 'kitchen':
+        return generateKitchenKOT(order);
+      case 'bar':
+        return generateBarKOT(order);
+      case 'precheck':
+        return generatePreCheck(order);
+      case 'closing':
+        return generateClosingCheck(order);
+      case 'combined':
+        return generateCombinedKOT(order);
+      default:
+        return generatePreCheck(order);
+    }
+  }, [order, selectedType]);
+
+  // Core Bluetooth print logic (no toast on success as caller handles)
+  const doPrint = useCallback(async (): Promise<boolean> => {
+    const lines = generateLines();
+    if (lines.length === 0) {
+      toast({ title: 'Nothing to Print', description: `No ${selectedType} items in this order`, variant: 'destructive' });
+      return false;
+    }
+
+    const receiptLines: ReceiptLine[] = lines.map(line => {
+      const isCentered = line.startsWith(' '.repeat(10)) || line.includes('***') || line.includes('───');
+      const isBold = line.includes('***') || line.includes('TOTAL') || line.includes('═');
+      return {
+        text: line.trim() || ' ',
+        align: isCentered ? 'center' : 'left',
+        bold: isBold,
+        size: line.includes('***') && line.length < 30 ? 'tall' : 'normal',
+      };
+    });
+
+    const data = createReceiptData(receiptLines);
+    return printRaw(data);
+  }, [generateLines, selectedType, createReceiptData, printRaw]);
+
+  // Auto-print when dialog opens (with auto-reconnect)
+  useEffect(() => {
+    if (!open || !order || autoPrintAttempted) return;
+
+    const autoPrint = async () => {
+      setAutoPrintAttempted(true);
+      setIsPrinting(true);
+
+      try {
+        // If not connected, attempt auto-reconnect
+        let connected = status.isConnected;
+        if (!connected) {
+          connected = await connect();
+        }
+
+        if (connected) {
+          const success = await doPrint();
+          if (success) {
+            toast({ title: 'Printed successfully!' });
+            onPrintComplete?.();
+          }
+        } else {
+          // Bluetooth unavailable / user cancelled – fallback to browser print
+          handleBrowserPrint();
+        }
+      } catch (err) {
+        console.error('Auto-print error', err);
+        // Fallback to browser print
+        handleBrowserPrint();
+      } finally {
+        setIsPrinting(false);
+      }
+    };
+
+    // Small delay to let the dialog render
+    const t = setTimeout(autoPrint, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, order]);
+
+  // Reset auto-print flag when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setAutoPrintAttempted(false);
+    }
+  }, [open]);
 
   // Update selected type when dialog opens with a new defaultType
   useEffect(() => {
@@ -111,53 +200,7 @@ export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaul
     setIsPrinting(true);
 
     try {
-      // Generate text content based on selected type
-      let lines: string[] = [];
-      
-      switch (selectedType) {
-        case 'kitchen':
-          lines = generateKitchenKOT(order);
-          break;
-        case 'bar':
-          lines = generateBarKOT(order);
-          break;
-        case 'precheck':
-          lines = generatePreCheck(order);
-          break;
-        case 'closing':
-          lines = generateClosingCheck(order);
-          break;
-        case 'combined':
-          lines = generateCombinedKOT(order);
-          break;
-      }
-
-      if (lines.length === 0) {
-        toast({
-          title: "Nothing to Print",
-          description: `No ${selectedType} items in this order`,
-          variant: "destructive"
-        });
-        setIsPrinting(false);
-        return;
-      }
-
-      // Convert to receipt lines with formatting
-      const receiptLines: ReceiptLine[] = lines.map(line => {
-        const isCentered = line.startsWith(' '.repeat(10)) || line.includes('***') || line.includes('───');
-        const isBold = line.includes('***') || line.includes('TOTAL') || line.includes('═');
-        
-        return {
-          text: line.trim() || ' ',
-          align: isCentered ? 'center' : 'left',
-          bold: isBold,
-          size: line.includes('***') && line.length < 30 ? 'tall' : 'normal'
-        };
-      });
-
-      const data = createReceiptData(receiptLines);
-      const success = await printRaw(data);
-
+      const success = await doPrint();
       if (success) {
         toast({ title: "Printed successfully!" });
         onPrintComplete?.();
