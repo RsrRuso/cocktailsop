@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,16 +26,24 @@ interface PrintDialogProps {
   onOpenChange: (open: boolean) => void;
   order: OrderData | null;
   onPrintComplete?: () => void;
+  defaultType?: PrintType;
 }
 
 type PrintType = 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined';
 
-export function PrintDialog({ open, onOpenChange, order, onPrintComplete }: PrintDialogProps) {
-  const [selectedType, setSelectedType] = useState<PrintType>('precheck');
+export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaultType = 'precheck' }: PrintDialogProps) {
+  const [selectedType, setSelectedType] = useState<PrintType>(defaultType);
   const [isPrinting, setIsPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   
   const { status, connect, disconnect, printRaw, createReceiptData } = useBluetoothPrinter();
+
+  // Update selected type when dialog opens with a new defaultType
+  useEffect(() => {
+    if (open) {
+      setSelectedType(defaultType);
+    }
+  }, [open, defaultType]);
 
   if (!order) return null;
 
