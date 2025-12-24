@@ -46,7 +46,8 @@ export default function StaffPOSPrint() {
   const job = useMemo(() => {
     if (!jobId) return null;
     try {
-      const raw = sessionStorage.getItem(`${JOB_PREFIX}${jobId}`);
+      const key = `${JOB_PREFIX}${jobId}`;
+      const raw = sessionStorage.getItem(key) ?? localStorage.getItem(key);
       return raw ? (JSON.parse(raw) as { order: OrderData; type: PrintType; createdAt: number }) : null;
     } catch {
       return null;
@@ -80,14 +81,26 @@ export default function StaffPOSPrint() {
     setMetaTag("robots", "noindex, nofollow");
     setCanonical(`${window.location.origin}${window.location.pathname}`);
 
+    const key = jobId ? `${JOB_PREFIX}${jobId}` : null;
+    const cleanupJob = () => {
+      if (!key) return;
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    };
+
+    window.addEventListener("afterprint", cleanupJob);
+
     // Auto-trigger print after mount (reliable, no popups).
     const t = window.setTimeout(() => {
       // Only auto-print if we have content
       if (order && plainLines.length > 0) window.print();
     }, 400);
 
-    return () => window.clearTimeout(t);
-  }, [order, plainLines.length, type]);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener("afterprint", cleanupJob);
+    };
+  }, [jobId, order, plainLines.length, type]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
