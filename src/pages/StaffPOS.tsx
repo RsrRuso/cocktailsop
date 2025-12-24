@@ -729,7 +729,7 @@ export default function StaffPOS() {
         total_amount: subtotal,
         lab_ops_payments: [{ payment_method: paymentMethod, amount: subtotal }]
       };
-      openPrintDialog(closedOrder, 'closing');
+      void openPrintDialog(closedOrder, 'closing');
       
       setSelectedOrder(null);
       fetchOpenOrders(outlet.id);
@@ -801,13 +801,45 @@ export default function StaffPOS() {
     return printData;
   };
 
-  const openPrintDialog = (
+  const openPrintDialog = async (
     order: any,
     printType?: 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined'
   ) => {
     // Open in-app dialog (no navigation / no popups)
     try {
-      const printData = prepareOrderForPrint(order);
+      let hydratedOrder = order;
+
+      // If the order we have doesn't include items (common in list views), hydrate it from the database.
+      const hasItems = Array.isArray(order?.lab_ops_order_items) && order.lab_ops_order_items.length > 0;
+      if (!hasItems && order?.id) {
+        const { data, error } = await supabase
+          .from('lab_ops_orders')
+          .select(
+            `
+            id,
+            created_at,
+            status,
+            covers,
+            total_amount,
+            service_charge,
+            tax_total,
+            discount_total,
+            closed_at,
+            lab_ops_tables ( name, table_number ),
+            lab_ops_order_items ( id, qty, unit_price, note, lab_ops_menu_items ( name, lab_ops_categories ( name, type ) ) ),
+            lab_ops_payments ( payment_method, amount )
+          `.replace(/\s+/g, ' ').trim()
+          )
+          .eq('id', order.id)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+        if (data) hydratedOrder = data;
+      }
+
+      const printData = prepareOrderForPrint(hydratedOrder);
       if (!printData?.items?.length) {
         toast({
           title: "No items to print",
@@ -1360,7 +1392,7 @@ export default function StaffPOS() {
                     <Button 
                       variant="outline" 
                       className="w-full h-12 text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
-                      onClick={() => openPrintDialog(selectedOrder, 'precheck')}
+                      onClick={() => void openPrintDialog(selectedOrder, 'precheck')}
                     >
                       <Printer className="w-5 h-5 mr-2" />
                       Pre Check
