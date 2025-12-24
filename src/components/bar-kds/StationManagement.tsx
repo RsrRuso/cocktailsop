@@ -155,7 +155,31 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
     }
   };
 
+  // Get tables already assigned to OTHER stations
+  const getTablesAssignedToOtherStations = (currentStationId: string): number[] => {
+    return stations
+      .filter(s => s.id !== currentStationId)
+      .flatMap(s => s.assigned_tables || []);
+  };
+
+  // Get categories already assigned to OTHER stations
+  const getCategoriesAssignedToOtherStations = (currentStationId: string): string[] => {
+    return stations
+      .filter(s => s.id !== currentStationId)
+      .flatMap(s => s.category_filter || []);
+  };
+
   const toggleTable = (stationId: string, tableNumber: number) => {
+    const alreadyAssigned = getTablesAssignedToOtherStations(stationId);
+    if (alreadyAssigned.includes(tableNumber)) {
+      toast({ 
+        title: "Table already assigned", 
+        description: `Table ${tableNumber} is already assigned to another station`,
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     setStations(prev => prev.map(s => {
       if (s.id !== stationId) return s;
       const current = s.assigned_tables || [];
@@ -184,6 +208,17 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
   };
 
   const toggleCategory = (stationId: string, categoryId: string) => {
+    const alreadyAssigned = getCategoriesAssignedToOtherStations(stationId);
+    if (alreadyAssigned.includes(categoryId)) {
+      const catName = categories.find(c => c.id === categoryId)?.name || "Category";
+      toast({ 
+        title: "Category already assigned", 
+        description: `${catName} is already assigned to another station`,
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     setStations(prev => prev.map(s => {
       if (s.id !== stationId) return s;
       const current = s.category_filter || [];
@@ -282,20 +317,28 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
                       <div className="space-y-2">
                         <Label className="text-sm text-gray-400">Drink Categories (leave empty for all)</Label>
                         <div className="flex flex-wrap gap-2">
-                          {categories.map((cat) => (
-                            <Badge
-                              key={cat.id}
-                              variant="outline"
-                              className={`cursor-pointer transition-colors ${
-                                station.category_filter?.includes(cat.id)
-                                  ? "bg-amber-600 text-white border-amber-600"
-                                  : "text-gray-400 border-gray-600 hover:border-amber-400"
-                              }`}
-                              onClick={() => toggleCategory(station.id, cat.id)}
-                            >
-                              {cat.name}
-                            </Badge>
-                          ))}
+                          {categories.map((cat) => {
+                            const isAssignedToOther = getCategoriesAssignedToOtherStations(station.id).includes(cat.id);
+                            const isAssignedToThis = station.category_filter?.includes(cat.id);
+                            
+                            return (
+                              <Badge
+                                key={cat.id}
+                                variant="outline"
+                                className={`cursor-pointer transition-colors ${
+                                  isAssignedToThis
+                                    ? "bg-amber-600 text-white border-amber-600"
+                                    : isAssignedToOther
+                                    ? "bg-gray-700 text-gray-500 border-gray-600 cursor-not-allowed opacity-50"
+                                    : "text-gray-400 border-gray-600 hover:border-amber-400"
+                                }`}
+                                onClick={() => toggleCategory(station.id, cat.id)}
+                              >
+                                {cat.name}
+                                {isAssignedToOther && " ✓"}
+                              </Badge>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -311,20 +354,28 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
                           <div className="flex flex-wrap gap-1.5">
                             {floorTables
                               .filter(t => t.table_number !== null)
-                              .map((table) => (
-                                <Badge
-                                  key={table.id}
-                                  variant="outline"
-                                  className={`cursor-pointer transition-colors text-xs px-2 py-0.5 ${
-                                    station.assigned_tables?.includes(table.table_number!)
-                                      ? "bg-blue-600 text-white border-blue-600"
-                                      : "text-gray-400 border-gray-600 hover:border-blue-400"
-                                  }`}
-                                  onClick={() => toggleTable(station.id, table.table_number!)}
-                                >
-                                  T{table.table_number}
-                                </Badge>
-                              ))}
+                              .map((table) => {
+                                const isAssignedToOther = getTablesAssignedToOtherStations(station.id).includes(table.table_number!);
+                                const isAssignedToThis = station.assigned_tables?.includes(table.table_number!);
+                                
+                                return (
+                                  <Badge
+                                    key={table.id}
+                                    variant="outline"
+                                    className={`cursor-pointer transition-colors text-xs px-2 py-0.5 ${
+                                      isAssignedToThis
+                                        ? "bg-blue-600 text-white border-blue-600"
+                                        : isAssignedToOther
+                                        ? "bg-gray-700 text-gray-500 border-gray-600 cursor-not-allowed opacity-50"
+                                        : "text-gray-400 border-gray-600 hover:border-blue-400"
+                                    }`}
+                                    onClick={() => toggleTable(station.id, table.table_number!)}
+                                  >
+                                    T{table.table_number}
+                                    {isAssignedToOther && " ✓"}
+                                  </Badge>
+                                );
+                              })}
                           </div>
                         )}
                         {station.assigned_tables?.length > 0 && (
