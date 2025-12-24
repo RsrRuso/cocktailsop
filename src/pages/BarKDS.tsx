@@ -108,6 +108,18 @@ export default function BarKDS() {
   const [myStationId, setMyStationId] = useState<string | null>(null);
   const hasShownStationToast = useRef(false);
 
+  const isManager = !!staff && ["manager", "owner", "admin"].includes(staff.role.toLowerCase());
+
+  // Ensure non-managers never see management windows (even if state was previously set)
+  useEffect(() => {
+    if (staff && !isManager) {
+      setTableAssignmentOpen(false);
+      setStationManagementOpen(false);
+      setPerformanceOpen(false);
+      setConsumptionOpen(false);
+    }
+  }, [staff, isManager]);
+
   // Fetch outlets for login screen
   useEffect(() => {
     const fetchOutlets = async () => {
@@ -611,7 +623,7 @@ export default function BarKDS() {
         
         {/* Station Selector - Only managers/owners can see dropdown */}
         <div className="mt-3">
-          {staff && ['manager', 'owner', 'admin'].includes(staff.role.toLowerCase()) ? (
+          {isManager ? (
             <Select value={selectedStation} onValueChange={setSelectedStation}>
               <SelectTrigger className="bg-black/30 border-amber-600/50 text-white h-9">
                 <SelectValue>
@@ -664,40 +676,42 @@ export default function BarKDS() {
         </div>
         
         {/* Management Buttons Row */}
-        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTableAssignmentOpen(true)}
-            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
-          >
-            <User className="h-3.5 w-3.5 mr-1" /> Tables
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setStationManagementOpen(true)}
-            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
-          >
-            <Settings className="h-3.5 w-3.5 mr-1" /> Stations
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPerformanceOpen(true)}
-            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
-          >
-            <TrendingUp className="h-3.5 w-3.5 mr-1" /> Performance
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setConsumptionOpen(true)}
-            className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
-          >
-            <Beaker className="h-3.5 w-3.5 mr-1" /> Consumption
-          </Button>
-        </div>
+        {isManager && (
+          <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTableAssignmentOpen(true)}
+              className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+            >
+              <User className="h-3.5 w-3.5 mr-1" /> Tables
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStationManagementOpen(true)}
+              className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+            >
+              <Settings className="h-3.5 w-3.5 mr-1" /> Stations
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPerformanceOpen(true)}
+              className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+            >
+              <TrendingUp className="h-3.5 w-3.5 mr-1" /> Performance
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConsumptionOpen(true)}
+              className="text-white hover:bg-white/20 text-xs px-2.5 py-1.5 h-8 whitespace-nowrap"
+            >
+              <Beaker className="h-3.5 w-3.5 mr-1" /> Consumption
+            </Button>
+          </div>
+        )}
         
         {/* Tab Buttons */}
         <div className="flex gap-2 mt-3">
@@ -937,7 +951,7 @@ export default function BarKDS() {
       )}
 
       {/* Quick Table Assignment Dialog */}
-      {selectedOutlet && (
+      {selectedOutlet && isManager && (
         <QuickTableAssignment
           open={tableAssignmentOpen}
           onClose={() => setTableAssignmentOpen(false)}
@@ -947,7 +961,7 @@ export default function BarKDS() {
       )}
 
       {/* Station Management Dialog */}
-      {selectedOutlet && (
+      {selectedOutlet && isManager && (
         <StationManagement
           open={stationManagementOpen}
           onClose={() => setStationManagementOpen(false)}
@@ -957,7 +971,7 @@ export default function BarKDS() {
       )}
 
       {/* Bartender Performance Dialog */}
-      {selectedOutlet && (
+      {selectedOutlet && isManager && (
         <BartenderPerformance
           open={performanceOpen}
           onClose={() => setPerformanceOpen(false)}
@@ -966,7 +980,7 @@ export default function BarKDS() {
       )}
 
       {/* Station Consumption Dialog */}
-      {selectedOutlet && (
+      {selectedOutlet && isManager && (
         <StationConsumption
           open={consumptionOpen}
           onClose={() => setConsumptionOpen(false)}
