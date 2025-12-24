@@ -4,43 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   TrendingUp, TrendingDown, Package, DollarSign, Calendar, 
   ShoppingCart, Layers, BarChart3, PieChart, List, ArrowUpRight, 
-  ArrowDownRight, Leaf, Wrench, Box, Download, FileSpreadsheet
+  ArrowDownRight, Leaf, Wrench, Box, Download, FileSpreadsheet,
+  ChevronDown, ChevronRight, Hash
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-
-interface ItemSummary {
-  item_name: string;
-  item_code: string;
-  totalQuantity: number;
-  totalAmount: number;
-  avgPrice: number;
-  orderCount: number;
-  unit?: string;
-  category: 'market' | 'material' | 'unknown';
-}
-
-interface AnalyticsSummary {
-  totalOrders: number;
-  totalAmount: number;
-  avgOrderValue: number;
-  totalItems: number;
-  uniqueItems: number;
-  marketItems: { count: number; amount: number; items: ItemSummary[] };
-  materialItems: { count: number; amount: number; items: ItemSummary[] };
-  ordersByDate: { date: string; count: number; amount: number }[];
-  ordersBySupplier: { supplier: string; count: number; amount: number }[];
-  topItems: ItemSummary[];
-  dailyAverage: number;
-  weeklyTrend: number;
-  monthlyComparison: { current: number; previous: number; change: number };
-  itemsByCategory: { category: string; items: ItemSummary[] }[];
-}
+import type { AnalyticsSummary, ItemSummary, DateItemDetail } from "@/hooks/usePurchaseOrderAnalytics";
 
 interface PurchaseOrderAnalyticsProps {
   analytics: AnalyticsSummary;
@@ -49,6 +24,28 @@ interface PurchaseOrderAnalyticsProps {
 
 export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOrderAnalyticsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'market' | 'material' | 'combined' | 'dates'>('overview');
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const toggleDateExpanded = (date: string) => {
+    const newExpanded = new Set(expandedDates);
+    if (newExpanded.has(date)) {
+      newExpanded.delete(date);
+    } else {
+      newExpanded.add(date);
+    }
+    setExpandedDates(newExpanded);
+  };
+
+  const toggleItemExpanded = (itemName: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemName)) {
+      newExpanded.delete(itemName);
+    } else {
+      newExpanded.add(itemName);
+    }
+    setExpandedItems(newExpanded);
+  };
 
   // Download helpers
   const downloadExcel = (data: any[], fileName: string, sheetName: string = 'Data') => {
@@ -94,7 +91,10 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       Unit: item.unit || 'units',
       'Total Amount': item.totalAmount.toFixed(2),
       'Avg Price': item.avgPrice.toFixed(2),
-      'Order Count': item.orderCount
+      'Order Count': item.orderCount,
+      'Purchase Days': item.purchaseDays,
+      'First Purchase': item.firstPurchaseDate || '-',
+      'Last Purchase': item.lastPurchaseDate || '-'
     }));
     downloadExcel(data, 'PO_Top_Items', 'Top Items');
   };
@@ -118,7 +118,10 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       Unit: item.unit || 'units',
       'Total Amount': item.totalAmount.toFixed(2),
       'Avg Price': item.avgPrice.toFixed(2),
-      'Order Count': item.orderCount
+      'Order Count': item.orderCount,
+      'Purchase Days': item.purchaseDays,
+      'First Purchase': item.firstPurchaseDate || '-',
+      'Last Purchase': item.lastPurchaseDate || '-'
     }));
     downloadExcel(data, 'PO_Market_Items', 'Market Items');
   };
@@ -132,7 +135,10 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       Unit: item.unit || 'units',
       'Total Amount': item.totalAmount.toFixed(2),
       'Avg Price': item.avgPrice.toFixed(2),
-      'Order Count': item.orderCount
+      'Order Count': item.orderCount,
+      'Purchase Days': item.purchaseDays,
+      'First Purchase': item.firstPurchaseDate || '-',
+      'Last Purchase': item.lastPurchaseDate || '-'
     }));
     downloadExcel(data, 'PO_Material_Items', 'Material Items');
   };
@@ -150,20 +156,46 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       Unit: item.unit || 'units',
       'Total Amount': item.totalAmount.toFixed(2),
       'Avg Price': item.avgPrice.toFixed(2),
-      'Order Count': item.orderCount
+      'Order Count': item.orderCount,
+      'Purchase Days': item.purchaseDays,
+      'First Purchase': item.firstPurchaseDate || '-',
+      'Last Purchase': item.lastPurchaseDate || '-'
     }));
     downloadExcel(data, 'PO_All_Items', 'All Items');
   };
 
   const downloadOrdersByDate = () => {
-    const data = analytics.ordersByDate.slice().reverse().map(d => ({
-      Date: format(parseISO(d.date), 'yyyy-MM-dd'),
-      Day: format(parseISO(d.date), 'EEEE'),
-      'Order Count': d.count,
-      'Total Amount': d.amount.toFixed(2),
-      'Avg per Order': (d.amount / d.count).toFixed(2)
-    }));
-    downloadExcel(data, 'PO_Orders_By_Date', 'Orders By Date');
+    // Create detailed data with items per date
+    const data: any[] = [];
+    analytics.ordersByDate.slice().reverse().forEach(d => {
+      // Add date header row
+      data.push({
+        Date: format(parseISO(d.date), 'yyyy-MM-dd'),
+        Day: format(parseISO(d.date), 'EEEE'),
+        'Order Count': d.count,
+        'Total Amount': d.amount.toFixed(2),
+        'Item Name': '',
+        'Item Code': '',
+        Quantity: '',
+        'Item Amount': '',
+        Category: ''
+      });
+      // Add each item under this date
+      d.items.forEach(item => {
+        data.push({
+          Date: '',
+          Day: '',
+          'Order Count': '',
+          'Total Amount': '',
+          'Item Name': item.item_name,
+          'Item Code': item.item_code || '-',
+          Quantity: `${item.quantity} ${item.unit || 'units'}`,
+          'Item Amount': item.amount.toFixed(2),
+          Category: item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other'
+        });
+      });
+    });
+    downloadExcel(data, 'PO_Orders_By_Date_Detailed', 'Orders By Date');
   };
 
   const downloadFullReport = () => {
@@ -182,7 +214,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       ];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(overviewData), 'Overview');
       
-      // Market items sheet
+      // Market items sheet with purchase days
       const marketData = analytics.marketItems.items.map((item, idx) => ({
         Rank: idx + 1,
         'Item Name': item.item_name,
@@ -190,11 +222,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
         Qty: item.totalQuantity.toFixed(2),
         Unit: item.unit || 'units',
         Amount: item.totalAmount.toFixed(2),
-        Orders: item.orderCount
+        Orders: item.orderCount,
+        'Purchase Days': item.purchaseDays,
+        'First Purchase': item.firstPurchaseDate || '-',
+        'Last Purchase': item.lastPurchaseDate || '-'
       }));
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marketData), 'Market Items');
       
-      // Material items sheet
+      // Material items sheet with purchase days
       const materialData = analytics.materialItems.items.map((item, idx) => ({
         Rank: idx + 1,
         'Item Name': item.item_name,
@@ -202,17 +237,24 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
         Qty: item.totalQuantity.toFixed(2),
         Unit: item.unit || 'units',
         Amount: item.totalAmount.toFixed(2),
-        Orders: item.orderCount
+        Orders: item.orderCount,
+        'Purchase Days': item.purchaseDays,
+        'First Purchase': item.firstPurchaseDate || '-',
+        'Last Purchase': item.lastPurchaseDate || '-'
       }));
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(materialData), 'Material Items');
       
-      // Orders by date sheet
-      const dateData = analytics.ordersByDate.slice().reverse().map(d => ({
-        Date: format(parseISO(d.date), 'yyyy-MM-dd'),
-        Day: format(parseISO(d.date), 'EEEE'),
-        Orders: d.count,
-        Amount: d.amount.toFixed(2)
-      }));
+      // Orders by date sheet with items
+      const dateData: any[] = [];
+      analytics.ordersByDate.slice().reverse().forEach(d => {
+        dateData.push({
+          Date: format(parseISO(d.date), 'yyyy-MM-dd'),
+          Day: format(parseISO(d.date), 'EEEE'),
+          Orders: d.count,
+          Amount: d.amount.toFixed(2),
+          'Items Count': d.items.length
+        });
+      });
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dateData), 'By Date');
       
       // Suppliers sheet
@@ -273,39 +315,92 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
     </motion.div>
   );
 
-  const ItemRow = ({ item, index, formatCurrency }: { item: ItemSummary; index: number; formatCurrency: (n: number) => string }) => (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03 }}
-      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
-    >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <span className="text-xs text-muted-foreground font-mono w-6">{index + 1}</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{item.item_name}</p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {item.item_code && <span className="font-mono">{item.item_code}</span>}
-            <span>{item.totalQuantity.toFixed(1)} {item.unit || 'units'}</span>
-            <Badge 
-              variant="outline" 
-              className={`text-[10px] ${
-                item.category === 'market' ? 'border-emerald-500 text-emerald-500' : 
-                item.category === 'material' ? 'border-purple-500 text-purple-500' : 
-                'border-muted-foreground'
-              }`}
-            >
-              {item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other'}
-            </Badge>
+  const ItemRowWithDates = ({ item, index, formatCurrency }: { item: ItemSummary; index: number; formatCurrency: (n: number) => string }) => {
+    const isExpanded = expandedItems.has(item.item_name);
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.03 }}
+        className="rounded-lg hover:bg-muted/50 transition-colors"
+      >
+        <div 
+          className="flex items-center justify-between py-2 px-3 cursor-pointer"
+          onClick={() => toggleItemExpanded(item.item_name)}
+        >
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <span className="text-xs text-muted-foreground font-mono w-6">{index + 1}</span>
+            {item.purchaseDays > 1 ? (
+              isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            ) : <div className="w-4" />}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{item.item_name}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                {item.item_code && <span className="font-mono">{item.item_code}</span>}
+                <span>{item.totalQuantity.toFixed(1)} {item.unit || 'units'}</span>
+                <Badge 
+                  variant="outline" 
+                  className={`text-[10px] ${
+                    item.category === 'market' ? 'border-emerald-500 text-emerald-500' : 
+                    item.category === 'material' ? 'border-purple-500 text-purple-500' : 
+                    'border-muted-foreground'
+                  }`}
+                >
+                  {item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other'}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px] gap-0.5">
+                  <Hash className="w-2.5 h-2.5" />
+                  {item.purchaseDays} day{item.purchaseDays !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-bold text-primary">{formatCurrency(item.totalAmount)}</p>
+            <p className="text-xs text-muted-foreground">{item.orderCount} orders</p>
           </div>
         </div>
-      </div>
-      <div className="text-right">
-        <p className="text-sm font-bold text-primary">{formatCurrency(item.totalAmount)}</p>
-        <p className="text-xs text-muted-foreground">{item.orderCount} orders</p>
-      </div>
-    </motion.div>
-  );
+        
+        <AnimatePresence>
+          {isExpanded && item.dateOccurrences.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="pl-14 pr-3 pb-2 space-y-1">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Purchase History</p>
+                {item.dateOccurrences
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((occ, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-1 px-2 rounded bg-muted/30 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3 h-3 text-muted-foreground" />
+                        <span className="font-medium">
+                          {occ.date !== 'Unknown' ? format(parseISO(occ.date), 'dd MMM yyyy') : 'Unknown'}
+                        </span>
+                        {occ.order_number && (
+                          <span className="text-muted-foreground font-mono">#{occ.order_number}</span>
+                        )}
+                        {occ.supplier && (
+                          <span className="text-muted-foreground">• {occ.supplier}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-muted-foreground">{occ.quantity} {item.unit || 'units'}</span>
+                        <span className="font-medium text-primary">{formatCurrency(occ.amount)}</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -435,7 +530,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
               <ScrollArea className="h-[300px]">
                 <div className="space-y-1">
                   {analytics.topItems.slice(0, 10).map((item, idx) => (
-                    <ItemRow key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
+                    <ItemRowWithDates key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
                   ))}
                 </div>
               </ScrollArea>
@@ -496,13 +591,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 </Button>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mb-3">Click an item to see purchase dates</p>
             <ScrollArea className="h-[400px]">
               {analytics.marketItems.items.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No market items found</p>
               ) : (
                 <div className="space-y-1">
                   {analytics.marketItems.items.map((item, idx) => (
-                    <ItemRow key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
+                    <ItemRowWithDates key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
                   ))}
                 </div>
               )}
@@ -527,13 +623,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 </Button>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mb-3">Click an item to see purchase dates</p>
             <ScrollArea className="h-[400px]">
               {analytics.materialItems.items.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No material items found</p>
               ) : (
                 <div className="space-y-1">
                   {analytics.materialItems.items.map((item, idx) => (
-                    <ItemRow key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
+                    <ItemRowWithDates key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
                   ))}
                 </div>
               )}
@@ -558,10 +655,11 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 </Button>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mb-3">Click an item to see purchase dates</p>
             <ScrollArea className="h-[400px]">
               <div className="space-y-1">
                 {analytics.topItems.map((item, idx) => (
-                  <ItemRow key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
+                  <ItemRowWithDates key={item.item_name} item={item} index={idx} formatCurrency={formatCurrency} />
                 ))}
               </div>
             </ScrollArea>
@@ -585,35 +683,114 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 </Button>
               </div>
             </div>
-            <ScrollArea className="h-[400px]">
+            <p className="text-xs text-muted-foreground mb-3">Click a date to see all items ordered that day</p>
+            <ScrollArea className="h-[500px]">
               <div className="space-y-2">
-                {analytics.ordersByDate.slice().reverse().map((dayData, idx) => (
-                  <motion.div
-                    key={dayData.date}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.02 }}
-                    className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="text-center min-w-[60px]">
-                        <p className="text-lg font-bold text-primary">{format(parseISO(dayData.date), 'd')}</p>
-                        <p className="text-xs text-muted-foreground">{format(parseISO(dayData.date), 'MMM yyyy')}</p>
+                {analytics.ordersByDate.slice().reverse().map((dayData, idx) => {
+                  const isExpanded = expandedDates.has(dayData.date);
+                  const marketItemsCount = dayData.items.filter(i => i.category === 'market').length;
+                  const materialItemsCount = dayData.items.filter(i => i.category === 'material').length;
+                  
+                  return (
+                    <motion.div
+                      key={dayData.date}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                      className="rounded-lg bg-muted/30 overflow-hidden"
+                    >
+                      <div 
+                        className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => toggleDateExpanded(dayData.date)}
+                      >
+                        <div className="flex items-center gap-4">
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <div className="text-center min-w-[60px]">
+                            <p className="text-lg font-bold text-primary">{format(parseISO(dayData.date), 'd')}</p>
+                            <p className="text-xs text-muted-foreground">{format(parseISO(dayData.date), 'MMM yyyy')}</p>
+                          </div>
+                          <div className="h-10 w-px bg-border" />
+                          <div>
+                            <p className="text-sm font-medium">{format(parseISO(dayData.date), 'EEEE')}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{dayData.count} order{dayData.count > 1 ? 's' : ''}</span>
+                              <span>•</span>
+                              <span>{dayData.items.length} items</span>
+                              {marketItemsCount > 0 && (
+                                <Badge variant="outline" className="text-[9px] py-0 h-4 border-emerald-500 text-emerald-500">
+                                  {marketItemsCount} market
+                                </Badge>
+                              )}
+                              {materialItemsCount > 0 && (
+                                <Badge variant="outline" className="text-[9px] py-0 h-4 border-purple-500 text-purple-500">
+                                  {materialItemsCount} material
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">{formatCurrency(dayData.amount)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Avg: {formatCurrency(dayData.amount / dayData.count)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="h-10 w-px bg-border" />
-                      <div>
-                        <p className="text-sm font-medium">{format(parseISO(dayData.date), 'EEEE')}</p>
-                        <p className="text-xs text-muted-foreground">{dayData.count} order{dayData.count > 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-primary">{formatCurrency(dayData.amount)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Avg: {formatCurrency(dayData.amount / dayData.count)}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
+                      
+                      <AnimatePresence>
+                        {isExpanded && dayData.items.length > 0 && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-3 pt-1 border-t border-border/50">
+                              <div className="grid grid-cols-1 gap-1 mt-2">
+                                {dayData.items
+                                  .sort((a, b) => b.amount - a.amount)
+                                  .map((item, itemIdx) => (
+                                    <div 
+                                      key={`${item.item_name}-${itemIdx}`} 
+                                      className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50 text-xs"
+                                    >
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="text-muted-foreground font-mono w-5">{itemIdx + 1}</span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium truncate">{item.item_name}</p>
+                                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                                            {item.item_code && <span className="font-mono">{item.item_code}</span>}
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`text-[9px] py-0 h-3.5 ${
+                                                item.category === 'market' ? 'border-emerald-500 text-emerald-500' : 
+                                                item.category === 'material' ? 'border-purple-500 text-purple-500' : 
+                                                'border-muted-foreground'
+                                              }`}
+                                            >
+                                              {item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other'}
+                                            </Badge>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-4">
+                                        <span className="text-muted-foreground">{item.quantity} {item.unit || 'units'}</span>
+                                        <span className="font-medium text-primary min-w-[70px] text-right">{formatCurrency(item.amount)}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </Card>
