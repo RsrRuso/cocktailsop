@@ -391,11 +391,12 @@ export default function StaffPOS() {
   };
 
   const fetchTables = async (outletId: string) => {
-    // Use raw query to get tables with assigned staff
+    // Use raw query to get tables with assigned staff - only active (non-archived) tables
     const { data: rawTables } = await supabase
       .from("lab_ops_tables")
       .select("*")
       .eq("outlet_id", outletId)
+      .eq("is_archived", false)
       .order("table_number", { ascending: true, nullsFirst: false });
     
     const tableData = rawTables || [];
