@@ -1784,28 +1784,23 @@ export default function StaffPOS() {
                     <span className="font-black text-2xl leading-none">
                       {table.table_number || table.name?.replace(/[^0-9]/g, '') || '?'}
                     </span>
-                    {/* Bill amount for occupied tables OR capacity for free tables */}
-                    {isOccupied && billTotal > 0 ? (
-                      <div className="flex items-center gap-1 mt-1.5 bg-white/20 px-2 py-0.5 rounded-full">
-                        <DollarSign className="w-3 h-3" />
-                        <span className="text-sm font-bold">{billTotal.toFixed(0)}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 mt-1 opacity-80">
-                        <Users className="w-3.5 h-3.5" />
-                        <span className="text-xs font-medium">{table.capacity}</span>
-                        {table.allocation === "outdoor" && <span className="text-[10px]">•Out</span>}
-                      </div>
-                    )}
-                    {/* Assigned staff name */}
-                    {table.assigned_staff_name ? (
+                    {/* Capacity/guest count */}
+                    <div className="flex items-center gap-1 mt-0.5 opacity-80">
+                      <Users className="w-3 h-3" />
+                      <span className="text-xs font-medium">{table.capacity}</span>
+                    </div>
+                    {/* Assigned staff name - always show if assigned */}
+                    {table.assigned_staff_name && (
                       <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded mt-0.5 truncate max-w-full">
                         {table.assigned_staff_name.split(' ')[0]}
                       </span>
-                    ) : (
-                      <span className="text-[10px] font-medium opacity-70 mt-1">
-                        ↻ {table.turnover_count} turns
-                      </span>
+                    )}
+                    {/* Bill amount for occupied tables */}
+                    {isOccupied && billTotal > 0 && (
+                      <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-1 bg-black/30 px-2 py-0.5 rounded">
+                        <DollarSign className="w-3 h-3" />
+                        <span className="text-xs font-bold">{billTotal.toFixed(0)}</span>
+                      </div>
                     )}
                   </Button>
                   {/* Assign button - only for managers */}
