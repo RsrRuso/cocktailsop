@@ -49,14 +49,23 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
     setExpandedItems(newExpanded);
   };
 
+  // PDF-safe currency formatter (avoids special Unicode characters that break in PDFs)
+  const formatCurrencyPDF = (amount: number): string => {
+    const formatted = amount.toLocaleString('en-US', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    });
+    return 'AED ' + formatted;
+  };
+
   // Download helpers
   const downloadExcel = (data: any[], fileName: string, sheetName: string = 'Data') => {
     try {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      XLSX.writeFile(wb, `${fileName}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-      toast.success(`Downloaded ${fileName}`);
+      XLSX.writeFile(wb, fileName + '_' + format(new Date(), 'yyyy-MM-dd') + '.xlsx');
+      toast.success('Downloaded ' + fileName);
     } catch (error) {
       toast.error('Failed to download');
       console.error(error);
@@ -216,7 +225,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       
       const metrics = [
         { label: 'TOTAL ORDERS', value: String(analytics.totalOrders), color: pdfColors.primary },
-        { label: 'TOTAL SPEND', value: formatCurrency(analytics.totalAmount), color: pdfColors.accent },
+        { label: 'TOTAL SPEND', value: formatCurrencyPDF(analytics.totalAmount), color: pdfColors.accent },
         { label: 'UNIQUE ITEMS', value: String(analytics.uniqueItems), color: pdfColors.secondary },
       ];
       
@@ -252,9 +261,9 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       
       autoTable(doc, {
         body: [
-          ['Average Order Value', formatCurrency(analytics.avgOrderValue), 'Daily Average', formatCurrency(analytics.dailyAverage)],
+          ['Average Order Value', formatCurrencyPDF(analytics.avgOrderValue), 'Daily Average', formatCurrencyPDF(analytics.dailyAverage)],
           ['Weekly Trend', weeklySign + analytics.weeklyTrend.toFixed(1) + '%', 'Monthly Change', monthlySign + analytics.monthlyComparison.change.toFixed(1) + '%'],
-          ['This Month', formatCurrency(analytics.monthlyComparison.current), 'Last Month', formatCurrency(analytics.monthlyComparison.previous)],
+          ['This Month', formatCurrencyPDF(analytics.monthlyComparison.current), 'Last Month', formatCurrencyPDF(analytics.monthlyComparison.previous)],
         ],
         startY: yPos,
         theme: 'plain',
@@ -293,7 +302,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       doc.setFontSize(11);
       doc.text(analytics.marketItems.count + ' items', 22, yPos + 24);
       doc.setFontSize(13);
-      doc.text(formatCurrency(analytics.marketItems.amount), 22, yPos + 32);
+      doc.text(formatCurrencyPDF(analytics.marketItems.amount), 22, yPos + 32);
       
       // Material card
       const materialX = 14 + halfWidth + 7;
@@ -306,7 +315,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       doc.setFontSize(11);
       doc.text(analytics.materialItems.count + ' items', materialX + 8, yPos + 24);
       doc.setFontSize(13);
-      doc.text(formatCurrency(analytics.materialItems.amount), materialX + 8, yPos + 32);
+      doc.text(formatCurrencyPDF(analytics.materialItems.amount), materialX + 8, yPos + 32);
       
       // Footer
       doc.setDrawColor(...pdfColors.primary);
@@ -332,8 +341,8 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       item.item_name,
       item.item_code || '-',
       item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
-      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      formatCurrency(item.totalAmount),
+      item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'units'),
+      formatCurrencyPDF(item.totalAmount),
       item.orderCount,
       item.purchaseDays
     ]);
@@ -346,7 +355,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       idx + 1,
       s.supplier,
       s.count,
-      formatCurrency(s.amount)
+      formatCurrencyPDF(s.amount)
     ]);
     downloadPDF('Top Suppliers', headers, rows, 'PO_Suppliers', pdfColors.dark);
   };
@@ -357,8 +366,8 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       idx + 1,
       item.item_name,
       item.item_code || '-',
-      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      formatCurrency(item.totalAmount),
+      item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'units'),
+      formatCurrencyPDF(item.totalAmount),
       item.orderCount,
       item.purchaseDays,
       item.firstPurchaseDate || '-',
@@ -373,8 +382,8 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       idx + 1,
       item.item_name,
       item.item_code || '-',
-      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      formatCurrency(item.totalAmount),
+      item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'units'),
+      formatCurrencyPDF(item.totalAmount),
       item.orderCount,
       item.purchaseDays,
       item.firstPurchaseDate || '-',
@@ -390,8 +399,8 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       item.item_name,
       item.item_code || '-',
       item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
-      `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      formatCurrency(item.totalAmount),
+      item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'units'),
+      formatCurrencyPDF(item.totalAmount),
       item.orderCount,
       item.purchaseDays
     ]);
@@ -459,7 +468,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
         doc.setTextColor(...pdfColors.gold);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatCurrency(dayData.amount), pageWidth - 20, yPos + 12, { align: 'right' });
+        doc.text(formatCurrencyPDF(dayData.amount), pageWidth - 20, yPos + 12, { align: 'right' });
         
         yPos += 24;
         
@@ -471,7 +480,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
               item.item_name,
               item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
               item.quantity + ' ' + (item.unit || ''),
-              formatCurrency(item.amount)
+              formatCurrencyPDF(item.amount)
             ]),
             startY: yPos,
             theme: 'striped',
@@ -556,7 +565,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       const coverStats = [
         { label: 'TOTAL ORDERS', value: String(analytics.totalOrders), color: pdfColors.primary },
         { label: 'UNIQUE ITEMS', value: String(analytics.uniqueItems), color: pdfColors.secondary },
-        { label: 'TOTAL SPEND', value: formatCurrency(analytics.totalAmount), color: pdfColors.gold },
+        { label: 'TOTAL SPEND', value: formatCurrencyPDF(analytics.totalAmount), color: pdfColors.gold },
       ];
       
       coverStats.forEach((stat, idx) => {
@@ -597,8 +606,8 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       const monthlySign = analytics.monthlyComparison.change >= 0 ? '+' : '';
       
       const metricsData = [
-        ['Total Orders', String(analytics.totalOrders), 'Total Spend', formatCurrency(analytics.totalAmount)],
-        ['Avg Order Value', formatCurrency(analytics.avgOrderValue), 'Daily Average', formatCurrency(analytics.dailyAverage)],
+        ['Total Orders', String(analytics.totalOrders), 'Total Spend', formatCurrencyPDF(analytics.totalAmount)],
+        ['Avg Order Value', formatCurrencyPDF(analytics.avgOrderValue), 'Daily Average', formatCurrencyPDF(analytics.dailyAverage)],
         ['Weekly Trend', weeklySign + analytics.weeklyTrend.toFixed(1) + '%', 'Monthly Change', monthlySign + analytics.monthlyComparison.change.toFixed(1) + '%'],
       ];
       
@@ -630,7 +639,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       doc.setFontSize(16);
       doc.text(analytics.marketItems.count + ' items', 28, yPos + 30);
       doc.setFontSize(12);
-      doc.text(formatCurrency(analytics.marketItems.amount), 28, yPos + 40);
+      doc.text(formatCurrencyPDF(analytics.marketItems.amount), 28, yPos + 40);
       
       doc.setFillColor(...pdfColors.secondary);
       doc.roundedRect(30 + cardWidth, yPos, cardWidth, 42, 4, 4, 'F');
@@ -641,7 +650,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       doc.setFontSize(16);
       doc.text(analytics.materialItems.count + ' items', 38 + cardWidth, yPos + 30);
       doc.setFontSize(12);
-      doc.text(formatCurrency(analytics.materialItems.amount), 38 + cardWidth, yPos + 40);
+      doc.text(formatCurrencyPDF(analytics.materialItems.amount), 38 + cardWidth, yPos + 40);
       
       yPos += 58;
       
@@ -659,7 +668,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
           item.item_name.substring(0, 28),
           item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
           item.totalQuantity.toFixed(1),
-          formatCurrency(item.totalAmount),
+          formatCurrencyPDF(item.totalAmount),
           item.orderCount,
           item.purchaseDays
         ]),
@@ -693,7 +702,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
           idx + 1,
           s.supplier,
           s.count,
-          formatCurrency(s.amount),
+          formatCurrencyPDF(s.amount),
           ((s.amount / analytics.totalAmount) * 100).toFixed(1) + '%'
         ]),
         startY: yPos,
@@ -724,7 +733,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
           format(parseISO(d.date), 'EEE'),
           d.count,
           d.items.length,
-          formatCurrency(d.amount)
+          formatCurrencyPDF(d.amount)
         ]),
         startY: yPos,
         theme: 'striped',
