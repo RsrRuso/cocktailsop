@@ -192,6 +192,26 @@ export default function StaffPOS() {
     window.setTimeout(cleanup, 1500);
   };
 
+  const openPrintPage = (job: { order: OrderData; type: POSPrintType }) => {
+    // Store a print job and navigate to the dedicated print page (best UX on iOS).
+    // iOS often blocks auto-print unless user taps the Print button on that page.
+    const id = (globalThis.crypto as any)?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const key = `pos_print_job:${id}`;
+    const payload = JSON.stringify({ ...job, createdAt: Date.now() });
+
+    try {
+      sessionStorage.setItem(key, payload);
+    } catch {
+      try {
+        localStorage.setItem(key, payload);
+      } catch {
+        // ignore
+      }
+    }
+
+    navigate(`/staff-pos/print?job=${encodeURIComponent(id)}`);
+  };
+
   useEffect(() => {
     const initSession = async () => {
       // First check navigation state (coming from KDS)
@@ -692,29 +712,8 @@ export default function StaffPOS() {
       const orderItems = order.lab_ops_order_items || [];
       const subtotal = orderItems.reduce((sum: number, item: any) => sum + (item.unit_price * item.qty), 0);
 
-      // Print closing check immediately from the user tap (reliable on mobile browsers)
-      try {
-        const closingCandidate = {
-          ...order,
-          status: "closed",
-          closed_at: new Date().toISOString(),
-          total_amount: subtotal,
-          lab_ops_payments: [{ payment_method: paymentMethod, amount: subtotal }],
-        };
-
-        const printData = prepareOrderForPrint(closingCandidate);
-        if (printData?.items?.length) {
-          triggerSystemPrint({ order: printData, type: "closing" });
-        } else {
-          toast({
-            title: "No items to print",
-            description: "This order has no items to print.",
-            variant: "destructive",
-          });
-        }
-      } catch (e) {
-        console.error("Closing print prep failed:", e);
-      }
+      // Note: Closing check print is handled after the order is successfully closed,
+      // by navigating to the dedicated print page (better UX and correct preview on iOS).
 
       // Create payment record
       const { error: paymentError } = await supabase.from("lab_ops_payments").insert({
@@ -801,16 +800,30 @@ export default function StaffPOS() {
 
       toast({ title: "Order closed!", description: `${formatPrice(subtotal)} recorded in sales` });
       
-      // Auto-open closing check print dialog
       const closedOrder = {
         ...order,
         status: "closed",
         closed_at: new Date().toISOString(),
         total_amount: subtotal,
-        lab_ops_payments: [{ payment_method: paymentMethod, amount: subtotal }]
+        lab_ops_payments: [{ payment_method: paymentMethod, amount: subtotal }],
       };
-      void openPrintDialog(closedOrder, 'closing');
-      
+
+      // Open closing check preview (then user can tap Print)
+      try {
+        const printData = prepareOrderForPrint(closedOrder);
+        if (printData?.items?.length) {
+          openPrintPage({ order: printData, type: "closing" });
+        } else {
+          toast({
+            title: "No items to print",
+            description: "This order has no items to print.",
+            variant: "destructive",
+          });
+        }
+      } catch (e) {
+        console.error("Closing print prep failed:", e);
+      }
+
       setSelectedOrder(null);
       fetchOpenOrders(outlet.id);
       fetchTables(outlet.id);
@@ -954,11 +967,8 @@ export default function StaffPOS() {
         return;
       }
 
-      // System print from the tap (works on iPhone/iPad via AirPrint; also works on desktop)
-      triggerSystemPrint({ order: printData, type: "precheck" });
-
-      // Also open the dialog as backup/preview
-      void openPrintDialog(order, "precheck");
+      // Open the dedicated print page so the user sees the receipt preview (and can tap Print).
+      openPrintPage({ order: printData, type: "precheck" });
     } catch (error: any) {
       console.error("Error preparing pre-check print:", error);
       toast({
@@ -2375,7 +2385,7 @@ export default function StaffPOS() {
       </Dialog>
       {/* Hidden print area for system printing */}
       {quickPrintJob && (
-        <div className="sr-only" aria-hidden>
+        <div className="pointer-events-none absolute -left-[10000px] top-0" aria-hidden>
           <div data-pos-print-area>
             <KOTPreview order={quickPrintJob.order} type={quickPrintJob.type} />
           </div>
