@@ -4,6 +4,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initPerformanceBoost } from "./lib/performanceBoost";
+import { initChunkLoadRecovery } from "./lib/chunkLoadRecovery";
+
+// Recover from stale cached Vite chunks / Service Workers (prevents blank screen)
+initChunkLoadRecovery();
 
 // Initialize performance optimizations
 initPerformanceBoost();
