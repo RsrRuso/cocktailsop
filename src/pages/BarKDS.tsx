@@ -443,14 +443,26 @@ export default function BarKDS() {
   // Uses AND logic: orders must match BOTH table AND category filters if both are configured
   const getFilteredOrders = (allOrders: Order[]) => {
     if (selectedStation === "all") return allOrders;
-    
-    const station = stations.find(s => s.id === selectedStation);
+
+    const station = stations.find((s) => s.id === selectedStation);
     if (!station) return allOrders;
 
-    return allOrders.filter(order => {
+    const getOrderTableNumber = (order: Order): number | null => {
+      const direct = order.table_number ?? order.table?.table_number ?? null;
+      if (typeof direct === "number" && !Number.isNaN(direct)) return direct;
+
+      const name = order.table?.name || "";
+      const match = name.match(/\d+/);
+      if (!match) return null;
+
+      const parsed = Number.parseInt(match[0], 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    return allOrders.filter((order) => {
       // Filter by assigned tables if configured
       if (station.assigned_tables.length > 0) {
-        const tableNum = order.table_number || order.table?.table_number;
+        const tableNum = getOrderTableNumber(order);
         if (!tableNum || !station.assigned_tables.includes(tableNum)) {
           return false;
         }
@@ -458,7 +470,7 @@ export default function BarKDS() {
 
       // Filter by category if configured (must match table filter first)
       if (station.category_filter.length > 0) {
-        const hasMatchingItem = order.items.some(item => {
+        const hasMatchingItem = order.items.some((item) => {
           const categoryId = (item.menu_item as any)?.category?.id;
           return categoryId && station.category_filter.includes(categoryId);
         });
