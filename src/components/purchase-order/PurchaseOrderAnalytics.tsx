@@ -63,42 +63,100 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
     }
   };
 
-  // PDF Download helpers
-  const downloadPDF = (title: string, headers: string[], rows: (string | number)[][], fileName: string) => {
+  // PDF theme colors
+  const pdfColors = {
+    primary: [16, 185, 129] as [number, number, number], // Emerald
+    secondary: [139, 92, 246] as [number, number, number], // Purple
+    dark: [30, 41, 59] as [number, number, number], // Slate-800
+    accent: [245, 158, 11] as [number, number, number], // Amber
+    light: [248, 250, 252] as [number, number, number], // Slate-50
+    muted: [148, 163, 184] as [number, number, number], // Slate-400
+    white: [255, 255, 255] as [number, number, number],
+  };
+
+  // Enhanced PDF Download helper
+  const downloadPDF = (title: string, headers: string[], rows: (string | number)[][], fileName: string, accentColor?: [number, number, number]) => {
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const color = accentColor || pdfColors.primary;
       
-      // Header
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, pageWidth, 25, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      // Gradient-like header with decorative elements
+      doc.setFillColor(...pdfColors.dark);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      // Accent bar
+      doc.setFillColor(...color);
+      doc.rect(0, 40, pageWidth, 4, 'F');
+      
+      // Decorative circle
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(pageWidth - 25, 20, 12, 'F');
+      
+      // Title
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text(title, 14, 16);
+      doc.text(title, 14, 22);
       
+      // Subtitle
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, pageWidth - 14, 16, { align: 'right' });
+      doc.setTextColor(200, 200, 200);
+      doc.text(`Generated: ${format(new Date(), 'EEEE, dd MMMM yyyy • HH:mm')}`, 14, 32);
       
-      // Table
+      // Stats summary bar
+      doc.setFillColor(...pdfColors.light);
+      doc.roundedRect(14, 50, pageWidth - 28, 18, 3, 3, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Total Records: ${rows.length}`, 20, 61);
+      
+      // Table with enhanced styling
       autoTable(doc, {
         head: [headers],
         body: rows.map(row => row.map(cell => String(cell))),
-        startY: 30,
-        theme: 'striped',
-        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 3 },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
+        startY: 75,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: color,
+          textColor: pdfColors.white,
+          fontStyle: 'bold',
+          fontSize: 9,
+          cellPadding: 5,
+          halign: 'center'
+        },
+        styles: { 
+          fontSize: 8,
+          cellPadding: 4,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.5
+        },
+        alternateRowStyles: { 
+          fillColor: pdfColors.light
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+        },
+        didDrawPage: (data) => {
+          // Add decorative footer line
+          doc.setDrawColor(...color);
+          doc.setLineWidth(2);
+          doc.line(14, pageHeight - 18, pageWidth - 14, pageHeight - 18);
+        }
       });
       
-      // Footer
+      // Footer on all pages
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(128);
-        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        doc.setTextColor(...pdfColors.muted);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text('Purchase Order Analytics', 14, pageHeight - 10);
+        doc.text(format(new Date(), 'yyyy-MM-dd'), pageWidth - 14, pageHeight - 10, { align: 'right' });
       }
       
       doc.save(`${fileName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
@@ -110,23 +168,130 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
   };
 
   const downloadOverviewPDF = () => {
-    const headers = ['Metric', 'Value'];
-    const rows = [
-      ['Total Orders', analytics.totalOrders],
-      ['Total Spend', analytics.totalAmount.toFixed(2)],
-      ['Average Order Value', analytics.avgOrderValue.toFixed(2)],
-      ['Daily Average', analytics.dailyAverage.toFixed(2)],
-      ['Weekly Trend (%)', analytics.weeklyTrend.toFixed(1)],
-      ['This Month', analytics.monthlyComparison.current.toFixed(2)],
-      ['Last Month', analytics.monthlyComparison.previous.toFixed(2)],
-      ['Monthly Change (%)', analytics.monthlyComparison.change.toFixed(1)],
-      ['Unique Items', analytics.uniqueItems],
-      ['Market Items Count', analytics.marketItems.count],
-      ['Market Items Spend', analytics.marketItems.amount.toFixed(2)],
-      ['Material Items Count', analytics.materialItems.count],
-      ['Material Items Spend', analytics.materialItems.amount.toFixed(2)],
-    ];
-    downloadPDF('Purchase Order Analytics - Overview', headers, rows, 'PO_Analytics_Overview');
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Dark header with gradient effect
+      doc.setFillColor(...pdfColors.dark);
+      doc.rect(0, 0, pageWidth, 50, 'F');
+      
+      // Accent strip
+      doc.setFillColor(...pdfColors.primary);
+      doc.rect(0, 50, pageWidth, 5, 'F');
+      
+      // Title
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Analytics Overview', 14, 28);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(180, 180, 180);
+      doc.text('Purchase Order Summary Report', 14, 40);
+      doc.text(format(new Date(), 'dd MMMM yyyy'), pageWidth - 14, 40, { align: 'right' });
+      
+      // Key metrics cards
+      let yPos = 70;
+      const cardWidth = (pageWidth - 42) / 3;
+      
+      const metrics = [
+        { label: 'Total Orders', value: String(analytics.totalOrders), color: pdfColors.primary },
+        { label: 'Total Spend', value: formatCurrency(analytics.totalAmount), color: pdfColors.accent },
+        { label: 'Unique Items', value: String(analytics.uniqueItems), color: pdfColors.secondary },
+      ];
+      
+      metrics.forEach((metric, idx) => {
+        const x = 14 + (idx * (cardWidth + 7));
+        doc.setFillColor(...metric.color);
+        doc.roundedRect(x, yPos, cardWidth, 35, 4, 4, 'F');
+        doc.setTextColor(...pdfColors.white);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(metric.label.toUpperCase(), x + 8, yPos + 12);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text(metric.value, x + 8, yPos + 27);
+      });
+      
+      yPos += 50;
+      
+      // Section header
+      doc.setFillColor(...pdfColors.light);
+      doc.roundedRect(14, yPos, pageWidth - 28, 12, 2, 2, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DETAILED METRICS', 20, yPos + 8);
+      
+      yPos += 20;
+      
+      // Detailed metrics table
+      autoTable(doc, {
+        body: [
+          ['Average Order Value', formatCurrency(analytics.avgOrderValue), 'Daily Average', formatCurrency(analytics.dailyAverage)],
+          ['Weekly Trend', `${analytics.weeklyTrend >= 0 ? '+' : ''}${analytics.weeklyTrend.toFixed(1)}%`, 'Monthly Change', `${analytics.monthlyComparison.change >= 0 ? '+' : ''}${analytics.monthlyComparison.change.toFixed(1)}%`],
+          ['This Month', formatCurrency(analytics.monthlyComparison.current), 'Last Month', formatCurrency(analytics.monthlyComparison.previous)],
+        ],
+        startY: yPos,
+        theme: 'plain',
+        styles: { fontSize: 9, cellPadding: 6 },
+        columnStyles: { 
+          0: { fontStyle: 'bold', textColor: pdfColors.muted },
+          2: { fontStyle: 'bold', textColor: pdfColors.muted }
+        },
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Category breakdown
+      doc.setFillColor(...pdfColors.light);
+      doc.roundedRect(14, yPos, pageWidth - 28, 12, 2, 2, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CATEGORY BREAKDOWN', 20, yPos + 8);
+      
+      yPos += 20;
+      
+      // Market card
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(14, yPos, (pageWidth - 35) / 2, 30, 3, 3, 'F');
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(8);
+      doc.text('MARKET / FRESH ITEMS', 20, yPos + 10);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${analytics.marketItems.count} items • ${formatCurrency(analytics.marketItems.amount)}`, 20, yPos + 22);
+      
+      // Material card
+      const materialX = 14 + (pageWidth - 35) / 2 + 7;
+      doc.setFillColor(139, 92, 246);
+      doc.roundedRect(materialX, yPos, (pageWidth - 35) / 2, 30, 3, 3, 'F');
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('MATERIALS / SUPPLIES', materialX + 6, yPos + 10);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${analytics.materialItems.count} items • ${formatCurrency(analytics.materialItems.amount)}`, materialX + 6, yPos + 22);
+      
+      // Footer
+      doc.setDrawColor(...pdfColors.primary);
+      doc.setLineWidth(2);
+      doc.line(14, pageHeight - 18, pageWidth - 14, pageHeight - 18);
+      doc.setFontSize(8);
+      doc.setTextColor(...pdfColors.muted);
+      doc.text('Purchase Order Analytics • Overview Report', 14, pageHeight - 10);
+      doc.text(format(new Date(), 'yyyy-MM-dd'), pageWidth - 14, pageHeight - 10, { align: 'right' });
+      
+      doc.save(`PO_Analytics_Overview_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('Downloaded overview PDF');
+    } catch (error) {
+      toast.error('Failed to download PDF');
+      console.error(error);
+    }
   };
 
   const downloadTopItemsPDF = () => {
@@ -137,11 +302,11 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       item.item_code || '-',
       item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
       `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      item.totalAmount.toFixed(2),
+      formatCurrency(item.totalAmount),
       item.orderCount,
       item.purchaseDays
     ]);
-    downloadPDF('Purchase Order Analytics - Top Items', headers, rows, 'PO_Top_Items');
+    downloadPDF('Top Items by Spend', headers, rows, 'PO_Top_Items', pdfColors.accent);
   };
 
   const downloadSuppliersPDF = () => {
@@ -150,9 +315,9 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       idx + 1,
       s.supplier,
       s.count,
-      s.amount.toFixed(2)
+      formatCurrency(s.amount)
     ]);
-    downloadPDF('Purchase Order Analytics - Suppliers', headers, rows, 'PO_Suppliers');
+    downloadPDF('Top Suppliers', headers, rows, 'PO_Suppliers', pdfColors.dark);
   };
 
   const downloadMarketItemsPDF = () => {
@@ -162,13 +327,13 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       item.item_name,
       item.item_code || '-',
       `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      item.totalAmount.toFixed(2),
+      formatCurrency(item.totalAmount),
       item.orderCount,
       item.purchaseDays,
       item.firstPurchaseDate || '-',
       item.lastPurchaseDate || '-'
     ]);
-    downloadPDF('Purchase Order Analytics - Market Items', headers, rows, 'PO_Market_Items');
+    downloadPDF('Market / Fresh Items', headers, rows, 'PO_Market_Items', pdfColors.primary);
   };
 
   const downloadMaterialItemsPDF = () => {
@@ -178,13 +343,13 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       item.item_name,
       item.item_code || '-',
       `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      item.totalAmount.toFixed(2),
+      formatCurrency(item.totalAmount),
       item.orderCount,
       item.purchaseDays,
       item.firstPurchaseDate || '-',
       item.lastPurchaseDate || '-'
     ]);
-    downloadPDF('Purchase Order Analytics - Material Items', headers, rows, 'PO_Material_Items');
+    downloadPDF('Materials / Supplies', headers, rows, 'PO_Material_Items', pdfColors.secondary);
   };
 
   const downloadAllItemsPDF = () => {
@@ -195,66 +360,108 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       item.item_code || '-',
       item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
       `${item.totalQuantity.toFixed(1)} ${item.unit || 'units'}`,
-      item.totalAmount.toFixed(2),
+      formatCurrency(item.totalAmount),
       item.orderCount,
       item.purchaseDays
     ]);
-    downloadPDF('Purchase Order Analytics - All Items', headers, rows, 'PO_All_Items');
+    downloadPDF('All Items Combined', headers, rows, 'PO_All_Items', pdfColors.dark);
   };
 
   const downloadOrdersByDatePDF = () => {
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
       // Header
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, pageWidth, 25, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      doc.setFillColor(...pdfColors.dark);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      doc.setFillColor(...pdfColors.accent);
+      doc.rect(0, 40, pageWidth, 4, 'F');
+      
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('Purchase Order Analytics - Orders by Date', 14, 16);
+      doc.text('Orders by Date', 14, 22);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, pageWidth - 14, 16, { align: 'right' });
+      doc.setTextColor(180, 180, 180);
+      doc.text(`${analytics.ordersByDate.length} days with orders`, 14, 32);
+      doc.text(format(new Date(), 'dd MMMM yyyy'), pageWidth - 14, 32, { align: 'right' });
       
-      let yPos = 35;
+      let yPos = 55;
       
-      analytics.ordersByDate.slice().reverse().forEach((dayData) => {
-        if (yPos > doc.internal.pageSize.getHeight() - 60) {
+      analytics.ordersByDate.slice().reverse().forEach((dayData, dayIdx) => {
+        if (yPos > pageHeight - 80) {
           doc.addPage();
           yPos = 20;
         }
         
-        // Date header
-        doc.setFillColor(240, 240, 240);
-        doc.rect(14, yPos - 5, pageWidth - 28, 10, 'F');
-        doc.setTextColor(0);
+        const marketCount = dayData.items.filter(i => i.category === 'market').length;
+        const materialCount = dayData.items.filter(i => i.category === 'material').length;
+        
+        // Date header card
+        doc.setFillColor(...pdfColors.dark);
+        doc.roundedRect(14, yPos, pageWidth - 28, 18, 3, 3, 'F');
+        
+        // Day indicator
+        doc.setFillColor(...pdfColors.accent);
+        doc.roundedRect(16, yPos + 2, 28, 14, 2, 2, 'F');
+        doc.setTextColor(...pdfColors.white);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(format(parseISO(dayData.date), 'd'), 30, yPos + 11, { align: 'center' });
+        
+        // Date info
+        doc.setTextColor(...pdfColors.white);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${format(parseISO(dayData.date), 'EEEE, dd MMM yyyy')}`, 50, yPos + 8);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180, 180, 180);
+        doc.text(`${dayData.count} orders • ${dayData.items.length} items • M:${marketCount} T:${materialCount}`, 50, yPos + 14);
+        
+        // Amount
+        doc.setTextColor(...pdfColors.accent);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text(`${format(parseISO(dayData.date), 'EEEE, dd MMM yyyy')}`, 16, yPos + 2);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`${dayData.count} orders | ${dayData.items.length} items | Total: ${dayData.amount.toFixed(2)}`, pageWidth - 16, yPos + 2, { align: 'right' });
-        yPos += 12;
+        doc.text(formatCurrency(dayData.amount), pageWidth - 18, yPos + 11, { align: 'right' });
         
-        // Items table for this date
+        yPos += 22;
+        
+        // Items table
         if (dayData.items.length > 0) {
           autoTable(doc, {
-            head: [['Item', 'Code', 'Cat', 'Qty', 'Amount']],
-            body: dayData.items.map(item => [
+            head: [['Item', 'Cat', 'Qty', 'Amount']],
+            body: dayData.items.sort((a, b) => b.amount - a.amount).map(item => [
               item.item_name,
-              item.item_code || '-',
               item.category === 'market' ? 'M' : item.category === 'material' ? 'T' : 'O',
               `${item.quantity} ${item.unit || ''}`,
-              item.amount.toFixed(2)
+              formatCurrency(item.amount)
             ]),
             startY: yPos,
             theme: 'plain',
-            headStyles: { fillColor: [230, 230, 230], textColor: 50, fontStyle: 'bold', fontSize: 8 },
-            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { 
+              fillColor: pdfColors.light,
+              textColor: pdfColors.dark,
+              fontStyle: 'bold',
+              fontSize: 7,
+              cellPadding: 3
+            },
+            styles: { 
+              fontSize: 7,
+              cellPadding: 2.5,
+              textColor: pdfColors.dark
+            },
+            alternateRowStyles: { fillColor: [252, 252, 253] },
             margin: { left: 14, right: 14 },
+            columnStyles: {
+              1: { halign: 'center', cellWidth: 15 },
+              3: { halign: 'right' }
+            }
           });
-          yPos = (doc as any).lastAutoTable.finalY + 10;
+          yPos = (doc as any).lastAutoTable.finalY + 8;
         }
       });
       
@@ -262,9 +469,12 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        doc.setDrawColor(...pdfColors.accent);
+        doc.setLineWidth(1);
+        doc.line(14, pageHeight - 16, pageWidth - 14, pageHeight - 16);
         doc.setFontSize(8);
-        doc.setTextColor(128);
-        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        doc.setTextColor(...pdfColors.muted);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
       }
       
       doc.save(`PO_Orders_By_Date_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
@@ -279,115 +489,223 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      // Cover page
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, pageWidth, 60, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      // ===== COVER PAGE =====
+      doc.setFillColor(...pdfColors.dark);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Decorative elements
+      doc.setFillColor(...pdfColors.primary);
+      doc.circle(pageWidth + 30, -30, 80, 'F');
+      doc.setFillColor(...pdfColors.secondary);
+      doc.circle(-20, pageHeight + 20, 60, 'F');
+      doc.setFillColor(...pdfColors.accent);
+      doc.roundedRect(14, 60, 6, 50, 3, 3, 'F');
+      
+      // Title
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(32);
       doc.setFont('helvetica', 'bold');
-      doc.text('Purchase Order', 14, 30);
-      doc.text('Analytics Report', 14, 42);
+      doc.text('Purchase Order', 28, 85);
+      doc.setFontSize(32);
+      doc.text('Analytics Report', 28, 100);
+      
+      // Subtitle
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Generated: ${format(new Date(), 'dd MMMM yyyy HH:mm')}`, 14, 55);
+      doc.setTextColor(180, 180, 180);
+      doc.text('Comprehensive spending analysis and insights', 28, 120);
+      doc.text(format(new Date(), 'EEEE, dd MMMM yyyy'), 28, 135);
       
-      // Overview section
-      let yPos = 75;
-      doc.setTextColor(0);
-      doc.setFontSize(14);
+      // Key stats on cover
+      const coverStats = [
+        { label: 'Total Orders', value: analytics.totalOrders, color: pdfColors.primary },
+        { label: 'Unique Items', value: analytics.uniqueItems, color: pdfColors.secondary },
+        { label: 'Total Spend', value: formatCurrency(analytics.totalAmount), color: pdfColors.accent },
+      ];
+      
+      coverStats.forEach((stat, idx) => {
+        const y = 170 + (idx * 28);
+        doc.setFillColor(...stat.color);
+        doc.roundedRect(28, y, 5, 18, 2, 2, 'F');
+        doc.setTextColor(180, 180, 180);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(stat.label.toUpperCase(), 40, y + 7);
+        doc.setTextColor(...pdfColors.white);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(stat.value), 40, y + 17);
+      });
+      
+      // ===== OVERVIEW PAGE =====
+      doc.addPage();
+      
+      // Section header
+      doc.setFillColor(...pdfColors.primary);
+      doc.rect(0, 0, 8, pageHeight, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text('Overview Summary', 14, yPos);
-      yPos += 8;
+      doc.text('Overview Summary', 20, 25);
+      doc.setDrawColor(...pdfColors.primary);
+      doc.setLineWidth(2);
+      doc.line(20, 30, 80, 30);
+      
+      // Metrics grid
+      let yPos = 45;
+      const metricsData = [
+        ['Total Orders', String(analytics.totalOrders), 'Total Spend', formatCurrency(analytics.totalAmount)],
+        ['Avg Order Value', formatCurrency(analytics.avgOrderValue), 'Daily Average', formatCurrency(analytics.dailyAverage)],
+        ['Weekly Trend', `${analytics.weeklyTrend >= 0 ? '+' : ''}${analytics.weeklyTrend.toFixed(1)}%`, 'Monthly Change', `${analytics.monthlyComparison.change >= 0 ? '+' : ''}${analytics.monthlyComparison.change.toFixed(1)}%`],
+      ];
       
       autoTable(doc, {
-        body: [
-          ['Total Orders', String(analytics.totalOrders), 'Total Spend', analytics.totalAmount.toFixed(2)],
-          ['Avg Order Value', analytics.avgOrderValue.toFixed(2), 'Daily Average', analytics.dailyAverage.toFixed(2)],
-          ['Market Items', `${analytics.marketItems.count} (${analytics.marketItems.amount.toFixed(2)})`, 
-           'Material Items', `${analytics.materialItems.count} (${analytics.materialItems.amount.toFixed(2)})`],
-        ],
+        body: metricsData,
         startY: yPos,
-        theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 4 },
-        columnStyles: { 0: { fontStyle: 'bold' }, 2: { fontStyle: 'bold' } },
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 8 },
+        columnStyles: { 
+          0: { fontStyle: 'bold', textColor: pdfColors.muted, cellWidth: 45 },
+          1: { fontStyle: 'bold', textColor: pdfColors.dark, cellWidth: 50 },
+          2: { fontStyle: 'bold', textColor: pdfColors.muted, cellWidth: 45 },
+          3: { fontStyle: 'bold', textColor: pdfColors.dark }
+        },
+        margin: { left: 20 }
       });
-      yPos = (doc as any).lastAutoTable.finalY + 15;
       
-      // Top Items
+      yPos = (doc as any).lastAutoTable.finalY + 20;
+      
+      // Category cards
+      const cardWidth = (pageWidth - 50) / 2;
+      
+      doc.setFillColor(...pdfColors.primary);
+      doc.roundedRect(20, yPos, cardWidth, 40, 4, 4, 'F');
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('MARKET / FRESH ITEMS', 28, yPos + 14);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Top 15 Items by Spend', 14, yPos);
+      doc.text(`${analytics.marketItems.count} items`, 28, yPos + 28);
+      doc.setFontSize(11);
+      doc.text(formatCurrency(analytics.marketItems.amount), 28, yPos + 38);
+      
+      doc.setFillColor(...pdfColors.secondary);
+      doc.roundedRect(30 + cardWidth, yPos, cardWidth, 40, 4, 4, 'F');
+      doc.setTextColor(...pdfColors.white);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('MATERIALS / SUPPLIES', 38 + cardWidth, yPos + 14);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${analytics.materialItems.count} items`, 38 + cardWidth, yPos + 28);
+      doc.setFontSize(11);
+      doc.text(formatCurrency(analytics.materialItems.amount), 38 + cardWidth, yPos + 38);
+      
+      yPos += 55;
+      
+      // Top Items section
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Top 15 Items by Spend', 20, yPos);
       yPos += 5;
       
       autoTable(doc, {
-        head: [['#', 'Item', 'Cat', 'Qty', 'Amount', 'Orders', 'Days']],
+        head: [['#', 'Item Name', 'Category', 'Qty', 'Amount', 'Orders', 'Days']],
         body: analytics.topItems.slice(0, 15).map((item, idx) => [
           idx + 1,
-          item.item_name.substring(0, 25),
+          item.item_name.substring(0, 28),
           item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
-          `${item.totalQuantity.toFixed(1)}`,
-          item.totalAmount.toFixed(2),
+          item.totalQuantity.toFixed(1),
+          formatCurrency(item.totalAmount),
           item.orderCount,
           item.purchaseDays
         ]),
         startY: yPos,
-        theme: 'striped',
-        headStyles: { fillColor: [59, 130, 246] },
-        styles: { fontSize: 8, cellPadding: 2 },
+        theme: 'grid',
+        headStyles: { fillColor: pdfColors.dark, textColor: pdfColors.white, fontSize: 8 },
+        styles: { fontSize: 7, cellPadding: 3 },
+        alternateRowStyles: { fillColor: pdfColors.light },
+        margin: { left: 20, right: 14 },
+        columnStyles: { 0: { halign: 'center', cellWidth: 10 } }
       });
       
-      // Top Suppliers on new page
+      // ===== SUPPLIERS PAGE =====
       doc.addPage();
-      yPos = 20;
-      doc.setFontSize(14);
+      
+      doc.setFillColor(...pdfColors.secondary);
+      doc.rect(0, 0, 8, pageHeight, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text('Top Suppliers', 14, yPos);
-      yPos += 5;
+      doc.text('Supplier Analysis', 20, 25);
+      doc.setDrawColor(...pdfColors.secondary);
+      doc.setLineWidth(2);
+      doc.line(20, 30, 80, 30);
+      
+      yPos = 45;
       
       autoTable(doc, {
-        head: [['#', 'Supplier', 'Orders', 'Total Amount']],
-        body: analytics.ordersBySupplier.slice(0, 10).map((s, idx) => [
+        head: [['Rank', 'Supplier', 'Orders', 'Total Amount', '% of Total']],
+        body: analytics.ordersBySupplier.slice(0, 15).map((s, idx) => [
           idx + 1,
           s.supplier,
           s.count,
-          s.amount.toFixed(2)
+          formatCurrency(s.amount),
+          `${((s.amount / analytics.totalAmount) * 100).toFixed(1)}%`
         ]),
         startY: yPos,
-        theme: 'striped',
-        headStyles: { fillColor: [59, 130, 246] },
-        styles: { fontSize: 9, cellPadding: 3 },
+        theme: 'grid',
+        headStyles: { fillColor: pdfColors.secondary, textColor: pdfColors.white, fontSize: 9 },
+        styles: { fontSize: 8, cellPadding: 4 },
+        alternateRowStyles: { fillColor: pdfColors.light },
+        margin: { left: 20, right: 14 },
+        columnStyles: { 
+          0: { halign: 'center', cellWidth: 15 },
+          4: { halign: 'right' }
+        }
       });
-      yPos = (doc as any).lastAutoTable.finalY + 15;
       
-      // Recent Orders by Date
+      yPos = (doc as any).lastAutoTable.finalY + 25;
+      
+      // Recent dates summary
+      doc.setTextColor(...pdfColors.dark);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Recent Orders Summary', 14, yPos);
+      doc.text('Recent Orders Summary', 20, yPos);
       yPos += 5;
       
       autoTable(doc, {
         head: [['Date', 'Day', 'Orders', 'Items', 'Amount']],
-        body: analytics.ordersByDate.slice().reverse().slice(0, 15).map(d => [
+        body: analytics.ordersByDate.slice().reverse().slice(0, 12).map(d => [
           format(parseISO(d.date), 'dd MMM yyyy'),
           format(parseISO(d.date), 'EEE'),
           d.count,
           d.items.length,
-          d.amount.toFixed(2)
+          formatCurrency(d.amount)
         ]),
         startY: yPos,
-        theme: 'striped',
-        headStyles: { fillColor: [59, 130, 246] },
-        styles: { fontSize: 9, cellPadding: 3 },
+        theme: 'grid',
+        headStyles: { fillColor: pdfColors.accent, textColor: pdfColors.white, fontSize: 9 },
+        styles: { fontSize: 8, cellPadding: 3 },
+        alternateRowStyles: { fillColor: pdfColors.light },
+        margin: { left: 20, right: 14 },
+        columnStyles: { 4: { halign: 'right' } }
       });
       
       // Footer on all pages
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(128);
-        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        if (i > 1) { // Skip cover page
+          doc.setFontSize(8);
+          doc.setTextColor(...pdfColors.muted);
+          doc.text(`Purchase Order Analytics Report`, 20, pageHeight - 10);
+          doc.text(`Page ${i - 1} of ${pageCount - 1}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+        }
       }
       
       doc.save(`PO_Full_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
