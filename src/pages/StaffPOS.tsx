@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +21,7 @@ import {
   DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X, BarChart3, UserPlus, Printer
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PrintDialog, OrderData } from "@/components/lab-ops/print";
+import { PrintDialog, OrderData, KOTPreview } from "@/components/lab-ops/print";
 
 interface OnlineTeamMember {
   id: string;
@@ -132,9 +133,64 @@ export default function StaffPOS() {
   const [assigningStaff, setAssigningStaff] = useState(false);
   
   // Print dialog state
+  type POSPrintType = 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined';
+
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [orderToPrint, setOrderToPrint] = useState<OrderData | null>(null);
-  const [defaultPrintType, setDefaultPrintType] = useState<'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined'>('precheck');
+  const [defaultPrintType, setDefaultPrintType] = useState<POSPrintType>('precheck');
+
+  // Hidden in-page print area (so we can call window.print() from a user tap reliably)
+  const [quickPrintJob, setQuickPrintJob] = useState<{ order: OrderData; type: POSPrintType } | null>(null);
+
+  const ensurePosPrintStyles = () => {
+    const id = "pos-print-style";
+    if (document.getElementById(id)) return;
+
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+@media print {
+  body[data-pos-printing='true'] * {
+    visibility: hidden !important;
+  }
+  body[data-pos-printing='true'] [data-pos-print-area],
+  body[data-pos-printing='true'] [data-pos-print-area] * {
+    visibility: visible !important;
+  }
+  body[data-pos-printing='true'] [data-pos-print-area] {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    padding: 10px !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
+`;
+    document.head.appendChild(style);
+  };
+
+  const triggerSystemPrint = (job: { order: OrderData; type: POSPrintType }) => {
+    ensurePosPrintStyles();
+
+    // Flush receipt to DOM before calling print (important for mobile Safari)
+    flushSync(() => {
+      setQuickPrintJob(job);
+    });
+
+    document.body.setAttribute("data-pos-printing", "true");
+    window.print();
+
+    const cleanup = () => {
+      document.body.removeAttribute("data-pos-printing");
+      setQuickPrintJob(null);
+      window.removeEventListener("afterprint", cleanup);
+    };
+
+    window.addEventListener("afterprint", cleanup);
+    window.setTimeout(cleanup, 1500);
+  };
 
   useEffect(() => {
     const initSession = async () => {
@@ -635,6 +691,30 @@ export default function StaffPOS() {
     try {
       const orderItems = order.lab_ops_order_items || [];
       const subtotal = orderItems.reduce((sum: number, item: any) => sum + (item.unit_price * item.qty), 0);
+
+      // Print closing check immediately from the user tap (reliable on mobile browsers)
+      try {
+        const closingCandidate = {
+          ...order,
+          status: "closed",
+          closed_at: new Date().toISOString(),
+          total_amount: subtotal,
+          lab_ops_payments: [{ payment_method: paymentMethod, amount: subtotal }],
+        };
+
+        const printData = prepareOrderForPrint(closingCandidate);
+        if (printData?.items?.length) {
+          triggerSystemPrint({ order: printData, type: "closing" });
+        } else {
+          toast({
+            title: "No items to print",
+            description: "This order has no items to print.",
+            variant: "destructive",
+          });
+        }
+      } catch (e) {
+        console.error("Closing print prep failed:", e);
+      }
 
       // Create payment record
       const { error: paymentError } = await supabase.from("lab_ops_payments").insert({
@@ -1392,7 +1472,7 @@ export default function StaffPOS() {
                     <Button 
                       variant="outline" 
                       className="w-full h-12 text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
-                      onClick={() => void openPrintDialog(selectedOrder, 'precheck')}
+                      onClick={() => handlePrecheckPrint(selectedOrder)}
                     >
                       <Printer className="w-5 h-5 mr-2" />
                       Pre Check
@@ -2266,7 +2346,15 @@ export default function StaffPOS() {
           </p>
         </DialogContent>
       </Dialog>
-      
+      {/* Hidden print area for system printing */}
+      {quickPrintJob && (
+        <div className="sr-only" aria-hidden>
+          <div data-pos-print-area>
+            <KOTPreview order={quickPrintJob.order} type={quickPrintJob.type} />
+          </div>
+        </div>
+      )}
+
       {/* Print Dialog */}
       <PrintDialog 
         open={printDialogOpen}
