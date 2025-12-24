@@ -524,286 +524,409 @@ const CocktailSOPPromoVideo = () => {
   };
 
   const drawPDF = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
-    // Section title with fade
-    const titleOpacity = Math.min(progress * 3, 1);
-    ctx.fillStyle = `rgba(212, 175, 55, ${0.9 * titleOpacity})`;
-    ctx.font = "bold 48px 'Inter', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Professional PDF", w / 2, h * 0.05);
-
-    // PDF mockup - fuller document style
-    const pdfW = w * 0.88;
-    const pdfH = h * 0.82;
+    // PDF mockup - full document matching reference
+    const pdfW = w * 0.92;
+    const pdfH = h * 0.94;
     const pdfX = w / 2 - pdfW / 2;
-    const pdfY = h * 0.09;
+    const pdfY = h * 0.03;
 
     // Shadow
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.beginPath();
-    ctx.roundRect(pdfX + 12, pdfY + 12, pdfW, pdfH, 20);
+    ctx.roundRect(pdfX + 8, pdfY + 8, pdfW, pdfH, 12);
     ctx.fill();
 
-    // PDF page - unfold animation
-    const pageProgress = Math.min(progress * 2, 1);
-    ctx.fillStyle = "#ffffff";
+    // PDF page background
+    const pageProgress = Math.min(progress * 1.5, 1);
+    ctx.fillStyle = "#f5f5f5";
     ctx.beginPath();
-    ctx.roundRect(pdfX, pdfY, pdfW, pdfH * pageProgress, 20);
+    ctx.roundRect(pdfX, pdfY, pdfW, pdfH * pageProgress, 12);
     ctx.fill();
 
-    // PDF Header with brand styling
-    if (progress > 0.08) {
-      const headerOpacity = Math.min((progress - 0.08) * 8, 1);
-      ctx.fillStyle = `rgba(26, 26, 46, ${headerOpacity})`;
-      ctx.beginPath();
-      ctx.roundRect(pdfX, pdfY, pdfW, 140, [20, 20, 0, 0]);
-      ctx.fill();
-
-      // Accent line
-      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
-      ctx.fillRect(pdfX, pdfY + 140, pdfW, 4);
-
-      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
-      ctx.font = "bold 42px 'Inter', sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText(demoRecipe.name, pdfX + 40, pdfY + 60);
-
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * headerOpacity})`;
-      ctx.font = "24px 'Inter', sans-serif";
-      ctx.fillText(`${demoRecipe.glass} • ${demoRecipe.technique}`, pdfX + 40, pdfY + 100);
-
-      // Garnish badge
-      ctx.fillStyle = `rgba(212, 175, 55, ${0.2 * headerOpacity})`;
-      ctx.beginPath();
-      ctx.roundRect(pdfX + pdfW - 200, pdfY + 30, 160, 40, 20);
-      ctx.fill();
-      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
-      ctx.font = "18px 'Inter', sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(demoRecipe.garnish, pdfX + pdfW - 120, pdfY + 56);
-    }
-
-    // Ingredients section
-    if (progress > 0.18) {
-      const ingOpacity = Math.min((progress - 0.18) * 5, 1);
-      ctx.fillStyle = `rgba(51, 51, 51, ${ingOpacity})`;
-      ctx.font = "bold 28px 'Inter', sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText("INGREDIENTS", pdfX + 40, pdfY + 195);
-
-      // Separator line
-      ctx.fillStyle = `rgba(212, 175, 55, ${0.3 * ingOpacity})`;
-      ctx.fillRect(pdfX + 40, pdfY + 205, pdfW - 80, 2);
-
-      demoRecipe.ingredients.forEach((ing, i) => {
-        const rowDelay = 0.22 + i * 0.03;
-        const rowOpacity = Math.min((progress - rowDelay) * 8, 1);
-        if (rowOpacity <= 0) return;
-
-        const rowY = pdfY + 245 + i * 50;
-        
-        // Alternating row bg
-        if (i % 2 === 0) {
-          ctx.fillStyle = `rgba(248, 248, 248, ${rowOpacity})`;
-          ctx.fillRect(pdfX + 30, rowY - 25, pdfW - 60, 45);
-        }
-
-        ctx.fillStyle = `rgba(68, 68, 68, ${rowOpacity})`;
-        ctx.font = "24px 'Inter', sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(ing.name, pdfX + 50, rowY);
-        
-        ctx.fillStyle = `rgba(212, 175, 55, ${rowOpacity})`;
-        ctx.font = "bold 24px 'Inter', sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(ing.amount, pdfX + pdfW - 150, rowY);
-
-        ctx.fillStyle = `rgba(136, 136, 136, ${rowOpacity})`;
-        ctx.font = "20px 'Inter', sans-serif";
-        ctx.fillText(ing.abv, pdfX + pdfW - 50, rowY);
-      });
-    }
-
-    // Metrics section with cards
-    if (progress > 0.38) {
-      const metricsOpacity = Math.min((progress - 0.38) * 4, 1);
+    // === DARK HEADER ===
+    if (progress > 0.02) {
+      const headerOpacity = Math.min((progress - 0.02) * 10, 1);
+      const headerH = 110;
       
-      ctx.fillStyle = `rgba(51, 51, 51, ${metricsOpacity})`;
-      ctx.font = "bold 28px 'Inter', sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText("SPECIFICATIONS", pdfX + 40, pdfY + 480);
-
-      // Metrics bar
-      ctx.fillStyle = `rgba(245, 245, 245, ${metricsOpacity})`;
+      ctx.fillStyle = `rgba(51, 65, 85, ${headerOpacity})`;
       ctx.beginPath();
-      ctx.roundRect(pdfX + 30, pdfY + 500, pdfW - 60, 90, 16);
+      ctx.roundRect(pdfX, pdfY, pdfW, headerH, [12, 12, 0, 0]);
       ctx.fill();
 
-      const metrics = [
-        { label: "Volume", value: "120ml", icon: "📏" },
-        { label: "ABV", value: "22.5%", icon: "🍸" },
-        { label: "Calories", value: "185 kcal", icon: "🔥" },
+      // Gold accent line under header
+      ctx.fillStyle = `rgba(212, 175, 55, ${headerOpacity})`;
+      ctx.fillRect(pdfX, pdfY + headerH, pdfW, 3);
+
+      // "COCKTAIL SOP" label
+      ctx.fillStyle = `rgba(148, 163, 184, ${headerOpacity})`;
+      ctx.font = "16px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("COCKTAIL SOP", pdfX + 30, pdfY + 35);
+
+      // Recipe name - big and bold
+      ctx.fillStyle = `rgba(255, 255, 255, ${headerOpacity})`;
+      ctx.font = "bold 42px 'Inter', sans-serif";
+      ctx.fillText("NEGRONI", pdfX + 30, pdfY + 82);
+    }
+
+    // === QR CODE + SPECIFICATIONS SECTION ===
+    if (progress > 0.08) {
+      const specOpacity = Math.min((progress - 0.08) * 6, 1);
+      const sectionY = pdfY + 130;
+      const sectionH = 170;
+
+      // Section card
+      ctx.fillStyle = `rgba(255, 255, 255, ${specOpacity})`;
+      ctx.strokeStyle = `rgba(226, 232, 240, ${specOpacity})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + 15, sectionY, pdfW - 30, sectionH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      // QR Code placeholder (left side)
+      const qrSize = 120;
+      const qrX = pdfX + 40;
+      const qrY = sectionY + 25;
+      
+      ctx.fillStyle = `rgba(0, 0, 0, ${specOpacity})`;
+      ctx.fillRect(qrX, qrY, qrSize, qrSize);
+      
+      // QR pattern (simplified)
+      ctx.fillStyle = `rgba(255, 255, 255, ${specOpacity})`;
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if ((i + j) % 2 === 0) {
+            ctx.fillRect(qrX + 10 + i * 12, qrY + 10 + j * 12, 10, 10);
+          }
+        }
+      }
+
+      // SPECIFICATIONS title
+      ctx.fillStyle = `rgba(51, 51, 51, ${specOpacity})`;
+      ctx.font = "bold 20px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("SPECIFICATIONS", pdfX + 200, sectionY + 35);
+
+      // Underline
+      ctx.fillStyle = `rgba(212, 175, 55, ${specOpacity})`;
+      ctx.fillRect(pdfX + 200, sectionY + 42, 140, 2);
+
+      // Specs grid
+      const specs = [
+        { label: "TECHNIQUE", value: "Stir" },
+        { label: "GLASS", value: "Rock Glass" },
+        { label: "ICE", value: "Block Ice" },
+        { label: "GARNISH", value: "Orange peel" },
+        { label: "VOLUME", value: "90ml" },
+        { label: "ABV", value: "35.7%" },
       ];
 
-      metrics.forEach((m, i) => {
-        const mx = pdfX + 90 + i * ((pdfW - 120) / 3);
-        ctx.font = "28px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(m.icon, mx - 40, pdfY + 555);
-        
-        ctx.fillStyle = `rgba(212, 175, 55, ${metricsOpacity})`;
-        ctx.font = "bold 26px 'Inter', sans-serif";
-        ctx.fillText(m.value, mx + 30, pdfY + 545);
-        
-        ctx.fillStyle = `rgba(136, 136, 136, ${metricsOpacity})`;
-        ctx.font = "16px 'Inter', sans-serif";
-        ctx.fillText(m.label, mx + 30, pdfY + 575);
+      const colW = (pdfW - 250) / 2;
+      specs.forEach((spec, i) => {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const sx = pdfX + 200 + col * colW;
+        const sy = sectionY + 70 + row * 40;
+
+        ctx.fillStyle = `rgba(148, 163, 184, ${specOpacity})`;
+        ctx.font = "12px 'Inter', sans-serif";
+        ctx.fillText(spec.label, sx, sy);
+
+        ctx.fillStyle = `rgba(51, 51, 51, ${specOpacity})`;
+        ctx.font = "bold 16px 'Inter', sans-serif";
+        ctx.fillText(spec.value, sx, sy + 18);
       });
     }
 
-    // Taste Profile radar chart
-    if (progress > 0.50) {
-      const chartOpacity = Math.min((progress - 0.50) * 3, 1);
-      
-      ctx.fillStyle = `rgba(51, 51, 51, ${chartOpacity})`;
-      ctx.font = "bold 28px 'Inter', sans-serif";
+    // === TASTE & TEXTURE PROFILES (side by side) ===
+    if (progress > 0.18) {
+      const profileOpacity = Math.min((progress - 0.18) * 5, 1);
+      const profileY = pdfY + 320;
+      const profileH = 200;
+      const halfW = (pdfW - 45) / 2;
+
+      // Taste Profile card
+      ctx.fillStyle = `rgba(255, 255, 255, ${profileOpacity})`;
+      ctx.strokeStyle = `rgba(226, 232, 240, ${profileOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + 15, profileY, halfW, profileH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = `rgba(51, 51, 51, ${profileOpacity})`;
+      ctx.font = "bold 16px 'Inter', sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("TASTE PROFILE", pdfX + 40, pdfY + 640);
+      ctx.fillText("TASTE PROFILE", pdfX + 30, profileY + 25);
 
-      const chartX = pdfX + pdfW / 2;
-      const chartY = pdfY + 780;
-      const chartR = 100;
+      // Taste radar chart
+      const tasteLabels = ["SWEET", "SOUR", "BITTER", "SALTY", "UMAMI"];
+      const tasteVals = [4, 5, 6, 1, 3];
+      drawMiniRadar(ctx, pdfX + 15 + halfW / 2, profileY + 120, 60, tasteLabels, tasteVals, profileOpacity, progress - 0.2);
 
-      // Grid circles
-      ctx.strokeStyle = `rgba(221, 221, 221, ${chartOpacity})`;
-      ctx.lineWidth = 1;
-      for (let i = 1; i <= 5; i++) {
-        ctx.beginPath();
-        ctx.arc(chartX, chartY, (chartR * i) / 5, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      // Texture Profile card
+      ctx.fillStyle = `rgba(255, 255, 255, ${profileOpacity})`;
+      ctx.strokeStyle = `rgba(226, 232, 240, ${profileOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + 30 + halfW, profileY, halfW, profileH, 10);
+      ctx.fill();
+      ctx.stroke();
 
-      // Axes
-      const labels = ["Sweet", "Bitter", "Sour", "Salty", "Umami"];
-      labels.forEach((label, i) => {
-        const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-        const x = chartX + Math.cos(angle) * chartR;
-        const y = chartY + Math.sin(angle) * chartR;
-        
-        ctx.strokeStyle = `rgba(212, 175, 55, ${0.3 * chartOpacity})`;
-        ctx.beginPath();
-        ctx.moveTo(chartX, chartY);
-        ctx.lineTo(x, y);
-        ctx.stroke();
+      ctx.fillStyle = `rgba(51, 51, 51, ${profileOpacity})`;
+      ctx.font = "bold 16px 'Inter', sans-serif";
+      ctx.fillText("TEXTURE PROFILE", pdfX + 45 + halfW, profileY + 25);
 
-        // Labels
-        const labelX = chartX + Math.cos(angle) * (chartR + 35);
-        const labelY = chartY + Math.sin(angle) * (chartR + 35);
-        ctx.fillStyle = `rgba(102, 102, 102, ${chartOpacity})`;
-        ctx.font = "18px 'Inter', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(label, labelX, labelY + 5);
-      });
-
-      // Data polygon with animation
-      const dataProgress = Math.min((progress - 0.55) * 3, 1);
-      if (dataProgress > 0) {
-        ctx.beginPath();
-        const vals = [6, 7, 2, 1, 2];
-        vals.forEach((v, i) => {
-          const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-          const r = (v / 10) * chartR * dataProgress;
-          const px = chartX + Math.cos(angle) * r;
-          const py = chartY + Math.sin(angle) * r;
-          if (i === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.closePath();
-        ctx.fillStyle = `rgba(212, 175, 55, ${0.35 * chartOpacity})`;
-        ctx.fill();
-        ctx.strokeStyle = `rgba(212, 175, 55, ${chartOpacity})`;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Data points
-        vals.forEach((v, i) => {
-          const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-          const r = (v / 10) * chartR * dataProgress;
-          const px = chartX + Math.cos(angle) * r;
-          const py = chartY + Math.sin(angle) * r;
-          
-          ctx.beginPath();
-          ctx.arc(px, py, 8, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(212, 175, 55, ${chartOpacity})`;
-          ctx.fill();
-          ctx.strokeStyle = `rgba(255, 255, 255, ${chartOpacity})`;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        });
-      }
+      // Texture radar chart
+      const textureLabels = ["BODY", "FOAM", "BUBBLES", "OIL", "CREAM", "ASTRIN"];
+      const textureVals = [7, 2, 1, 3, 2, 4];
+      drawMiniRadar(ctx, pdfX + 30 + halfW + halfW / 2, profileY + 120, 60, textureLabels, textureVals, profileOpacity, progress - 0.2);
     }
 
-    // Method section
-    if (progress > 0.65) {
-      const methodOpacity = Math.min((progress - 0.65) * 4, 1);
-      
+    // === RECIPE TABLE ===
+    if (progress > 0.32) {
+      const recipeOpacity = Math.min((progress - 0.32) * 5, 1);
+      const recipeY = pdfY + 540;
+      const recipeH = 160;
+
+      // Recipe card
+      ctx.fillStyle = `rgba(255, 255, 255, ${recipeOpacity})`;
+      ctx.strokeStyle = `rgba(226, 232, 240, ${recipeOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + 15, recipeY, pdfW - 30, recipeH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      // Title with accent
+      ctx.fillStyle = `rgba(51, 51, 51, ${recipeOpacity})`;
+      ctx.font = "bold 18px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("RECIPE", pdfX + 30, recipeY + 30);
+
+      ctx.fillStyle = `rgba(212, 175, 55, ${recipeOpacity})`;
+      ctx.fillRect(pdfX + 30, recipeY + 38, 50, 3);
+
+      // Ingredients
+      const ingredients = [
+        { name: "GIN", amount: "30 ml", type: "Spirit • 49%" },
+        { name: "VERMOUTH", amount: "30 ml", type: "Liqueur • 28%" },
+        { name: "CAMPARI", amount: "30 ml", type: "Bitters • 30%" },
+      ];
+
+      ingredients.forEach((ing, i) => {
+        const rowY = recipeY + 65 + i * 32;
+        const rowOpacity = Math.min((progress - 0.35 - i * 0.02) * 8, 1);
+        if (rowOpacity <= 0) return;
+
+        ctx.fillStyle = `rgba(51, 51, 51, ${rowOpacity})`;
+        ctx.font = "bold 15px 'Inter', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(ing.name, pdfX + 40, rowY);
+
+        ctx.fillStyle = `rgba(100, 116, 139, ${rowOpacity})`;
+        ctx.font = "15px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(ing.amount, pdfX + pdfW / 2, rowY);
+
+        ctx.fillStyle = `rgba(148, 163, 184, ${rowOpacity})`;
+        ctx.font = "14px 'Inter', sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(ing.type, pdfX + pdfW - 45, rowY);
+      });
+    }
+
+    // === METHOD & SERVICE NOTES (side by side) ===
+    if (progress > 0.48) {
+      const methodOpacity = Math.min((progress - 0.48) * 4, 1);
+      const methodY = pdfY + 720;
+      const methodH = 200;
+      const halfW = (pdfW - 45) / 2;
+
+      // Method card
+      ctx.fillStyle = `rgba(255, 255, 255, ${methodOpacity})`;
+      ctx.strokeStyle = `rgba(226, 232, 240, ${methodOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + 15, methodY, halfW, methodH, 10);
+      ctx.fill();
+      ctx.stroke();
+
       ctx.fillStyle = `rgba(51, 51, 51, ${methodOpacity})`;
-      ctx.font = "bold 28px 'Inter', sans-serif";
+      ctx.font = "bold 16px 'Inter', sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("METHOD", pdfX + 40, pdfY + 940);
+      ctx.fillText("METHOD", pdfX + 30, methodY + 25);
 
       const steps = [
-        "1. Add all ingredients to shaker",
-        "2. Add ice and shake vigorously for 15 sec",
-        "3. Double strain into chilled coupe",
-        "4. Garnish with 3 coffee beans"
+        "1. Chill rock glass with ice",
+        "2. Combine gin, vermouth,",
+        "   Campari in mixing glass",
+        "3. Stir for 20-30 seconds",
+        "4. Strain over fresh ice",
+        "5. Express orange peel"
       ];
 
       steps.forEach((step, i) => {
-        const stepOpacity = Math.min((progress - 0.68 - i * 0.02) * 6, 1);
+        const stepOpacity = Math.min((progress - 0.52 - i * 0.015) * 6, 1);
         if (stepOpacity <= 0) return;
         
-        ctx.fillStyle = `rgba(68, 68, 68, ${stepOpacity})`;
-        ctx.font = "22px 'Inter', sans-serif";
-        ctx.fillText(step, pdfX + 50, pdfY + 985 + i * 38);
+        ctx.fillStyle = `rgba(71, 85, 105, ${stepOpacity})`;
+        ctx.font = "13px 'Inter', sans-serif";
+        ctx.fillText(step, pdfX + 30, methodY + 50 + i * 24);
+      });
+
+      // Service Notes card
+      ctx.fillStyle = `rgba(255, 255, 255, ${methodOpacity})`;
+      ctx.strokeStyle = `rgba(226, 232, 240, ${methodOpacity})`;
+      ctx.beginPath();
+      ctx.roundRect(pdfX + 30 + halfW, methodY, halfW, methodH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = `rgba(51, 51, 51, ${methodOpacity})`;
+      ctx.font = "bold 16px 'Inter', sans-serif";
+      ctx.fillText("SERVICE NOTES", pdfX + 45 + halfW, methodY + 25);
+
+      // Service notes text
+      const notes = [
+        "The Negroni, a vibrant ruby-red",
+        "elixir, owes its existence to a",
+        "bold request in Florence, Italy,",
+        "around 1919. Legend has it that",
+        "Count Camillo Negroni asked the",
+        "bartender to strengthen his drink."
+      ];
+
+      notes.forEach((note, i) => {
+        const noteOpacity = Math.min((progress - 0.55 - i * 0.01) * 5, 1);
+        if (noteOpacity <= 0) return;
+        
+        ctx.fillStyle = `rgba(100, 116, 139, ${noteOpacity})`;
+        ctx.font = "12px 'Inter', sans-serif";
+        ctx.fillText(note, pdfX + 45 + halfW, methodY + 50 + i * 22);
       });
     }
 
-    // Footer with additional metrics
-    if (progress > 0.78) {
-      const footerOpacity = Math.min((progress - 0.78) * 5, 1);
-      
-      ctx.fillStyle = `rgba(26, 26, 46, ${footerOpacity})`;
-      ctx.beginPath();
-      ctx.roundRect(pdfX, pdfY + pdfH - 80, pdfW, 80, [0, 0, 20, 20]);
-      ctx.fill();
+    // === FOOTER ===
+    if (progress > 0.72) {
+      const footerOpacity = Math.min((progress - 0.72) * 5, 1);
+      const footerY = pdfY + pdfH - 70;
 
-      ctx.fillStyle = `rgba(212, 175, 55, ${footerOpacity})`;
-      ctx.font = "18px 'Inter', sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("pH: 3.8  •  Brix: 12°  •  Ratio: 5:3:3:1  •  Allergens: None", w / 2, pdfY + pdfH - 35);
+      // Footer separator line
+      ctx.strokeStyle = `rgba(226, 232, 240, ${footerOpacity})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pdfX + 30, footerY);
+      ctx.lineTo(pdfX + pdfW - 30, footerY);
+      ctx.stroke();
+
+      // Footer metrics
+      const footerMetrics = [
+        { label: "RATIO", value: "1:1:1" },
+        { label: "pH", value: "3.4" },
+        { label: "BRIX", value: "14" },
+        { label: "KCAL", value: "270" },
+      ];
+
+      const mWidth = 70;
+      footerMetrics.forEach((m, i) => {
+        const mx = pdfX + 35 + i * mWidth;
+        
+        ctx.fillStyle = `rgba(148, 163, 184, ${footerOpacity})`;
+        ctx.font = "11px 'Inter', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(m.label, mx, footerY + 25);
+
+        ctx.fillStyle = `rgba(51, 51, 51, ${footerOpacity})`;
+        ctx.font = "bold 16px 'Inter', sans-serif";
+        ctx.fillText(m.value, mx, footerY + 45);
+      });
+
+      // Allergens
+      ctx.fillStyle = `rgba(148, 163, 184, ${footerOpacity})`;
+      ctx.font = "11px 'Inter', sans-serif";
+      ctx.fillText("ALLERGENS:", pdfX + 320, footerY + 25);
+
+      ctx.fillStyle = `rgba(71, 85, 105, ${footerOpacity})`;
+      ctx.font = "12px 'Inter', sans-serif";
+      ctx.fillText("WHEAT (Gin), SULFITES (Vermouth)", pdfX + 320, footerY + 45);
     }
 
-    // Download success animation
-    if (progress > 0.88) {
-      const successOpacity = Math.min((progress - 0.88) * 8, 1);
+    // Download indicator at end
+    if (progress > 0.92) {
+      const successOpacity = Math.min((progress - 0.92) * 12, 1);
       
-      // Glow effect
-      const glow = ctx.createRadialGradient(w / 2, h * 0.5, 0, w / 2, h * 0.5, 300);
-      glow.addColorStop(0, `rgba(212, 175, 55, ${0.15 * successOpacity})`);
-      glow.addColorStop(1, "transparent");
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, w, h);
-
-      // Checkmark badge
-      ctx.fillStyle = `rgba(212, 175, 55, ${successOpacity})`;
+      ctx.fillStyle = `rgba(34, 197, 94, ${successOpacity})`;
       ctx.beginPath();
-      ctx.arc(w / 2, h * 0.94, 35, 0, Math.PI * 2);
+      ctx.arc(w / 2, h * 0.97, 25, 0, Math.PI * 2);
       ctx.fill();
       
-      ctx.fillStyle = `rgba(0, 0, 0, ${successOpacity})`;
-      ctx.font = "bold 36px sans-serif";
+      ctx.fillStyle = `rgba(255, 255, 255, ${successOpacity})`;
+      ctx.font = "bold 24px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("✓", w / 2, h * 0.95 + 5);
+      ctx.fillText("✓", w / 2, h * 0.975);
+    }
+  };
+
+  // Mini radar chart helper for profiles
+  const drawMiniRadar = (
+    ctx: CanvasRenderingContext2D, 
+    cx: number, cy: number, r: number, 
+    labels: string[], values: number[], 
+    opacity: number, animProgress: number
+  ) => {
+    const n = labels.length;
+    const dataProgress = Math.max(0, Math.min(1, animProgress * 3));
+
+    // Grid
+    ctx.strokeStyle = `rgba(226, 232, 240, ${opacity})`;
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      for (let j = 0; j <= n; j++) {
+        const angle = (j * 2 * Math.PI) / n - Math.PI / 2;
+        const x = cx + Math.cos(angle) * (r * i / 3);
+        const y = cy + Math.sin(angle) * (r * i / 3);
+        if (j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Axes
+    for (let i = 0; i < n; i++) {
+      const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+      ctx.stroke();
+    }
+
+    // Labels
+    ctx.fillStyle = `rgba(100, 116, 139, ${opacity})`;
+    ctx.font = "9px 'Inter', sans-serif";
+    ctx.textAlign = "center";
+    labels.forEach((label, i) => {
+      const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
+      const lx = cx + Math.cos(angle) * (r + 18);
+      const ly = cy + Math.sin(angle) * (r + 18) + 3;
+      ctx.fillText(label, lx, ly);
+    });
+
+    // Data polygon
+    if (dataProgress > 0) {
+      ctx.beginPath();
+      values.forEach((v, i) => {
+        const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
+        const dr = (v / 10) * r * dataProgress;
+        const x = cx + Math.cos(angle) * dr;
+        const y = cy + Math.sin(angle) * dr;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = `rgba(148, 163, 184, ${0.4 * opacity})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(100, 116, 139, ${opacity})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
   };
 
