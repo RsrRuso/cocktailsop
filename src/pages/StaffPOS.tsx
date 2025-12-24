@@ -767,7 +767,18 @@ export default function StaffPOS() {
     }));
 
     const subtotal = items.reduce((sum: number, i: any) => sum + (i.qty * i.price), 0);
-    
+
+    const rawTotal = (order.total_amount ?? order.total ?? subtotal) as number;
+    const serviceCharge = (order.service_charge ?? order.serviceCharge ?? 0) as number;
+    const discountTotal = (order.discount_total ?? order.discountTotal ?? 0) as number;
+    let taxTotal = (order.tax_total ?? order.taxTotal ?? 0) as number;
+
+    // If backend totals exist but tax wasn’t provided, infer it so Pre‑Check prints full totals.
+    if ((!taxTotal || taxTotal === 0) && typeof rawTotal === "number") {
+      const impliedTax = rawTotal - subtotal - serviceCharge + discountTotal;
+      if (impliedTax > 0.0001) taxTotal = impliedTax;
+    }
+
     const printData: OrderData = {
       id: order.id || `order-${Date.now()}`,
       tableName,
@@ -777,15 +788,15 @@ export default function StaffPOS() {
       createdAt: order.created_at || order.createdAt || new Date().toISOString(),
       items,
       subtotal,
-      taxTotal: order.tax_total || order.taxTotal || 0,
-      serviceCharge: order.service_charge || order.serviceCharge || 0,
-      discountTotal: order.discount_total || order.discountTotal || 0,
-      total: order.total_amount || order.total || subtotal,
+      taxTotal,
+      serviceCharge,
+      discountTotal,
+      total: rawTotal,
       paymentMethod: order.lab_ops_payments?.[0]?.payment_method || order.paymentMethod,
       paidAt: order.closed_at || order.paidAt,
       outletName: outlet?.name || order.outletName,
     };
-    
+
     console.log('Prepared print data result:', printData);
     return printData;
   };
@@ -794,8 +805,7 @@ export default function StaffPOS() {
     order: any,
     printType?: 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined'
   ) => {
-    // Reliable print flow: store a print job in sessionStorage and navigate to a dedicated print page.
-    // (Dialog-based printing was inconsistent in some mobile/PWA contexts.)
+    // Open in-app dialog (no navigation / no popups)
     try {
       const printData = prepareOrderForPrint(order);
       if (!printData?.items?.length) {
@@ -807,29 +817,14 @@ export default function StaffPOS() {
         return;
       }
 
-      const jobId =
-        (globalThis.crypto?.randomUUID?.() as string | undefined) ||
-        `job-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-      const storageKey = `pos_print_job:${jobId}`;
-      const payload = JSON.stringify({
-        order: printData,
-        type: printType || "precheck",
-        createdAt: Date.now(),
-      });
-
-      // Use sessionStorage for same-tab flows, and localStorage as a fallback for
-      // environments that open the print page in a new tab/window.
-      sessionStorage.setItem(storageKey, payload);
-      localStorage.setItem(storageKey, payload);
-
-      const url = `/staff-pos/print?job=${encodeURIComponent(jobId)}`;
-      navigate(url);
+      setOrderToPrint(printData);
+      setDefaultPrintType(printType || "precheck");
+      setPrintDialogOpen(true);
     } catch (error: any) {
       console.error("Error preparing print job:", error);
       toast({
         title: "Print error",
-        description: error?.message || "Failed to prepare print job",
+        description: error?.message || "Failed to prepare print",
         variant: "destructive",
       });
     }
