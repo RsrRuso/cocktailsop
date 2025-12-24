@@ -2378,6 +2378,7 @@ function MenuModule({ outletId }: { outletId: string }) {
 
 // ====================== INVENTORY MODULE ======================
 function InventoryModule({ outletId }: { outletId: string }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
