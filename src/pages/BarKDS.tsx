@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { 
   Wine, Check, ArrowLeft, RefreshCw, 
   Volume2, VolumeX, Timer, AlertTriangle,
-  Settings, TrendingUp, Beaker, User, LogOut
+  Settings, TrendingUp, Beaker, User, LogOut, ShoppingCart
 } from "lucide-react";
 import { differenceInMinutes, format } from "date-fns";
 import { RecipeDialog } from "@/components/bar-kds/RecipeDialog";
@@ -408,8 +408,51 @@ export default function BarKDS() {
   const filteredCompletedOrders = getFilteredOrders(completedOrders);
 
   const playNotificationSound = () => {
-    const audio = new Audio('/notification.wav');
-    audio.play().catch(() => {});
+    // Create a loud, prolonged alert sound using Web Audio API
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Play 3 beeps with increasing urgency
+      const playBeep = (startTime: number, frequency: number, duration: number) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'square'; // Harsher, more attention-grabbing
+        
+        // Loud volume with slight fade
+        gainNode.gain.setValueAtTime(0.8, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.5, startTime + duration * 0.8);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+      
+      const now = audioContext.currentTime;
+      
+      // First sequence: 3 rapid beeps
+      playBeep(now, 880, 0.3);        // A5
+      playBeep(now + 0.35, 988, 0.3); // B5
+      playBeep(now + 0.7, 1047, 0.4); // C6
+      
+      // Second sequence: 3 more urgent beeps
+      playBeep(now + 1.2, 1047, 0.25);
+      playBeep(now + 1.5, 1175, 0.25);
+      playBeep(now + 1.8, 1319, 0.5);  // E6 - higher and longer
+      
+      // Final attention-grabbing long tone
+      playBeep(now + 2.5, 1047, 0.8);
+      
+    } catch (error) {
+      console.error('Error playing notification sound:', error);
+      // Fallback to simple audio file
+      const audio = new Audio('/notification.wav');
+      audio.play().catch(() => {});
+    }
   };
 
   const startItem = async (item: OrderItem, orderId: string) => {
@@ -590,6 +633,16 @@ export default function BarKDS() {
                 {staff.full_name} • {myStationId ? stations.find(s => s.id === myStationId)?.name : 'All Stations'}
               </p>
             </div>
+            {/* POS Button for bartenders to post orders */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/staff-pos'}
+              className="ml-2 bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-7 text-xs"
+            >
+              <ShoppingCart className="h-3.5 w-3.5 mr-1" />
+              POS
+            </Button>
           </div>
           
           <div className="flex items-center gap-1">
