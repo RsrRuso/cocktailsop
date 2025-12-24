@@ -4342,15 +4342,17 @@ function StaffModule({ outletId, outletName, isOwnerOrManager }: { outletId: str
                 <div className="flex items-center gap-1 shrink-0">
                   {member.is_active ? (
                     <>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="gap-1.5"
-                        onClick={() => setEditingStaff(member)}
-                      >
-                        <Key className="h-3.5 w-3.5" />
-                        {member.pin_code ? "Edit" : "Set"}
-                      </Button>
+                      {isOwnerOrManager && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="gap-1.5"
+                          onClick={() => setEditingStaff(member)}
+                        >
+                          <Key className="h-3.5 w-3.5" />
+                          {member.pin_code ? "Edit" : "Set"}
+                        </Button>
+                      )}
                       {isOwnerOrManager && (
                         <Button
                           size="sm"
@@ -4365,9 +4367,11 @@ function StaffModule({ outletId, outletName, isOwnerOrManager }: { outletId: str
                       )}
                     </>
                   ) : (
-                    <Button size="sm" variant="outline" onClick={() => reactivateStaff(member.id)}>
-                      Restore
-                    </Button>
+                    isOwnerOrManager && (
+                      <Button size="sm" variant="outline" onClick={() => reactivateStaff(member.id)}>
+                        Restore
+                      </Button>
+                    )
                   )}
                 </div>
               </div>
