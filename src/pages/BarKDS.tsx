@@ -609,42 +609,58 @@ export default function BarKDS() {
           </div>
         </div>
         
-        {/* Station Selector */}
+        {/* Station Selector - Only managers/owners can see dropdown */}
         <div className="mt-3">
-          <Select value={selectedStation} onValueChange={setSelectedStation}>
-            <SelectTrigger className="bg-black/30 border-amber-600/50 text-white h-9">
-              <SelectValue>
-                <div className="flex items-center gap-2">
-                  <User className="h-3.5 w-3.5" />
-                  {selectedStation === "all" 
-                    ? "All Stations" 
-                    : stations.find(s => s.id === selectedStation)?.name || "Select Station"
-                  }
-                  {myStationId === selectedStation && selectedStation !== "all" && (
-                    <Badge className="bg-green-600 text-xs px-1 py-0">You</Badge>
-                  )}
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700">
-              <SelectItem value="all">All Stations</SelectItem>
-              {stations.map((station) => (
-                <SelectItem key={station.id} value={station.id}>
+          {['manager', 'owner', 'admin'].includes(staff.role) ? (
+            <Select value={selectedStation} onValueChange={setSelectedStation}>
+              <SelectTrigger className="bg-black/30 border-amber-600/50 text-white h-9">
+                <SelectValue>
                   <div className="flex items-center gap-2">
-                    {station.name}
-                    {station.assigned_bartender_id && (
-                      <span className="text-gray-400 text-xs">
-                        ({station.bartender?.full_name || "Assigned"})
-                      </span>
-                    )}
-                    {myStationId === station.id && (
-                      <Badge className="bg-green-600 text-xs px-1 py-0 ml-1">You</Badge>
+                    <User className="h-3.5 w-3.5" />
+                    {selectedStation === "all" 
+                      ? "All Stations" 
+                      : stations.find(s => s.id === selectedStation)?.name || "Select Station"
+                    }
+                    {myStationId === selectedStation && selectedStation !== "all" && (
+                      <Badge className="bg-green-600 text-xs px-1 py-0">You</Badge>
                     )}
                   </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all">All Stations</SelectItem>
+                {stations.map((station) => (
+                  <SelectItem key={station.id} value={station.id}>
+                    <div className="flex items-center gap-2">
+                      {station.name}
+                      {station.assigned_bartender_id && (
+                        <span className="text-gray-400 text-xs">
+                          ({station.bartender?.full_name || "Assigned"})
+                        </span>
+                      )}
+                      {myStationId === station.id && (
+                        <Badge className="bg-green-600 text-xs px-1 py-0 ml-1">You</Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            // Regular staff - show their assigned station only (no dropdown)
+            <div className="bg-black/30 border border-amber-600/50 rounded-md px-3 py-2 h-9 flex items-center">
+              <div className="flex items-center gap-2 text-white">
+                <User className="h-3.5 w-3.5" />
+                {myStationId 
+                  ? stations.find(s => s.id === myStationId)?.name 
+                  : "No station assigned"
+                }
+                {myStationId && (
+                  <Badge className="bg-green-600 text-xs px-1 py-0">You</Badge>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Management Buttons Row */}
