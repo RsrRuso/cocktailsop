@@ -7,10 +7,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   TrendingUp, TrendingDown, Package, DollarSign, Calendar, 
   ShoppingCart, Layers, BarChart3, PieChart, List, ArrowUpRight, 
-  ArrowDownRight, Leaf, Wrench, Box
+  ArrowDownRight, Leaf, Wrench, Box, Download, FileSpreadsheet
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 interface ItemSummary {
   item_name: string;
@@ -47,6 +49,188 @@ interface PurchaseOrderAnalyticsProps {
 
 export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOrderAnalyticsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'market' | 'material' | 'combined' | 'dates'>('overview');
+
+  // Download helpers
+  const downloadExcel = (data: any[], fileName: string, sheetName: string = 'Data') => {
+    try {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, `${fileName}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      toast.success(`Downloaded ${fileName}`);
+    } catch (error) {
+      toast.error('Failed to download');
+      console.error(error);
+    }
+  };
+
+  const downloadOverview = () => {
+    const data = [
+      { Metric: 'Total Orders', Value: analytics.totalOrders },
+      { Metric: 'Total Spend', Value: analytics.totalAmount.toFixed(2) },
+      { Metric: 'Average Order Value', Value: analytics.avgOrderValue.toFixed(2) },
+      { Metric: 'Daily Average', Value: analytics.dailyAverage.toFixed(2) },
+      { Metric: 'Weekly Trend (%)', Value: analytics.weeklyTrend.toFixed(1) },
+      { Metric: 'This Month', Value: analytics.monthlyComparison.current.toFixed(2) },
+      { Metric: 'Last Month', Value: analytics.monthlyComparison.previous.toFixed(2) },
+      { Metric: 'Monthly Change (%)', Value: analytics.monthlyComparison.change.toFixed(1) },
+      { Metric: 'Unique Items', Value: analytics.uniqueItems },
+      { Metric: 'Total Items Qty', Value: analytics.totalItems.toFixed(0) },
+      { Metric: 'Market Items Count', Value: analytics.marketItems.count },
+      { Metric: 'Market Items Spend', Value: analytics.marketItems.amount.toFixed(2) },
+      { Metric: 'Material Items Count', Value: analytics.materialItems.count },
+      { Metric: 'Material Items Spend', Value: analytics.materialItems.amount.toFixed(2) },
+    ];
+    downloadExcel(data, 'PO_Analytics_Overview', 'Overview');
+  };
+
+  const downloadTopItems = () => {
+    const data = analytics.topItems.map((item, idx) => ({
+      Rank: idx + 1,
+      'Item Name': item.item_name,
+      'Item Code': item.item_code || '-',
+      Category: item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+      'Total Quantity': item.totalQuantity.toFixed(2),
+      Unit: item.unit || 'units',
+      'Total Amount': item.totalAmount.toFixed(2),
+      'Avg Price': item.avgPrice.toFixed(2),
+      'Order Count': item.orderCount
+    }));
+    downloadExcel(data, 'PO_Top_Items', 'Top Items');
+  };
+
+  const downloadSuppliers = () => {
+    const data = analytics.ordersBySupplier.map((s, idx) => ({
+      Rank: idx + 1,
+      Supplier: s.supplier,
+      'Order Count': s.count,
+      'Total Amount': s.amount.toFixed(2)
+    }));
+    downloadExcel(data, 'PO_Suppliers', 'Suppliers');
+  };
+
+  const downloadMarketItems = () => {
+    const data = analytics.marketItems.items.map((item, idx) => ({
+      Rank: idx + 1,
+      'Item Name': item.item_name,
+      'Item Code': item.item_code || '-',
+      'Total Quantity': item.totalQuantity.toFixed(2),
+      Unit: item.unit || 'units',
+      'Total Amount': item.totalAmount.toFixed(2),
+      'Avg Price': item.avgPrice.toFixed(2),
+      'Order Count': item.orderCount
+    }));
+    downloadExcel(data, 'PO_Market_Items', 'Market Items');
+  };
+
+  const downloadMaterialItems = () => {
+    const data = analytics.materialItems.items.map((item, idx) => ({
+      Rank: idx + 1,
+      'Item Name': item.item_name,
+      'Item Code': item.item_code || '-',
+      'Total Quantity': item.totalQuantity.toFixed(2),
+      Unit: item.unit || 'units',
+      'Total Amount': item.totalAmount.toFixed(2),
+      'Avg Price': item.avgPrice.toFixed(2),
+      'Order Count': item.orderCount
+    }));
+    downloadExcel(data, 'PO_Material_Items', 'Material Items');
+  };
+
+  const downloadAllItems = () => {
+    const allItems = [...analytics.marketItems.items, ...analytics.materialItems.items, 
+      ...analytics.topItems.filter(i => i.category === 'unknown')];
+    const uniqueItems = Array.from(new Map(allItems.map(item => [item.item_name, item])).values());
+    const data = uniqueItems.sort((a, b) => b.totalAmount - a.totalAmount).map((item, idx) => ({
+      Rank: idx + 1,
+      'Item Name': item.item_name,
+      'Item Code': item.item_code || '-',
+      Category: item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+      'Total Quantity': item.totalQuantity.toFixed(2),
+      Unit: item.unit || 'units',
+      'Total Amount': item.totalAmount.toFixed(2),
+      'Avg Price': item.avgPrice.toFixed(2),
+      'Order Count': item.orderCount
+    }));
+    downloadExcel(data, 'PO_All_Items', 'All Items');
+  };
+
+  const downloadOrdersByDate = () => {
+    const data = analytics.ordersByDate.slice().reverse().map(d => ({
+      Date: format(parseISO(d.date), 'yyyy-MM-dd'),
+      Day: format(parseISO(d.date), 'EEEE'),
+      'Order Count': d.count,
+      'Total Amount': d.amount.toFixed(2),
+      'Avg per Order': (d.amount / d.count).toFixed(2)
+    }));
+    downloadExcel(data, 'PO_Orders_By_Date', 'Orders By Date');
+  };
+
+  const downloadFullReport = () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      // Overview sheet
+      const overviewData = [
+        { Metric: 'Total Orders', Value: analytics.totalOrders },
+        { Metric: 'Total Spend', Value: analytics.totalAmount.toFixed(2) },
+        { Metric: 'Average Order Value', Value: analytics.avgOrderValue.toFixed(2) },
+        { Metric: 'Daily Average', Value: analytics.dailyAverage.toFixed(2) },
+        { Metric: 'Unique Items', Value: analytics.uniqueItems },
+        { Metric: 'Market Items Spend', Value: analytics.marketItems.amount.toFixed(2) },
+        { Metric: 'Material Items Spend', Value: analytics.materialItems.amount.toFixed(2) },
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(overviewData), 'Overview');
+      
+      // Market items sheet
+      const marketData = analytics.marketItems.items.map((item, idx) => ({
+        Rank: idx + 1,
+        'Item Name': item.item_name,
+        'Item Code': item.item_code || '-',
+        Qty: item.totalQuantity.toFixed(2),
+        Unit: item.unit || 'units',
+        Amount: item.totalAmount.toFixed(2),
+        Orders: item.orderCount
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marketData), 'Market Items');
+      
+      // Material items sheet
+      const materialData = analytics.materialItems.items.map((item, idx) => ({
+        Rank: idx + 1,
+        'Item Name': item.item_name,
+        'Item Code': item.item_code || '-',
+        Qty: item.totalQuantity.toFixed(2),
+        Unit: item.unit || 'units',
+        Amount: item.totalAmount.toFixed(2),
+        Orders: item.orderCount
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(materialData), 'Material Items');
+      
+      // Orders by date sheet
+      const dateData = analytics.ordersByDate.slice().reverse().map(d => ({
+        Date: format(parseISO(d.date), 'yyyy-MM-dd'),
+        Day: format(parseISO(d.date), 'EEEE'),
+        Orders: d.count,
+        Amount: d.amount.toFixed(2)
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dateData), 'By Date');
+      
+      // Suppliers sheet
+      const supplierData = analytics.ordersBySupplier.map((s, idx) => ({
+        Rank: idx + 1,
+        Supplier: s.supplier,
+        Orders: s.count,
+        Amount: s.amount.toFixed(2)
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(supplierData), 'Suppliers');
+      
+      XLSX.writeFile(wb, `PO_Full_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      toast.success('Downloaded full report');
+    } catch (error) {
+      toast.error('Failed to download report');
+      console.error(error);
+    }
+  };
 
   const StatCard = ({ 
     title, 
@@ -125,6 +309,15 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
 
   return (
     <div className="space-y-4">
+      {/* Download Full Report Button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Purchase Order Analytics</h2>
+        <Button onClick={downloadFullReport} size="sm" className="gap-2">
+          <FileSpreadsheet className="w-4 h-4" />
+          Download Full Report
+        </Button>
+      </div>
+
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard 
@@ -156,9 +349,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       {/* Category Breakdown Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card className="p-4 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/30">
-          <div className="flex items-center gap-2 mb-3">
-            <Leaf className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Market / Fresh Items</h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Leaf className="w-5 h-5 text-emerald-500" />
+              <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Market / Fresh Items</h3>
+            </div>
+            <Button variant="ghost" size="sm" onClick={downloadMarketItems} className="h-7 px-2 gap-1 text-emerald-600">
+              <Download className="w-3 h-3" />
+            </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -173,9 +371,14 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
         </Card>
         
         <Card className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/30">
-          <div className="flex items-center gap-2 mb-3">
-            <Wrench className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold text-purple-600 dark:text-purple-400">Materials / Supplies</h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-purple-500" />
+              <h3 className="font-semibold text-purple-600 dark:text-purple-400">Materials / Supplies</h3>
+            </div>
+            <Button variant="ghost" size="sm" onClick={downloadMaterialItems} className="h-7 px-2 gap-1 text-purple-600">
+              <Download className="w-3 h-3" />
+            </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -219,10 +422,16 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top Items */}
             <Card className="p-4">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                Top Items by Spend
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  Top Items by Spend
+                </h3>
+                <Button variant="ghost" size="sm" onClick={downloadTopItems} className="h-7 px-2 gap-1">
+                  <Download className="w-3 h-3" />
+                  <span className="text-xs">Export</span>
+                </Button>
+              </div>
               <ScrollArea className="h-[300px]">
                 <div className="space-y-1">
                   {analytics.topItems.slice(0, 10).map((item, idx) => (
@@ -234,10 +443,16 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
 
             {/* Suppliers */}
             <Card className="p-4">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4 text-primary" />
-                Top Suppliers
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  Top Suppliers
+                </h3>
+                <Button variant="ghost" size="sm" onClick={downloadSuppliers} className="h-7 px-2 gap-1">
+                  <Download className="w-3 h-3" />
+                  <span className="text-xs">Export</span>
+                </Button>
+              </div>
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {analytics.ordersBySupplier.slice(0, 10).map((supplier, idx) => (
@@ -271,9 +486,15 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Leaf className="w-4 h-4 text-emerald-500" />
                 Market / Fresh Items
               </h3>
-              <Badge variant="outline" className="border-emerald-500 text-emerald-500">
-                {analytics.marketItems.count} items • {formatCurrency(analytics.marketItems.amount)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="border-emerald-500 text-emerald-500">
+                  {analytics.marketItems.count} items • {formatCurrency(analytics.marketItems.amount)}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={downloadMarketItems} className="h-7 px-2 gap-1">
+                  <Download className="w-3 h-3" />
+                  <span className="text-xs">Export</span>
+                </Button>
+              </div>
             </div>
             <ScrollArea className="h-[400px]">
               {analytics.marketItems.items.length === 0 ? (
@@ -296,9 +517,15 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Wrench className="w-4 h-4 text-purple-500" />
                 Materials / Supplies
               </h3>
-              <Badge variant="outline" className="border-purple-500 text-purple-500">
-                {analytics.materialItems.count} items • {formatCurrency(analytics.materialItems.amount)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="border-purple-500 text-purple-500">
+                  {analytics.materialItems.count} items • {formatCurrency(analytics.materialItems.amount)}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={downloadMaterialItems} className="h-7 px-2 gap-1">
+                  <Download className="w-3 h-3" />
+                  <span className="text-xs">Export</span>
+                </Button>
+              </div>
             </div>
             <ScrollArea className="h-[400px]">
               {analytics.materialItems.items.length === 0 ? (
@@ -321,9 +548,15 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Layers className="w-4 h-4 text-primary" />
                 All Items Combined
               </h3>
-              <Badge variant="outline">
-                {analytics.uniqueItems} items • {formatCurrency(analytics.totalAmount)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {analytics.uniqueItems} items • {formatCurrency(analytics.totalAmount)}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={downloadAllItems} className="h-7 px-2 gap-1">
+                  <Download className="w-3 h-3" />
+                  <span className="text-xs">Export</span>
+                </Button>
+              </div>
             </div>
             <ScrollArea className="h-[400px]">
               <div className="space-y-1">
@@ -342,9 +575,15 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
                 <Calendar className="w-4 h-4 text-primary" />
                 Orders by Date
               </h3>
-              <Badge variant="outline">
-                {analytics.ordersByDate.length} days with orders
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {analytics.ordersByDate.length} days with orders
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={downloadOrdersByDate} className="h-7 px-2 gap-1">
+                  <Download className="w-3 h-3" />
+                  <span className="text-xs">Export</span>
+                </Button>
+              </div>
             </div>
             <ScrollArea className="h-[400px]">
               <div className="space-y-2">
