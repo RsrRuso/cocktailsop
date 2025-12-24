@@ -60,29 +60,33 @@ const CocktailSOPPromoVideo = () => {
     const currentScene = scenes.find(s => frame >= s.start && frame < s.end) || scenes[0];
     const sceneProgress = (frame - currentScene.start) / (currentScene.end - currentScene.start);
 
-    // Draw background gradient
+    // Draw vibrant background gradient
     const gradient = ctx.createLinearGradient(0, 0, w, h);
-    gradient.addColorStop(0, "#0c0c0c");
-    gradient.addColorStop(0.5, "#1a1a2e");
-    gradient.addColorStop(1, "#0c0c0c");
+    gradient.addColorStop(0, "#1a0a2e");
+    gradient.addColorStop(0.3, "#2d1b4e");
+    gradient.addColorStop(0.6, "#1e3a5f");
+    gradient.addColorStop(1, "#0d2137");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Animated particles
-    for (let i = 0; i < 30; i++) {
+    // Animated colorful particles
+    const particleColors = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3", "#F38181", "#A8E6CF", "#FF8B94"];
+    for (let i = 0; i < 40; i++) {
       const x = (Math.sin(frame * 0.01 + i * 0.5) + 1) * w * 0.5;
       const y = ((frame * 0.5 + i * 50) % (h + 100)) - 50;
-      const size = 2 + Math.sin(i) * 1.5;
-      ctx.fillStyle = `rgba(212, 175, 55, ${0.15 + Math.sin(frame * 0.05 + i) * 0.1})`;
+      const size = 3 + Math.sin(i) * 2;
+      const color = particleColors[i % particleColors.length];
+      ctx.fillStyle = color + Math.floor((0.3 + Math.sin(frame * 0.05 + i) * 0.2) * 255).toString(16).padStart(2, '0');
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Draw decorative lines
-    ctx.strokeStyle = "rgba(212, 175, 55, 0.1)";
-    ctx.lineWidth = 1;
+    // Draw colorful decorative lines
+    const lineColors = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3", "#F38181"];
     for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = lineColors[i] + "40";
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, h * 0.2 + i * 40 + Math.sin(frame * 0.02 + i) * 10);
       ctx.lineTo(w, h * 0.2 + i * 40 + Math.sin(frame * 0.02 + i + 1) * 10);
@@ -127,15 +131,27 @@ const CocktailSOPPromoVideo = () => {
   const drawIntro = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
     const opacity = Math.min(progress * 2, 1);
     
-    // Logo/Icon animation - moved higher for vertical
+    // Colorful glow behind icon
+    const glowGradient = ctx.createRadialGradient(w / 2, h * 0.25, 0, w / 2, h * 0.25, 200);
+    glowGradient.addColorStop(0, `rgba(255, 107, 107, ${0.4 * opacity})`);
+    glowGradient.addColorStop(0.5, `rgba(78, 205, 196, ${0.2 * opacity})`);
+    glowGradient.addColorStop(1, "transparent");
+    ctx.fillStyle = glowGradient;
+    ctx.fillRect(0, 0, w, h);
+    
+    // Logo/Icon animation
     ctx.save();
     ctx.translate(w / 2, h * 0.25);
     ctx.rotate(Math.sin(frame * 0.02) * 0.05);
     ctx.scale(0.5 + progress * 0.5, 0.5 + progress * 0.5);
     
-    // Cocktail glass icon - larger for vertical
-    ctx.strokeStyle = `rgba(212, 175, 55, ${opacity})`;
-    ctx.lineWidth = 6;
+    // Cocktail glass icon - vibrant gradient stroke
+    const glassGradient = ctx.createLinearGradient(-80, -50, 80, 140);
+    glassGradient.addColorStop(0, "#FF6B6B");
+    glassGradient.addColorStop(0.5, "#FFE66D");
+    glassGradient.addColorStop(1, "#4ECDC4");
+    ctx.strokeStyle = glassGradient;
+    ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.moveTo(-80, -50);
     ctx.lineTo(80, -50);
@@ -153,21 +169,24 @@ const CocktailSOPPromoVideo = () => {
     
     ctx.restore();
 
-    // Title - larger for vertical format
+    // Title - bright gradient text effect
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
     ctx.font = "bold 72px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("COCKTAIL", w / 2, h * 0.48);
+    
+    // SOP with accent color
+    ctx.fillStyle = `rgba(255, 107, 107, ${opacity})`;
     ctx.fillText("SOP", w / 2, h * 0.55);
 
-    // Subtitle
-    ctx.fillStyle = `rgba(212, 175, 55, ${opacity})`;
+    // Subtitle - bright cyan
+    ctx.fillStyle = `rgba(78, 205, 196, ${opacity})`;
     ctx.font = "36px 'Inter', sans-serif";
     ctx.fillText("Professional Recipe", w / 2, h * 0.65);
     ctx.fillText("Documentation", w / 2, h * 0.70);
 
-    // Tagline
-    ctx.fillStyle = `rgba(180, 180, 180, ${Math.max(0, opacity - 0.3)})`;
+    // Tagline - bright yellow
+    ctx.fillStyle = `rgba(255, 230, 109, ${Math.max(0, opacity - 0.3)})`;
     ctx.font = "28px 'Inter', sans-serif";
     ctx.fillText("Create • Document • Export", w / 2, h * 0.82);
   };
@@ -176,77 +195,80 @@ const CocktailSOPPromoVideo = () => {
     const slideIn = Math.min(progress * 2, 1);
     const offsetY = (1 - slideIn) * 100;
 
-    // Section title
-    ctx.fillStyle = "rgba(212, 175, 55, 0.9)";
+    // Section title - bright colors
+    ctx.fillStyle = "#4ECDC4";
     ctx.font = "bold 48px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Step 1", w / 2, h * 0.08 - offsetY);
     ctx.font = "bold 36px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillText("Create Your Recipe", w / 2, h * 0.12 - offsetY);
 
-    // Mock editor card - taller for vertical
+    // Mock editor card - gradient border
     const cardX = w * 0.08;
     const cardY = h * 0.16 - offsetY;
     const cardW = w * 0.84;
     const cardH = h * 0.72;
 
-    // Card background
-    ctx.fillStyle = "rgba(30, 30, 40, 0.9)";
-    ctx.strokeStyle = "rgba(212, 175, 55, 0.3)";
-    ctx.lineWidth = 3;
+    // Card background with gradient border
+    ctx.fillStyle = "rgba(20, 30, 50, 0.95)";
+    ctx.strokeStyle = "#4ECDC4";
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.roundRect(cardX, cardY, cardW, cardH, 24);
     ctx.fill();
     ctx.stroke();
 
-    // Form fields animation - more spacing for vertical
+    // Form fields animation with bright colors
     const fields = [
-      { label: "Drink Name", value: demoRecipe.name },
-      { label: "Glass Type", value: demoRecipe.glass },
-      { label: "Ice", value: demoRecipe.ice },
-      { label: "Technique", value: demoRecipe.technique },
-      { label: "Garnish", value: demoRecipe.garnish },
+      { label: "Drink Name", value: demoRecipe.name, color: "#FF6B6B" },
+      { label: "Glass Type", value: demoRecipe.glass, color: "#4ECDC4" },
+      { label: "Ice", value: demoRecipe.ice, color: "#FFE66D" },
+      { label: "Technique", value: demoRecipe.technique, color: "#95E1D3" },
+      { label: "Garnish", value: demoRecipe.garnish, color: "#F38181" },
     ];
 
     fields.forEach((field, i) => {
       const fieldProgress = Math.max(0, Math.min(1, (progress * 3) - i * 0.3));
       const fieldY = cardY + 80 + i * 120;
       
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * fieldProgress})`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * fieldProgress})`;
       ctx.font = "24px 'Inter', sans-serif";
       ctx.textAlign = "left";
       ctx.fillText(field.label, cardX + 40, fieldY);
 
-      // Input field
-      ctx.fillStyle = `rgba(20, 20, 30, ${fieldProgress})`;
+      // Input field with colored border
+      ctx.fillStyle = `rgba(15, 25, 45, ${fieldProgress})`;
+      ctx.strokeStyle = field.color + Math.floor(fieldProgress * 180).toString(16).padStart(2, '0');
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.roundRect(cardX + 40, fieldY + 15, cardW - 80, 60, 12);
       ctx.fill();
+      ctx.stroke();
 
-      // Typing animation
+      // Typing animation with bright text
       const typedLength = Math.floor(field.value.length * fieldProgress);
-      ctx.fillStyle = `rgba(255, 255, 255, ${fieldProgress})`;
-      ctx.font = "28px 'Inter', sans-serif";
+      ctx.fillStyle = field.color;
+      ctx.font = "bold 28px 'Inter', sans-serif";
       ctx.fillText(field.value.substring(0, typedLength), cardX + 60, fieldY + 55);
 
-      // Cursor blink
+      // Cursor blink - bright cyan
       if (fieldProgress > 0.5 && fieldProgress < 1 && frame % 30 < 15) {
         const textWidth = ctx.measureText(field.value.substring(0, typedLength)).width;
-        ctx.fillStyle = "#d4af37";
+        ctx.fillStyle = "#4ECDC4";
         ctx.fillRect(cardX + 62 + textWidth, fieldY + 28, 3, 32);
       }
     });
   };
 
   const drawIngredients = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
-    // Section title
-    ctx.fillStyle = "rgba(212, 175, 55, 0.9)";
+    // Section title - bright magenta/pink
+    ctx.fillStyle = "#FF6B6B";
     ctx.font = "bold 48px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Step 2", w / 2, h * 0.06);
     ctx.font = "bold 36px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillText("Add Ingredients", w / 2, h * 0.10);
 
     // Ingredients table - vertical layout
@@ -255,57 +277,68 @@ const CocktailSOPPromoVideo = () => {
     const tableW = w * 0.88;
     const rowH = 100;
 
-    // Header
-    ctx.fillStyle = "rgba(212, 175, 55, 0.2)";
+    // Header with gradient
+    ctx.fillStyle = "rgba(255, 107, 107, 0.3)";
     ctx.beginPath();
     ctx.roundRect(tableX, tableY, tableW, 70, [16, 16, 0, 0]);
     ctx.fill();
 
-    ctx.fillStyle = "#d4af37";
+    ctx.fillStyle = "#FF6B6B";
     ctx.font = "bold 24px 'Inter', sans-serif";
     ctx.textAlign = "left";
     ctx.fillText("INGREDIENT", tableX + 30, tableY + 45);
+    ctx.fillStyle = "#FFE66D";
     ctx.fillText("AMOUNT", tableX + tableW * 0.55, tableY + 45);
+    ctx.fillStyle = "#4ECDC4";
     ctx.fillText("ABV", tableX + tableW * 0.82, tableY + 45);
+
+    // Row colors
+    const rowColors = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3"];
 
     // Rows
     demoRecipe.ingredients.forEach((ing, i) => {
       const rowProgress = Math.max(0, Math.min(1, (progress * 2) - i * 0.25));
       const rowY = tableY + 70 + i * rowH;
       const slideIn = rowProgress;
+      const rowColor = rowColors[i % rowColors.length];
 
-      // Row background
-      ctx.fillStyle = `rgba(30, 30, 40, ${0.8 * rowProgress})`;
+      // Row background with color accent
+      ctx.fillStyle = `rgba(20, 30, 50, ${0.9 * rowProgress})`;
       ctx.beginPath();
       ctx.roundRect(tableX + (1 - slideIn) * 50, rowY, tableW, rowH - 6, i === 3 ? [0, 0, 16, 16] : 0);
       ctx.fill();
+      
+      // Left accent bar
+      ctx.fillStyle = rowColor + Math.floor(rowProgress * 255).toString(16).padStart(2, '0');
+      ctx.fillRect(tableX + (1 - slideIn) * 50, rowY, 5, rowH - 6);
 
       // Row content
       ctx.fillStyle = `rgba(255, 255, 255, ${rowProgress})`;
       ctx.font = "28px 'Inter', sans-serif";
-      ctx.fillText(ing.name, tableX + 30 + (1 - slideIn) * 50, rowY + 60);
+      ctx.textAlign = "left";
+      ctx.fillText(ing.name, tableX + 40 + (1 - slideIn) * 50, rowY + 60);
       
-      ctx.fillStyle = `rgba(212, 175, 55, ${rowProgress})`;
+      ctx.fillStyle = rowColor;
       ctx.font = "bold 28px 'Inter', sans-serif";
       ctx.fillText(ing.amount, tableX + tableW * 0.55 + (1 - slideIn) * 50, rowY + 60);
       
-      ctx.fillStyle = `rgba(150, 150, 150, ${rowProgress})`;
+      ctx.fillStyle = `rgba(149, 225, 211, ${rowProgress})`;
       ctx.font = "24px 'Inter', sans-serif";
       ctx.fillText(ing.abv, tableX + tableW * 0.82 + (1 - slideIn) * 50, rowY + 60);
     });
 
-    // Add button animation
+    // Add button animation - bright green
     if (progress > 0.8) {
       const btnOpacity = (progress - 0.8) * 5;
-      ctx.fillStyle = `rgba(212, 175, 55, ${0.2 * btnOpacity})`;
-      ctx.strokeStyle = `rgba(212, 175, 55, ${btnOpacity})`;
+      ctx.fillStyle = `rgba(78, 205, 196, ${0.3 * btnOpacity})`;
+      ctx.strokeStyle = `rgba(78, 205, 196, ${btnOpacity})`;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(tableX + tableW / 2 - 120, tableY + 500, 240, 70, 12);
       ctx.fill();
       ctx.stroke();
       
-      ctx.fillStyle = `rgba(212, 175, 55, ${btnOpacity})`;
+      ctx.fillStyle = `rgba(78, 205, 196, ${btnOpacity})`;
       ctx.font = "bold 28px 'Inter', sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("+ Add Ingredient", tableX + tableW / 2, tableY + 545);
@@ -313,31 +346,38 @@ const CocktailSOPPromoVideo = () => {
   };
 
   const drawProfiles = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
-    // Section title
-    ctx.fillStyle = "rgba(212, 175, 55, 0.9)";
+    // Section title - bright yellow
+    ctx.fillStyle = "#FFE66D";
     ctx.font = "bold 48px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Step 3", w / 2, h * 0.06);
     ctx.font = "bold 36px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillText("Define Taste Profile", w / 2, h * 0.10);
 
-    // Radar chart visualization - centered in vertical space
+    // Radar chart visualization
     const centerX = w / 2;
     const centerY = h * 0.40;
     const radius = w * 0.35;
 
-    // Draw grid circles
+    // Draw grid circles with colorful rings
+    const ringColors = ["#FF6B6B", "#FFE66D", "#4ECDC4", "#95E1D3", "#F38181"];
     for (let i = 1; i <= 5; i++) {
-      ctx.strokeStyle = `rgba(212, 175, 55, ${0.1 + i * 0.02})`;
+      ctx.strokeStyle = ringColors[i - 1] + "40";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(centerX, centerY, (radius * i) / 5, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // Taste attributes
-    const attributes = ["Sweet", "Bitter", "Sour", "Salty", "Umami"];
+    // Taste attributes with colors
+    const attributes = [
+      { name: "Sweet", color: "#FF6B6B" },
+      { name: "Bitter", color: "#4ECDC4" },
+      { name: "Sour", color: "#FFE66D" },
+      { name: "Salty", color: "#95E1D3" },
+      { name: "Umami", color: "#F38181" }
+    ];
     const values = [6, 7, 2, 1, 2];
 
     // Draw axes and labels
@@ -346,23 +386,23 @@ const CocktailSOPPromoVideo = () => {
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
 
-      ctx.strokeStyle = "rgba(212, 175, 55, 0.3)";
+      ctx.strokeStyle = attr.color + "60";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
-      // Labels - larger for vertical
+      // Labels with bright colors
       const labelX = centerX + Math.cos(angle) * (radius + 50);
       const labelY = centerY + Math.sin(angle) * (radius + 50);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.fillStyle = attr.color;
       ctx.font = "bold 28px 'Inter', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(attr, labelX, labelY);
+      ctx.fillText(attr.name, labelX, labelY);
     });
 
-    // Draw data polygon with animation
+    // Draw data polygon with gradient fill
     const animatedProgress = Math.min(progress * 1.5, 1);
     ctx.beginPath();
     attributes.forEach((_, i) => {
@@ -374,44 +414,51 @@ const CocktailSOPPromoVideo = () => {
       else ctx.lineTo(x, y);
     });
     ctx.closePath();
-    ctx.fillStyle = "rgba(212, 175, 55, 0.3)";
+    
+    // Gradient fill for polygon
+    const polyGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+    polyGradient.addColorStop(0, "rgba(255, 107, 107, 0.5)");
+    polyGradient.addColorStop(0.5, "rgba(78, 205, 196, 0.3)");
+    polyGradient.addColorStop(1, "rgba(255, 230, 109, 0.2)");
+    ctx.fillStyle = polyGradient;
     ctx.fill();
-    ctx.strokeStyle = "#d4af37";
+    ctx.strokeStyle = "#FF6B6B";
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    // Draw data points
-    attributes.forEach((_, i) => {
+    // Draw data points with matching colors
+    attributes.forEach((attr, i) => {
       const angle = (i * 2 * Math.PI) / attributes.length - Math.PI / 2;
       const value = (values[i] / 10) * radius * animatedProgress;
       const x = centerX + Math.cos(angle) * value;
       const y = centerY + Math.sin(angle) * value;
 
       ctx.beginPath();
-      ctx.arc(x, y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = "#d4af37";
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = attr.color;
       ctx.fill();
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 3;
       ctx.stroke();
     });
 
-    // Subtitle
-    ctx.fillStyle = "rgba(180, 180, 180, 0.8)";
+    // Subtitle - bright colors
+    ctx.fillStyle = "#95E1D3";
     ctx.font = "26px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Visual flavor balance", w / 2, h * 0.75);
+    ctx.fillStyle = "#FFE66D";
     ctx.fillText("for training & consistency", w / 2, h * 0.79);
   };
 
   const drawMetrics = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
-    // Section title
-    ctx.fillStyle = "rgba(212, 175, 55, 0.9)";
+    // Section title - bright green
+    ctx.fillStyle = "#95E1D3";
     ctx.font = "bold 48px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Auto-Calculated", w / 2, h * 0.08);
     ctx.font = "bold 36px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillText("Metrics", w / 2, h * 0.12);
 
     const metrics = [
@@ -438,21 +485,21 @@ const CocktailSOPPromoVideo = () => {
       ctx.scale(scale, scale);
       ctx.translate(-(startX + cardW / 2), -(y + cardH / 2));
 
-      // Card
-      ctx.fillStyle = `rgba(30, 30, 40, ${cardProgress})`;
-      ctx.strokeStyle = `${metric.color}40`;
-      ctx.lineWidth = 3;
+      // Card with vibrant border
+      ctx.fillStyle = `rgba(15, 25, 45, ${cardProgress})`;
+      ctx.strokeStyle = metric.color;
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.roundRect(startX, y, cardW, cardH, 20);
       ctx.fill();
       ctx.stroke();
 
-      // Glow effect
+      // Colorful glow effect
       const glowGradient = ctx.createRadialGradient(
         startX, y + cardH / 2, 0,
         startX, y + cardH / 2, cardH
       );
-      glowGradient.addColorStop(0, `${metric.color}20`);
+      glowGradient.addColorStop(0, metric.color + "40");
       glowGradient.addColorStop(1, "transparent");
       ctx.fillStyle = glowGradient;
       ctx.fill();
@@ -463,14 +510,14 @@ const CocktailSOPPromoVideo = () => {
       ctx.fillText(metric.icon, startX + 25, y + 75);
 
       // Label
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.font = "22px 'Inter', sans-serif";
       ctx.fillText(metric.label, startX + 100, y + 50);
 
-      // Value
+      // Value with bright color
       ctx.fillStyle = metric.color;
-      ctx.font = "bold 36px 'Inter', sans-serif";
-      ctx.fillText(metric.value, startX + 100, y + 90);
+      ctx.font = "bold 40px 'Inter', sans-serif";
+      ctx.fillText(metric.value, startX + 100, y + 95);
 
       ctx.restore();
     });
@@ -761,22 +808,22 @@ const CocktailSOPPromoVideo = () => {
   };
 
   const drawFeatures = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
-    // Section title
-    ctx.fillStyle = "rgba(212, 175, 55, 0.9)";
+    // Section title - bright pink
+    ctx.fillStyle = "#F38181";
     ctx.font = "bold 48px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Powerful", w / 2, h * 0.06);
     ctx.font = "bold 36px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillText("Features", w / 2, h * 0.10);
 
     const features = [
-      { icon: "📝", title: "Complete Recipe Builder", desc: "Name, glass, ice, technique, garnish" },
-      { icon: "🧪", title: "Auto ABV Calculator", desc: "Precise alcohol calculations" },
-      { icon: "🎨", title: "Taste & Texture Profiles", desc: "Visual radar charts" },
-      { icon: "📊", title: "Smart Metrics", desc: "Volume, calories, pH, Brix" },
-      { icon: "📄", title: "PDF Export", desc: "Professional documentation" },
-      { icon: "📚", title: "Recipe Library", desc: "Save and organize recipes" },
+      { icon: "📝", title: "Complete Recipe Builder", desc: "Name, glass, ice, technique, garnish", color: "#FF6B6B" },
+      { icon: "🧪", title: "Auto ABV Calculator", desc: "Precise alcohol calculations", color: "#4ECDC4" },
+      { icon: "🎨", title: "Taste & Texture Profiles", desc: "Visual radar charts", color: "#FFE66D" },
+      { icon: "📊", title: "Smart Metrics", desc: "Volume, calories, pH, Brix", color: "#95E1D3" },
+      { icon: "📄", title: "PDF Export", desc: "Professional documentation", color: "#F38181" },
+      { icon: "📚", title: "Recipe Library", desc: "Save and organize recipes", color: "#A8E6CF" },
     ];
 
     // Vertical layout for 9:16
@@ -793,60 +840,73 @@ const CocktailSOPPromoVideo = () => {
       // Card with slide-in from alternating sides
       const slideX = (1 - cardProgress) * (i % 2 === 0 ? -80 : 80);
       
-      ctx.fillStyle = `rgba(30, 30, 40, ${cardProgress})`;
-      ctx.strokeStyle = `rgba(212, 175, 55, ${0.3 * cardProgress})`;
-      ctx.lineWidth = 2;
+      ctx.fillStyle = `rgba(15, 25, 45, ${cardProgress})`;
+      ctx.strokeStyle = feature.color + Math.floor(cardProgress * 255).toString(16).padStart(2, '0');
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(startX + slideX, y, cardW, cardH, 16);
       ctx.fill();
       ctx.stroke();
 
+      // Left accent
+      ctx.fillStyle = feature.color + Math.floor(cardProgress * 255).toString(16).padStart(2, '0');
+      ctx.fillRect(startX + slideX, y, 6, cardH);
+
       // Icon
       ctx.font = "48px sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText(feature.icon, startX + 25 + slideX, y + 70);
+      ctx.fillText(feature.icon, startX + 30 + slideX, y + 70);
 
-      // Title
-      ctx.fillStyle = `rgba(255, 255, 255, ${cardProgress})`;
-      ctx.font = "bold 28px 'Inter', sans-serif";
-      ctx.fillText(feature.title, startX + 100 + slideX, y + 50);
+      // Title with feature color
+      ctx.fillStyle = feature.color;
+      ctx.font = "bold 26px 'Inter', sans-serif";
+      ctx.fillText(feature.title, startX + 105 + slideX, y + 48);
 
       // Description
-      ctx.fillStyle = `rgba(150, 150, 150, ${cardProgress})`;
-      ctx.font = "22px 'Inter', sans-serif";
-      ctx.fillText(feature.desc, startX + 100 + slideX, y + 85);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * cardProgress})`;
+      ctx.font = "20px 'Inter', sans-serif";
+      ctx.fillText(feature.desc, startX + 105 + slideX, y + 82);
     });
   };
 
   const drawOutro = (ctx: CanvasRenderingContext2D, w: number, h: number, progress: number, frame: number) => {
     const opacity = Math.min(progress * 2, 1);
 
-    // Pulsing glow - larger for vertical
-    const glowSize = 350 + Math.sin(frame * 0.05) * 50;
+    // Multi-color pulsing glow
+    const glowSize = 400 + Math.sin(frame * 0.05) * 60;
     const glow = ctx.createRadialGradient(w / 2, h * 0.35, 0, w / 2, h * 0.35, glowSize);
-    glow.addColorStop(0, `rgba(212, 175, 55, ${0.4 * opacity})`);
+    glow.addColorStop(0, `rgba(255, 107, 107, ${0.4 * opacity})`);
+    glow.addColorStop(0.3, `rgba(78, 205, 196, ${0.3 * opacity})`);
+    glow.addColorStop(0.6, `rgba(255, 230, 109, ${0.2 * opacity})`);
     glow.addColorStop(1, "transparent");
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, w, h);
 
-    // Main CTA - stacked for vertical
+    // Main CTA - bright colors
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
     ctx.font = "bold 64px 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Start", w / 2, h * 0.32);
+    ctx.fillStyle = `rgba(78, 205, 196, ${opacity})`;
     ctx.fillText("Creating", w / 2, h * 0.40);
 
-    ctx.fillStyle = `rgba(212, 175, 55, ${opacity})`;
+    ctx.fillStyle = `rgba(255, 107, 107, ${opacity})`;
     ctx.font = "bold 56px 'Inter', sans-serif";
     ctx.fillText("Professional", w / 2, h * 0.52);
+    ctx.fillStyle = `rgba(255, 230, 109, ${opacity})`;
     ctx.fillText("SOPs", w / 2, h * 0.60);
 
-    // Button - larger for vertical
+    // Gradient button
     if (progress > 0.5) {
       const btnOpacity = (progress - 0.5) * 2;
       const btnY = h * 0.72;
       
-      ctx.fillStyle = `rgba(212, 175, 55, ${btnOpacity})`;
+      // Button with gradient
+      const btnGradient = ctx.createLinearGradient(w / 2 - 180, btnY, w / 2 + 180, btnY + 80);
+      btnGradient.addColorStop(0, `rgba(255, 107, 107, ${btnOpacity})`);
+      btnGradient.addColorStop(0.5, `rgba(255, 230, 109, ${btnOpacity})`);
+      btnGradient.addColorStop(1, `rgba(78, 205, 196, ${btnOpacity})`);
+      ctx.fillStyle = btnGradient;
       ctx.beginPath();
       ctx.roundRect(w / 2 - 180, btnY, 360, 80, 40);
       ctx.fill();
@@ -856,10 +916,11 @@ const CocktailSOPPromoVideo = () => {
       ctx.fillText("Try Cocktail SOP", w / 2, btnY + 52);
     }
 
-    // Branding
-    ctx.fillStyle = `rgba(100, 100, 100, ${opacity * 0.7})`;
+    // Branding with colors
+    ctx.fillStyle = `rgba(149, 225, 211, ${opacity * 0.9})`;
     ctx.font = "24px 'Inter', sans-serif";
     ctx.fillText("Built with ❤️ for", w / 2, h * 0.88);
+    ctx.fillStyle = `rgba(255, 230, 109, ${opacity * 0.9})`;
     ctx.fillText("Bartenders & Mixologists", w / 2, h * 0.92);
   };
 
