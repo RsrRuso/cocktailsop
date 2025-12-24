@@ -86,6 +86,7 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
           .from("lab_ops_tables")
           .select("id, table_number, name")
           .eq("outlet_id", outletId)
+          .eq("is_archived", false)
           .order("table_number", { ascending: true })
       ]);
 
@@ -317,29 +318,38 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
                       <div className="space-y-2">
                         <Label className="text-sm text-gray-400">Drink Categories (leave empty for all)</Label>
                         <div className="flex flex-wrap gap-2">
-                          {categories.map((cat) => {
-                            const isAssignedToOther = getCategoriesAssignedToOtherStations(station.id).includes(cat.id);
-                            const isAssignedToThis = station.category_filter?.includes(cat.id);
-                            
-                            return (
+                          {/* Show categories assigned to this station first */}
+                          {categories
+                            .filter(cat => station.category_filter?.includes(cat.id))
+                            .map((cat) => (
                               <Badge
                                 key={cat.id}
                                 variant="outline"
-                                className={`cursor-pointer transition-colors ${
-                                  isAssignedToThis
-                                    ? "bg-amber-600 text-white border-amber-600"
-                                    : isAssignedToOther
-                                    ? "bg-gray-700 text-gray-500 border-gray-600 cursor-not-allowed opacity-50"
-                                    : "text-gray-400 border-gray-600 hover:border-amber-400"
-                                }`}
+                                className="cursor-pointer transition-colors bg-amber-600 text-white border-amber-600"
+                                onClick={() => toggleCategory(station.id, cat.id)}
+                              >
+                                {cat.name} ✕
+                              </Badge>
+                            ))}
+                          {/* Show available (unassigned) categories */}
+                          {categories
+                            .filter(cat => !getCategoriesAssignedToOtherStations(station.id).includes(cat.id) && !station.category_filter?.includes(cat.id))
+                            .map((cat) => (
+                              <Badge
+                                key={cat.id}
+                                variant="outline"
+                                className="cursor-pointer transition-colors text-gray-400 border-gray-600 hover:border-amber-400"
                                 onClick={() => toggleCategory(station.id, cat.id)}
                               >
                                 {cat.name}
-                                {isAssignedToOther && " ✓"}
                               </Badge>
-                            );
-                          })}
+                            ))}
                         </div>
+                        {getCategoriesAssignedToOtherStations(station.id).length > 0 && (
+                          <p className="text-xs text-gray-500">
+                            {getCategoriesAssignedToOtherStations(station.id).length} categories assigned to other stations
+                          </p>
+                        )}
                       </div>
 
                       {/* Assigned Tables */}
@@ -348,39 +358,46 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
                           <LayoutGrid className="h-3.5 w-3.5" />
                           Assigned Tables (leave empty for all)
                         </Label>
-                        {floorTables.length === 0 ? (
+                        {floorTables.filter(t => t.table_number !== null).length === 0 ? (
                           <p className="text-xs text-gray-500">No tables configured in floor plan</p>
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
+                            {/* Show tables assigned to this station first */}
                             {floorTables
-                              .filter(t => t.table_number !== null)
-                              .map((table) => {
-                                const isAssignedToOther = getTablesAssignedToOtherStations(station.id).includes(table.table_number!);
-                                const isAssignedToThis = station.assigned_tables?.includes(table.table_number!);
-                                
-                                return (
-                                  <Badge
-                                    key={table.id}
-                                    variant="outline"
-                                    className={`cursor-pointer transition-colors text-xs px-2 py-0.5 ${
-                                      isAssignedToThis
-                                        ? "bg-blue-600 text-white border-blue-600"
-                                        : isAssignedToOther
-                                        ? "bg-gray-700 text-gray-500 border-gray-600 cursor-not-allowed opacity-50"
-                                        : "text-gray-400 border-gray-600 hover:border-blue-400"
-                                    }`}
-                                    onClick={() => toggleTable(station.id, table.table_number!)}
-                                  >
-                                    T{table.table_number}
-                                    {isAssignedToOther && " ✓"}
-                                  </Badge>
-                                );
-                              })}
+                              .filter(t => t.table_number !== null && station.assigned_tables?.includes(t.table_number!))
+                              .map((table) => (
+                                <Badge
+                                  key={table.id}
+                                  variant="outline"
+                                  className="cursor-pointer transition-colors text-xs px-2 py-0.5 bg-blue-600 text-white border-blue-600"
+                                  onClick={() => toggleTable(station.id, table.table_number!)}
+                                >
+                                  T{table.table_number} ✕
+                                </Badge>
+                              ))}
+                            {/* Show available (unassigned) tables */}
+                            {floorTables
+                              .filter(t => t.table_number !== null && !getTablesAssignedToOtherStations(station.id).includes(t.table_number!) && !station.assigned_tables?.includes(t.table_number!))
+                              .map((table) => (
+                                <Badge
+                                  key={table.id}
+                                  variant="outline"
+                                  className="cursor-pointer transition-colors text-xs px-2 py-0.5 text-gray-400 border-gray-600 hover:border-blue-400"
+                                  onClick={() => toggleTable(station.id, table.table_number!)}
+                                >
+                                  T{table.table_number}
+                                </Badge>
+                              ))}
                           </div>
                         )}
                         {station.assigned_tables?.length > 0 && (
                           <p className="text-xs text-blue-400">
                             Only orders from tables {station.assigned_tables.join(", ")} will route here
+                          </p>
+                        )}
+                        {getTablesAssignedToOtherStations(station.id).length > 0 && (
+                          <p className="text-xs text-gray-500">
+                            {getTablesAssignedToOtherStations(station.id).length} tables assigned to other stations
                           </p>
                         )}
                       </div>
