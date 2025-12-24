@@ -51,11 +51,10 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
 
   // PDF-safe currency formatter (avoids special Unicode characters that break in PDFs)
   const formatCurrencyPDF = (amount: number): string => {
-    const formatted = amount.toLocaleString('en-US', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
-    });
-    return 'AED ' + formatted;
+    // Use simple number formatting without locale to avoid any special characters
+    const parts = amount.toFixed(2).split('.');
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return 'AED ' + intPart + '.' + parts[1];
   };
 
   // Download helpers
