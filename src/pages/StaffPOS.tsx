@@ -744,46 +744,76 @@ export default function StaffPOS() {
 
   // Prepare order data for printing
   const prepareOrderForPrint = (order: any): OrderData => {
-    const tableName = order.lab_ops_tables?.name || "Table";
-    const tableNumber = order.lab_ops_tables?.table_number || null;
-    const serverName = order.server?.full_name || staff?.full_name || "Staff";
+    console.log('Preparing order for print:', order);
     
-    const items = (order.lab_ops_order_items || []).map((item: any) => ({
-      id: item.id,
-      name: item.lab_ops_menu_items?.name || "Item",
-      qty: item.qty,
-      price: item.unit_price,
+    if (!order) {
+      throw new Error('No order provided');
+    }
+    
+    const tableName = order.lab_ops_tables?.name || order.tableName || "Table";
+    const tableNumber = order.lab_ops_tables?.table_number || order.tableNumber || null;
+    const serverName = order.server?.full_name || order.serverName || staff?.full_name || "Staff";
+    
+    // Handle items from different sources
+    const rawItems = order.lab_ops_order_items || order.items || [];
+    const items = rawItems.map((item: any) => ({
+      id: item.id || `item-${Math.random()}`,
+      name: item.lab_ops_menu_items?.name || item.name || "Item",
+      qty: item.qty || 1,
+      price: item.unit_price || item.price || 0,
       note: item.note || undefined,
-      category: item.lab_ops_menu_items?.lab_ops_categories?.name,
-      categoryType: item.lab_ops_menu_items?.lab_ops_categories?.type as 'food' | 'drink' | undefined,
+      category: item.lab_ops_menu_items?.lab_ops_categories?.name || item.category,
+      categoryType: (item.lab_ops_menu_items?.lab_ops_categories?.type || item.categoryType) as 'food' | 'drink' | undefined,
     }));
 
     const subtotal = items.reduce((sum: number, i: any) => sum + (i.qty * i.price), 0);
     
-    return {
-      id: order.id,
+    const printData: OrderData = {
+      id: order.id || `order-${Date.now()}`,
       tableName,
       tableNumber,
       serverName,
       covers: order.covers || 1,
-      createdAt: order.created_at,
+      createdAt: order.created_at || order.createdAt || new Date().toISOString(),
       items,
       subtotal,
-      taxTotal: order.tax_total || 0,
-      serviceCharge: order.service_charge || 0,
-      discountTotal: order.discount_total || 0,
-      total: order.total_amount || subtotal,
-      paymentMethod: order.lab_ops_payments?.[0]?.payment_method,
-      paidAt: order.closed_at,
-      outletName: outlet?.name,
+      taxTotal: order.tax_total || order.taxTotal || 0,
+      serviceCharge: order.service_charge || order.serviceCharge || 0,
+      discountTotal: order.discount_total || order.discountTotal || 0,
+      total: order.total_amount || order.total || subtotal,
+      paymentMethod: order.lab_ops_payments?.[0]?.payment_method || order.paymentMethod,
+      paidAt: order.closed_at || order.paidAt,
+      outletName: outlet?.name || order.outletName,
     };
+    
+    console.log('Prepared print data result:', printData);
+    return printData;
   };
 
   const openPrintDialog = (order: any, printType?: 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined') => {
-    const printData = prepareOrderForPrint(order);
-    setOrderToPrint(printData);
-    setDefaultPrintType(printType || 'precheck');
-    setPrintDialogOpen(true);
+    console.log('Opening print dialog:', { order, printType });
+    try {
+      const printData = prepareOrderForPrint(order);
+      console.log('Prepared print data:', printData);
+      if (!printData || !printData.items || printData.items.length === 0) {
+        toast({ 
+          title: "No items to print", 
+          description: "This order has no items to display",
+          variant: "destructive"
+        });
+        return;
+      }
+      setOrderToPrint(printData);
+      setDefaultPrintType(printType || 'precheck');
+      setPrintDialogOpen(true);
+    } catch (error: any) {
+      console.error('Error preparing print data:', error);
+      toast({ 
+        title: "Print error", 
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleLogout = () => {
