@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, subDays, subMonths, startOfWeek, endOfWeek } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, subDays, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
 interface PurchaseOrder {
   id: string;
@@ -22,7 +22,39 @@ interface PurchaseOrderItem {
   price_total: number;
 }
 
-interface AnalyticsSummary {
+export interface ItemDateOccurrence {
+  date: string;
+  quantity: number;
+  amount: number;
+  order_number: string | null;
+  supplier: string | null;
+}
+
+export interface DateItemDetail {
+  item_name: string;
+  item_code: string;
+  quantity: number;
+  amount: number;
+  unit?: string;
+  category: 'market' | 'material' | 'unknown';
+}
+
+export interface ItemSummary {
+  item_name: string;
+  item_code: string;
+  totalQuantity: number;
+  totalAmount: number;
+  avgPrice: number;
+  orderCount: number;
+  purchaseDays: number;
+  unit?: string;
+  category: 'market' | 'material' | 'unknown';
+  dateOccurrences: ItemDateOccurrence[];
+  firstPurchaseDate: string | null;
+  lastPurchaseDate: string | null;
+}
+
+export interface AnalyticsSummary {
   totalOrders: number;
   totalAmount: number;
   avgOrderValue: number;
@@ -30,24 +62,13 @@ interface AnalyticsSummary {
   uniqueItems: number;
   marketItems: { count: number; amount: number; items: ItemSummary[] };
   materialItems: { count: number; amount: number; items: ItemSummary[] };
-  ordersByDate: { date: string; count: number; amount: number }[];
+  ordersByDate: { date: string; count: number; amount: number; items: DateItemDetail[] }[];
   ordersBySupplier: { supplier: string; count: number; amount: number }[];
   topItems: ItemSummary[];
   dailyAverage: number;
   weeklyTrend: number;
   monthlyComparison: { current: number; previous: number; change: number };
   itemsByCategory: { category: string; items: ItemSummary[] }[];
-}
-
-interface ItemSummary {
-  item_name: string;
-  item_code: string;
-  totalQuantity: number;
-  totalAmount: number;
-  avgPrice: number;
-  orderCount: number;
-  unit?: string;
-  category: 'market' | 'material' | 'unknown';
 }
 
 // Keywords to identify market (fresh produce) vs material items
@@ -91,24 +112,57 @@ export const usePurchaseOrderAnalytics = (
     const safeOrders = orders || [];
     const safeItems = items || [];
     
+    // Create order lookup map
+    const orderMap = new Map<string, PurchaseOrder>();
+    safeOrders.forEach(order => {
+      orderMap.set(order.id, order);
+    });
+    
     // Basic metrics
     const totalOrders = safeOrders.length;
     const totalAmount = safeOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const avgOrderValue = totalOrders > 0 ? totalAmount / totalOrders : 0;
     const totalItems = safeItems.reduce((sum, i) => sum + Number(i.quantity || 0), 0);
     
-    // Group items by name for analysis
+    // Group items by name for analysis - include date tracking
     const itemMap = new Map<string, ItemSummary>();
     safeItems.forEach(item => {
       const key = item.item_name.toLowerCase().trim();
       const existing = itemMap.get(key);
       const category = categorizeItem(item.item_name);
       
+      // Get order date for this item
+      const order = item.purchase_order_id ? orderMap.get(item.purchase_order_id) : null;
+      const orderDate = order?.order_date?.split('T')[0] || null;
+      
+      const dateOccurrence: ItemDateOccurrence = {
+        date: orderDate || 'Unknown',
+        quantity: Number(item.quantity || 0),
+        amount: Number(item.price_total || 0),
+        order_number: order?.order_number || null,
+        supplier: order?.supplier_name || null
+      };
+      
       if (existing) {
         existing.totalQuantity += Number(item.quantity || 0);
         existing.totalAmount += Number(item.price_total || 0);
         existing.orderCount += 1;
         existing.avgPrice = existing.totalAmount / existing.totalQuantity;
+        existing.dateOccurrences.push(dateOccurrence);
+        
+        // Update purchase days count
+        const uniqueDates = new Set(existing.dateOccurrences.map(d => d.date));
+        existing.purchaseDays = uniqueDates.size;
+        
+        // Update first/last purchase dates
+        if (orderDate) {
+          if (!existing.firstPurchaseDate || orderDate < existing.firstPurchaseDate) {
+            existing.firstPurchaseDate = orderDate;
+          }
+          if (!existing.lastPurchaseDate || orderDate > existing.lastPurchaseDate) {
+            existing.lastPurchaseDate = orderDate;
+          }
+        }
       } else {
         itemMap.set(key, {
           item_name: item.item_name,
@@ -117,8 +171,12 @@ export const usePurchaseOrderAnalytics = (
           totalAmount: Number(item.price_total || 0),
           avgPrice: Number(item.price_per_unit || 0),
           orderCount: 1,
+          purchaseDays: orderDate ? 1 : 0,
           unit: item.unit,
-          category
+          category,
+          dateOccurrences: [dateOccurrence],
+          firstPurchaseDate: orderDate,
+          lastPurchaseDate: orderDate
         });
       }
     });
@@ -147,19 +205,40 @@ export const usePurchaseOrderAnalytics = (
       .sort((a, b) => b.totalAmount - a.totalAmount)
       .slice(0, 20);
     
-    // Orders by date
-    const ordersByDateMap = new Map<string, { count: number; amount: number }>();
+    // Orders by date with item details
+    const ordersByDateMap = new Map<string, { count: number; amount: number; items: DateItemDetail[] }>();
+    
+    // First, process orders
     safeOrders.forEach(order => {
       const dateKey = order.order_date.split('T')[0];
-      const existing = ordersByDateMap.get(dateKey);
-      if (existing) {
-        existing.count += 1;
-        existing.amount += Number(order.total_amount || 0);
-      } else {
+      if (!ordersByDateMap.has(dateKey)) {
         ordersByDateMap.set(dateKey, {
-          count: 1,
-          amount: Number(order.total_amount || 0)
+          count: 0,
+          amount: 0,
+          items: []
         });
+      }
+      const existing = ordersByDateMap.get(dateKey)!;
+      existing.count += 1;
+      existing.amount += Number(order.total_amount || 0);
+    });
+    
+    // Then, add item details per date
+    safeItems.forEach(item => {
+      const order = item.purchase_order_id ? orderMap.get(item.purchase_order_id) : null;
+      if (order) {
+        const dateKey = order.order_date.split('T')[0];
+        const dateData = ordersByDateMap.get(dateKey);
+        if (dateData) {
+          dateData.items.push({
+            item_name: item.item_name,
+            item_code: item.item_code || '',
+            quantity: Number(item.quantity || 0),
+            amount: Number(item.price_total || 0),
+            unit: item.unit,
+            category: categorizeItem(item.item_name)
+          });
+        }
       }
     });
     
