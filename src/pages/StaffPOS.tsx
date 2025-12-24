@@ -811,21 +811,20 @@ export default function StaffPOS() {
         (globalThis.crypto?.randomUUID?.() as string | undefined) ||
         `job-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-      sessionStorage.setItem(
-        `pos_print_job:${jobId}`,
-        JSON.stringify({
-          order: printData,
-          type: printType || "precheck",
-          createdAt: Date.now(),
-        })
-      );
+      const storageKey = `pos_print_job:${jobId}`;
+      const payload = JSON.stringify({
+        order: printData,
+        type: printType || "precheck",
+        createdAt: Date.now(),
+      });
+
+      // Use sessionStorage for same-tab flows, and localStorage as a fallback for
+      // environments that open the print page in a new tab/window.
+      sessionStorage.setItem(storageKey, payload);
+      localStorage.setItem(storageKey, payload);
 
       const url = `/staff-pos/print?job=${encodeURIComponent(jobId)}`;
-      const newTab = window.open(url, "_blank", "noopener,noreferrer");
-      if (!newTab) {
-        // Popup blocked → fallback to same-tab navigation
-        navigate(url);
-      }
+      navigate(url);
     } catch (error: any) {
       console.error("Error preparing print job:", error);
       toast({
