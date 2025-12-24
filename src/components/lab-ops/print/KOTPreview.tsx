@@ -10,8 +10,10 @@ const formatPrice = (amount: number) => `$${amount.toFixed(2)}`;
 const getOrderRef = (orderId: string) => orderId.replace(/-/g, '').toUpperCase().substring(0, 8);
 
 export function KOTPreview({ order, type }: KOTPreviewProps) {
-  const foodItems = order.items.filter(item => item.categoryType === 'food' || !item.categoryType);
-  const drinkItems = order.items.filter(item => item.categoryType === 'drink');
+  // Handle empty or missing items array
+  const items = order?.items || [];
+  const foodItems = items.filter(item => item.categoryType === 'food' || !item.categoryType);
+  const drinkItems = items.filter(item => item.categoryType === 'drink');
 
   // Kitchen KOT Preview
   if (type === 'kitchen') {
@@ -132,28 +134,32 @@ export function KOTPreview({ order, type }: KOTPreviewProps) {
         <div className="border-t-2 border-black my-3" />
         
         <div className="space-y-2">
-          {order.items.map((item, idx) => {
-            const itemTotal = item.qty * item.price;
-            return (
-              <div key={idx}>
-                {item.qty > 1 ? (
-                  <>
-                    <div>{item.name}</div>
-                    <div className="flex justify-between text-gray-600">
-                      <span className="ml-2">{item.qty} @ {formatPrice(item.price)}</span>
+          {items.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">No items in order</div>
+          ) : (
+            items.map((item, idx) => {
+              const itemTotal = item.qty * item.price;
+              return (
+                <div key={idx}>
+                  {item.qty > 1 ? (
+                    <>
+                      <div>{item.name}</div>
+                      <div className="flex justify-between text-gray-600">
+                        <span className="ml-2">{item.qty} @ {formatPrice(item.price)}</span>
+                        <span>{formatPrice(itemTotal)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span>{item.name}</span>
                       <span>{formatPrice(itemTotal)}</span>
                     </div>
-                  </>
-                ) : (
-                  <div className="flex justify-between">
-                    <span>{item.name}</span>
-                    <span>{formatPrice(itemTotal)}</span>
-                  </div>
-                )}
-                {item.note && <div className="text-gray-500 ml-2">- {item.note}</div>}
-              </div>
-            );
-          })}
+                  )}
+                  {item.note && <div className="text-gray-500 ml-2">- {item.note}</div>}
+                </div>
+              );
+            })
+          )}
         </div>
         
         <div className="border-t border-dashed border-gray-400 my-3" />
@@ -220,27 +226,31 @@ export function KOTPreview({ order, type }: KOTPreviewProps) {
         <div className="border-t-2 border-black my-3" />
         
         <div className="space-y-2">
-          {order.items.map((item, idx) => {
-            const itemTotal = item.qty * item.price;
-            return (
-              <div key={idx}>
-                {item.qty > 1 ? (
-                  <>
-                    <div>{item.name}</div>
-                    <div className="flex justify-between text-gray-600">
-                      <span className="ml-2">{item.qty} @ {formatPrice(item.price)}</span>
+          {items.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">No items in order</div>
+          ) : (
+            items.map((item, idx) => {
+              const itemTotal = item.qty * item.price;
+              return (
+                <div key={idx}>
+                  {item.qty > 1 ? (
+                    <>
+                      <div>{item.name}</div>
+                      <div className="flex justify-between text-gray-600">
+                        <span className="ml-2">{item.qty} @ {formatPrice(item.price)}</span>
+                        <span>{formatPrice(itemTotal)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span>{item.name}</span>
                       <span>{formatPrice(itemTotal)}</span>
                     </div>
-                  </>
-                ) : (
-                  <div className="flex justify-between">
-                    <span>{item.name}</span>
-                    <span>{formatPrice(itemTotal)}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
         
         <div className="border-t border-dashed border-gray-400 my-3" />
@@ -357,7 +367,7 @@ export function KOTPreview({ order, type }: KOTPreviewProps) {
       
       <div className="border-t-2 border-black my-3" />
       <div className="text-center font-bold">
-        TOTAL ITEMS: {order.items.reduce((sum, i) => sum + i.qty, 0)}
+        TOTAL ITEMS: {items.reduce((sum, i) => sum + i.qty, 0)}
       </div>
       <div className="border-t border-dashed border-gray-400 my-2" />
       <div className="text-center text-xs text-gray-500">
