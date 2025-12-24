@@ -942,6 +942,33 @@ export default function StaffPOS() {
     }
   };
 
+  const handlePrecheckPrint = (order: any) => {
+    try {
+      const printData = prepareOrderForPrint(order);
+      if (!printData?.items?.length) {
+        toast({
+          title: "No items to print",
+          description: "This order has no items to print.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // System print from the tap (works on iPhone/iPad via AirPrint; also works on desktop)
+      triggerSystemPrint({ order: printData, type: "precheck" });
+
+      // Also open the dialog as backup/preview
+      void openPrintDialog(order, "precheck");
+    } catch (error: any) {
+      console.error("Error preparing pre-check print:", error);
+      toast({
+        title: "Print error",
+        description: error?.message || "Failed to print pre-check",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLogout = () => {
     cleanupPresence();
     setStaff(null);
