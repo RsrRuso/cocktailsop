@@ -11,6 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
+import { ReceivingAnalytics } from "@/components/receiving/ReceivingAnalytics";
+import { CombinedProcurementAnalytics } from "@/components/analytics/CombinedProcurementAnalytics";
+import { useReceivingAnalytics } from "@/hooks/useReceivingAnalytics";
+import { usePurchaseOrderAnalytics } from "@/hooks/usePurchaseOrderAnalytics";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -127,7 +131,7 @@ const POReceivedItems = () => {
   const [varianceReport, setVarianceReport] = useState<VarianceReport | null>(null);
   const [showVarianceDialog, setShowVarianceDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
+  const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices' | 'analytics'>('recent');
   const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>(() => {
@@ -153,7 +157,7 @@ const POReceivedItems = () => {
   // Effective workspace: staff workspace takes precedence
   const effectiveWorkspaceId = staffMode ? staffWorkspaceId : selectedWorkspaceId;
   
-  // Hook must be called after state declaration
+// Hook must be called after state declaration
   const { receivedItems, receivedSummary, receivedTotals, isLoadingReceived, addReceivedItem } = usePurchaseOrderMaster(effectiveWorkspaceId);
   
   const handleWorkspaceChange = (workspaceId: string | null) => {
@@ -204,6 +208,9 @@ const POReceivedItems = () => {
     },
     enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
+
+  // Analytics hooks - must be after queries
+  const receivingAnalytics = useReceivingAnalytics(recentReceived || [], receivedItems || []);
 
   // Fetch all purchase orders to compare with received - workspace aware
   const { data: allPurchaseOrders } = useQuery({
