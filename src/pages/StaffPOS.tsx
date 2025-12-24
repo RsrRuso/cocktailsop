@@ -134,6 +134,7 @@ export default function StaffPOS() {
   // Print dialog state
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [orderToPrint, setOrderToPrint] = useState<OrderData | null>(null);
+  const [defaultPrintType, setDefaultPrintType] = useState<'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined'>('precheck');
 
   useEffect(() => {
     const initSession = async () => {
@@ -719,6 +720,17 @@ export default function StaffPOS() {
       }
 
       toast({ title: "Order closed!", description: `${formatPrice(subtotal)} recorded in sales` });
+      
+      // Auto-open closing check print dialog
+      const closedOrder = {
+        ...order,
+        status: "closed",
+        closed_at: new Date().toISOString(),
+        total_amount: subtotal,
+        lab_ops_payments: [{ payment_method: paymentMethod, amount: subtotal }]
+      };
+      openPrintDialog(closedOrder, 'closing');
+      
       setSelectedOrder(null);
       fetchOpenOrders(outlet.id);
       fetchTables(outlet.id);
@@ -767,9 +779,10 @@ export default function StaffPOS() {
     };
   };
 
-  const openPrintDialog = (order: any) => {
+  const openPrintDialog = (order: any, printType?: 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined') => {
     const printData = prepareOrderForPrint(order);
     setOrderToPrint(printData);
+    setDefaultPrintType(printType || 'precheck');
     setPrintDialogOpen(true);
   };
 
@@ -1297,17 +1310,19 @@ export default function StaffPOS() {
                   </div>
                 </div>
 
-                {/* Print Button - Always visible */}
-                <div className="border-t pt-3">
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-12 text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
-                    onClick={() => openPrintDialog(selectedOrder)}
-                  >
-                    <Printer className="w-5 h-5 mr-2" />
-                    Print KOT / Check
-                  </Button>
-                </div>
+                {/* Print Pre-Check Button - only for open orders */}
+                {selectedOrder.status !== "closed" && (
+                  <div className="border-t pt-3">
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-12 text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
+                      onClick={() => openPrintDialog(selectedOrder, 'precheck')}
+                    >
+                      <Printer className="w-5 h-5 mr-2" />
+                      Pre Check
+                    </Button>
+                  </div>
+                )}
 
                 {/* Show payment info for closed orders */}
                 {selectedOrder.status === "closed" && selectedOrder.lab_ops_payments?.[0] && (
@@ -2181,6 +2196,7 @@ export default function StaffPOS() {
         open={printDialogOpen}
         onOpenChange={setPrintDialogOpen}
         order={orderToPrint}
+        defaultType={defaultPrintType}
         onPrintComplete={() => setPrintDialogOpen(false)}
       />
     </div>
