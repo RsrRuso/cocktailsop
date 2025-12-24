@@ -730,6 +730,49 @@ export default function StaffPOS() {
     }
   };
 
+  // Prepare order data for printing
+  const prepareOrderForPrint = (order: any): OrderData => {
+    const tableName = order.lab_ops_tables?.name || "Table";
+    const tableNumber = order.lab_ops_tables?.table_number || null;
+    const serverName = order.server?.full_name || staff?.full_name || "Staff";
+    
+    const items = (order.lab_ops_order_items || []).map((item: any) => ({
+      id: item.id,
+      name: item.lab_ops_menu_items?.name || "Item",
+      qty: item.qty,
+      price: item.unit_price,
+      note: item.note || undefined,
+      category: item.lab_ops_menu_items?.lab_ops_categories?.name,
+      categoryType: item.lab_ops_menu_items?.lab_ops_categories?.type as 'food' | 'drink' | undefined,
+    }));
+
+    const subtotal = items.reduce((sum: number, i: any) => sum + (i.qty * i.price), 0);
+    
+    return {
+      id: order.id,
+      tableName,
+      tableNumber,
+      serverName,
+      covers: order.covers || 1,
+      createdAt: order.created_at,
+      items,
+      subtotal,
+      taxTotal: order.tax_total || 0,
+      serviceCharge: order.service_charge || 0,
+      discountTotal: order.discount_total || 0,
+      total: order.total_amount || subtotal,
+      paymentMethod: order.lab_ops_payments?.[0]?.payment_method,
+      paidAt: order.closed_at,
+      outletName: outlet?.name,
+    };
+  };
+
+  const openPrintDialog = (order: any) => {
+    const printData = prepareOrderForPrint(order);
+    setOrderToPrint(printData);
+    setPrintDialogOpen(true);
+  };
+
   const handleLogout = () => {
     cleanupPresence();
     setStaff(null);
@@ -1253,6 +1296,16 @@ export default function StaffPOS() {
                     <span>{formatPrice(selectedOrder.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0) || 0)}</span>
                   </div>
                 </div>
+
+                {/* Print Button - Always visible */}
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => openPrintDialog(selectedOrder)}
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print KOT / Check
+                </Button>
 
                 {/* Show payment info for closed orders */}
                 {selectedOrder.status === "closed" && selectedOrder.lab_ops_payments?.[0] && (
@@ -2120,6 +2173,14 @@ export default function StaffPOS() {
           </p>
         </DialogContent>
       </Dialog>
+      
+      {/* Print Dialog */}
+      <PrintDialog 
+        open={printDialogOpen}
+        onOpenChange={setPrintDialogOpen}
+        order={orderToPrint}
+        onPrintComplete={() => setPrintDialogOpen(false)}
+      />
     </div>
   );
 }
