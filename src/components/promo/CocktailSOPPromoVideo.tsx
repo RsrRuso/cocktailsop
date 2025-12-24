@@ -60,24 +60,23 @@ const CocktailSOPPromoVideo = () => {
     const currentScene = scenes.find(s => frame >= s.start && frame < s.end) || scenes[0];
     const sceneProgress = (frame - currentScene.start) / (currentScene.end - currentScene.start);
 
-    // Draw vibrant background gradient - Pink, Green, Light Blue
+    // Draw vibrant background gradient
     const gradient = ctx.createLinearGradient(0, 0, w, h);
-    gradient.addColorStop(0, "#2d0a3e");      // Deep magenta
-    gradient.addColorStop(0.25, "#1a3a2e");   // Deep teal green
-    gradient.addColorStop(0.5, "#0a3a4e");    // Deep cyan
-    gradient.addColorStop(0.75, "#1a2a4e");   // Deep blue
-    gradient.addColorStop(1, "#3a0a3e");      // Deep pink
+    gradient.addColorStop(0, "#1a0a2e");
+    gradient.addColorStop(0.3, "#2d1b4e");
+    gradient.addColorStop(0.6, "#1e3a5f");
+    gradient.addColorStop(1, "#0d2137");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Animated colorful particles - Pink, Green, Light Blue theme
-    const particleColors = ["#FF69B4", "#00FF7F", "#87CEEB", "#FF1493", "#00FA9A", "#00BFFF", "#FFB6C1", "#98FB98", "#B0E0E6"];
-    for (let i = 0; i < 50; i++) {
+    // Animated colorful particles
+    const particleColors = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3", "#F38181", "#A8E6CF", "#FF8B94"];
+    for (let i = 0; i < 40; i++) {
       const x = (Math.sin(frame * 0.01 + i * 0.5) + 1) * w * 0.5;
       const y = ((frame * 0.5 + i * 50) % (h + 100)) - 50;
-      const size = 4 + Math.sin(i) * 3;
+      const size = 3 + Math.sin(i) * 2;
       const color = particleColors[i % particleColors.length];
-      ctx.fillStyle = color + Math.floor((0.4 + Math.sin(frame * 0.05 + i) * 0.3) * 255).toString(16).padStart(2, '0');
+      ctx.fillStyle = color + Math.floor((0.3 + Math.sin(frame * 0.05 + i) * 0.2) * 255).toString(16).padStart(2, '0');
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
@@ -1145,7 +1144,7 @@ const CocktailSOPPromoVideo = () => {
           <span className="text-xs text-muted-foreground">30 sec • 9:16 Reel</span>
         </div>
 
-        <div className="relative rounded-lg overflow-hidden bg-black mx-auto" style={{ aspectRatio: '9/16', maxHeight: '85vh', width: '100%', maxWidth: '480px' }}>
+        <div className="relative rounded-lg overflow-hidden bg-black mx-auto" style={{ aspectRatio: '9/16', maxHeight: '70vh' }}>
           <canvas
             ref={canvasRef}
             width={1080}
