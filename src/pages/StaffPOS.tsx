@@ -17,9 +17,10 @@ import {
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
-  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X, BarChart3, UserPlus
+  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar, Flame, X, BarChart3, UserPlus, Printer
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PrintDialog, OrderData } from "@/components/lab-ops/print";
 
 interface OnlineTeamMember {
   id: string;
@@ -129,6 +130,10 @@ export default function StaffPOS() {
   const [tableToAssign, setTableToAssign] = useState<Table | null>(null);
   const [outletStaffList, setOutletStaffList] = useState<StaffMember[]>([]);
   const [assigningStaff, setAssigningStaff] = useState(false);
+  
+  // Print dialog state
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [orderToPrint, setOrderToPrint] = useState<OrderData | null>(null);
 
   useEffect(() => {
     const initSession = async () => {
