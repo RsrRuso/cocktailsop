@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -54,6 +55,7 @@ interface Outlet {
 }
 
 export default function LabOps() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
@@ -499,7 +501,7 @@ export default function LabOps() {
                 variant="outline"
                 size="sm"
                 className="h-9 rounded-lg px-2 sm:px-3 gap-1.5"
-                onClick={() => (window.location.href = "/lab-ops-promo")}
+                onClick={() => navigate("/lab-ops-promo")}
               >
                 <Video className="h-4 w-4" />
                 <span className="hidden sm:inline">Promo</span>
@@ -563,7 +565,7 @@ export default function LabOps() {
               <Button
                 size="sm"
                 variant="default"
-                onClick={() => window.location.href = '/staff-pos'}
+                onClick={() => navigate('/staff-pos')}
                 className="h-9 px-3 rounded-lg bg-primary shrink-0 active:scale-95 transition-transform text-xs"
               >
                 <Smartphone className="h-3.5 w-3.5 mr-1.5" />
@@ -573,7 +575,7 @@ export default function LabOps() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => window.location.href = '/staff-qr-access'}
+                onClick={() => navigate('/staff-qr-access')}
                 className="h-9 px-3 rounded-lg border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
                 <QrCode className="h-3.5 w-3.5 mr-1.5" />
@@ -583,7 +585,7 @@ export default function LabOps() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => window.location.href = '/bar-kds'}
+                onClick={() => navigate('/bar-kds')}
                 className="h-9 px-3 rounded-lg border-amber-500/50 text-amber-500 hover:bg-amber-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
                 <Wine className="h-3.5 w-3.5 mr-1.5" />
@@ -593,7 +595,7 @@ export default function LabOps() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => window.location.href = '/kitchen-kds'}
+                onClick={() => navigate('/kitchen-kds')}
                 className="h-9 px-3 rounded-lg border-orange-500/50 text-orange-500 hover:bg-orange-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
                 <ChefHat className="h-3.5 w-3.5 mr-1.5" />
@@ -3025,7 +3027,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                     variant="link" 
                                     size="sm" 
                                     className="h-auto p-0 text-xs ml-1"
-                                    onClick={() => window.location.href = '/po-received-items'}
+                                    onClick={() => navigate('/po-received-items')}
                                   >
                                     View →
                                   </Button>
