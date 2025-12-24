@@ -33,10 +33,16 @@ type PrintType = 'kitchen' | 'bar' | 'precheck' | 'closing' | 'combined';
 export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaultType = 'precheck' }: PrintDialogProps) {
   const [selectedType, setSelectedType] = useState<PrintType>(defaultType);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [autoPrintAttempted, setAutoPrintAttempted] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   
   const { status, connect, disconnect, printRaw, createReceiptData } = useBluetoothPrinter();
+
+  // Update selected type when dialog opens with a new defaultType
+  useEffect(() => {
+    if (open) {
+      setSelectedType(defaultType);
+    }
+  }, [open, defaultType]);
 
   // Generate receipt lines for the current order/type
   const generateLines = useCallback((): string[] => {
@@ -57,7 +63,7 @@ export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaul
     }
   }, [order, selectedType]);
 
-  // Core Bluetooth print logic (no toast on success as caller handles)
+  // Core Bluetooth print logic
   const doPrint = useCallback(async (): Promise<boolean> => {
     const lines = generateLines();
     if (lines.length === 0) {
@@ -79,60 +85,6 @@ export function PrintDialog({ open, onOpenChange, order, onPrintComplete, defaul
     const data = createReceiptData(receiptLines);
     return printRaw(data);
   }, [generateLines, selectedType, createReceiptData, printRaw]);
-
-  // Auto-print when dialog opens (with auto-reconnect)
-  useEffect(() => {
-    if (!open || !order || autoPrintAttempted) return;
-
-    const autoPrint = async () => {
-      setAutoPrintAttempted(true);
-      setIsPrinting(true);
-
-      try {
-        // If not connected, attempt auto-reconnect
-        let connected = status.isConnected;
-        if (!connected) {
-          connected = await connect();
-        }
-
-        if (connected) {
-          const success = await doPrint();
-          if (success) {
-            toast({ title: 'Printed successfully!' });
-            onPrintComplete?.();
-          }
-        } else {
-          // Bluetooth unavailable / user cancelled – fallback to browser print
-          handleBrowserPrint();
-        }
-      } catch (err) {
-        console.error('Auto-print error', err);
-        // Fallback to browser print
-        handleBrowserPrint();
-      } finally {
-        setIsPrinting(false);
-      }
-    };
-
-    // Small delay to let the dialog render
-    const t = setTimeout(autoPrint, 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, order]);
-
-  // Reset auto-print flag when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setAutoPrintAttempted(false);
-    }
-  }, [open]);
-
-  // Update selected type when dialog opens with a new defaultType
-  useEffect(() => {
-    if (open) {
-      setSelectedType(defaultType);
-    }
-  }, [open, defaultType]);
 
   if (!order) return null;
 
