@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Eye, Save, Download, Library } from "lucide-react";
+import { ArrowLeft, Edit, Eye, Save, Download, Library, Play } from "lucide-react";
 import RecipeEditor from "@/components/sop/RecipeEditor";
 import RecipeView from "@/components/sop/RecipeView";
 import { CocktailRecipe } from "@/types/cocktail-recipe";
@@ -198,9 +198,14 @@ const CocktailSOP = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-sm font-semibold">Cocktail SOP</h1>
-            <Button variant="ghost" size="icon" onClick={() => navigate("/cocktail-sop-library")}>
-              <Library className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/cocktail-sop-promo")} title="Watch Promo">
+                <Play className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/cocktail-sop-library")}>
+                <Library className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
