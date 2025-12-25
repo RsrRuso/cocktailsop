@@ -15,7 +15,7 @@ import { ReceivingAnalytics } from "@/components/receiving/ReceivingAnalytics";
 import { CombinedProcurementAnalytics } from "@/components/analytics/CombinedProcurementAnalytics";
 import { useReceivingAnalytics } from "@/hooks/useReceivingAnalytics";
 import { usePurchaseOrderAnalytics } from "@/hooks/usePurchaseOrderAnalytics";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -264,24 +264,38 @@ const POReceivedItems = () => {
     enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
 
-  // Calculate PO completion stats by matching doc codes - moved up for filtering
-  const receivedDocCodesSet = new Set<string>();
-  recentReceived?.filter(r => r.document_number).forEach(r => {
-    receivedDocCodesSet.add(normalizeItemCode(r.document_number || ''));
-  });
-
   // Filter PO items to only include those from POs that have been received
   // This excludes pending POs (confirmed but not yet received) from variance calculation
-  const receivedPurchaseOrders = (allPurchaseOrders || []).filter((po: any) => {
-    const poCode = normalizeItemCode(po.order_number || '');
-    return receivedDocCodesSet.has(poCode);
-  });
+  const { receivedPurchaseOrders, receivedPurchaseOrderItems } = useMemo(() => {
+    if (!recentReceived || !allPurchaseOrders || !allPurchaseOrderItems) {
+      return { receivedPurchaseOrders: [], receivedPurchaseOrderItems: [] };
+    }
 
-  const receivedPurchaseOrderIds = new Set(receivedPurchaseOrders.map((po: any) => po.id));
-  
-  const receivedPurchaseOrderItems = (allPurchaseOrderItems || []).filter((item: any) => {
-    return receivedPurchaseOrderIds.has(item.purchase_order_id);
-  });
+    // Build set of received document codes
+    const receivedDocCodesSet = new Set<string>();
+    recentReceived.filter(r => r.document_number).forEach(r => {
+      receivedDocCodesSet.add(normalizeItemCode(r.document_number || ''));
+    });
+
+    // Filter POs to only those with matching receiving records
+    const filteredPOs = allPurchaseOrders.filter((po: any) => {
+      const poCode = normalizeItemCode(po.order_number || '');
+      return receivedDocCodesSet.has(poCode);
+    });
+
+    // Get IDs of received POs
+    const receivedPOIds = new Set(filteredPOs.map((po: any) => po.id));
+    
+    // Filter PO items to only those from received POs
+    const filteredItems = allPurchaseOrderItems.filter((item: any) => {
+      return receivedPOIds.has(item.purchase_order_id);
+    });
+
+    return { 
+      receivedPurchaseOrders: filteredPOs, 
+      receivedPurchaseOrderItems: filteredItems 
+    };
+  }, [recentReceived, allPurchaseOrders, allPurchaseOrderItems]);
 
   // Purchase order analytics hook - ONLY uses items from POs that have been received
   const purchaseOrderAnalytics = usePurchaseOrderAnalytics(receivedPurchaseOrders, receivedPurchaseOrderItems);
