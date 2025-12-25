@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Sparkles, ChevronDown, ChevronUp, Play, 
   Home, Image, Video, Clock, Radio, MessageCircle, 
-  Music, Search, User, Bell, Users, BarChart3, Bookmark
+  Music, Search, User, Bell, Users, BarChart3, Bookmark, Film
 } from "lucide-react";
 import {
   NotificationCenterPreview,
@@ -25,6 +25,7 @@ import {
   AnalyticsPreview
 } from "@/components/promo/SpecVerseFeaturePreview";
 import SpecVersePromoVideo from "@/components/promo/SpecVersePromoVideo";
+import LandingPromoVideo from "@/components/promo/LandingPromoVideo";
 
 interface FeatureSection {
   id: string;
@@ -249,14 +250,18 @@ const SpecVersePromo = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3">
             <TabsTrigger value="features" className="gap-2">
               <Play className="w-4 h-4" />
               Live Previews
             </TabsTrigger>
             <TabsTrigger value="video" className="gap-2">
               <Video className="w-4 h-4" />
-              Promo Video
+              Feature Video
+            </TabsTrigger>
+            <TabsTrigger value="landing" className="gap-2">
+              <Film className="w-4 h-4" />
+              Landing Video
             </TabsTrigger>
           </TabsList>
 
@@ -348,6 +353,10 @@ const SpecVersePromo = () => {
 
           <TabsContent value="video" className="mt-6">
             <SpecVersePromoVideo />
+          </TabsContent>
+
+          <TabsContent value="landing" className="mt-6">
+            <LandingPromoVideo />
           </TabsContent>
         </Tabs>
 
