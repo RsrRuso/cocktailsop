@@ -112,7 +112,7 @@ const PurchaseOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'active' | 'archive' | 'discrepancies' | 'analytics'>('active');
+  const [viewMode, setViewMode] = useState<'overview' | 'orders' | 'archive' | 'discrepancies'>('overview');
   const [pasteContent, setPasteContent] = useState("");
   
   // Use staff workspace if in staffMode, otherwise from localStorage
@@ -688,7 +688,7 @@ const PurchaseOrders = () => {
     return hasReceived && !hasDiscrepancy;
   }) || [];
 
-  const displayOrders = viewMode === 'active' ? activeOrders : viewMode === 'discrepancies' ? discrepancyOrders : archivedOrders;
+  const displayOrders = viewMode === 'orders' ? activeOrders : viewMode === 'discrepancies' ? discrepancyOrders : archivedOrders;
 
   const filteredOrders = displayOrders.filter(order => 
     order.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -877,30 +877,30 @@ const PurchaseOrders = () => {
           />
         </div>
 
-        {/* Active/Discrepancies/Archive/Analytics Tabs */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive' | 'discrepancies' | 'analytics')} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="active" className="flex items-center gap-1 text-xs">
-              <FileText className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Active</span> ({activeOrders.length})
+        {/* Overview/Orders/Issues/Archive Tabs */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'overview' | 'orders' | 'archive' | 'discrepancies')} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 h-9">
+            <TabsTrigger value="overview" className="flex items-center gap-1 text-xs px-1">
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="discrepancies" className="flex items-center gap-1 text-xs text-destructive">
+            <TabsTrigger value="orders" className="flex items-center gap-1 text-xs px-1">
+              <FileText className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Orders</span> ({activeOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="discrepancies" className="flex items-center gap-1 text-xs text-destructive px-1">
               <Package className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Issues</span> ({discrepancyOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="archive" className="flex items-center gap-1 text-xs">
+            <TabsTrigger value="archive" className="flex items-center gap-1 text-xs px-1">
               <Archive className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Archive</span> ({archivedOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs text-primary">
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {/* Analytics View */}
-        {viewMode === 'analytics' && (
+        {/* Overview - Full Analytics */}
+        {viewMode === 'overview' && (
           <PurchaseOrderAnalytics 
             analytics={analytics} 
             formatCurrency={formatCurrency} 
@@ -908,13 +908,13 @@ const PurchaseOrders = () => {
         )}
 
         {/* Orders List */}
-        {viewMode !== 'analytics' && (
+        {viewMode !== 'overview' && (
         <div className="space-y-3">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : filteredOrders?.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {viewMode === 'active' 
+              {viewMode === 'orders' 
                 ? 'No active orders. Create your first purchase order!'
                 : viewMode === 'discrepancies'
                 ? 'No discrepancy orders. Orders with issues will appear here.'
