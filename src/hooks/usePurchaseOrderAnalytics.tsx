@@ -71,35 +71,17 @@ export interface AnalyticsSummary {
   itemsByCategory: { category: string; items: ItemSummary[] }[];
 }
 
-// Keywords to identify market (fresh produce) vs material items
-const MARKET_KEYWORDS = [
-  'vegetable', 'fruit', 'meat', 'fish', 'chicken', 'beef', 'pork', 'lamb', 'seafood',
-  'prawn', 'shrimp', 'salmon', 'tuna', 'cod', 'lettuce', 'tomato', 'onion', 'garlic',
-  'potato', 'carrot', 'broccoli', 'spinach', 'cabbage', 'pepper', 'cucumber', 'lemon',
-  'lime', 'orange', 'apple', 'banana', 'mango', 'berry', 'strawberry', 'herb', 'basil',
-  'parsley', 'cilantro', 'mint', 'thyme', 'rosemary', 'egg', 'dairy', 'milk', 'cream',
-  'cheese', 'butter', 'yogurt', 'fresh', 'produce', 'organic', 'farm', 'mushroom',
-  'avocado', 'ginger', 'chili', 'celery', 'asparagus', 'bean', 'pea', 'corn', 'olive',
-  'amarena', 'cherry', 'honey', 'juice', 'water', 'sparkling', 'tonic', 'syrup', 'puree', 'citrus'
-];
-
-const MATERIAL_KEYWORDS = [
-  'paper', 'napkin', 'tissue', 'plastic', 'container', 'box', 'bag', 'wrap', 'foil',
-  'chemical', 'cleaner', 'detergent', 'sanitizer', 'soap', 'glove', 'apron', 'uniform',
-  'equipment', 'tool', 'utensil', 'knife', 'pan', 'pot', 'tray', 'rack', 'shelf',
-  'filter', 'cartridge', 'bulb', 'battery', 'cord', 'cable', 'plug', 'wire', 'tape',
-  'label', 'sticker', 'marker', 'pen', 'clip', 'staple', 'folder', 'binder', 'office',
-  'packaging', 'disposable', 'cup', 'plate', 'cutlery', 'straw', 'lid', 'aluminium',
-  'can', 'bottle', 'jar', 'pump', 'spray', 'mop', 'broom', 'bucket', 'brush'
-];
-
-const categorizeItem = (itemName: string): 'market' | 'material' | 'unknown' => {
-  const lowerName = itemName.toLowerCase();
+// Categorize item based on document/order number prefix
+// ML prefix = Market (fresh produce, food items)
+// RQ prefix = Material (supplies, equipment)
+const categorizeByDocumentCode = (orderNumber: string | null | undefined): 'market' | 'material' | 'unknown' => {
+  if (!orderNumber) return 'unknown';
+  const upperCode = orderNumber.trim().toUpperCase();
   
-  if (MARKET_KEYWORDS.some(kw => lowerName.includes(kw))) {
+  if (upperCode.startsWith('ML')) {
     return 'market';
   }
-  if (MATERIAL_KEYWORDS.some(kw => lowerName.includes(kw))) {
+  if (upperCode.startsWith('RQ')) {
     return 'material';
   }
   return 'unknown';
@@ -130,10 +112,10 @@ export const usePurchaseOrderAnalytics = (
     safeItems.forEach(item => {
       const key = item.item_name.toLowerCase().trim();
       const existing = itemMap.get(key);
-      const category = categorizeItem(item.item_name);
       
-      // Get order date for this item
+      // Get order to determine category from order_number prefix and get order date
       const order = item.purchase_order_id ? orderMap.get(item.purchase_order_id) : null;
+      const category = categorizeByDocumentCode(order?.order_number);
       const orderDate = order?.order_date?.split('T')[0] || null;
       
       const dateOccurrence: ItemDateOccurrence = {
@@ -237,7 +219,7 @@ export const usePurchaseOrderAnalytics = (
             quantity: Number(item.quantity || 0),
             amount: Number(item.price_total || 0),
             unit: item.unit,
-            category: categorizeItem(item.item_name)
+            category: categorizeByDocumentCode(order.order_number)
           });
         }
       }
