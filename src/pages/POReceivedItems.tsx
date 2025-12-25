@@ -264,10 +264,29 @@ const POReceivedItems = () => {
     enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
 
-  // Purchase order analytics hook
-  const purchaseOrderAnalytics = usePurchaseOrderAnalytics(allPurchaseOrders || [], allPurchaseOrderItems || []);
+  // Calculate PO completion stats by matching doc codes - moved up for filtering
+  const receivedDocCodesSet = new Set<string>();
+  recentReceived?.filter(r => r.document_number).forEach(r => {
+    receivedDocCodesSet.add(normalizeItemCode(r.document_number || ''));
+  });
 
-  // Calculate PO completion stats by matching doc codes
+  // Filter PO items to only include those from POs that have been received
+  // This excludes pending POs (confirmed but not yet received) from variance calculation
+  const receivedPurchaseOrders = (allPurchaseOrders || []).filter((po: any) => {
+    const poCode = normalizeItemCode(po.order_number || '');
+    return receivedDocCodesSet.has(poCode);
+  });
+
+  const receivedPurchaseOrderIds = new Set(receivedPurchaseOrders.map((po: any) => po.id));
+  
+  const receivedPurchaseOrderItems = (allPurchaseOrderItems || []).filter((item: any) => {
+    return receivedPurchaseOrderIds.has(item.purchase_order_id);
+  });
+
+  // Purchase order analytics hook - ONLY uses items from POs that have been received
+  const purchaseOrderAnalytics = usePurchaseOrderAnalytics(receivedPurchaseOrders, receivedPurchaseOrderItems);
+
+  // Calculate PO completion stats using the already-computed received doc codes
   const poCompletionStats = (() => {
     if (!allPurchaseOrders || !recentReceived) return { total: 0, completed: 0, pending: 0, completedCodes: [] as string[], pendingPOs: [] as any[], completedPOs: [] as any[] };
     
