@@ -213,12 +213,14 @@ const POReceivedItems = () => {
   const receivingAnalytics = useReceivingAnalytics(recentReceived || [], receivedItems || []);
 
   // Fetch all purchase orders to compare with received - workspace aware
+  // Only include approved/completed POs, exclude pending/draft
   const { data: allPurchaseOrders } = useQuery({
     queryKey: ['po-all-orders', user?.id || 'staff', effectiveWorkspaceId],
     queryFn: async () => {
       let query = supabase
         .from('purchase_orders')
         .select('id, order_number, supplier_name, order_date, status, total_amount, created_at')
+        .in('status', ['approved', 'completed', 'sent', 'issued', 'received', 'partially_received', 'closed'])
         .order('created_at', { ascending: false });
       
       if (effectiveWorkspaceId) {
