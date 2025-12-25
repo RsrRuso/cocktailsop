@@ -218,7 +218,7 @@ const POReceivedItems = () => {
     queryFn: async () => {
       let query = supabase
         .from('purchase_orders')
-        .select('id, order_number, supplier_name, order_date, status')
+        .select('id, order_number, supplier_name, order_date, status, total_amount, created_at')
         .order('created_at', { ascending: false });
       
       if (effectiveWorkspaceId) {
@@ -235,6 +235,33 @@ const POReceivedItems = () => {
     },
     enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
   });
+
+  // Fetch all purchase order items for analytics - workspace aware
+  const { data: allPurchaseOrderItems } = useQuery({
+    queryKey: ['po-all-order-items', user?.id || 'staff', effectiveWorkspaceId],
+    queryFn: async () => {
+      let query = supabase
+        .from('purchase_order_items')
+        .select('*, purchase_orders!inner(workspace_id, user_id)')
+        .order('created_at', { ascending: false });
+      
+      if (effectiveWorkspaceId) {
+        query = query.eq('purchase_orders.workspace_id', effectiveWorkspaceId);
+      } else if (user?.id) {
+        query = query.eq('purchase_orders.user_id', user.id).is('purchase_orders.workspace_id', null);
+      } else {
+        return [];
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
+  });
+
+  // Purchase order analytics hook
+  const purchaseOrderAnalytics = usePurchaseOrderAnalytics(allPurchaseOrders || [], allPurchaseOrderItems || []);
 
   // Calculate PO completion stats by matching doc codes
   const poCompletionStats = (() => {
@@ -1541,7 +1568,7 @@ const POReceivedItems = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-8">
+          <TabsList className="grid w-full grid-cols-5 h-8">
             <TabsTrigger value="recent" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <History className="h-3 w-3 sm:mr-1" />
               <span className="hidden sm:inline">Recent</span>
@@ -1557,6 +1584,10 @@ const POReceivedItems = () => {
             <TabsTrigger value="prices" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingDown className="h-3 w-3 sm:mr-1" />
               <span className="hidden sm:inline">Prices</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BarChart3 className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1938,6 +1969,15 @@ const POReceivedItems = () => {
                 <p className="text-xs mt-1">Price changes are tracked automatically when updating master items</p>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Analytics Tab - Combined Procurement Analytics */}
+          <TabsContent value="analytics" className="mt-3 space-y-3">
+            <CombinedProcurementAnalytics 
+              purchaseAnalytics={purchaseOrderAnalytics}
+              receivingAnalytics={receivingAnalytics}
+              formatCurrency={formatCurrency}
+            />
           </TabsContent>
         </Tabs>
       </div>
