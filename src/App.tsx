@@ -228,6 +228,7 @@ const Presentation = lazy(() => import("./pages/Presentation"));
 const PromoReels = lazy(() => import("./pages/PromoReels"));
 const PromoAds = lazy(() => import("./pages/PromoAds"));
 const PurchaseOrderPromo = lazy(() => import("./pages/PurchaseOrderPromo"));
+const SpecVersePromo = lazy(() => import("./pages/SpecVersePromo"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -461,6 +462,7 @@ const AppContent = () => {
           <Route path="/campaign-payment" element={<CampaignPayment />} />
           <Route path="/promo-reels" element={<PromoReels />} />
           <Route path="/promo-ads" element={<PromoAds />} />
+          <Route path="/specverse-promo" element={<SpecVersePromo />} />
           <Route path="/presentation" element={<Presentation />} />
           
           {/* Pre-Opening Package */}
