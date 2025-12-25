@@ -26,6 +26,7 @@ import {
 } from "@/components/promo/SpecVerseFeaturePreview";
 import SpecVersePromoVideo from "@/components/promo/SpecVersePromoVideo";
 import LandingPromoVideo from "@/components/promo/LandingPromoVideo";
+import ReelPromoVideo from "@/components/promo/ReelPromoVideo";
 
 interface FeatureSection {
   id: string;
