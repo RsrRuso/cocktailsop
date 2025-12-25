@@ -220,7 +220,7 @@ const POReceivedItems = () => {
       let query = supabase
         .from('purchase_orders')
         .select('id, order_number, supplier_name, order_date, status, total_amount, created_at')
-        .in('status', ['approved', 'completed', 'sent', 'issued', 'received', 'partially_received', 'closed'])
+        .in('status', ['confirmed', 'approved', 'completed', 'sent', 'issued', 'received', 'partially_received', 'closed'])
         .order('created_at', { ascending: false });
       
       if (effectiveWorkspaceId) {
@@ -246,7 +246,7 @@ const POReceivedItems = () => {
       let query = supabase
         .from('purchase_order_items')
         .select('*, purchase_orders!inner(workspace_id, user_id, status)')
-        .in('purchase_orders.status', ['approved', 'completed', 'sent', 'issued', 'received', 'partially_received', 'closed'])
+        .in('purchase_orders.status', ['confirmed', 'approved', 'completed', 'sent', 'issued', 'received', 'partially_received', 'closed'])
         .order('created_at', { ascending: false });
       
       if (effectiveWorkspaceId) {
