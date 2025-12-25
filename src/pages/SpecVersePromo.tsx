@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Sparkles, ChevronDown, ChevronUp, Play, 
   Home, Image, Video, Clock, Radio, MessageCircle, 
-  Music, Search, User, Bell, Users, BarChart3, Bookmark, Film
+  Music, Search, User, Bell, Users, BarChart3, Bookmark, Film, Smartphone
 } from "lucide-react";
 import {
   NotificationCenterPreview,
@@ -251,18 +251,22 @@ const SpecVersePromo = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3">
-            <TabsTrigger value="features" className="gap-2">
+          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4">
+            <TabsTrigger value="features" className="gap-1 text-xs sm:text-sm">
               <Play className="w-4 h-4" />
-              Live Previews
+              <span className="hidden sm:inline">Live</span> Previews
             </TabsTrigger>
-            <TabsTrigger value="video" className="gap-2">
+            <TabsTrigger value="video" className="gap-1 text-xs sm:text-sm">
               <Video className="w-4 h-4" />
-              Feature Video
+              <span className="hidden sm:inline">Feature</span> Video
             </TabsTrigger>
-            <TabsTrigger value="landing" className="gap-2">
+            <TabsTrigger value="landing" className="gap-1 text-xs sm:text-sm">
               <Film className="w-4 h-4" />
-              Landing Video
+              <span className="hidden sm:inline">Landing</span> Video
+            </TabsTrigger>
+            <TabsTrigger value="reel" className="gap-1 text-xs sm:text-sm">
+              <Smartphone className="w-4 h-4" />
+              Reel Video
             </TabsTrigger>
           </TabsList>
 
@@ -358,6 +362,10 @@ const SpecVersePromo = () => {
 
           <TabsContent value="landing" className="mt-6">
             <LandingPromoVideo />
+          </TabsContent>
+
+          <TabsContent value="reel" className="mt-6">
+            <ReelPromoVideo />
           </TabsContent>
         </Tabs>
 
