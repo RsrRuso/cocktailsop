@@ -82,7 +82,7 @@ const MARKET_KEYWORDS = [
   'parsley', 'cilantro', 'mint', 'thyme', 'rosemary', 'egg', 'dairy', 'milk', 'cream',
   'cheese', 'butter', 'yogurt', 'fresh', 'produce', 'organic', 'farm', 'mushroom',
   'avocado', 'ginger', 'chili', 'celery', 'asparagus', 'bean', 'pea', 'corn', 'olive',
-  'juice', 'water', 'sparkling', 'tonic', 'syrup', 'puree', 'citrus'
+  'amarena', 'cherry', 'honey', 'juice', 'water', 'sparkling', 'tonic', 'syrup', 'puree', 'citrus'
 ];
 
 const MATERIAL_KEYWORDS = [
