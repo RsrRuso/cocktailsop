@@ -79,7 +79,8 @@ const MARKET_KEYWORDS = [
   'lime', 'orange', 'apple', 'banana', 'mango', 'berry', 'strawberry', 'herb', 'basil',
   'parsley', 'cilantro', 'mint', 'thyme', 'rosemary', 'egg', 'dairy', 'milk', 'cream',
   'cheese', 'butter', 'yogurt', 'fresh', 'produce', 'organic', 'farm', 'mushroom',
-  'avocado', 'ginger', 'chili', 'celery', 'asparagus', 'bean', 'pea', 'corn', 'olive'
+  'avocado', 'ginger', 'chili', 'celery', 'asparagus', 'bean', 'pea', 'corn', 'olive',
+  'amarena', 'cherry', 'honey', 'juice', 'water', 'sparkling', 'tonic', 'syrup', 'puree', 'citrus'
 ];
 
 const MATERIAL_KEYWORDS = [
