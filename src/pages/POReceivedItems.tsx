@@ -131,7 +131,7 @@ const POReceivedItems = () => {
   const [varianceReport, setVarianceReport] = useState<VarianceReport | null>(null);
   const [showVarianceDialog, setShowVarianceDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices' | 'analytics'>('recent');
+  const [activeTab, setActiveTab] = useState<'overview' | 'summary' | 'forecast' | 'prices'>('overview');
   const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>(() => {
@@ -1559,77 +1559,98 @@ const POReceivedItems = () => {
           <span className="text-lg sm:text-xl font-bold text-green-500">{formatCurrency(calculatedTotalValue)}</span>
         </Card>
 
-        {/* Tabs - Clean 5-column layout */}
+        {/* Tabs - Clean 4-column layout */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-9">
-            <TabsTrigger value="recent" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <History className="h-3.5 w-3.5 sm:mr-1" />
-              <span className="hidden sm:inline">Recent</span>
+          <TabsList className="grid w-full grid-cols-4 h-9">
+            <TabsTrigger value="overview" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BarChart3 className="h-3.5 w-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
             <TabsTrigger value="summary" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingUp className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Summary</span>
             </TabsTrigger>
             <TabsTrigger value="forecast" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-3.5 w-3.5 sm:mr-1" />
+              <History className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Forecast</span>
             </TabsTrigger>
             <TabsTrigger value="prices" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingDown className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Prices</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-3.5 w-3.5 sm:mr-1" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
           </TabsList>
 
-          {/* Recent Received Tab */}
-          <TabsContent value="recent" className="mt-2 space-y-2">
-            {isLoadingRecent ? (
-              <div className="text-center py-4 text-muted-foreground text-xs">Loading...</div>
-            ) : recentReceived && recentReceived.length > 0 ? (
-              <div className="space-y-2">
-                {recentReceived.map((record) => (
-                  <Card key={record.id} className="p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-primary shrink-0" />
-                          <span className="font-medium text-sm truncate">
-                            {record.supplier_name || record.document_number || 'Delivery'}
-                          </span>
-                          <Badge 
-                            variant="outline"
-                            className={`text-[10px] h-5 px-1.5 ${record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}`}
-                          >
-                            {record.status}
-                          </Badge>
+          {/* Overview Tab - All Analytics Combined */}
+          <TabsContent value="overview" className="mt-2 space-y-3">
+            {/* Combined Procurement Analytics */}
+            <CombinedProcurementAnalytics 
+              purchaseAnalytics={purchaseOrderAnalytics}
+              receivingAnalytics={receivingAnalytics}
+              formatCurrency={formatCurrency}
+            />
+
+            {/* Recent Received Records Section */}
+            <Card className="p-3">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <History className="h-4 w-4 text-primary" />
+                  Recent Received
+                </h4>
+                <Badge variant="outline" className="text-xs">
+                  {recentReceived?.length || 0} records
+                </Badge>
+              </div>
+              
+              {isLoadingRecent ? (
+                <div className="text-center py-4 text-muted-foreground text-xs">Loading...</div>
+              ) : recentReceived && recentReceived.length > 0 ? (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {recentReceived.slice(0, 10).map((record) => (
+                    <div key={record.id} className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="font-medium text-xs truncate">
+                              {record.supplier_name || record.document_number || 'Delivery'}
+                            </span>
+                            <Badge 
+                              variant="outline"
+                              className={`text-[9px] h-4 px-1 ${record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}`}
+                            >
+                              {record.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                            <span>{format(new Date(record.received_date), 'MMM d')}</span>
+                            <span className="font-semibold text-foreground">{formatCurrency(Number(record.total_value || 0))}</span>
+                            {record.received_by_name && <span className="text-green-500 truncate max-w-[80px]">{record.received_by_name}</span>}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>{format(new Date(record.received_date), 'MMM d')}</span>
-                          <span className="font-semibold text-foreground">{formatCurrency(Number(record.total_value || 0))}</span>
-                          {record.received_by_name && <span className="text-green-500 truncate max-w-[100px]">{record.received_by_name}</span>}
+                        <div className="flex gap-0.5 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRecordContent(record)}>
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteReceivedRecord(record.id)}>
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowRecordContent(record)}>
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => deleteReceivedRecord(record.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No received records yet</p>
-              </div>
-            )}
+                  ))}
+                  {recentReceived.length > 10 && (
+                    <p className="text-center text-xs text-muted-foreground pt-2">
+                      +{recentReceived.length - 10} more records
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <Package className="h-6 w-6 mx-auto mb-1 opacity-50" />
+                  <p className="text-xs">No received records yet</p>
+                </div>
+              )}
+            </Card>
           </TabsContent>
 
           {/* Summary Tab - Overall Aggregated Report */}
@@ -1964,14 +1985,6 @@ const POReceivedItems = () => {
             )}
           </TabsContent>
 
-          {/* Analytics Tab - Combined Procurement Analytics */}
-          <TabsContent value="analytics" className="mt-3 space-y-3">
-            <CombinedProcurementAnalytics 
-              purchaseAnalytics={purchaseOrderAnalytics}
-              receivingAnalytics={receivingAnalytics}
-              formatCurrency={formatCurrency}
-            />
-          </TabsContent>
         </Tabs>
       </div>
 
