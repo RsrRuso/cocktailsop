@@ -715,62 +715,52 @@ const PurchaseOrders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header - Clean & Mobile Friendly */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+        <div className="flex items-center justify-between px-3 py-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             {!staffMode && <BackToProfileDoor />}
-            <Button variant="ghost" size="icon" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate('/ops-tools')}>
+            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate('/ops-tools')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">Purchase Orders</h1>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-foreground">Purchase Orders</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 {staffMode ? `Staff: ${staffName}` : 'Track and manage your purchases'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <Button 
               variant="ghost" 
               size="icon" 
+              className="h-8 w-8"
               onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
                 toast.success("Refreshed");
               }}
               disabled={isLoading}
-              title="Refresh"
             >
-              <RefreshCw className={`w-5 h-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/purchase-order-promo')}
-              title="Promo Video"
-            >
-              <Film className="w-5 h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/purchase-order-promo')}>
+              <Film className="w-4 h-4 text-muted-foreground" />
             </Button>
             {!staffMode && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/procurement-pin-access')}
-                title="Staff PIN Access"
-              >
-                <Smartphone className="w-5 h-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/procurement-pin-access')}>
+                <Smartphone className="w-4 h-4 text-muted-foreground" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={() => setShowGuide(true)}>
-              <HelpCircle className="w-5 h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowGuide(true)}>
+              <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-4 pb-24">
-        {/* Workspace Selector - hidden in staff mode (locked to their workspace) */}
+      <div className="p-3 sm:p-4 space-y-3">
+        {/* Workspace Selector - Clean compact design */}
         {!staffMode && (
           <ProcurementWorkspaceSelector 
             selectedWorkspaceId={selectedWorkspaceId}
@@ -778,11 +768,11 @@ const PurchaseOrders = () => {
           />
         )}
 
-        {/* Currency Selector + Stats Cards */}
-        <div className="flex items-center justify-end mb-2">
+        {/* Currency Selector - Right aligned, compact */}
+        <div className="flex justify-end">
           <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
-            <SelectTrigger className="w-28 h-9">
-              <Coins className="w-4 h-4 mr-1" />
+            <SelectTrigger className="w-24 h-8 text-xs">
+              <Coins className="w-3.5 h-3.5 mr-1" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -795,52 +785,53 @@ const PurchaseOrders = () => {
           </Select>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="p-4 bg-card">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Coins className="w-5 h-5 text-primary" />
+        {/* Stats Cards - Clean 2-column grid */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <Card className="p-3 sm:p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Spent</p>
-                <p className="text-lg font-bold text-foreground">{formatCurrency(totalSpent)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total Spent</p>
+                <p className="text-base sm:text-lg font-bold text-foreground">{formatCurrency(totalSpent)}</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 bg-card">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
-                <Package className="w-5 h-5 text-secondary" />
+          <Card className="p-3 sm:p-4 bg-gradient-to-br from-secondary/5 to-secondary/10 border-secondary/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-secondary/20 flex items-center justify-center">
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 text-secondary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Orders</p>
-                <p className="text-lg font-bold text-foreground">{totalItems}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total Orders</p>
+                <p className="text-base sm:text-lg font-bold text-foreground">{totalItems}</p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Quick Links */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Quick Navigation Links - Polished buttons */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <Button 
             variant="outline" 
-            className="h-auto py-3 flex flex-col items-center gap-1"
+            className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-card hover:bg-accent/50 transition-all"
             onClick={() => navigate('/po-master-items')}
           >
             <List className="w-5 h-5 text-primary" />
-            <span className="text-sm">Master Items</span>
+            <span className="text-xs sm:text-sm font-medium">Master Items</span>
           </Button>
           <Button 
             variant="outline" 
-            className="h-auto py-3 flex flex-col items-center gap-1"
+            className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-card hover:bg-accent/50 transition-all"
             onClick={() => navigate('/po-received-items')}
           >
             <TrendingUp className="w-5 h-5 text-green-500" />
-            <span className="text-sm">Received Items</span>
+            <span className="text-xs sm:text-sm font-medium">Received Items</span>
           </Button>
         </div>
 
-        {/* Search & Actions */}
+        {/* Search & New Order */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -848,54 +839,43 @@ const PurchaseOrders = () => {
               placeholder="Search orders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-10"
             />
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button onClick={() => setShowCreateDialog(true)} className="h-10 px-4">
             <Plus className="w-4 h-4 mr-1" />
             New
           </Button>
         </div>
 
-        {/* Upload Section */}
-        <Card className="p-4 border-dashed border-2 border-muted">
-          <div className="text-center space-y-3">
-            <div className="flex justify-center gap-2 flex-wrap">
-              <Button 
-                variant="outline" 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="flex-1 min-w-[120px]"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPasteDialog(true)}
-                disabled={isUploading}
-                className="flex-1 min-w-[120px]"
-              >
-                <ClipboardPaste className="w-4 h-4 mr-2" />
-                Paste
-              </Button>
-              <Button variant="outline" disabled className="flex-1 min-w-[120px]">
-                <Camera className="w-4 h-4 mr-2" />
-                Scan
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Upload invoice/PO to auto-parse items (PDF, Image, Excel)
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </div>
-        </Card>
+        {/* Upload/Paste Actions - Compact horizontal row */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="h-10"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Upload
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPasteDialog(true)}
+            disabled={isUploading}
+            className="h-10"
+          >
+            <ClipboardPaste className="w-4 h-4 mr-2" />
+            Paste
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+        </div>
 
         {/* Active/Discrepancies/Archive/Analytics Tabs */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archive' | 'discrepancies' | 'analytics')} className="w-full">

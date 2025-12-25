@@ -1440,47 +1440,40 @@ const POReceivedItems = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header - Mobile Friendly */}
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header - Clean & Mobile Friendly */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center justify-between p-3 sm:p-4 gap-2">
+        <div className="flex items-center justify-between px-3 py-3 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate(-1)}>
+            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold truncate">Received Items</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+              <h1 className="text-base sm:text-lg font-bold truncate">Received Items</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 {staffMode ? `Staff: ${staffName}` : 'Compare with purchase orders'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 sm:h-9 sm:w-9"
+              className="h-8 w-8"
               onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ['po-received-records'] });
                 queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
                 toast.success("Refreshed");
               }}
               disabled={isLoadingRecent}
-              title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground ${isLoadingRecent ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isLoadingRecent ? 'animate-spin' : ''}`} />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 sm:h-9 sm:w-9"
-              onClick={() => navigate('/procurement-pin-access')}
-              title="Staff PIN Access"
-            >
-              <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/procurement-pin-access')}>
+              <Smartphone className="w-4 h-4 text-muted-foreground" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setShowGuide(true)}>
-              <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowGuide(true)}>
+              <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </Button>
             <input
               ref={fileInputRef}
@@ -1492,19 +1485,19 @@ const POReceivedItems = () => {
             <Button 
               variant="default" 
               size="sm" 
-              className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+              className="h-8 px-3 text-xs"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
-              <Upload className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isUploading ? 'animate-pulse' : ''}`} />
-              <span className="ml-1 sm:ml-2">{isUploading ? 'Parsing...' : 'Receive'}</span>
+              <Upload className={`h-3.5 w-3.5 mr-1.5 ${isUploading ? 'animate-pulse' : ''}`} />
+              {isUploading ? 'Parsing...' : 'Receive'}
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="p-2 sm:p-3 space-y-2">
-        {/* Workspace Selector - hidden in staff mode (locked to their workspace) */}
+      <div className="p-3 sm:p-4 space-y-3">
+        {/* Workspace Selector - hidden in staff mode */}
         {!staffMode && (
           <ProcurementWorkspaceSelector 
             selectedWorkspaceId={selectedWorkspaceId}
@@ -1512,39 +1505,39 @@ const POReceivedItems = () => {
           />
         )}
 
-        {/* Stats Row */}
-        <div className="flex items-center gap-1">
-          <div className="grid grid-cols-3 gap-1 flex-1">
-            <Card className="p-1.5 flex items-center gap-1">
-              <FileText className="h-3 w-3 text-blue-500 shrink-0" />
+        {/* Stats Row - Compact horizontal layout */}
+        <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 gap-1.5 flex-1">
+            <Card className="p-2 flex items-center gap-1.5 bg-blue-500/5 border-blue-500/20">
+              <FileText className="h-4 w-4 text-blue-500 shrink-0" />
               <div>
-                <p className="text-[8px] text-muted-foreground leading-none">POs</p>
+                <p className="text-[9px] text-muted-foreground leading-none">POs</p>
                 <p className="text-sm font-bold leading-tight">{poCompletionStats.total}</p>
               </div>
             </Card>
             <Card 
-              className="p-1.5 flex items-center gap-1 cursor-pointer hover:bg-accent/50 active:scale-95"
+              className="p-2 flex items-center gap-1.5 cursor-pointer bg-green-500/5 border-green-500/20 hover:bg-green-500/10 active:scale-95 transition-all"
               onClick={() => poCompletionStats.completed > 0 && setShowCompletedPOsDialog(true)}
             >
-              <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
               <div>
-                <p className="text-[8px] text-muted-foreground leading-none">Done</p>
+                <p className="text-[9px] text-muted-foreground leading-none">Done</p>
                 <p className="text-sm font-bold text-green-500 leading-tight">{poCompletionStats.completed}</p>
               </div>
             </Card>
             <Card 
-              className="p-1.5 flex items-center gap-1 cursor-pointer hover:bg-accent/50 active:scale-95"
+              className="p-2 flex items-center gap-1.5 cursor-pointer bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 active:scale-95 transition-all"
               onClick={() => poCompletionStats.pending > 0 && setShowPendingPOsDialog(true)}
             >
-              <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
               <div>
-                <p className="text-[8px] text-muted-foreground leading-none">Pending</p>
+                <p className="text-[9px] text-muted-foreground leading-none">Pending</p>
                 <p className="text-sm font-bold text-amber-500 leading-tight">{poCompletionStats.pending}</p>
               </div>
             </Card>
           </div>
           <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
-            <SelectTrigger className="w-[52px] h-7 text-[9px] px-1">
+            <SelectTrigger className="w-14 h-8 text-xs px-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-background border z-50">
@@ -1557,36 +1550,36 @@ const POReceivedItems = () => {
           </Select>
         </div>
 
-        {/* Total Value - Separate Row */}
-        <Card className="p-2 flex items-center justify-between">
+        {/* Total Value Card - Clean prominent display */}
+        <Card className="p-3 flex items-center justify-between bg-gradient-to-r from-green-500/5 to-green-500/10 border-green-500/20">
           <div className="flex items-center gap-2">
-            <Coins className="h-4 w-4 text-green-500" />
-            <span className="text-xs text-muted-foreground">Total Value</span>
+            <Coins className="h-5 w-5 text-green-500" />
+            <span className="text-xs sm:text-sm text-muted-foreground">Total Value</span>
           </div>
-          <span className="text-base font-bold text-green-500">{formatCurrency(calculatedTotalValue)}</span>
+          <span className="text-lg sm:text-xl font-bold text-green-500">{formatCurrency(calculatedTotalValue)}</span>
         </Card>
 
-        {/* Tabs */}
+        {/* Tabs - Clean 5-column layout */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-8">
+          <TabsList className="grid w-full grid-cols-5 h-9">
             <TabsTrigger value="recent" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <History className="h-3 w-3 sm:mr-1" />
+              <History className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Recent</span>
             </TabsTrigger>
             <TabsTrigger value="summary" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <TrendingUp className="h-3 w-3 sm:mr-1" />
+              <TrendingUp className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Summary</span>
             </TabsTrigger>
             <TabsTrigger value="forecast" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-3 w-3 sm:mr-1" />
+              <BarChart3 className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Forecast</span>
             </TabsTrigger>
             <TabsTrigger value="prices" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <TrendingDown className="h-3 w-3 sm:mr-1" />
+              <TrendingDown className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Prices</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-[10px] px-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-3 w-3 sm:mr-1" />
+              <BarChart3 className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
           </TabsList>
