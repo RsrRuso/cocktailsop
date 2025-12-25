@@ -608,13 +608,15 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
         ['Total Orders', String(analytics.totalOrders), 'Total Spend', formatCurrencyPDF(analytics.totalAmount)],
         ['Avg Order Value', formatCurrencyPDF(analytics.avgOrderValue), 'Daily Average', formatCurrencyPDF(analytics.dailyAverage)],
         ['Weekly Trend', weeklySign + analytics.weeklyTrend.toFixed(1) + '%', 'Monthly Change', monthlySign + analytics.monthlyComparison.change.toFixed(1) + '%'],
+        ['This Month', formatCurrencyPDF(analytics.monthlyComparison.current), 'Last Month', formatCurrencyPDF(analytics.monthlyComparison.previous)],
+        ['Total Items Qty', analytics.totalItems.toFixed(0), 'Unique Items', String(analytics.uniqueItems)],
       ];
       
       autoTable(doc, {
         body: metricsData,
         startY: yPos,
         theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 9 },
+        styles: { fontSize: 10, cellPadding: 7 },
         columnStyles: { 
           0: { fontStyle: 'bold', textColor: pdfColors.muted, cellWidth: 45 },
           1: { fontStyle: 'bold', textColor: pdfColors.dark, cellWidth: 50 },
@@ -624,7 +626,7 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
         margin: { left: 20 }
       });
       
-      yPos = (doc as any).lastAutoTable.finalY + 22;
+      yPos = (doc as any).lastAutoTable.finalY + 18;
       
       // Category cards
       const cardWidth = (pageWidth - 50) / 2;
@@ -651,36 +653,99 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       doc.setFontSize(12);
       doc.text(formatCurrencyPDF(analytics.materialItems.amount), 38 + cardWidth, yPos + 40);
       
-      yPos += 58;
+      // ===== TOP ITEMS PAGE =====
+      doc.addPage();
       
-      // Top Items section
+      doc.setFillColor(...pdfColors.accent);
+      doc.rect(0, 0, 8, pageHeight, 'F');
       doc.setTextColor(...pdfColors.dark);
-      doc.setFontSize(14);
+      doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.text('Top 15 Items by Spend', 20, yPos);
-      yPos += 6;
+      doc.text('Top Items by Spend', 20, 28);
+      doc.setDrawColor(...pdfColors.accent);
+      doc.setLineWidth(2);
+      doc.line(20, 34, 100, 34);
+      
+      yPos = 45;
+      
+      // All top items - paginated
+      const topItemsRows = analytics.topItems.map((item, idx) => [
+        idx + 1,
+        item.item_name.substring(0, 30),
+        item.item_code || '-',
+        item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+        item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'u'),
+        formatCurrencyPDF(item.totalAmount),
+        item.orderCount,
+        item.purchaseDays
+      ]);
       
       autoTable(doc, {
-        head: [['#', 'Item Name', 'Category', 'Qty', 'Amount', 'Orders', 'Days']],
-        body: analytics.topItems.slice(0, 15).map((item, idx) => [
-          idx + 1,
-          item.item_name.substring(0, 28),
-          item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
-          item.totalQuantity.toFixed(1),
-          formatCurrencyPDF(item.totalAmount),
-          item.orderCount,
-          item.purchaseDays
-        ]),
+        head: [['#', 'Item Name', 'Code', 'Category', 'Quantity', 'Amount', 'Orders', 'Days']],
+        body: topItemsRows,
         startY: yPos,
         theme: 'striped',
-        headStyles: { fillColor: pdfColors.darkAlt, textColor: pdfColors.white, fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: pdfColors.accent, textColor: pdfColors.white, fontSize: 8, cellPadding: 4 },
         styles: { fontSize: 7, cellPadding: 3 },
         alternateRowStyles: { fillColor: pdfColors.light },
-        margin: { left: 20, right: 14 },
-        columnStyles: { 0: { halign: 'center', cellWidth: 10 } }
+        margin: { left: 14, right: 14 },
+        columnStyles: { 
+          0: { halign: 'center', cellWidth: 10 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 18 },
+          3: { cellWidth: 18 },
+          5: { halign: 'right' }
+        }
       });
       
-      // ===== SUPPLIERS PAGE =====
+      // ===== MARKET ITEMS PAGE =====
+      doc.addPage();
+      
+      doc.setFillColor(...pdfColors.primary);
+      doc.rect(0, 0, 8, pageHeight, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Market / Fresh Items', 20, 28);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...pdfColors.muted);
+      doc.text(analytics.marketItems.count + ' items | ' + formatCurrencyPDF(analytics.marketItems.amount) + ' total', 20, 38);
+      doc.setDrawColor(...pdfColors.primary);
+      doc.setLineWidth(2);
+      doc.line(20, 44, 100, 44);
+      
+      yPos = 52;
+      
+      const marketRows = analytics.marketItems.items.map((item, idx) => [
+        idx + 1,
+        item.item_name.substring(0, 32),
+        item.item_code || '-',
+        item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'u'),
+        formatCurrencyPDF(item.totalAmount),
+        item.orderCount,
+        item.purchaseDays,
+        item.firstPurchaseDate ? format(parseISO(item.firstPurchaseDate), 'dd/MM') : '-',
+        item.lastPurchaseDate ? format(parseISO(item.lastPurchaseDate), 'dd/MM') : '-'
+      ]);
+      
+      autoTable(doc, {
+        head: [['#', 'Item Name', 'Code', 'Quantity', 'Amount', 'Ord', 'Days', 'First', 'Last']],
+        body: marketRows,
+        startY: yPos,
+        theme: 'striped',
+        headStyles: { fillColor: pdfColors.primary, textColor: pdfColors.white, fontSize: 7, cellPadding: 3 },
+        styles: { fontSize: 6, cellPadding: 2 },
+        alternateRowStyles: { fillColor: pdfColors.light },
+        margin: { left: 14, right: 14 },
+        columnStyles: { 
+          0: { halign: 'center', cellWidth: 8 },
+          1: { cellWidth: 42 },
+          4: { halign: 'right' }
+        }
+      });
+      
+      // ===== MATERIAL ITEMS PAGE =====
       doc.addPage();
       
       doc.setFillColor(...pdfColors.secondary);
@@ -688,78 +753,220 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
       doc.setTextColor(...pdfColors.dark);
       doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.text('Supplier Analysis', 20, 28);
+      doc.text('Materials / Supplies', 20, 28);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...pdfColors.muted);
+      doc.text(analytics.materialItems.count + ' items | ' + formatCurrencyPDF(analytics.materialItems.amount) + ' total', 20, 38);
       doc.setDrawColor(...pdfColors.secondary);
       doc.setLineWidth(2);
-      doc.line(20, 34, 90, 34);
+      doc.line(20, 44, 100, 44);
       
-      yPos = 50;
+      yPos = 52;
+      
+      const materialRows = analytics.materialItems.items.map((item, idx) => [
+        idx + 1,
+        item.item_name.substring(0, 32),
+        item.item_code || '-',
+        item.totalQuantity.toFixed(1) + ' ' + (item.unit || 'u'),
+        formatCurrencyPDF(item.totalAmount),
+        item.orderCount,
+        item.purchaseDays,
+        item.firstPurchaseDate ? format(parseISO(item.firstPurchaseDate), 'dd/MM') : '-',
+        item.lastPurchaseDate ? format(parseISO(item.lastPurchaseDate), 'dd/MM') : '-'
+      ]);
       
       autoTable(doc, {
-        head: [['Rank', 'Supplier', 'Orders', 'Total Amount', '% of Total']],
-        body: analytics.ordersBySupplier.slice(0, 15).map((s, idx) => [
-          idx + 1,
-          s.supplier,
-          s.count,
-          formatCurrencyPDF(s.amount),
-          ((s.amount / analytics.totalAmount) * 100).toFixed(1) + '%'
-        ]),
+        head: [['#', 'Item Name', 'Code', 'Quantity', 'Amount', 'Ord', 'Days', 'First', 'Last']],
+        body: materialRows,
         startY: yPos,
         theme: 'striped',
-        headStyles: { fillColor: pdfColors.secondary, textColor: pdfColors.white, fontSize: 9, cellPadding: 5 },
-        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: pdfColors.secondary, textColor: pdfColors.white, fontSize: 7, cellPadding: 3 },
+        styles: { fontSize: 6, cellPadding: 2 },
         alternateRowStyles: { fillColor: pdfColors.light },
-        margin: { left: 20, right: 14 },
+        margin: { left: 14, right: 14 },
         columnStyles: { 
-          0: { halign: 'center', cellWidth: 16 },
+          0: { halign: 'center', cellWidth: 8 },
+          1: { cellWidth: 42 },
           4: { halign: 'right' }
         }
       });
       
-      yPos = (doc as any).lastAutoTable.finalY + 28;
+      // ===== SUPPLIERS PAGE =====
+      doc.addPage();
       
-      // Recent dates summary
+      doc.setFillColor(...pdfColors.info);
+      doc.rect(0, 0, 8, pageHeight, 'F');
       doc.setTextColor(...pdfColors.dark);
-      doc.setFontSize(14);
+      doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.text('Recent Orders Summary', 20, yPos);
-      yPos += 6;
+      doc.text('Supplier Analysis', 20, 28);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...pdfColors.muted);
+      doc.text(analytics.ordersBySupplier.length + ' suppliers', 20, 38);
+      doc.setDrawColor(...pdfColors.info);
+      doc.setLineWidth(2);
+      doc.line(20, 44, 90, 44);
+      
+      yPos = 52;
+      
+      const supplierRows = analytics.ordersBySupplier.map((s, idx) => [
+        idx + 1,
+        s.supplier,
+        s.count,
+        formatCurrencyPDF(s.amount),
+        ((s.amount / analytics.totalAmount) * 100).toFixed(1) + '%'
+      ]);
       
       autoTable(doc, {
-        head: [['Date', 'Day', 'Orders', 'Items', 'Amount']],
-        body: analytics.ordersByDate.slice().reverse().slice(0, 12).map(d => [
+        head: [['Rank', 'Supplier Name', 'Orders', 'Total Amount', '% of Total']],
+        body: supplierRows,
+        startY: yPos,
+        theme: 'striped',
+        headStyles: { fillColor: pdfColors.info, textColor: pdfColors.white, fontSize: 9, cellPadding: 5 },
+        styles: { fontSize: 8, cellPadding: 4 },
+        alternateRowStyles: { fillColor: pdfColors.light },
+        margin: { left: 14, right: 14 },
+        columnStyles: { 
+          0: { halign: 'center', cellWidth: 16 },
+          3: { halign: 'right' },
+          4: { halign: 'right' }
+        }
+      });
+      
+      // ===== ORDERS BY DATE PAGES =====
+      doc.addPage();
+      
+      doc.setFillColor(...pdfColors.gold);
+      doc.rect(0, 0, 8, pageHeight, 'F');
+      doc.setTextColor(...pdfColors.dark);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Orders by Date', 20, 28);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...pdfColors.muted);
+      doc.text(analytics.ordersByDate.length + ' days with orders', 20, 38);
+      doc.setDrawColor(...pdfColors.gold);
+      doc.setLineWidth(2);
+      doc.line(20, 44, 90, 44);
+      
+      yPos = 55;
+      
+      // Date summary table
+      const dateRows = analytics.ordersByDate.slice().reverse().map(d => {
+        const marketCount = d.items.filter(i => i.category === 'market').length;
+        const materialCount = d.items.filter(i => i.category === 'material').length;
+        return [
           format(parseISO(d.date), 'dd MMM yyyy'),
           format(parseISO(d.date), 'EEE'),
           d.count,
           d.items.length,
+          marketCount,
+          materialCount,
           formatCurrencyPDF(d.amount)
-        ]),
-        startY: yPos,
-        theme: 'striped',
-        headStyles: { fillColor: pdfColors.gold, textColor: pdfColors.dark, fontSize: 9, cellPadding: 4 },
-        styles: { fontSize: 8, cellPadding: 3 },
-        alternateRowStyles: { fillColor: pdfColors.light },
-        margin: { left: 20, right: 14 },
-        columnStyles: { 4: { halign: 'right' } }
+        ];
       });
       
-      // Footer on all pages
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        if (i > 1) { // Skip cover page
-          doc.setDrawColor(...pdfColors.primary);
-          doc.setLineWidth(1);
-          doc.line(20, pageHeight - 18, pageWidth - 14, pageHeight - 18);
-          doc.setFontSize(8);
-          doc.setTextColor(...pdfColors.muted);
-          doc.text('Purchase Order Analytics Report', 20, pageHeight - 10);
-          doc.text('Page ' + (i - 1) + ' of ' + (pageCount - 1), pageWidth - 14, pageHeight - 10, { align: 'right' });
+      autoTable(doc, {
+        head: [['Date', 'Day', 'Orders', 'Items', 'Market', 'Material', 'Amount']],
+        body: dateRows,
+        startY: yPos,
+        theme: 'striped',
+        headStyles: { fillColor: pdfColors.gold, textColor: pdfColors.dark, fontSize: 8, cellPadding: 4 },
+        styles: { fontSize: 7, cellPadding: 3 },
+        alternateRowStyles: { fillColor: pdfColors.light },
+        margin: { left: 14, right: 14 },
+        columnStyles: { 
+          0: { cellWidth: 28 },
+          6: { halign: 'right' }
         }
+      });
+      
+      // ===== DETAILED DATE BREAKDOWN PAGES =====
+      analytics.ordersByDate.slice().reverse().forEach((dayData) => {
+        if (dayData.items.length === 0) return;
+        
+        doc.addPage();
+        
+        const marketCount = dayData.items.filter(i => i.category === 'market').length;
+        const materialCount = dayData.items.filter(i => i.category === 'material').length;
+        
+        // Date header
+        doc.setFillColor(...pdfColors.darkAlt);
+        doc.rect(0, 0, pageWidth, 50, 'F');
+        doc.setFillColor(...pdfColors.gold);
+        doc.rect(0, 0, 8, 50, 'F');
+        
+        // Day number
+        doc.setFillColor(...pdfColors.gold);
+        doc.roundedRect(20, 12, 32, 28, 4, 4, 'F');
+        doc.setTextColor(...pdfColors.dark);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(format(parseISO(dayData.date), 'd'), 36, 30, { align: 'center' });
+        
+        // Date details
+        doc.setTextColor(...pdfColors.white);
+        doc.setFontSize(16);
+        doc.text(format(parseISO(dayData.date), 'EEEE, dd MMMM yyyy'), 62, 24);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180, 180, 180);
+        doc.text(dayData.count + ' orders | ' + dayData.items.length + ' items | Market: ' + marketCount + ' | Material: ' + materialCount, 62, 38);
+        
+        // Total amount
+        doc.setTextColor(...pdfColors.gold);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatCurrencyPDF(dayData.amount), pageWidth - 20, 28, { align: 'right' });
+        
+        yPos = 60;
+        
+        // Items for this date
+        const dateItemRows = dayData.items.sort((a, b) => b.amount - a.amount).map((item, idx) => [
+          idx + 1,
+          item.item_name.substring(0, 35),
+          item.item_code || '-',
+          item.category === 'market' ? 'Market' : item.category === 'material' ? 'Material' : 'Other',
+          item.quantity + ' ' + (item.unit || ''),
+          formatCurrencyPDF(item.amount)
+        ]);
+        
+        autoTable(doc, {
+          head: [['#', 'Item Name', 'Code', 'Category', 'Quantity', 'Amount']],
+          body: dateItemRows,
+          startY: yPos,
+          theme: 'striped',
+          headStyles: { fillColor: pdfColors.darkAlt, textColor: pdfColors.white, fontSize: 8, cellPadding: 4 },
+          styles: { fontSize: 7, cellPadding: 3 },
+          alternateRowStyles: { fillColor: pdfColors.light },
+          margin: { left: 14, right: 14 },
+          columnStyles: { 
+            0: { halign: 'center', cellWidth: 10 },
+            1: { cellWidth: 50 },
+            5: { halign: 'right' }
+          }
+        });
+      });
+      
+      // Footer on all pages (skip cover)
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 2; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(...pdfColors.primary);
+        doc.setLineWidth(1);
+        doc.line(14, pageHeight - 18, pageWidth - 14, pageHeight - 18);
+        doc.setFontSize(8);
+        doc.setTextColor(...pdfColors.muted);
+        doc.text('Purchase Order Analytics Report', 14, pageHeight - 10);
+        doc.text('Page ' + (i - 1) + ' of ' + (pageCount - 1), pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text(format(new Date(), 'dd/MM/yyyy'), pageWidth - 14, pageHeight - 10, { align: 'right' });
       }
       
       doc.save('PO_Full_Report_' + format(new Date(), 'yyyy-MM-dd') + '.pdf');
-      toast.success('Downloaded full report PDF');
+      toast.success('Downloaded comprehensive analytics PDF');
     } catch (error) {
       toast.error('Failed to download PDF');
       console.error(error);
