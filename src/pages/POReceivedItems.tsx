@@ -239,12 +239,14 @@ const POReceivedItems = () => {
   });
 
   // Fetch all purchase order items for analytics - workspace aware
+  // Only include items from approved/completed POs, exclude pending/draft
   const { data: allPurchaseOrderItems } = useQuery({
     queryKey: ['po-all-order-items', user?.id || 'staff', effectiveWorkspaceId],
     queryFn: async () => {
       let query = supabase
         .from('purchase_order_items')
-        .select('*, purchase_orders!inner(workspace_id, user_id)')
+        .select('*, purchase_orders!inner(workspace_id, user_id, status)')
+        .in('purchase_orders.status', ['approved', 'completed', 'sent', 'issued', 'received', 'partially_received', 'closed'])
         .order('created_at', { ascending: false });
       
       if (effectiveWorkspaceId) {
