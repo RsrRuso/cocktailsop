@@ -20,16 +20,29 @@ import { toast } from "sonner";
 import type { AnalyticsSummary, ItemSummary } from "@/hooks/usePurchaseOrderAnalytics";
 import type { ReceivingAnalyticsSummary, ReceivingItemSummary } from "@/hooks/useReceivingAnalytics";
 
+interface PerDocumentComparison {
+  itemName: string;
+  orderedQty: number;
+  receivedQty: number;
+  orderedValue: number;
+  receivedValue: number;
+  qtyVariance: number;
+  valueVariance: number;
+  status: 'match' | 'short' | 'over' | 'not-received' | 'extra';
+}
+
 interface CombinedProcurementAnalyticsProps {
   purchaseAnalytics: AnalyticsSummary;
   receivingAnalytics: ReceivingAnalyticsSummary;
   formatCurrency: (amount: number) => string;
+  perDocumentComparison?: PerDocumentComparison[];
 }
 
 export const CombinedProcurementAnalytics = ({ 
   purchaseAnalytics, 
   receivingAnalytics, 
-  formatCurrency 
+  formatCurrency,
+  perDocumentComparison
 }: CombinedProcurementAnalyticsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'comparison' | 'variance' | 'trends'>('overview');
 
@@ -74,7 +87,14 @@ export const CombinedProcurementAnalytics = ({
   const receivingItemsList = receivingAnalytics.topItems || [];
 
   // Compare items between purchase and receiving
-  const compareItems = () => {
+  // Use per-document comparison if provided (accurate), otherwise fallback to aggregate comparison
+  const compareItems = (): PerDocumentComparison[] => {
+    // If we have per-document comparison data, use it (this is the accurate method)
+    if (perDocumentComparison && perDocumentComparison.length > 0) {
+      return perDocumentComparison;
+    }
+
+    // Fallback to aggregate comparison (less accurate for variance)
     const purchaseItems = new Map<string, ItemSummary>();
     const receivingItems = new Map<string, ReceivingItemSummary>();
     
@@ -86,16 +106,7 @@ export const CombinedProcurementAnalytics = ({
       receivingItems.set(item.item_name.toLowerCase(), item);
     });
 
-    const comparison: Array<{
-      itemName: string;
-      orderedQty: number;
-      receivedQty: number;
-      orderedValue: number;
-      receivedValue: number;
-      qtyVariance: number;
-      valueVariance: number;
-      status: 'match' | 'short' | 'over' | 'not-received' | 'extra';
-    }> = [];
+    const comparison: PerDocumentComparison[] = [];
 
     // Check ordered items
     purchaseItems.forEach((pItem, key) => {

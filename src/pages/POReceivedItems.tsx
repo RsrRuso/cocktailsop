@@ -341,6 +341,175 @@ const POReceivedItems = () => {
   // Calculate total from recent received records for accurate display
   const calculatedTotalValue = recentReceived?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
 
+  // Fetch received items linked to receiving records for per-document comparison
+  const { data: allReceivedItems } = useQuery({
+    queryKey: ['po-all-received-items', user?.id || 'staff', effectiveWorkspaceId],
+    queryFn: async () => {
+      let query = supabase
+        .from('purchase_order_received_items')
+        .select('*, po_received_records!inner(document_number, workspace_id, user_id)')
+        .order('created_at', { ascending: false });
+      
+      if (effectiveWorkspaceId) {
+        query = query.eq('po_received_records.workspace_id', effectiveWorkspaceId);
+      } else if (user?.id) {
+        query = query.eq('po_received_records.user_id', user.id).is('po_received_records.workspace_id', null);
+      } else {
+        return [];
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: hasAccess && (!!effectiveWorkspaceId || !!user?.id)
+  });
+
+  // Calculate per-document comparison (accurate variance calculation)
+  // This compares items ordered in each PO with items received for that same document
+  const perDocumentComparison = useMemo(() => {
+    if (!allPurchaseOrderItems || !allReceivedItems || !recentReceived) {
+      return [];
+    }
+
+    // Get document numbers that have both PO and receiving records
+    const receivedDocNumbers = new Set<string>();
+    recentReceived.forEach(r => {
+      if (r.document_number) {
+        receivedDocNumbers.add(r.document_number.toLowerCase().trim());
+      }
+    });
+
+    // Build ordered items by document (only for received documents)
+    const orderedByDoc = new Map<string, Map<string, { qty: number; value: number; item_name: string }>>();
+    
+    // Get PO order numbers for lookup
+    const poOrderNumbers = new Map<string, string>();
+    (allPurchaseOrders || []).forEach((po: any) => {
+      poOrderNumbers.set(po.id, po.order_number?.toLowerCase().trim() || '');
+    });
+
+    allPurchaseOrderItems.forEach((item: any) => {
+      const poId = item.purchase_order_id;
+      const docNumber = poOrderNumbers.get(poId);
+      if (!docNumber || !receivedDocNumbers.has(docNumber)) return;
+
+      if (!orderedByDoc.has(docNumber)) {
+        orderedByDoc.set(docNumber, new Map());
+      }
+      const docItems = orderedByDoc.get(docNumber)!;
+      const itemKey = item.item_name.toLowerCase().trim();
+      const existing = docItems.get(itemKey) || { qty: 0, value: 0, item_name: item.item_name };
+      existing.qty += item.quantity || 0;
+      existing.value += item.price_total || 0;
+      docItems.set(itemKey, existing);
+    });
+
+    // Build received items by document
+    const receivedByDoc = new Map<string, Map<string, { qty: number; value: number; item_name: string }>>();
+    allReceivedItems.forEach((item: any) => {
+      const docNumber = item.po_received_records?.document_number?.toLowerCase().trim();
+      if (!docNumber) return;
+
+      if (!receivedByDoc.has(docNumber)) {
+        receivedByDoc.set(docNumber, new Map());
+      }
+      const docItems = receivedByDoc.get(docNumber)!;
+      const itemKey = item.item_name.toLowerCase().trim();
+      const existing = docItems.get(itemKey) || { qty: 0, value: 0, item_name: item.item_name };
+      existing.qty += item.quantity || 0;
+      existing.value += item.total_price || 0;
+      docItems.set(itemKey, existing);
+    });
+
+    // Compare per document and aggregate by item name
+    const aggregatedComparison = new Map<string, {
+      itemName: string;
+      orderedQty: number;
+      receivedQty: number;
+      orderedValue: number;
+      receivedValue: number;
+    }>();
+
+    // Process ordered items
+    orderedByDoc.forEach((orderedItems, docNumber) => {
+      const receivedItems = receivedByDoc.get(docNumber) || new Map();
+      
+      orderedItems.forEach((ordered, itemKey) => {
+        const received = receivedItems.get(itemKey);
+        const existing = aggregatedComparison.get(itemKey) || {
+          itemName: ordered.item_name,
+          orderedQty: 0,
+          receivedQty: 0,
+          orderedValue: 0,
+          receivedValue: 0
+        };
+        existing.orderedQty += ordered.qty;
+        existing.receivedQty += received?.qty || 0;
+        existing.orderedValue += ordered.value;
+        existing.receivedValue += received?.value || 0;
+        aggregatedComparison.set(itemKey, existing);
+      });
+
+      // Check for extra received items in this document
+      receivedItems.forEach((received, itemKey) => {
+        if (!orderedItems.has(itemKey)) {
+          const existing = aggregatedComparison.get(itemKey) || {
+            itemName: received.item_name,
+            orderedQty: 0,
+            receivedQty: 0,
+            orderedValue: 0,
+            receivedValue: 0
+          };
+          existing.receivedQty += received.qty;
+          existing.receivedValue += received.value;
+          aggregatedComparison.set(itemKey, existing);
+        }
+      });
+    });
+
+    // Convert to comparison array with status
+    const comparison: Array<{
+      itemName: string;
+      orderedQty: number;
+      receivedQty: number;
+      orderedValue: number;
+      receivedValue: number;
+      qtyVariance: number;
+      valueVariance: number;
+      status: 'match' | 'short' | 'over' | 'not-received' | 'extra';
+    }> = [];
+
+    aggregatedComparison.forEach((item) => {
+      const qtyVariance = item.orderedQty - item.receivedQty;
+      const valueVariance = item.orderedValue - item.receivedValue;
+      
+      let status: 'match' | 'short' | 'over' | 'not-received' | 'extra' = 'match';
+      if (item.orderedQty > 0 && item.receivedQty === 0) {
+        status = 'not-received';
+      } else if (item.orderedQty === 0 && item.receivedQty > 0) {
+        status = 'extra';
+      } else if (qtyVariance > 0.5) {
+        status = 'short';
+      } else if (qtyVariance < -0.5) {
+        status = 'over';
+      }
+
+      comparison.push({
+        itemName: item.itemName,
+        orderedQty: item.orderedQty,
+        receivedQty: item.receivedQty,
+        orderedValue: item.orderedValue,
+        receivedValue: item.receivedValue,
+        qtyVariance,
+        valueVariance,
+        status
+      });
+    });
+
+    return comparison.sort((a, b) => Math.abs(b.valueVariance) - Math.abs(a.valueVariance));
+  }, [allPurchaseOrderItems, allReceivedItems, recentReceived, allPurchaseOrders]);
+
   // Fetch price history for change tracking (only for authenticated users, not staff)
   const { data: priceHistory } = useQuery({
     queryKey: ['po-price-history', user?.id],
@@ -1624,6 +1793,7 @@ const POReceivedItems = () => {
               purchaseAnalytics={purchaseOrderAnalytics}
               receivingAnalytics={receivingAnalytics}
               formatCurrency={formatCurrency}
+              perDocumentComparison={perDocumentComparison}
             />
 
             {/* Recent Received Records Section */}
