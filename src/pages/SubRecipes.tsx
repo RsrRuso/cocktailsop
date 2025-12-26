@@ -153,33 +153,34 @@ const SubRecipes = () => {
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-6 max-w-4xl mx-auto">
+      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/batch-calculator")}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/batch-calculator")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gradient-primary flex items-center gap-2">
-                <Layers className="h-6 w-6" />
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gradient-primary flex items-center gap-2 truncate">
+                <Layers className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
                 Sub-Recipes
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 Create pre-made mixes to use as ingredients
               </p>
             </div>
           </div>
-          <Button onClick={() => handleOpenDialog()} className="gap-2">
+          <Button onClick={() => handleOpenDialog()} className="gap-1.5 shrink-0 text-xs sm:text-sm">
             <Plus className="h-4 w-4" />
-            New Sub-Recipe
+            <span className="hidden sm:inline">New Sub-Recipe</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
 
         {/* Group Selector */}
         {groups && groups.length > 0 && (
           <Select value={selectedGroupId || "personal"} onValueChange={(v) => setSelectedGroupId(v === "personal" ? null : v)}>
-            <SelectTrigger className="w-full max-w-xs">
+            <SelectTrigger className="w-full max-w-xs text-sm">
               <SelectValue placeholder="Select group" />
             </SelectTrigger>
             <SelectContent>
@@ -200,27 +201,27 @@ const SubRecipes = () => {
             placeholder="Search sub-recipes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-sm"
           />
         </div>
 
         {/* Calculator Card */}
         <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Calculator className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Proportion Calculator
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Calculate ingredient breakdown for any amount of sub-recipe
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Select Sub-Recipe</Label>
+                <Label className="text-xs sm:text-sm">Select Sub-Recipe</Label>
                 <Select value={calculatorRecipeId || ""} onValueChange={setCalculatorRecipeId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm">
                     <SelectValue placeholder="Choose recipe" />
                   </SelectTrigger>
                   <SelectContent>
@@ -233,12 +234,13 @@ const SubRecipes = () => {
                 </Select>
               </div>
               <div>
-                <Label>Amount Needed (ml)</Label>
+                <Label className="text-xs sm:text-sm">Amount Needed (ml)</Label>
                 <Input
                   type="number"
                   placeholder="e.g., 500"
                   value={calculatorAmount}
                   onChange={(e) => setCalculatorAmount(e.target.value)}
+                  className="text-sm"
                 />
               </div>
             </div>
@@ -251,20 +253,20 @@ const SubRecipes = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-3"
                 >
-                  <div className="p-4 bg-card rounded-lg border">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-medium">{calculatorRecipe.name}</span>
-                      <Badge variant="outline">{calculatorAmount}ml needed</Badge>
+                  <div className="p-3 sm:p-4 bg-card rounded-lg border">
+                    <div className="flex justify-between items-center mb-3 gap-2">
+                      <span className="font-medium text-sm sm:text-base truncate">{calculatorRecipe.name}</span>
+                      <Badge variant="outline" className="shrink-0 text-xs">{calculatorAmount}ml needed</Badge>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       {calculatorResult.map((ing, i) => (
-                        <div key={i} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{ing.name}</span>
-                          <span className="font-medium">{ing.scaled_amount} {ing.unit}</span>
+                        <div key={i} className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-muted-foreground truncate">{ing.name}</span>
+                          <span className="font-medium shrink-0 ml-2">{ing.scaled_amount} {ing.unit}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                    <div className="mt-3 pt-3 border-t text-[10px] sm:text-xs text-muted-foreground">
                       Based on {calculatorRecipe.total_yield_ml}ml total yield
                     </div>
                   </div>
@@ -293,96 +295,133 @@ const SubRecipes = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {filteredRecipes.map((recipe) => (
-              <Card key={recipe.id} className="overflow-hidden">
-                <div 
-                  className="p-4 cursor-pointer"
-                  onClick={() => setExpandedId(expandedId === recipe.id ? null : recipe.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Beaker className="h-5 w-5 text-primary" />
+            {filteredRecipes.map((recipe) => {
+              const totalUsed = getTotalDepletion(recipe.id);
+              const usagePercent = totalUsed > 0 ? Math.min((totalUsed / recipe.total_yield_ml) * 100, 100) : 0;
+              const getUsageStatus = () => {
+                if (usagePercent >= 75) return { color: 'text-red-500', label: 'High Usage', bg: 'bg-red-500/10', border: 'border-red-500/20' };
+                if (usagePercent >= 40) return { color: 'text-yellow-500', label: 'Medium', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' };
+                return { color: 'text-green-500', label: 'Available', bg: 'bg-green-500/10', border: 'border-green-500/20' };
+              };
+              const status = getUsageStatus();
+              
+              return (
+                <Card key={recipe.id} className={`glass border ${status.border}`}>
+                  <CardContent className="pt-4 sm:pt-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Beaker className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                          </div>
+                          <h4 className="font-semibold text-base sm:text-lg truncate">{recipe.name}</h4>
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            Sub-Recipe
+                          </Badge>
+                        </div>
+                        {recipe.description && (
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {recipe.description}
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <h3 className="font-medium">{recipe.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {recipe.ingredients.length} ingredients • {recipe.total_yield_ml}ml yield
-                        </p>
+                      <div className="text-right shrink-0">
+                        <div className={`text-xl sm:text-2xl font-bold ${status.color}`}>
+                          {recipe.total_yield_ml}ml
+                        </div>
+                        <span className="text-xs text-muted-foreground">Total Yield</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Ingredients List */}
+                    <div className="bg-muted/30 rounded-lg p-2 sm:p-3 space-y-1 mb-3">
+                      <span className="text-xs font-medium text-muted-foreground">Ingredients ({recipe.ingredients.length}):</span>
+                      {recipe.ingredients.map((ing, idx) => (
+                        <div key={idx} className="flex justify-between text-xs sm:text-sm py-0.5">
+                          <span className="truncate">{ing.name}</span>
+                          <span className="font-medium shrink-0 ml-2">{ing.amount} {ing.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Ingredients:</span>
+                        <div className="font-medium">{recipe.ingredients.length} items</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Per Ingredient:</span>
+                        <div className="font-medium">
+                          ~{(recipe.total_yield_ml / Math.max(recipe.ingredients.length, 1)).toFixed(0)}ml avg
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Usage Tracking */}
+                    {totalUsed > 0 && (
+                      <div className="pt-2 sm:pt-3 border-t border-border/50 mt-2 sm:mt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-medium">Usage Tracking:</span>
+                          <span className="text-xs sm:text-sm font-bold text-orange-500">
+                            {totalUsed.toFixed(0)}ml used
+                          </span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5 mt-1">
+                          <div 
+                            className="bg-orange-500 h-1.5 rounded-full transition-all" 
+                            style={{ width: `${usagePercent}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                          {usagePercent.toFixed(0)}% of total yield used in batch productions
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Status Badge */}
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${status.bg} mt-2`}>
+                      <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-2 pt-2 sm:pt-3 mt-2 border-t border-border/50">
                       <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={(e) => { e.stopPropagation(); handleOpenDialog(recipe); }}
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 gap-1.5 text-xs sm:text-sm"
+                        onClick={() => {
+                          setCalculatorRecipeId(recipe.id);
+                          setCalculatorAmount(recipe.total_yield_ml.toString());
+                        }}
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Calculate</span>
+                        <span className="sm:hidden">Calc</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-1.5 text-xs sm:text-sm"
+                        onClick={() => handleOpenDialog(recipe)}
+                      >
+                        <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                       <Button 
                         variant="ghost" 
-                        size="icon" 
-                        onClick={(e) => { e.stopPropagation(); handleDelete(recipe.id); }}
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => handleDelete(recipe.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                      {expandedId === recipe.id ? (
-                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      )}
                     </div>
-                  </div>
-                </div>
-
-                <AnimatePresence>
-                  {expandedId === recipe.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="border-t bg-muted/30"
-                    >
-                      <div className="p-4 space-y-2">
-                        {recipe.description && (
-                          <p className="text-sm text-muted-foreground mb-3">{recipe.description}</p>
-                        )}
-                        <div className="text-sm font-medium mb-2">Ingredients:</div>
-                        {recipe.ingredients.map((ing, i) => (
-                          <div key={i} className="flex justify-between text-sm py-1">
-                            <span>{ing.name}</span>
-                            <span className="font-medium">{ing.amount} {ing.unit}</span>
-                          </div>
-                        ))}
-                        <div className="pt-3 mt-3 border-t flex justify-between">
-                          <span className="font-medium">Total Yield</span>
-                          <span className="font-bold text-primary">{recipe.total_yield_ml} ml</span>
-                        </div>
-                        
-                        {/* Depletion tracking */}
-                        {getTotalDepletion(recipe.id) > 0 && (
-                          <div className="pt-3 mt-3 border-t">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Total Used</span>
-                              <span className="font-medium text-orange-500">
-                                {getTotalDepletion(recipe.id).toFixed(0)} ml
-                              </span>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              From batch productions
-                            </div>
-                          </div>
-                        )}
-                        
-                        <Badge variant="secondary" className="mt-2">
-                          Added to Master Spirits
-                        </Badge>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
