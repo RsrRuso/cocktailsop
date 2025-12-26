@@ -76,6 +76,7 @@ export function StationManagement({ open, onClose, outletId, onStationsChange }:
           .select("id, full_name, role")
           .eq("outlet_id", outletId)
           .eq("is_active", true)
+          .in("role", ["bartender", "manager", "supervisor"])
           .order("full_name", { ascending: true }),
         supabase
           .from("lab_ops_categories")
