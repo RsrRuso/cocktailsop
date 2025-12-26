@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
+import { IngredientCombobox } from "@/components/yield/IngredientCombobox";
 
 interface YieldCalculation {
   id: string;
@@ -366,21 +367,11 @@ const YieldCalculator = () => {
                   <label className="text-sm font-medium block">Input Ingredients</label>
                   {liquidIngredients.map((ing, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <Select
+                      <IngredientCombobox
+                        spirits={spirits}
                         value={ing.name}
                         onValueChange={(v) => updateLiquidIngredient(index, 'name', v)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select ingredient" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {spirits?.map((spirit) => (
-                            <SelectItem key={spirit.id} value={spirit.name}>
-                              {spirit.name} {spirit.brand ? `(${spirit.brand})` : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
                       <Input
                         type="number"
                         placeholder="Amount"
