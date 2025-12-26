@@ -18,8 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw, Film, BarChart3
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw, Film, BarChart3, Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -427,6 +429,142 @@ const PurchaseOrders = () => {
       notes: ""
     });
     setNewItems([{ item_code: "", item_name: "", unit: "", quantity: 0, price_per_unit: 0, price_total: 0 }]);
+  };
+
+  // Export order to PDF
+  const exportOrderToPDF = (order: PurchaseOrder, items: PurchaseOrderItem[] | undefined) => {
+    if (!order || !items) {
+      toast.error("No order data to export");
+      return;
+    }
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Dark background
+    doc.setFillColor(18, 18, 18);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    // Header with accent
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Purchase Order', 14, 20);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(order.order_number || 'No Order #', 14, 30);
+    doc.text(format(new Date(order.order_date), 'MMMM dd, yyyy'), pageWidth - 14, 30, { align: 'right' });
+
+    // Order details card
+    let yPos = 50;
+    doc.setFillColor(30, 30, 30);
+    doc.roundedRect(10, yPos, pageWidth - 20, 35, 3, 3, 'F');
+
+    doc.setTextColor(147, 197, 253);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SUPPLIER', 16, yPos + 10);
+    doc.text('STATUS', 80, yPos + 10);
+    doc.text('SUBMITTED BY', 130, yPos + 10);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(order.supplier_name || '-', 16, yPos + 20);
+    doc.text(order.status || 'confirmed', 80, yPos + 20);
+    doc.text(order.submitted_by_name || order.submitted_by_email || '-', 130, yPos + 20);
+
+    // Items table
+    yPos = 95;
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Order Items', 14, yPos);
+
+    const tableData = items.map(item => [
+      item.item_code || '-',
+      item.item_name,
+      item.unit || '-',
+      item.quantity.toString(),
+      formatCurrency(item.price_per_unit),
+      formatCurrency(item.price_total)
+    ]);
+
+    autoTable(doc, {
+      startY: yPos + 5,
+      head: [['Code', 'Item Name', 'Unit', 'Qty', 'Price', 'Total']],
+      body: tableData,
+      theme: 'plain',
+      styles: {
+        fillColor: [30, 30, 30],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [50, 50, 50],
+        textColor: [147, 197, 253],
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      alternateRowStyles: {
+        fillColor: [40, 40, 40],
+      },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right' },
+      },
+      margin: { left: 10, right: 10 },
+    });
+
+    // Total
+    const finalY = (doc as any).lastAutoTable?.finalY || yPos + 50;
+    doc.setFillColor(37, 99, 235);
+    doc.roundedRect(pageWidth - 70, finalY + 5, 60, 15, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL', pageWidth - 65, finalY + 14);
+    doc.text(formatCurrency(Number(order.total_amount)), pageWidth - 15, finalY + 14, { align: 'right' });
+
+    // Notes if available
+    if (order.notes) {
+      doc.setFillColor(30, 30, 30);
+      doc.roundedRect(10, finalY + 30, pageWidth - 20, 20, 3, 3, 'F');
+      doc.setTextColor(147, 197, 253);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('NOTES', 16, finalY + 40);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'normal');
+      doc.text(order.notes.substring(0, 100), 16, finalY + 47);
+    }
+
+    // Footer
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.text('SpecVerse • Purchase Order System', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+    // Save PDF
+    const fileName = `PO_${order.order_number || order.id}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+    doc.save(fileName);
+    toast.success("PDF downloaded!");
   };
 
   const handleAddItem = () => {
@@ -1208,8 +1346,17 @@ const PurchaseOrders = () => {
       {/* View Order Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
         <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between gap-2">
             <DialogTitle className="text-lg">Order Details</DialogTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => exportOrderToPDF(selectedOrder!, orderItems || [])}
+              className="h-8"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              PDF
+            </Button>
           </DialogHeader>
           
           {selectedOrder && (
