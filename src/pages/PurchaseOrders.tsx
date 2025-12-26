@@ -25,6 +25,7 @@ import autoTable from "jspdf-autotable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { ManualPOUploadDialog } from "@/components/procurement/ManualPOUploadDialog";
+import { DocumentScanner } from "@/components/procurement/DocumentScanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
@@ -112,6 +113,7 @@ const PurchaseOrders = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
   const [showManualPOUpload, setShowManualPOUpload] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1378,6 +1380,15 @@ const PurchaseOrders = () => {
             <ClipboardPaste className="w-4 h-4 mr-2 text-primary" />
             Manual
           </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowScanner(true)}
+            disabled={isUploading}
+            className="h-10 border-primary/50"
+          >
+            <Camera className="w-4 h-4 mr-2 text-primary" />
+            Scan
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
@@ -2018,6 +2029,25 @@ Example format:
         onOpenChange={setShowManualPOUpload}
         onConfirmSave={handleManualPOSave}
         currencySymbol={currencySymbols[currency]}
+      />
+
+      {/* Document Scanner */}
+      <DocumentScanner
+        open={showScanner}
+        onOpenChange={setShowScanner}
+        title="Scan PO Document"
+        onTextExtracted={(text) => {
+          setShowScanner(false);
+          setShowManualPOUpload(true);
+          // The text will be auto-filled into manual upload
+          setTimeout(() => {
+            const textarea = document.querySelector('textarea[placeholder*="Paste"]') as HTMLTextAreaElement;
+            if (textarea) {
+              textarea.value = text;
+              textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }, 100);
+        }}
       />
 
     </div>

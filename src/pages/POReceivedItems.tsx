@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw } from "lucide-react";
+import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw, Camera } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { ReceivingAnalytics } from "@/components/receiving/ReceivingAnalytics";
@@ -31,6 +31,7 @@ import {
   normalizeItemCode 
 } from "@/components/procurement/EnhancedReceivingDialog";
 import { ManualTextUploadDialog } from "@/components/procurement/ManualTextUploadDialog";
+import { DocumentScanner } from "@/components/procurement/DocumentScanner";
 import { 
   useDailyPOSummary, 
   normalizeItemName, 
@@ -155,7 +156,7 @@ const POReceivedItems = () => {
   const [showCompletedPOsDialog, setShowCompletedPOsDialog] = useState(false);
   const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
   const [showManualUpload, setShowManualUpload] = useState(false);
-  
+  const [showScanner, setShowScanner] = useState(false);
 
   // Workspace state - use staff workspace if in staffMode, otherwise from localStorage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
@@ -2033,6 +2034,15 @@ const POReceivedItems = () => {
               Manual
             </Button>
             <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-3 text-xs"
+              onClick={() => setShowScanner(true)}
+            >
+              <Camera className="h-3.5 w-3.5 mr-1.5" />
+              Scan
+            </Button>
+            <Button 
               variant="default" 
               size="sm" 
               className="h-8 px-3 text-xs"
@@ -3013,6 +3023,24 @@ const POReceivedItems = () => {
         onOpenChange={setShowManualUpload}
         onConfirmSave={handleManualUploadSave}
         currencySymbol={currencySymbols[currency]}
+      />
+
+      {/* Document Scanner */}
+      <DocumentScanner
+        open={showScanner}
+        onOpenChange={setShowScanner}
+        title="Scan Receiving Document"
+        onTextExtracted={(text) => {
+          setShowScanner(false);
+          setShowManualUpload(true);
+          setTimeout(() => {
+            const textarea = document.querySelector('textarea[placeholder*="Paste"]') as HTMLTextAreaElement;
+            if (textarea) {
+              textarea.value = text;
+              textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }, 100);
+        }}
       />
 
     </div>
