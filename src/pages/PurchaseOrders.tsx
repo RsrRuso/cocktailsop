@@ -813,17 +813,40 @@ const PurchaseOrders = () => {
   // Export receiving report PDF (works for both discrepancy and archived orders)
   const exportDiscrepancyPDF = async (order: PurchaseOrder) => {
     try {
-      // Fetch the full variance data from received records
+      // Fetch ALL variance data from received records (not just limit 1)
+      // This ensures we get the same data that the UI displays for discrepancy counts
       const { data: receivedRecords } = await supabase
         .from('po_received_records')
         .select('variance_data, received_date, total_value')
         .eq('document_number', order.order_number)
-        .order('received_date', { ascending: false })
-        .limit(1);
+        .order('received_date', { ascending: false });
 
-      const record = receivedRecords?.[0] as any;
-      const varianceData = record?.variance_data;
-      let allItems = varianceData?.items || [];
+      // Merge all items from all received records to get complete picture
+      // Use a Map to deduplicate items by item_code, keeping the most recent status
+      const itemsMap = new Map<string, any>();
+      
+      (receivedRecords || []).forEach((record: any) => {
+        const varianceData = record?.variance_data;
+        const items = varianceData?.items || [];
+        
+        items.forEach((item: any) => {
+          const key = item.item_code || item.itemCode || item.item_name || '';
+          // Keep the item with the most informative status (prefer discrepancy statuses)
+          const existing = itemsMap.get(key);
+          if (!existing) {
+            itemsMap.set(key, item);
+          } else {
+            // If current item has a discrepancy status and existing doesn't, use current
+            const currentHasDiscrepancy = ['short', 'missing', 'over', 'extra'].includes(item.status);
+            const existingHasDiscrepancy = ['short', 'missing', 'over', 'extra'].includes(existing.status);
+            if (currentHasDiscrepancy && !existingHasDiscrepancy) {
+              itemsMap.set(key, item);
+            }
+          }
+        });
+      });
+      
+      let allItems = Array.from(itemsMap.values());
 
       // If no variance data, fetch order items from database
       if (allItems.length === 0) {
