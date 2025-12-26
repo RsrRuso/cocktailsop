@@ -26,9 +26,25 @@ export const useMixologistGroups = () => {
   const { data: groups, isLoading } = useQuery({
     queryKey: ['mixologist-groups'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // First get group IDs where user is a member
+      const { data: memberships, error: memberError } = await supabase
+        .from('mixologist_group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      if (memberError) throw memberError;
+      if (!memberships || memberships.length === 0) return [];
+
+      const groupIds = memberships.map(m => m.group_id);
+
+      // Then fetch only those groups
       const { data, error } = await supabase
         .from('mixologist_groups')
         .select('*')
+        .in('id', groupIds)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
