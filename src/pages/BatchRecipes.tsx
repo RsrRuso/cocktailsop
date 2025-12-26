@@ -457,9 +457,9 @@ const BatchRecipes = () => {
                               spirits.map((spirit) => (
                                 <CommandItem
                                   key={spirit.id}
-                                  value={spirit.name}
-                                  onSelect={(currentValue) => {
-                                    updateIngredient(ingredient.id, "name", currentValue);
+                                  value={`${spirit.name} ${spirit.brand || ''} ${spirit.category || ''}`}
+                                  onSelect={() => {
+                                    updateIngredient(ingredient.id, "name", spirit.name);
                                     setOpenSpiritPopover(prev => ({ ...prev, [ingredient.id]: false }));
                                   }}
                                 >
@@ -467,6 +467,9 @@ const BatchRecipes = () => {
                                     <span>{spirit.name}</span>
                                     <span className="text-xs text-muted-foreground">
                                       {spirit.brand && `${spirit.brand} • `}
+                                      {spirit.source_type === 'yield_calculator' && 'Yield • '}
+                                      {spirit.source_type === 'sub_recipe' && 'Sub-Recipe • '}
+                                      {spirit.source_type === 'batch_recipe' && 'Batch • '}
                                       {spirit.bottle_size_ml}ml btl
                                     </span>
                                   </div>
