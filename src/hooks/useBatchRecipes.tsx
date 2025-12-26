@@ -110,12 +110,43 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
         .single();
       
       if (error) throw error;
+
+      // Auto-add to master spirits list (like sub-recipes)
+      const totalMl = recipe.ingredients.reduce((sum, ing) => {
+        const amount = parseFloat(ing.amount) || 0;
+        // Convert to ml based on unit
+        if (ing.unit === 'L') return sum + amount * 1000;
+        if (ing.unit === 'cl') return sum + amount * 10;
+        if (ing.unit === 'oz') return sum + amount * 29.5735;
+        return sum + amount; // assume ml
+      }, 0);
+
+      const { data: existing } = await supabase
+        .from('master_spirits')
+        .select('id')
+        .eq('name', recipe.recipe_name)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from('master_spirits').insert({
+          name: recipe.recipe_name,
+          category: 'Batch Recipe',
+          bottle_size_ml: Math.round(totalMl) || 1000,
+          source_type: 'batch_recipe',
+          source_id: data.id,
+          unit: 'ml',
+          user_id: user.id
+        });
+      }
+
       return data;
     },
     onSuccess: async (data) => {
       recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
-      toast.success("Recipe template saved!");
+      queryClient.invalidateQueries({ queryKey: ['master-spirits'] });
+      toast.success("Recipe template saved and added to spirits list!");
 
       // Notify all mixologist group members using SECURITY DEFINER function
       const { data: { user } } = await supabase.auth.getUser();
@@ -167,12 +198,35 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
           .eq('recipe_id', id);
       }
 
+      // Sync with master spirits if name or ingredients changed
+      if (updates.recipe_name || updates.ingredients) {
+        const updateData: any = {};
+        if (updates.recipe_name) updateData.name = updates.recipe_name;
+        if (updates.ingredients) {
+          const totalMl = updates.ingredients.reduce((sum, ing) => {
+            const amount = parseFloat(ing.amount) || 0;
+            if (ing.unit === 'L') return sum + amount * 1000;
+            if (ing.unit === 'cl') return sum + amount * 10;
+            if (ing.unit === 'oz') return sum + amount * 29.5735;
+            return sum + amount;
+          }, 0);
+          updateData.bottle_size_ml = Math.round(totalMl) || 1000;
+        }
+        
+        await supabase
+          .from('master_spirits')
+          .update(updateData)
+          .eq('source_id', id)
+          .eq('source_type', 'batch_recipe');
+      }
+
       return { id, ...updates };
     },
     onSuccess: () => {
       recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
+      queryClient.invalidateQueries({ queryKey: ['master-spirits'] });
       toast.success("Recipe and all linked productions updated!");
     },
     onError: (error) => {
@@ -182,6 +236,13 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
 
   const deleteRecipe = useMutation({
     mutationFn: async (id: string) => {
+      // Also delete from master spirits
+      await supabase
+        .from('master_spirits')
+        .delete()
+        .eq('source_id', id)
+        .eq('source_type', 'batch_recipe');
+
       const { error } = await supabase
         .from('batch_recipes')
         .delete()
@@ -192,6 +253,7 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
     onSuccess: () => {
       recipesCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
+      queryClient.invalidateQueries({ queryKey: ['master-spirits'] });
       toast.success("Recipe deleted!");
     },
     onError: (error) => {
