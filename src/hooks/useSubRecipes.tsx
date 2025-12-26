@@ -9,12 +9,19 @@ export interface SubRecipeIngredient {
   unit: string;
 }
 
+export interface SubRecipePrepStep {
+  id: string;
+  step_number: number;
+  description: string;
+}
+
 export interface SubRecipe {
   id: string;
   name: string;
   description?: string;
   total_yield_ml: number;
   ingredients: SubRecipeIngredient[];
+  prep_steps: SubRecipePrepStep[];
   user_id: string;
   group_id?: string | null;
   created_at: string;
@@ -60,7 +67,8 @@ export const useSubRecipes = (groupId?: string | null) => {
       
       return filtered.map((recipe: any) => ({
         ...recipe,
-        ingredients: recipe.ingredients as unknown as SubRecipeIngredient[]
+        ingredients: recipe.ingredients as unknown as SubRecipeIngredient[],
+        prep_steps: (recipe.prep_steps || []) as unknown as SubRecipePrepStep[]
       })) as SubRecipe[];
     },
   });
@@ -88,6 +96,7 @@ export const useSubRecipes = (groupId?: string | null) => {
       description?: string; 
       total_yield_ml: number; 
       ingredients: SubRecipeIngredient[]; 
+      prep_steps?: SubRecipePrepStep[];
       group_id?: string | null 
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -101,6 +110,7 @@ export const useSubRecipes = (groupId?: string | null) => {
           description: recipe.description,
           total_yield_ml: recipe.total_yield_ml,
           ingredients: JSON.parse(JSON.stringify(recipe.ingredients)),
+          prep_steps: JSON.parse(JSON.stringify(recipe.prep_steps || [])),
           group_id: recipe.group_id || null,
           user_id: user.id 
         }])
@@ -150,6 +160,7 @@ export const useSubRecipes = (groupId?: string | null) => {
           description: updates.description,
           total_yield_ml: updates.total_yield_ml,
           ingredients: updates.ingredients as any,
+          prep_steps: updates.prep_steps as any,
         })
         .eq('id', id);
       

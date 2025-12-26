@@ -14580,6 +14580,7 @@ export type Database = {
           id: string
           ingredients: Json
           name: string
+          prep_steps: Json | null
           total_yield_ml: number
           updated_at: string
           user_id: string
@@ -14591,6 +14592,7 @@ export type Database = {
           id?: string
           ingredients?: Json
           name: string
+          prep_steps?: Json | null
           total_yield_ml?: number
           updated_at?: string
           user_id: string
@@ -14602,6 +14604,7 @@ export type Database = {
           id?: string
           ingredients?: Json
           name?: string
+          prep_steps?: Json | null
           total_yield_ml?: number
           updated_at?: string
           user_id?: string
@@ -16954,6 +16957,7 @@ export type Database = {
           mode: string
           name: string
           notes: string | null
+          prep_steps: Json | null
           prepared_weight: number | null
           raw_weight: number | null
           total_cost: number | null
@@ -16972,6 +16976,7 @@ export type Database = {
           mode?: string
           name: string
           notes?: string | null
+          prep_steps?: Json | null
           prepared_weight?: number | null
           raw_weight?: number | null
           total_cost?: number | null
@@ -16990,6 +16995,7 @@ export type Database = {
           mode?: string
           name?: string
           notes?: string | null
+          prep_steps?: Json | null
           prepared_weight?: number | null
           raw_weight?: number | null
           total_cost?: number | null

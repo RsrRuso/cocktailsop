@@ -8,13 +8,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Percent, Save, Check, Trash2, Beaker, Apple, BookOpen } from "lucide-react";
+import { ArrowLeft, Percent, Save, Check, Trash2, Beaker, Apple, BookOpen, ListOrdered } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { IngredientCombobox } from "@/components/yield/IngredientCombobox";
 import { useYieldRecipes } from "@/hooks/useYieldRecipes";
+import { PrepStepsEditor, PrepStep } from "@/components/batch/PrepStepsEditor";
+
+interface YieldPrepStep {
+  id: string;
+  step_number: number;
+  description: string;
+}
 
 interface YieldCalculation {
   id: string;
@@ -30,6 +37,7 @@ interface YieldCalculation {
   savedAsRecipe: boolean;
   mode: 'solid' | 'liquid';
   inputIngredients?: Array<{ name: string; amount: number; unit: string }>;
+  prepSteps?: YieldPrepStep[];
 }
 
 const YieldCalculator = () => {
@@ -55,6 +63,7 @@ const YieldCalculator = () => {
   ]);
   const [finalYieldMl, setFinalYieldMl] = useState("");
   const [totalCost, setTotalCost] = useState("");
+  const [liquidPrepSteps, setLiquidPrepSteps] = useState<PrepStep[]>([]);
   
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -153,7 +162,8 @@ const YieldCalculator = () => {
         name: ing.name,
         amount: parseFloat(ing.amount),
         unit: ing.unit
-      }))
+      })),
+      prepSteps: liquidPrepSteps.filter(s => s.description.trim())
     };
 
     setCalculations([newCalc, ...calculations]);
@@ -162,6 +172,7 @@ const YieldCalculator = () => {
     setLiquidIngredients([{ name: "", amount: "", unit: "ml" }]);
     setFinalYieldMl("");
     setTotalCost("");
+    setLiquidPrepSteps([]);
     
     toast.success("Infusion yield calculated");
   };
@@ -244,6 +255,7 @@ const YieldCalculator = () => {
       name: calc.ingredient,
       mode: calc.mode,
       input_ingredients: calc.inputIngredients || [],
+      prep_steps: calc.prepSteps || [],
       raw_weight: calc.rawWeight,
       prepared_weight: calc.preparedWeight,
       final_yield_ml: calc.mode === 'liquid' ? calc.preparedWeight : null,
@@ -556,6 +568,12 @@ const YieldCalculator = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Prep Steps */}
+                <PrepStepsEditor
+                  steps={liquidPrepSteps}
+                  onStepsChange={setLiquidPrepSteps}
+                />
 
                 <Button onClick={handleCalculateLiquid} className="w-full text-sm sm:text-base">
                   Calculate Infusion Yield

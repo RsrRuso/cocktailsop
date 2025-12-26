@@ -8,12 +8,19 @@ export interface YieldRecipeIngredient {
   unit: string;
 }
 
+export interface YieldRecipePrepStep {
+  id: string;
+  step_number: number;
+  description: string;
+}
+
 export interface YieldRecipe {
   id: string;
   user_id: string;
   name: string;
   mode: 'solid' | 'liquid';
   input_ingredients: YieldRecipeIngredient[];
+  prep_steps: YieldRecipePrepStep[];
   raw_weight: number | null;
   prepared_weight: number | null;
   final_yield_ml: number | null;
@@ -46,7 +53,8 @@ export const useYieldRecipes = () => {
       return (data || []).map((r: any) => ({
         ...r,
         mode: r.mode as 'solid' | 'liquid',
-        input_ingredients: (r.input_ingredients as YieldRecipeIngredient[]) || []
+        input_ingredients: (r.input_ingredients as YieldRecipeIngredient[]) || [],
+        prep_steps: (r.prep_steps || []) as YieldRecipePrepStep[]
       }));
     },
   });
@@ -63,6 +71,7 @@ export const useYieldRecipes = () => {
           name: recipe.name,
           mode: recipe.mode,
           input_ingredients: JSON.parse(JSON.stringify(recipe.input_ingredients)),
+          prep_steps: JSON.parse(JSON.stringify(recipe.prep_steps || [])),
           raw_weight: recipe.raw_weight,
           prepared_weight: recipe.prepared_weight,
           final_yield_ml: recipe.final_yield_ml,
