@@ -24,6 +24,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
+import { ManualPOUploadDialog } from "@/components/procurement/ManualPOUploadDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
@@ -110,6 +111,7 @@ const PurchaseOrders = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [showManualPOUpload, setShowManualPOUpload] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1080,6 +1082,87 @@ const PurchaseOrders = () => {
     }
   };
 
+  // Handle manual PO upload save
+  const handleManualPOSave = async (data: {
+    docNumber: string;
+    supplier: string;
+    orderDate: string;
+    items: { item_code: string; item_name: string; quantity: number; unit: string; price_per_unit: number; price_total: number }[];
+  }) => {
+    const totalAmount = data.items.reduce((sum, item) => sum + item.price_total, 0);
+    
+    // Check for duplicate document code
+    if (data.docNumber) {
+      let duplicateQuery = supabase
+        .from('purchase_orders')
+        .select('id, order_number')
+        .eq('order_number', data.docNumber);
+      
+      if (selectedWorkspaceId) {
+        duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+      } else {
+        duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data: existingPO } = await duplicateQuery;
+      
+      if (existingPO && existingPO.length > 0) {
+        throw new Error(`PO with code "${data.docNumber}" already exists`);
+      }
+    }
+    
+    // Create the PO
+    const { data: orderData, error: orderError } = await supabase
+      .from('purchase_orders')
+      .insert({
+        user_id: user?.id,
+        workspace_id: selectedWorkspaceId || null,
+        supplier_name: data.supplier || null,
+        order_number: data.docNumber,
+        order_date: data.orderDate,
+        notes: `Manual upload - ${data.docNumber.toUpperCase().startsWith('TR') ? 'Transfer (Spirits)' : data.docNumber.toUpperCase().startsWith('RQ') ? 'Material' : 'Market List'}`,
+        total_amount: totalAmount,
+        status: 'confirmed',
+        submitted_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
+        submitted_by_email: staffMode ? null : (profile?.email || user?.email || null)
+      })
+      .select()
+      .single();
+    
+    if (orderError) throw orderError;
+    
+    // Create items
+    const itemsToInsert = data.items.map(item => ({
+      purchase_order_id: orderData.id,
+      item_code: item.item_code || null,
+      item_name: item.item_name,
+      unit: item.unit || null,
+      quantity: item.quantity,
+      price_per_unit: item.price_per_unit,
+      price_total: item.price_total
+    }));
+    
+    if (itemsToInsert.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('purchase_order_items')
+        .insert(itemsToInsert);
+      
+      if (itemsError) throw itemsError;
+    }
+    
+    // Auto-add items to master list
+    if (itemsToInsert.length > 0) {
+      try {
+        await addItemsFromPurchaseOrder(orderData.id, itemsToInsert);
+      } catch (e) {
+        console.error('Failed to add to master list:', e);
+      }
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+    toast.success(`PO ${data.docNumber} created with ${data.items.length} items`);
+  };
+
   // Calculate totals
   const totalSpent = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
   const totalItems = orders?.length || 0;
@@ -1267,7 +1350,7 @@ const PurchaseOrders = () => {
         </div>
 
         {/* Upload/Paste Actions - Compact horizontal row */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button 
             variant="outline" 
             onClick={() => fileInputRef.current?.click()}
@@ -1275,7 +1358,7 @@ const PurchaseOrders = () => {
             className="h-10"
           >
             <Upload className="w-4 h-4 mr-2" />
-            Upload
+            <span className="hidden sm:inline">AI</span> Upload
           </Button>
           <Button 
             variant="outline" 
@@ -1284,7 +1367,16 @@ const PurchaseOrders = () => {
             className="h-10"
           >
             <ClipboardPaste className="w-4 h-4 mr-2" />
-            Paste
+            <span className="hidden sm:inline">AI</span> Paste
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowManualPOUpload(true)}
+            disabled={isUploading}
+            className="h-10 border-primary/50"
+          >
+            <ClipboardPaste className="w-4 h-4 mr-2 text-primary" />
+            Manual
           </Button>
           <input
             ref={fileInputRef}
@@ -1920,6 +2012,13 @@ Example format:
       {/* Guide Dialog */}
       <PurchaseOrdersGuide open={showGuide} onOpenChange={setShowGuide} />
 
+      {/* Manual PO Upload Dialog */}
+      <ManualPOUploadDialog
+        open={showManualPOUpload}
+        onOpenChange={setShowManualPOUpload}
+        onConfirmSave={handleManualPOSave}
+        currencySymbol={currencySymbols[currency]}
+      />
 
     </div>
   );
