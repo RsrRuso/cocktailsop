@@ -860,22 +860,18 @@ const PurchaseOrders = () => {
       doc.setTextColor(80, 80, 80);
       doc.text(`Document: ${order.order_number || 'N/A'}    Date: ${format(new Date(), 'MMM d, yyyy, h:mm:ss a')}`, pageWidth / 2, 28, { align: 'center' });
       
+      // PDF-safe currency format (avoid special characters that render incorrectly in PDF)
+      const pdfCurrency = (amount: number) => {
+        const symbol = currency === 'AED' ? 'AED ' : currencySymbols[currency] || '$';
+        return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      };
+      
       // Determine type from order number
       const orderCode = (order.order_number || '').toUpperCase();
       const orderType = orderCode.startsWith('RQ') ? 'MATERIAL' : orderCode.startsWith('ML') ? 'MARKET' : 'ORDER';
       doc.text(`Type: ${orderType}`, pageWidth / 2, 36, { align: 'center' });
       
       let yPos = 58;
-      
-      // Summary section
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(200, 200, 200);
-      doc.roundedRect(14, yPos, pageWidth - 28, 35, 3, 3, 'FD');
-      
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('Summary', 20, yPos + 10);
       
       // Separate items and sort by item_code to maintain consistent order
       const receivedItems = allItems
@@ -909,6 +905,23 @@ const PurchaseOrders = () => {
         return sum + (qty * price);
       }, 0);
       
+      // Calculate deduction amount (value of excluded/pending items)
+      const deductionValue = pendingItems.reduce((sum: number, item: any) => {
+        const qty = item.ordered_qty || item.orderedQty || item.quantity || 0;
+        const price = item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
+        return sum + (qty * price);
+      }, 0);
+      
+      // Summary section - increase height to fit deduction
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(200, 200, 200);
+      doc.roundedRect(14, yPos, pageWidth - 28, 42, 3, 3, 'FD');
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Summary', 20, yPos + 10);
+      
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       
@@ -919,10 +932,13 @@ const PurchaseOrders = () => {
       
       // Right column
       const isMarket = orderType === 'MARKET';
-      doc.text(`${isMarket ? 'Market' : 'Material'} Items: ${receivedCount}/${totalPlaced} (${formatCurrency(receivedValue)})`, 100, yPos + 20);
-      doc.text(`Total Value: ${formatCurrency(receivedValue)}`, 100, yPos + 34);
+      doc.text(`${isMarket ? 'Market' : 'Material'} Items: ${receivedCount}/${totalPlaced} (${pdfCurrency(receivedValue)})`, 100, yPos + 20);
+      doc.setTextColor(220, 38, 38);
+      doc.text(`Deduction: ${pdfCurrency(deductionValue)}`, 100, yPos + 27);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Total Value: ${pdfCurrency(receivedValue)}`, 100, yPos + 34);
       
-      yPos += 45;
+      yPos += 52;
       
       // Received Items Section
       if (receivedItems.length > 0) {
@@ -940,8 +956,8 @@ const PurchaseOrders = () => {
             item.item_name || item.itemName || 'Unknown',
             `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
             String(qty),
-            formatCurrency(price),
-            formatCurrency(qty * price)
+            pdfCurrency(price),
+            pdfCurrency(qty * price)
           ];
         });
         
@@ -989,7 +1005,7 @@ const PurchaseOrders = () => {
             item.item_name || item.itemName || 'Unknown',
             `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
             String(qty),
-            formatCurrency(qty * price)
+            pdfCurrency(qty * price)
           ];
         });
         
