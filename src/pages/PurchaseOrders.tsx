@@ -131,8 +131,18 @@ const PurchaseOrders = () => {
   
   const currencySymbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$' };
   
+  // PDF-safe currency codes (avoid Unicode symbols that break in PDFs)
+  const pdfCurrencyCodes: Record<string, string> = { USD: 'USD', EUR: 'EUR', GBP: 'GBP', AED: 'AED', AUD: 'AUD' };
+  
   const formatCurrency = (amount: number) => {
     return `${currencySymbols[currency]}${amount.toFixed(2)}`;
+  };
+  
+  // PDF-safe currency formatter - uses text codes instead of Unicode symbols
+  const formatCurrencyPDFSafe = (amount: number) => {
+    const parts = amount.toFixed(2).split('.');
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return `${pdfCurrencyCodes[currency]} ${intPart}.${parts[1]}`;
   };
   
   const handleCurrencyChange = (newCurrency: 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') => {
@@ -496,8 +506,8 @@ const PurchaseOrders = () => {
       item.item_name,
       item.unit || '-',
       item.quantity.toString(),
-      formatCurrency(item.price_per_unit),
-      formatCurrency(item.price_total)
+      formatCurrencyPDFSafe(item.price_per_unit),
+      formatCurrencyPDFSafe(item.price_total)
     ]);
 
     autoTable(doc, {
@@ -539,7 +549,7 @@ const PurchaseOrders = () => {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('TOTAL', pageWidth - 65, finalY + 14);
-    doc.text(formatCurrency(Number(order.total_amount)), pageWidth - 15, finalY + 14, { align: 'right' });
+    doc.text(formatCurrencyPDFSafe(Number(order.total_amount)), pageWidth - 15, finalY + 14, { align: 'right' });
 
     // Notes if available
     if (order.notes) {
@@ -862,8 +872,9 @@ const PurchaseOrders = () => {
       
       // PDF-safe currency format (avoid special characters that render incorrectly in PDF)
       const pdfCurrency = (amount: number) => {
-        const symbol = currency === 'AED' ? 'AED ' : currencySymbols[currency] || '$';
-        return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const parts = amount.toFixed(2).split('.');
+        const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return `${pdfCurrencyCodes[currency]} ${intPart}.${parts[1]}`;
       };
       
       // Determine type from order number
@@ -1287,7 +1298,8 @@ const PurchaseOrders = () => {
         {viewMode === 'overview' && (
           <PurchaseOrderAnalytics 
             analytics={analytics} 
-            formatCurrency={formatCurrency} 
+            formatCurrency={formatCurrency}
+            currency={currency}
           />
         )}
 

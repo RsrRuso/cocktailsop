@@ -36,21 +36,27 @@ interface CombinedProcurementAnalyticsProps {
   receivingAnalytics: ReceivingAnalyticsSummary;
   formatCurrency: (amount: number) => string;
   perDocumentComparison?: PerDocumentComparison[];
+  currency?: string;
 }
 
 export const CombinedProcurementAnalytics = ({ 
   purchaseAnalytics, 
   receivingAnalytics, 
   formatCurrency,
-  perDocumentComparison
+  perDocumentComparison,
+  currency = 'AED'
 }: CombinedProcurementAnalyticsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'comparison' | 'variance' | 'trends'>('overview');
+
+  // PDF-safe currency codes (avoid Unicode symbols that break in PDFs)
+  const pdfCurrencyCodes: Record<string, string> = { USD: 'USD', EUR: 'EUR', GBP: 'GBP', AED: 'AED', AUD: 'AUD' };
 
   // PDF-safe currency formatter
   const formatCurrencyPDF = (amount: number): string => {
     const parts = amount.toFixed(2).split('.');
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return 'AED ' + intPart + '.' + parts[1];
+    const currencyCode = pdfCurrencyCodes[currency] || currency || 'AED';
+    return currencyCode + ' ' + intPart + '.' + parts[1];
   };
 
   // PDF theme colors
