@@ -55,36 +55,33 @@ export const ManualTextUploadDialog = ({
   const [items, setItems] = useState<ParsedItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Auto-detect delimiter from text
-  const detectDelimiter = (text: string): 'tab' | 'comma' | 'semicolon' | 'space' => {
-    const firstLine = text.split('\n')[0] || '';
-    if (firstLine.includes('\t')) return 'tab';
-    if (firstLine.includes(';')) return 'semicolon';
-    if (firstLine.includes(',')) return 'comma';
-    if (/\s{2,}/.test(firstLine)) return 'space';
-    return 'tab';
-  };
-
   const parseWithDelimiter = (text: string, delim: 'tab' | 'comma' | 'semicolon' | 'space'): string[][] => {
     const lines = text.trim().split('\n').filter(line => line.trim());
     
     return lines.map(line => {
+      let cells: string[];
       switch (delim) {
         case 'tab':
-          return line.split('\t').map(cell => cell.trim()).filter(c => c);
+          cells = line.split('\t').map(cell => cell.trim());
+          break;
         case 'comma':
-          return line.split(',').map(cell => cell.trim()).filter(c => c);
+          cells = line.split(',').map(cell => cell.trim());
+          break;
         case 'semicolon':
-          return line.split(';').map(cell => cell.trim()).filter(c => c);
+          cells = line.split(';').map(cell => cell.trim());
+          break;
         case 'space':
-          // Split by 2+ spaces or use intelligent splitting
-          const spaceSplit = line.split(/\s{2,}/).map(cell => cell.trim()).filter(c => c);
-          if (spaceSplit.length > 1) return spaceSplit;
-          // Fallback: split by single space but try to keep names together
-          return line.split(/\s+/).map(cell => cell.trim()).filter(c => c);
+          // Split by 2+ spaces
+          cells = line.split(/\s{2,}/).map(cell => cell.trim());
+          break;
         default:
-          return [line.trim()];
+          cells = [line.trim()];
       }
+      // Keep empty cells to preserve column positions, but filter trailing empties
+      while (cells.length > 0 && !cells[cells.length - 1]) {
+        cells.pop();
+      }
+      return cells;
     });
   };
 
@@ -95,23 +92,29 @@ export const ManualTextUploadDialog = ({
       return;
     }
 
-    // Auto-detect delimiter if current one produces only 1 column
-    let bestDelimiter = delimiter;
-    let bestRows = parseWithDelimiter(rawText, delimiter);
-    const maxColsWithCurrent = Math.max(...bestRows.map(r => r.length), 0);
-    
-    if (maxColsWithCurrent <= 1) {
-      // Try to auto-detect a better delimiter
-      const detected = detectDelimiter(rawText);
-      const detectedRows = parseWithDelimiter(rawText, detected);
-      const detectedMaxCols = Math.max(...detectedRows.map(r => r.length), 0);
-      
-      if (detectedMaxCols > maxColsWithCurrent) {
-        bestDelimiter = detected;
-        bestRows = detectedRows;
-        setDelimiter(detected);
-        toast.info(`Auto-detected "${detected}" delimiter`);
+    // Try ALL delimiters and pick the one that gives most columns
+    const delimiters: Array<'tab' | 'comma' | 'semicolon' | 'space'> = ['tab', 'comma', 'semicolon', 'space'];
+    let bestDelimiter: 'tab' | 'comma' | 'semicolon' | 'space' = delimiter;
+    let bestRows: string[][] = [];
+    let maxCols = 0;
+
+    for (const d of delimiters) {
+      const rows = parseWithDelimiter(rawText, d);
+      const cols = Math.max(...rows.map(r => r.length), 0);
+      console.log(`Delimiter "${d}" produced ${cols} columns from ${rows.length} rows`);
+      if (cols > maxCols) {
+        maxCols = cols;
+        bestRows = rows;
+        bestDelimiter = d;
       }
+    }
+
+    console.log(`Best delimiter: "${bestDelimiter}" with ${maxCols} columns`);
+    console.log('Sample row:', bestRows[0]);
+
+    if (bestDelimiter !== delimiter) {
+      setDelimiter(bestDelimiter);
+      toast.info(`Auto-detected "${bestDelimiter}" delimiter`);
     }
 
     if (bestRows.length === 0) {
@@ -121,7 +124,6 @@ export const ManualTextUploadDialog = ({
 
     setParsedRows(bestRows);
     
-    const maxCols = Math.max(...bestRows.map(r => r.length), 0);
     if (maxCols >= 5) {
       setColumnMap({ code: 0, name: 1, qty: 2, unit: 3, price: 4 });
     } else if (maxCols >= 3) {
