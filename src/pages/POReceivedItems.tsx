@@ -583,6 +583,123 @@ const POReceivedItems = () => {
         item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
+  // Handle Transfer Document (TR prefix) - direct stock addition without PO comparison
+  // Items with same code/name are summed together
+  const handleTransferDocument = async (parsed: any, documentCode: string) => {
+    if (!user) return;
+    
+    const receivedDate = new Date().toISOString().split('T')[0];
+    
+    // Sum quantities for repeated items (by item_code or item_name)
+    const itemsMap = new Map<string, {
+      item_code: string;
+      item_name: string;
+      unit: string;
+      quantity: number;
+      price_per_unit: number;
+      price_total: number;
+    }>();
+    
+    (parsed.items || []).forEach((item: any) => {
+      const itemCode = item.item_code || '';
+      const itemName = item.item_name || item.name || '';
+      // Use item_code as primary key, fallback to normalized name
+      const key = itemCode 
+        ? normalizeItemCode(itemCode) 
+        : itemName.toLowerCase().trim().replace(/\s+/g, ' ');
+      
+      if (!key) return;
+      
+      const existing = itemsMap.get(key);
+      const qty = Number(item.quantity) || 0;
+      const unitPrice = Number(item.price_per_unit) || 0;
+      
+      if (existing) {
+        // Sum quantities and recalculate total
+        existing.quantity += qty;
+        existing.price_total = existing.quantity * existing.price_per_unit;
+      } else {
+        itemsMap.set(key, {
+          item_code: itemCode,
+          item_name: itemName,
+          unit: item.unit || 'EA',
+          quantity: qty,
+          price_per_unit: unitPrice,
+          price_total: qty * unitPrice
+        });
+      }
+    });
+    
+    const consolidatedItems = Array.from(itemsMap.values()).filter(i => i.quantity > 0);
+    
+    if (consolidatedItems.length === 0) {
+      toast.error("No valid items found in transfer document");
+      return;
+    }
+    
+    // Calculate totals
+    const totalQty = consolidatedItems.reduce((sum, i) => sum + i.quantity, 0);
+    const totalValue = consolidatedItems.reduce((sum, i) => sum + i.price_total, 0);
+    
+    // Save the transfer record (no variance data since no PO comparison)
+    const { data: savedRecord, error: recordError } = await (supabase as any)
+      .from('po_received_records')
+      .insert({
+        user_id: user.id,
+        workspace_id: selectedWorkspaceId || null,
+        supplier_name: parsed.location || 'Stock Transfer',
+        document_number: documentCode,
+        received_date: receivedDate,
+        total_items: consolidatedItems.length,
+        total_quantity: totalQty,
+        total_value: totalValue,
+        status: 'received',
+        variance_data: null, // No variance for transfers
+        received_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
+        received_by_email: staffMode ? null : (profile?.email || user?.email || null)
+      })
+      .select('id')
+      .single();
+    
+    if (recordError) {
+      toast.error("Failed to save transfer record: " + recordError.message);
+      return;
+    }
+    
+    const recordId = savedRecord?.id;
+    
+    // Save individual items
+    for (const item of consolidatedItems) {
+      await addReceivedItem({
+        purchase_order_id: undefined, // No PO link for transfers
+        item_name: item.item_name,
+        quantity: item.quantity,
+        unit: item.unit,
+        unit_price: item.price_per_unit,
+        total_price: item.price_total,
+        received_date: receivedDate,
+        document_number: documentCode,
+        record_id: recordId
+      });
+    }
+    
+    // Sync to LAB Ops stock movements
+    try {
+      await syncToLabOpsMovements(consolidatedItems, recordId, staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null));
+    } catch (syncError) {
+      console.log('LAB Ops sync skipped:', syncError);
+    }
+    
+    // Refresh data
+    queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+    queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
+    
+    toast.success(
+      `Transfer "${documentCode}" saved: ${consolidatedItems.length} items, ${totalQty} units added to stock`,
+      { duration: 5000 }
+    );
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -660,16 +777,20 @@ const POReceivedItems = () => {
             return;
           }
           
-          // Extract document code from parsed data (ML for market, RQ for materials)
+          // Extract document code from parsed data (ML for market, RQ for materials, TR for transfers)
           const documentCode = parsed.doc_no?.trim();
           const normalizedDocCode = documentCode ? normalizeItemCode(documentCode) : null;
           
           // Validate document code exists
           if (!documentCode) {
-            toast.error("Upload rejected: No document code (ML/RQ) found in the file. Please ensure the document has a valid code.", { duration: 6000 });
+            toast.error("Upload rejected: No document code (ML/RQ/TR) found in the file. Please ensure the document has a valid code.", { duration: 6000 });
             setIsUploading(false);
             return;
           }
+          
+          // Check if this is a Transfer document (TR prefix) - these go directly to stock without PO matching
+          const isTransferDocument = documentCode.toUpperCase().startsWith('TR') || 
+                                      documentCode.toUpperCase().includes('-TR');
           
           // Check for duplicate document code in receiving records
           let duplicateQuery = supabase
@@ -697,6 +818,16 @@ const POReceivedItems = () => {
             return;
           }
           
+          // ===== TRANSFER DOCUMENT HANDLING (TR prefix) =====
+          // TR documents are stock transfers - add directly to stock without PO comparison
+          if (isTransferDocument) {
+            await handleTransferDocument(parsed, documentCode);
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+          }
+          
+          // ===== REGULAR PO DOCUMENT HANDLING =====
           // Check if document code exists in any Purchase Order
           let poQuery = supabase
             .from('purchase_orders')
