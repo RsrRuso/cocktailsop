@@ -92,10 +92,10 @@ export const CombinedProcurementAnalytics = ({
   const purchaseItemsList = purchaseAnalytics.topItems || [];
   const receivingItemsList = receivingAnalytics.topItems || [];
 
-  // Compare items between purchase and receiving
-  // Use per-document comparison if provided (accurate), otherwise fallback to aggregate comparison
-  const compareItems = (): PerDocumentComparison[] => {
-    // If we have per-document comparison data, use it (this is the accurate method)
+  // Use per-document comparison ONLY if provided (accurate method from POReceivedItems)
+  // This ensures PDF and UI show the exact same data
+  const itemComparison: PerDocumentComparison[] = (() => {
+    // ALWAYS use per-document comparison data when available - this is the source of truth
     if (perDocumentComparison && perDocumentComparison.length > 0) {
       return perDocumentComparison;
     }
@@ -105,11 +105,13 @@ export const CombinedProcurementAnalytics = ({
     const receivingItems = new Map<string, ReceivingItemSummary>();
     
     purchaseItemsList.forEach(item => {
-      purchaseItems.set(item.item_name.toLowerCase(), item);
+      const key = item.item_name.toLowerCase().trim();
+      purchaseItems.set(key, item);
     });
     
     receivingItemsList.forEach(item => {
-      receivingItems.set(item.item_name.toLowerCase(), item);
+      const key = item.item_name.toLowerCase().trim();
+      receivingItems.set(key, item);
     });
 
     const comparison: PerDocumentComparison[] = [];
@@ -165,9 +167,7 @@ export const CombinedProcurementAnalytics = ({
     });
 
     return comparison.sort((a, b) => Math.abs(b.valueVariance) - Math.abs(a.valueVariance));
-  };
-
-  const itemComparison = compareItems();
+  })();
   const shortItems = itemComparison.filter(i => i.status === 'short' || i.status === 'not-received');
   const overItems = itemComparison.filter(i => i.status === 'over' || i.status === 'extra');
   const matchedItems = itemComparison.filter(i => i.status === 'match');
