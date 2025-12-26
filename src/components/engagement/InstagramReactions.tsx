@@ -102,9 +102,24 @@ export const InstagramReactions = memo(({
     lastTapRef.current = now;
   }, [isLiked, onLike, haptic, disabled]);
 
+  // Check if target is an interactive element (buttons, links, etc.)
+  const isInteractiveElement = useCallback((target: EventTarget | null): boolean => {
+    if (!target || !(target instanceof Element)) return false;
+    
+    const interactiveSelectors = 'button, a, [role="button"], input, select, textarea, [data-no-double-tap]';
+    const element = target as Element;
+    
+    // Check if the target itself or any parent is interactive
+    return element.matches(interactiveSelectors) || element.closest(interactiveSelectors) !== null;
+  }, []);
+
   // Long press for reactions
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (disabled) return;
+    
+    // Skip if tapping on interactive elements (buttons, mute, etc.)
+    if (isInteractiveElement(e.target)) return;
+    
     isLongPressRef.current = false;
     
     longPressTimerRef.current = setTimeout(() => {
@@ -112,7 +127,7 @@ export const InstagramReactions = memo(({
       setShowReactions(true);
       haptic([20, 30, 20]);
     }, 400);
-  }, [haptic, disabled]);
+  }, [haptic, disabled, isInteractiveElement]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (longPressTimerRef.current) {
@@ -120,10 +135,13 @@ export const InstagramReactions = memo(({
       longPressTimerRef.current = null;
     }
     
+    // Skip if tapping on interactive elements (buttons, mute, etc.)
+    if (isInteractiveElement(e.target)) return;
+    
     if (!isLongPressRef.current && !disabled) {
       handleDoubleTap(e);
     }
-  }, [handleDoubleTap, disabled]);
+  }, [handleDoubleTap, disabled, isInteractiveElement]);
 
   const handleTouchMove = useCallback(() => {
     if (longPressTimerRef.current) {
