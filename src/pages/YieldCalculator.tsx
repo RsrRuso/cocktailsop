@@ -38,7 +38,7 @@ const YieldCalculator = () => {
   const [ingredient, setIngredient] = useState("");
   const [rawWeight, setRawWeight] = useState("");
   const [preparedWeight, setPreparedWeight] = useState("");
-  const [unit, setUnit] = useState("lbs");
+  const [unit, setUnit] = useState("kg");
   const [costPerLb, setCostPerLb] = useState("");
   
   // Liquid infusion mode state
@@ -320,9 +320,8 @@ const YieldCalculator = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="lbs">Pounds (lbs)</SelectItem>
+                        <SelectItem value="ml">Milliliters (ml)</SelectItem>
                         <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                        <SelectItem value="oz">Ounces (oz)</SelectItem>
                         <SelectItem value="g">Grams (g)</SelectItem>
                       </SelectContent>
                     </Select>
