@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, RotateCcw, Check, Loader2, ScanLine, FlipHorizontal } from "lucide-react";
+import { Camera, RotateCcw, Check, Loader2, ScanLine, FlipHorizontal, Upload, ImageIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { createWorker } from 'tesseract.js';
 
@@ -18,7 +18,7 @@ export function DocumentScanner({
   onTextExtracted,
   title = "Scan Document"
 }: DocumentScannerProps) {
-  const [step, setStep] = useState<'camera' | 'preview' | 'processing'>('camera');
+  const [step, setStep] = useState<'choose' | 'camera' | 'preview' | 'processing'>('choose');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState('');
@@ -27,6 +27,7 @@ export function DocumentScanner({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startCamera = useCallback(async () => {
     try {
@@ -87,9 +88,22 @@ export function DocumentScanner({
     }
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageData = e.target?.result as string;
+      setCapturedImage(imageData);
+      setStep('preview');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const retake = () => {
     setCapturedImage(null);
-    setStep('camera');
+    setStep('choose');
   };
 
   const toggleCamera = () => {
@@ -132,7 +146,7 @@ export function DocumentScanner({
   const handleClose = () => {
     stopCamera();
     setCapturedImage(null);
-    setStep('camera');
+    setStep('choose');
     setProgress(0);
     setProgressText('');
     onOpenChange(false);
@@ -149,6 +163,45 @@ export function DocumentScanner({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Choose method step */}
+          {step === 'choose' && (
+            <div className="space-y-4 py-4">
+              <p className="text-center text-sm text-muted-foreground mb-6">
+                Choose how to scan your document
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-32 flex flex-col gap-3 border-2 hover:border-primary"
+                  onClick={() => setStep('camera')}
+                >
+                  <Camera className="h-10 w-10 text-primary" />
+                  <span className="font-medium">Use Camera</span>
+                  <span className="text-xs text-muted-foreground">Take a photo</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-32 flex flex-col gap-3 border-2 hover:border-primary"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImageIcon className="h-10 w-10 text-primary" />
+                  <span className="font-medium">Upload Image</span>
+                  <span className="text-xs text-muted-foreground">From gallery</span>
+                </Button>
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          )}
+
           {step === 'camera' && (
             <div className="relative">
               <video 
@@ -172,9 +225,11 @@ export function DocumentScanner({
               </p>
               
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" onClick={toggleCamera} className="flex-1">
-                  <FlipHorizontal className="h-4 w-4 mr-2" />
-                  Flip Camera
+                <Button variant="outline" onClick={() => setStep('choose')} className="flex-1">
+                  Back
+                </Button>
+                <Button variant="outline" onClick={toggleCamera}>
+                  <FlipHorizontal className="h-4 w-4" />
                 </Button>
                 <Button onClick={captureImage} className="flex-1">
                   <Camera className="h-4 w-4 mr-2" />
@@ -189,7 +244,7 @@ export function DocumentScanner({
               <img 
                 src={capturedImage} 
                 alt="Captured document" 
-                className="w-full rounded-lg"
+                className="w-full rounded-lg max-h-[400px] object-contain bg-muted"
               />
               
               <div className="flex gap-2">
