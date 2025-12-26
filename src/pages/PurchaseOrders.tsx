@@ -808,7 +808,7 @@ const PurchaseOrders = () => {
         .from('po_received_records')
         .select('variance_data, received_date, total_value')
         .eq('document_number', order.order_number)
-        .order('received_at', { ascending: false })
+        .order('received_date', { ascending: false })
         .limit(1);
 
       const record = receivedRecords?.[0] as any;
