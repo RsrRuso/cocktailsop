@@ -39,14 +39,17 @@ import {
 import { toast } from "sonner";
 import { useSubRecipes, SubRecipeIngredient, SubRecipe, SubRecipePrepStep } from "@/hooks/useSubRecipes";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
+import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { motion, AnimatePresence } from "framer-motion";
 import { PrepStepsEditor, PrepStepsDisplay, PrepStep } from "@/components/batch/PrepStepsEditor";
+import { IngredientCombobox } from "@/components/yield/IngredientCombobox";
 
 const SubRecipes = () => {
   const navigate = useNavigate();
   const { groups } = useMixologistGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { subRecipes, depletions, isLoading, createSubRecipe, updateSubRecipe, deleteSubRecipe, calculateBreakdown, getTotalDepletion } = useSubRecipes(selectedGroupId);
+  const { spirits } = useMasterSpirits();
   
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -528,10 +531,10 @@ const SubRecipes = () => {
               {ingredients.map((ing, index) => (
                 <div key={ing.id} className="flex gap-2 items-start">
                   <div className="flex-1">
-                    <Input
-                      placeholder="Ingredient name"
+                    <IngredientCombobox
+                      spirits={spirits}
                       value={ing.name}
-                      onChange={(e) => updateIngredient(ing.id, "name", e.target.value)}
+                      onValueChange={(value) => updateIngredient(ing.id, "name", value)}
                     />
                   </div>
                   <div className="w-20">
