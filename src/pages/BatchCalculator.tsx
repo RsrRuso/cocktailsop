@@ -829,6 +829,12 @@ const BatchCalculator = () => {
       const { data: masterSpirits } = await supabase
         .from('master_spirits')
         .select('*');
+
+      // Fetch sub-recipe depletions for this production
+      const { data: subRecipeDepletions } = await supabase
+        .from('sub_recipe_depletions')
+        .select('*')
+        .eq('production_id', production.id);
       
       // Helper function for fuzzy matching spirit names
       const findMatchingSpirit = (ingredientName: string, spirits: any[]) => {
@@ -844,6 +850,11 @@ const BatchCalculator = () => {
       };
       
       const spiritsList = masterSpirits || [];
+      
+      // Create a set of sub-recipe names for quick lookup
+      const subRecipeNames = new Set(
+        spiritsList.filter(s => s.source_type === 'sub_recipe').map(s => s.name.toLowerCase())
+      );
 
       const doc = new jsPDF();
       
@@ -852,25 +863,74 @@ const BatchCalculator = () => {
       let totalLitersProduced = 0;
       let overallIngredientsMap = new Map<string, { amountMl: number; bottles: number; leftoverMl: number; bottleSize?: number }>();
       
+      // Helper to add ingredient to map with sub-recipe expansion
+      const addIngredientToMap = (ing: any, productionId: string, depletions: any[]) => {
+        const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount || 0) : parseFloat(ing.scaled_amount || 0) * 1000;
+        const ingNameLower = ing.ingredient_name.toLowerCase();
+        
+        // Check if this is a sub-recipe
+        const isSubRecipe = subRecipeNames.has(ingNameLower) || 
+          Array.from(subRecipeNames).some(name => 
+            name.replace(/[^a-z0-9]/g, '') === ingNameLower.replace(/[^a-z0-9]/g, '')
+          );
+        
+        if (isSubRecipe && depletions && depletions.length > 0) {
+          // Find the depletion record for this sub-recipe
+          const depletion = depletions.find((d: any) => 
+            d.production_id === productionId && 
+            Math.abs(d.amount_used_ml - amountInMl) < 1
+          );
+          
+          if (depletion && depletion.ingredient_breakdown) {
+            // Expand sub-recipe to its component ingredients
+            const breakdown = depletion.ingredient_breakdown as any[];
+            breakdown.forEach((subIng: any) => {
+              const subIngName = subIng.name;
+              const subIngMl = parseFloat(subIng.scaled_amount || subIng.amount || 0);
+              
+              const existing = overallIngredientsMap.get(subIngName);
+              if (existing) {
+                existing.amountMl += subIngMl;
+              } else {
+                overallIngredientsMap.set(subIngName, {
+                  amountMl: subIngMl,
+                  bottles: 0,
+                  leftoverMl: 0
+                });
+              }
+            });
+            return; // Don't add the sub-recipe itself
+          }
+        }
+        
+        // Regular ingredient or no breakdown found
+        const key = ing.ingredient_name;
+        const existing = overallIngredientsMap.get(key);
+        if (existing) {
+          existing.amountMl += amountInMl;
+        } else {
+          overallIngredientsMap.set(key, {
+            amountMl: amountInMl,
+            bottles: 0,
+            leftoverMl: 0
+          });
+        }
+      };
+      
       if (allProductions) {
+        // First, fetch all sub-recipe depletions for all productions
+        const allProductionIds = allProductions.map((p: any) => p.id);
+        const { data: allDepletions } = await supabase
+          .from('sub_recipe_depletions')
+          .select('*')
+          .in('production_id', allProductionIds);
+        
         allProductions.forEach((prod: any) => {
           totalLitersProduced += prod.target_liters || 0;
           
           if (prod.batch_production_ingredients) {
             prod.batch_production_ingredients.forEach((ing: any) => {
-              const key = `${ing.ingredient_name}`;
-              const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount || 0) : parseFloat(ing.scaled_amount || 0) * 1000;
-              
-              const existing = overallIngredientsMap.get(key);
-              if (existing) {
-                existing.amountMl += amountInMl;
-              } else {
-                overallIngredientsMap.set(key, {
-                  amountMl: amountInMl,
-                  bottles: 0,
-                  leftoverMl: 0
-                });
-              }
+              addIngredientToMap(ing, prod.id, allDepletions || []);
             });
           }
         });
@@ -1033,8 +1093,51 @@ const BatchCalculator = () => {
       doc.setTextColor(...slate);
       doc.setFontSize(8);
       
-      // Modern ingredients table
+      // Modern ingredients table - expand sub-recipes to show component ingredients
       if (ingredients && ingredients.length > 0) {
+        // Build expanded ingredients list
+        const expandedIngredients: { name: string; amount: number; unit: string; isSubRecipeComponent?: boolean; parentSubRecipe?: string }[] = [];
+        
+        ingredients.forEach((ing: any) => {
+          const ingNameLower = ing.ingredient_name.toLowerCase();
+          const scaledAmount = parseFloat(ing.scaled_amount || 0);
+          
+          // Check if this is a sub-recipe
+          const isSubRecipe = subRecipeNames.has(ingNameLower) || 
+            Array.from(subRecipeNames).some(name => 
+              name.replace(/[^a-z0-9]/g, '') === ingNameLower.replace(/[^a-z0-9]/g, '')
+            );
+          
+          if (isSubRecipe && subRecipeDepletions && subRecipeDepletions.length > 0) {
+            // Find the depletion record for this sub-recipe
+            const depletion = subRecipeDepletions.find((d: any) => 
+              Math.abs(d.amount_used_ml - scaledAmount) < 1
+            );
+            
+            if (depletion && depletion.ingredient_breakdown) {
+              // Add each sub-recipe component
+              const breakdown = depletion.ingredient_breakdown as any[];
+              breakdown.forEach((subIng: any) => {
+                expandedIngredients.push({
+                  name: subIng.name,
+                  amount: parseFloat(subIng.scaled_amount || subIng.amount || 0),
+                  unit: subIng.unit || 'ml',
+                  isSubRecipeComponent: true,
+                  parentSubRecipe: ing.ingredient_name
+                });
+              });
+              return; // Don't add the sub-recipe itself
+            }
+          }
+          
+          // Regular ingredient
+          expandedIngredients.push({
+            name: ing.ingredient_name,
+            amount: scaledAmount,
+            unit: ing.unit
+          });
+        });
+        
         // Table header with gradient effect
         doc.setFont("helvetica", "bold");
         doc.setFillColor(...deepBlue);
@@ -1050,7 +1153,7 @@ const BatchCalculator = () => {
         doc.setFont("helvetica", "normal");
         let totalIngredientsQty = 0;
         
-        ingredients.forEach((ing: any, index: number) => {
+        expandedIngredients.forEach((ing: any, index: number) => {
           if (index % 2 === 0) {
             doc.setFillColor(...lightGray);
             doc.rect(12, yPos - 2, 186, 5.5, 'F');
@@ -1058,15 +1161,15 @@ const BatchCalculator = () => {
           
           doc.setTextColor(...slate);
           doc.text(`${index + 1}`, 15, yPos + 2);
-          const ingName = ing.ingredient_name.length > 55 ? ing.ingredient_name.substring(0, 55) + '...' : ing.ingredient_name;
+          const ingName = ing.name.length > 55 ? ing.name.substring(0, 55) + '...' : ing.name;
           doc.text(ingName, 25, yPos + 2);
           doc.setTextColor(...emerald);
           doc.setFont("helvetica", "bold");
-          doc.text(ing.scaled_amount.toString(), 145, yPos + 2);
+          doc.text(ing.amount.toFixed(1), 145, yPos + 2);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(...slate);
           doc.text(ing.unit, 175, yPos + 2);
-          totalIngredientsQty += parseFloat(ing.scaled_amount);
+          totalIngredientsQty += ing.amount;
           yPos += 5.5;
         });
         
@@ -1076,18 +1179,18 @@ const BatchCalculator = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.text("TOTAL:", 25, yPos + 2.5);
-        doc.text(`${ingredients.length} Items`, 145, yPos + 2.5);
+        doc.text(`${expandedIngredients.length} Items`, 145, yPos + 2.5);
         yPos += 10;
         
-        // Separate ingredients into sharp bottles and required ml
+        // Separate ingredients into sharp bottles and required ml - use expanded list
         const sharpBottles: any[] = [];
         const requiredMlItems: any[] = [];
         
-        ingredients.forEach((ing: any) => {
+        expandedIngredients.forEach((ing: any) => {
           const amountInMl = ing.unit === 'ml'
-            ? parseFloat(ing.scaled_amount)
-            : parseFloat(ing.scaled_amount) * 1000;
-          const spirit = findMatchingSpirit(ing.ingredient_name, spiritsList);
+            ? ing.amount
+            : ing.amount * 1000;
+          const spirit = findMatchingSpirit(ing.name, spiritsList);
           
           if (spirit && spirit.bottle_size_ml) {
             const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
@@ -1095,7 +1198,7 @@ const BatchCalculator = () => {
 
             if (fullBottles > 0) {
               sharpBottles.push({
-                name: ing.ingredient_name,
+                name: ing.name,
                 bottles: fullBottles,
                 bottleSize: spirit.bottle_size_ml,
               });
@@ -1103,14 +1206,14 @@ const BatchCalculator = () => {
 
             if (leftoverMl > 0) {
               requiredMlItems.push({
-                name: ing.ingredient_name,
+                name: ing.name,
                 mlNeeded: leftoverMl,
               });
             }
           } else {
             // No bottle size defined - show total ML as required
             requiredMlItems.push({
-              name: ing.ingredient_name,
+              name: ing.name,
               mlNeeded: amountInMl,
             });
           }
@@ -3140,6 +3243,12 @@ const BatchCalculator = () => {
       
       if (error) throw error;
 
+      // Fetch sub-recipe depletions for these productions
+      const { data: subRecipeDepletions } = await supabase
+        .from('sub_recipe_depletions')
+        .select('*')
+        .in('production_id', allProductionIds);
+
       // Fetch master spirits for bottle calculations
       const { data: spirits } = await supabase
         .from('master_spirits')
@@ -3182,25 +3291,87 @@ const BatchCalculator = () => {
       
       yPos += 18;
       
-      // Aggregate ingredients
+      // Aggregate ingredients - expand sub-recipes to their component ingredients
       const ingredientTotals = new Map<string, { totalMl: number; bottleSize: number | null }>();
+      
+      // Create a map of sub-recipe names to check against
+      const subRecipeNames = new Set(
+        spirits?.filter(s => s.source_type === 'sub_recipe').map(s => s.name.toLowerCase()) || []
+      );
       
       if (allIngredients) {
         allIngredients.forEach((ing: any) => {
           const scaledMl = parseFloat(ing.scaled_amount || 0);
-          const matchingSpirit = spirits?.find(s => 
-            s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 
-            ing.ingredient_name.toLowerCase().replace(/[^a-z0-9]/g, '')
-          );
+          const ingNameLower = ing.ingredient_name.toLowerCase();
           
-          const existing = ingredientTotals.get(ing.ingredient_name);
-          if (existing) {
-            existing.totalMl += scaledMl;
+          // Check if this ingredient is a sub-recipe
+          const isSubRecipe = subRecipeNames.has(ingNameLower) || 
+            Array.from(subRecipeNames).some(name => 
+              name.replace(/[^a-z0-9]/g, '') === ingNameLower.replace(/[^a-z0-9]/g, '')
+            );
+          
+          if (isSubRecipe && subRecipeDepletions) {
+            // Find the depletion record for this sub-recipe usage
+            const depletion = subRecipeDepletions.find((d: any) => 
+              d.production_id === ing.production_id && 
+              Math.abs(d.amount_used_ml - scaledMl) < 1
+            );
+            
+            if (depletion && depletion.ingredient_breakdown) {
+              // Add each sub-recipe ingredient instead
+              const breakdown = depletion.ingredient_breakdown as any[];
+              breakdown.forEach((subIng: any) => {
+                const subIngName = subIng.name;
+                const subIngMl = parseFloat(subIng.scaled_amount || subIng.amount || 0);
+                
+                const matchingSpirit = spirits?.find(s => 
+                  s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 
+                  subIngName.toLowerCase().replace(/[^a-z0-9]/g, '')
+                );
+                
+                const existing = ingredientTotals.get(subIngName);
+                if (existing) {
+                  existing.totalMl += subIngMl;
+                } else {
+                  ingredientTotals.set(subIngName, {
+                    totalMl: subIngMl,
+                    bottleSize: matchingSpirit?.bottle_size_ml || null
+                  });
+                }
+              });
+            } else {
+              // No breakdown found, add as-is
+              const matchingSpirit = spirits?.find(s => 
+                s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 
+                ing.ingredient_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+              );
+              
+              const existing = ingredientTotals.get(ing.ingredient_name);
+              if (existing) {
+                existing.totalMl += scaledMl;
+              } else {
+                ingredientTotals.set(ing.ingredient_name, {
+                  totalMl: scaledMl,
+                  bottleSize: matchingSpirit?.bottle_size_ml || null
+                });
+              }
+            }
           } else {
-            ingredientTotals.set(ing.ingredient_name, {
-              totalMl: scaledMl,
-              bottleSize: matchingSpirit?.bottle_size_ml || null
-            });
+            // Regular ingredient - add normally
+            const matchingSpirit = spirits?.find(s => 
+              s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 
+              ing.ingredient_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+            );
+            
+            const existing = ingredientTotals.get(ing.ingredient_name);
+            if (existing) {
+              existing.totalMl += scaledMl;
+            } else {
+              ingredientTotals.set(ing.ingredient_name, {
+                totalMl: scaledMl,
+                bottleSize: matchingSpirit?.bottle_size_ml || null
+              });
+            }
           }
         });
       }
