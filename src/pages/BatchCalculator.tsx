@@ -3902,40 +3902,63 @@ const BatchCalculator = () => {
                         </div>
                         <div className="space-y-2">
                           {batchResults.scaledIngredients.map((ing) => {
-                            const scaledLiters = parseFloat(ing.scaledAmount) / 1000;
-                            const bottlesNeeded = ing.bottle_size_ml 
-                              ? calculateBottles(scaledLiters, ing.bottle_size_ml)
+
+                            const matchedSubRecipe = subRecipes?.find(
+                              (sr) => sr.name.toLowerCase() === ing.name.toLowerCase()
+                            );
+                            const subRecipeBreakdown = matchedSubRecipe
+                              ? calculateSubRecipeBreakdown(matchedSubRecipe, parseFloat(ing.scaledAmount))
                               : null;
                             
                             return (
-                              <div key={ing.id} className="flex justify-between items-center py-2 border-b border-border/50">
-                                <div className="flex-1">
-                                  <span className="font-medium">{ing.name}</span>
-                                  {ing.bottle_size_ml && (
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      ({ing.bottle_size_ml}ml btl)
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-right space-y-1">
-                                  <div className="text-primary font-bold">
-                                    {ing.scaledAmount} {ing.unit}
-                                  </div>
-                                  {ing.bottle_size_ml && (
-                                    <>
-                                      <div className="text-xs font-semibold text-emerald-600">
-                                        {Math.floor(parseFloat(ing.scaledAmount) / ing.bottle_size_ml)} btl
-                                        {parseFloat(ing.scaledAmount) % ing.bottle_size_ml > 0 && 
-                                          ` + ${(parseFloat(ing.scaledAmount) % ing.bottle_size_ml).toFixed(0)} ml`
-                                        }
-                                      </div>
-                                      {parseFloat(ing.scaledAmount) % ing.bottle_size_ml > 0 && (
-                                        <div className="text-xs text-amber-600">
-                                          {(ing.bottle_size_ml - (parseFloat(ing.scaledAmount) % ing.bottle_size_ml)).toFixed(0)} ml leftover
+                              <div key={ing.id} className="py-2 border-b border-border/50">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <span className="font-medium">{ing.name}</span>
+                                    {ing.bottle_size_ml && (
+                                      <span className="text-xs text-muted-foreground ml-2">
+                                        ({ing.bottle_size_ml}ml btl)
+                                      </span>
+                                    )}
+
+                                    {subRecipeBreakdown && subRecipeBreakdown.length > 0 && (
+                                      <details className="mt-2">
+                                        <summary className="cursor-pointer text-xs text-muted-foreground">
+                                          Sub-recipe depletion breakdown
+                                        </summary>
+                                        <div className="mt-2 space-y-1 pl-3 border-l border-border/60">
+                                          {subRecipeBreakdown.map((b: any) => (
+                                            <div key={b.id} className="flex items-center justify-between gap-3 text-xs">
+                                              <span className="text-muted-foreground">{b.name}</span>
+                                              <span className="font-medium tabular-nums">
+                                                {b.scaled_amount} {b.unit}
+                                              </span>
+                                            </div>
+                                          ))}
                                         </div>
-                                      )}
-                                    </>
-                                  )}
+                                      </details>
+                                    )}
+                                  </div>
+                                  <div className="text-right space-y-1">
+                                    <div className="text-primary font-bold">
+                                      {ing.scaledAmount} {ing.unit}
+                                    </div>
+                                    {ing.bottle_size_ml && (
+                                      <>
+                                        <div className="text-xs font-semibold text-emerald-600">
+                                          {Math.floor(parseFloat(ing.scaledAmount) / ing.bottle_size_ml)} btl
+                                          {parseFloat(ing.scaledAmount) % ing.bottle_size_ml > 0 && 
+                                            ` + ${(parseFloat(ing.scaledAmount) % ing.bottle_size_ml).toFixed(0)} ml`
+                                          }
+                                        </div>
+                                        {parseFloat(ing.scaledAmount) % ing.bottle_size_ml > 0 && (
+                                          <div className="text-xs text-amber-600">
+                                            {(ing.bottle_size_ml - (parseFloat(ing.scaledAmount) % ing.bottle_size_ml)).toFixed(0)} ml leftover
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
