@@ -30,6 +30,7 @@ import {
   detectDocumentType,
   normalizeItemCode 
 } from "@/components/procurement/EnhancedReceivingDialog";
+import { ManualTextUploadDialog } from "@/components/procurement/ManualTextUploadDialog";
 
 interface VarianceItem {
   item_code?: string;
@@ -146,6 +147,7 @@ const POReceivedItems = () => {
   const [showPendingPOsDialog, setShowPendingPOsDialog] = useState(false);
   const [showCompletedPOsDialog, setShowCompletedPOsDialog] = useState(false);
   const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
+  const [showManualUpload, setShowManualUpload] = useState(false);
   
 
   // Workspace state - use staff workspace if in staffMode, otherwise from localStorage
@@ -698,6 +700,83 @@ const POReceivedItems = () => {
       `Transfer "${documentCode}" saved: ${consolidatedItems.length} items, ${totalQty} units added to stock`,
       { duration: 5000 }
     );
+  };
+
+  // Handle manual text upload confirmation
+  const handleManualUploadSave = async (data: {
+    docNumber: string;
+    supplier: string;
+    items: { item_code: string; item_name: string; quantity: number; unit: string; price: number; total: number }[];
+  }) => {
+    if (!user) throw new Error("Not authenticated");
+    
+    const receivedDate = new Date().toISOString().split('T')[0];
+    const documentCode = data.docNumber;
+    
+    // Check for duplicate document
+    let duplicateQuery = supabase
+      .from('po_received_records')
+      .select('id')
+      .eq('document_number', documentCode);
+    
+    if (selectedWorkspaceId) {
+      duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+    } else {
+      duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+    }
+    
+    const { data: existing } = await duplicateQuery;
+    if (existing && existing.length > 0) {
+      throw new Error(`Document "${documentCode}" already exists`);
+    }
+    
+    // Calculate totals
+    const totalQty = data.items.reduce((sum, i) => sum + i.quantity, 0);
+    const totalValue = data.items.reduce((sum, i) => sum + i.total, 0);
+    
+    // Save the receiving record
+    const { data: savedRecord, error: recordError } = await (supabase as any)
+      .from('po_received_records')
+      .insert({
+        user_id: user.id,
+        workspace_id: selectedWorkspaceId || null,
+        supplier_name: data.supplier,
+        document_number: documentCode,
+        received_date: receivedDate,
+        total_items: data.items.length,
+        total_quantity: totalQty,
+        total_value: totalValue,
+        status: 'received',
+        variance_data: null,
+        received_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
+        received_by_email: staffMode ? null : (profile?.email || user?.email || null)
+      })
+      .select('id')
+      .single();
+    
+    if (recordError) throw recordError;
+    const recordId = savedRecord?.id;
+    
+    // Save individual items
+    for (const item of data.items) {
+      await addReceivedItem({
+        purchase_order_id: undefined,
+        item_name: item.item_name,
+        quantity: item.quantity,
+        unit: item.unit,
+        unit_price: item.price,
+        total_price: item.total,
+        received_date: receivedDate,
+        document_number: documentCode,
+        record_id: recordId
+      });
+    }
+    
+    // Refresh data
+    queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+    queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
+    
+    toast.success(`Manual upload saved: ${data.items.length} items, ${totalQty} units`);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1848,6 +1927,15 @@ const POReceivedItems = () => {
               className="hidden"
             />
             <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-3 text-xs"
+              onClick={() => setShowManualUpload(true)}
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Manual
+            </Button>
+            <Button 
               variant="default" 
               size="sm" 
               className="h-8 px-3 text-xs"
@@ -2822,6 +2910,13 @@ const POReceivedItems = () => {
       {/* Guide Dialog */}
       <PurchaseOrdersGuide open={showGuide} onOpenChange={setShowGuide} />
 
+      {/* Manual Text Upload Dialog */}
+      <ManualTextUploadDialog
+        open={showManualUpload}
+        onOpenChange={setShowManualUpload}
+        onConfirmSave={handleManualUploadSave}
+        currencySymbol={currencySymbols[currency]}
+      />
 
     </div>
   );
