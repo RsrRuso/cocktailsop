@@ -905,7 +905,7 @@ const PurchaseOrders = () => {
       // Calculate totals
       const receivedValue = receivedItems.reduce((sum: number, item: any) => {
         const qty = item.received_qty || item.receivedQty || 0;
-        const price = item.unit_price || item.unitPrice || item.price_per_unit || 0;
+        const price = item.received_price || item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
         return sum + (qty * price);
       }, 0);
       
@@ -934,7 +934,7 @@ const PurchaseOrders = () => {
         
         const receivedTable = receivedItems.map((item: any) => {
           const qty = item.received_qty || item.receivedQty || item.quantity || 0;
-          const price = item.unit_price || item.unitPrice || item.price_per_unit || 0;
+          const price = item.received_price || item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
           return [
             item.item_code || item.itemCode || '-',
             item.item_name || item.itemName || 'Unknown',
@@ -983,7 +983,7 @@ const PurchaseOrders = () => {
         
         const pendingTable = pendingItems.map((item: any) => {
           const qty = item.ordered_qty || item.orderedQty || item.quantity || 0;
-          const price = item.unit_price || item.unitPrice || item.price_per_unit || 0;
+          const price = item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
           return [
             item.item_code || item.itemCode || '-',
             item.item_name || item.itemName || 'Unknown',
