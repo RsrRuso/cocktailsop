@@ -21,6 +21,17 @@ export interface SubRecipe {
   updated_at: string;
 }
 
+export interface SubRecipeDepletion {
+  id: string;
+  sub_recipe_id: string;
+  production_id?: string;
+  amount_used_ml: number;
+  ingredient_breakdown: SubRecipeIngredient[];
+  depleted_by_user_id?: string;
+  depleted_at: string;
+  notes?: string;
+}
+
 export const useSubRecipes = (groupId?: string | null) => {
   const queryClient = useQueryClient();
 
@@ -51,6 +62,23 @@ export const useSubRecipes = (groupId?: string | null) => {
         ...recipe,
         ingredients: recipe.ingredients as unknown as SubRecipeIngredient[]
       })) as SubRecipe[];
+    },
+  });
+
+  // Fetch depletions for sub-recipes
+  const { data: depletions } = useQuery({
+    queryKey: ['sub-recipe-depletions'],
+    queryFn: async (): Promise<SubRecipeDepletion[]> => {
+      const { data, error } = await supabase
+        .from('sub_recipe_depletions')
+        .select('*')
+        .order('depleted_at', { ascending: false });
+      
+      if (error) throw error;
+      return (data || []).map((d: any) => ({
+        ...d,
+        ingredient_breakdown: d.ingredient_breakdown as SubRecipeIngredient[]
+      }));
     },
   });
 
@@ -178,6 +206,53 @@ export const useSubRecipes = (groupId?: string | null) => {
     },
   });
 
+  // Record sub-recipe usage/depletion
+  const recordDepletion = useMutation({
+    mutationFn: async ({ 
+      subRecipeId, 
+      amountUsedMl, 
+      productionId,
+      notes 
+    }: { 
+      subRecipeId: string; 
+      amountUsedMl: number;
+      productionId?: string;
+      notes?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Get the sub-recipe to calculate breakdown
+      const subRecipe = subRecipes?.find(r => r.id === subRecipeId);
+      if (!subRecipe) throw new Error("Sub-recipe not found");
+
+      const breakdown = calculateBreakdown(subRecipe, amountUsedMl);
+
+      const { data, error } = await supabase
+        .from('sub_recipe_depletions')
+        .insert({
+          sub_recipe_id: subRecipeId,
+          production_id: productionId || null,
+          amount_used_ml: amountUsedMl,
+          ingredient_breakdown: JSON.parse(JSON.stringify(breakdown)),
+          depleted_by_user_id: user.id,
+          notes: notes || null
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sub-recipe-depletions'] });
+      toast.success("Sub-recipe depletion recorded!");
+    },
+    onError: (error) => {
+      toast.error("Failed to record depletion: " + error.message);
+    },
+  });
+
   // Calculate ingredient breakdown for a given amount of sub-recipe
   const calculateBreakdown = (subRecipe: SubRecipe, amountMl: number) => {
     const ratio = amountMl / subRecipe.total_yield_ml;
@@ -187,12 +262,34 @@ export const useSubRecipes = (groupId?: string | null) => {
     }));
   };
 
+  // Get sub-recipe by ID (used for ingredient lookup in batch calculator)
+  const getSubRecipeById = (id: string) => {
+    return subRecipes?.find(r => r.id === id);
+  };
+
+  // Get sub-recipe by name (used when selecting ingredient in batch calculator)
+  const getSubRecipeByName = (name: string) => {
+    return subRecipes?.find(r => r.name.toLowerCase() === name.toLowerCase());
+  };
+
+  // Get total depletion for a sub-recipe
+  const getTotalDepletion = (subRecipeId: string) => {
+    return (depletions || [])
+      .filter(d => d.sub_recipe_id === subRecipeId)
+      .reduce((sum, d) => sum + d.amount_used_ml, 0);
+  };
+
   return {
     subRecipes,
+    depletions,
     isLoading,
     createSubRecipe: createSubRecipe.mutate,
     updateSubRecipe: updateSubRecipe.mutate,
     deleteSubRecipe: deleteSubRecipe.mutate,
+    recordDepletion: recordDepletion.mutate,
     calculateBreakdown,
+    getSubRecipeById,
+    getSubRecipeByName,
+    getTotalDepletion,
   };
 };

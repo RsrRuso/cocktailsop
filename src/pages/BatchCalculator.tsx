@@ -18,11 +18,12 @@ import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarCha
 import { ShareAnalyticsDialog } from "@/components/batch/ShareAnalyticsDialog";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
-import { useBatchProductions } from "@/hooks/useBatchProductions";
+import { useBatchProductions, SubRecipeDepletionData } from "@/hooks/useBatchProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { useGroupAdmin } from "@/hooks/useGroupAdmin";
 import { useBatchActivityTracker } from "@/hooks/useBatchActivityTracker";
+import { useSubRecipes } from "@/hooks/useSubRecipes";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
 import { ActivityTrackingPanel } from "@/components/batch-calculator/ActivityTrackingPanel";
 import QRCode from "qrcode";
@@ -142,6 +143,7 @@ const BatchCalculator = () => {
   );
   const { groups, createGroup, updateGroup, deleteGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
+  const { subRecipes, calculateBreakdown: calculateSubRecipeBreakdown } = useSubRecipes(selectedGroupId);
   const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
   const queryClient = useQueryClient();
   
@@ -637,6 +639,30 @@ const BatchCalculator = () => {
         })),
       });
     } else {
+      // Detect sub-recipes in ingredients and prepare depletion data
+      const subRecipeDepletions: SubRecipeDepletionData[] = [];
+      
+      if (subRecipes && subRecipes.length > 0) {
+        calculation.scaledIngredients.forEach((ing) => {
+          // Check if this ingredient is a sub-recipe
+          const matchedSubRecipe = subRecipes.find(
+            sr => sr.name.toLowerCase() === ing.name.toLowerCase()
+          );
+          
+          if (matchedSubRecipe) {
+            const scaledAmount = parseFloat(ing.scaledAmount);
+            const breakdown = calculateSubRecipeBreakdown(matchedSubRecipe, scaledAmount);
+            
+            subRecipeDepletions.push({
+              subRecipeId: matchedSubRecipe.id,
+              subRecipeName: matchedSubRecipe.name,
+              amountUsedMl: scaledAmount,
+              ingredientBreakdown: breakdown
+            });
+          }
+        });
+      }
+
       // Create new production via hook, then update QR code after
       createProduction(
         {
@@ -659,6 +685,7 @@ const BatchCalculator = () => {
             scaled_amount: parseFloat(ing.scaledAmount),
             unit: ing.unit,
           })),
+          subRecipeDepletions: subRecipeDepletions.length > 0 ? subRecipeDepletions : undefined,
         }
       );
     }
