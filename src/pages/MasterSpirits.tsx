@@ -188,9 +188,14 @@ const MasterSpirits = () => {
                             Sub-Recipe
                           </span>
                         )}
-                        {spirit.source_type === 'yield' && (
+                        {spirit.source_type === 'yield_calculator' && (
                           <span className="px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-600 rounded-full">
                             Yield Product
+                          </span>
+                        )}
+                        {spirit.source_type === 'batch_recipe' && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-600 rounded-full">
+                            Batch Recipe
                           </span>
                         )}
                       </div>

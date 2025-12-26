@@ -54,7 +54,7 @@ export function IngredientCombobox({ spirits, value, onValueChange }: Ingredient
               {spirits?.map((spirit) => (
                 <CommandItem
                   key={spirit.id}
-                  value={`${spirit.name} ${spirit.brand || ''}`}
+                  value={`${spirit.name} ${spirit.brand || ''} ${spirit.category || ''}`}
                   onSelect={() => {
                     onValueChange(spirit.name);
                     setOpen(false);
@@ -67,9 +67,16 @@ export function IngredientCombobox({ spirits, value, onValueChange }: Ingredient
                       value === spirit.name ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span className="truncate">
-                    {spirit.name} {spirit.brand ? `(${spirit.brand})` : ''}
-                  </span>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="truncate">{spirit.name}</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {spirit.brand && `${spirit.brand} • `}
+                      {spirit.source_type === 'yield_calculator' && 'Yield • '}
+                      {spirit.source_type === 'sub_recipe' && 'Sub-Recipe • '}
+                      {spirit.source_type === 'batch_recipe' && 'Batch • '}
+                      {spirit.bottle_size_ml}ml
+                    </span>
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>
