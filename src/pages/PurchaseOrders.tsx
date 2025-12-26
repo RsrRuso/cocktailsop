@@ -869,13 +869,26 @@ const PurchaseOrders = () => {
       doc.setTextColor(0, 0, 0);
       doc.text('Summary', 20, yPos + 10);
       
-      // Separate items
-      const receivedItems = allItems.filter((item: any) => 
-        item.status === 'match' || item.status === 'over' || (item.received_qty || item.receivedQty) > 0
-      );
-      const pendingItems = allItems.filter((item: any) => 
-        item.status === 'short' || item.status === 'missing' || item.status === 'extra'
-      );
+      // Separate items and sort by item_code to maintain consistent order
+      const receivedItems = allItems
+        .filter((item: any) => 
+          item.status === 'match' || item.status === 'over' || (item.received_qty || item.receivedQty) > 0
+        )
+        .sort((a: any, b: any) => {
+          const codeA = (a.item_code || a.itemCode || '').toString();
+          const codeB = (b.item_code || b.itemCode || '').toString();
+          return codeA.localeCompare(codeB, undefined, { numeric: true });
+        });
+      
+      const pendingItems = allItems
+        .filter((item: any) => 
+          item.status === 'short' || item.status === 'missing' || item.status === 'extra'
+        )
+        .sort((a: any, b: any) => {
+          const codeA = (a.item_code || a.itemCode || '').toString();
+          const codeB = (b.item_code || b.itemCode || '').toString();
+          return codeA.localeCompare(codeB, undefined, { numeric: true });
+        });
       
       const totalPlaced = allItems.length;
       const receivedCount = receivedItems.length;
