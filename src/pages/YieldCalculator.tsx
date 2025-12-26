@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Percent, Save, Check, Trash2, Beaker, Apple } from "lucide-react";
+import { ArrowLeft, Percent, Save, Check, Trash2, Beaker, Apple, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { IngredientCombobox } from "@/components/yield/IngredientCombobox";
+import { useYieldRecipes } from "@/hooks/useYieldRecipes";
 
 interface YieldCalculation {
   id: string;
@@ -26,6 +27,7 @@ interface YieldCalculation {
   usableCost: number;
   unit: string;
   savedToSpirits: boolean;
+  savedAsRecipe: boolean;
   mode: 'solid' | 'liquid';
   inputIngredients?: Array<{ name: string; amount: number; unit: string }>;
 }
@@ -34,8 +36,10 @@ const YieldCalculator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { spirits } = useMasterSpirits();
+  const { recipes, saveRecipe, deleteRecipe, isSaving } = useYieldRecipes();
   const [calculations, setCalculations] = useState<YieldCalculation[]>([]);
-  const [activeTab, setActiveTab] = useState<'solid' | 'liquid'>('solid');
+  const [activeTab, setActiveTab] = useState<'solid' | 'liquid'>('liquid');
+  const [viewMode, setViewMode] = useState<'calculate' | 'saved'>('calculate');
   
   // Solid mode state
   const [ingredient, setIngredient] = useState("");
@@ -85,6 +89,7 @@ const YieldCalculator = () => {
       usableCost,
       unit,
       savedToSpirits: false,
+      savedAsRecipe: false,
       mode: 'solid'
     };
 
@@ -142,6 +147,7 @@ const YieldCalculator = () => {
       usableCost: costPerMl,
       unit: 'ml',
       savedToSpirits: false,
+      savedAsRecipe: false,
       mode: 'liquid',
       inputIngredients: validIngredients.map(ing => ({
         name: ing.name,
@@ -233,6 +239,26 @@ const YieldCalculator = () => {
     toast.success("Calculation removed");
   };
 
+  const handleSaveAsRecipe = (calc: YieldCalculation) => {
+    saveRecipe({
+      name: calc.ingredient,
+      mode: calc.mode,
+      input_ingredients: calc.inputIngredients || [],
+      raw_weight: calc.rawWeight,
+      prepared_weight: calc.preparedWeight,
+      final_yield_ml: calc.mode === 'liquid' ? calc.preparedWeight : null,
+      total_cost: calc.costPerLb,
+      unit: calc.unit,
+      yield_percentage: calc.yieldPercentage,
+      wastage: calc.wastage,
+      cost_per_unit: calc.usableCost,
+      notes: null,
+    });
+    setCalculations(calculations.map(c => 
+      c.id === calc.id ? { ...c, savedAsRecipe: true } : c
+    ));
+  };
+
   const averageYield = calculations.length > 0
     ? calculations.reduce((sum, calc) => sum + calc.yieldPercentage, 0) / calculations.length
     : 0;
@@ -247,24 +273,111 @@ const YieldCalculator = () => {
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-6 max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
           <Button
             variant="ghost"
             size="icon"
+            className="shrink-0"
             onClick={() => navigate("/ops-tools")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gradient-primary">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-bold text-gradient-primary truncate">
               Yield Calculator
             </h1>
-            <p className="text-muted-foreground">
-              Calculate usable yield & true ingredient costs
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Calculate yield & true costs
             </p>
           </div>
+          <Button
+            variant={viewMode === 'saved' ? 'default' : 'outline'}
+            size="sm"
+            className="shrink-0 gap-1 text-xs sm:text-sm"
+            onClick={() => setViewMode(viewMode === 'calculate' ? 'saved' : 'calculate')}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">{viewMode === 'calculate' ? 'Saved Recipes' : 'Calculator'}</span>
+            <span className="sm:hidden">{recipes?.length || 0}</span>
+          </Button>
         </div>
+
+        {viewMode === 'saved' ? (
+          <div className="space-y-3">
+            <h3 className="font-semibold text-lg">Saved Yield Recipes</h3>
+            {!recipes || recipes.length === 0 ? (
+              <Card className="glass">
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  <p>No saved recipes yet. Calculate yields and save them here.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              recipes.map((recipe) => {
+                const status = getYieldStatus(recipe.yield_percentage || 0);
+                return (
+                  <Card key={recipe.id} className={`glass border ${status.border}`}>
+                    <CardContent className="pt-4 sm:pt-6">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-semibold text-base sm:text-lg truncate">{recipe.name}</h4>
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              {recipe.mode === 'liquid' ? 'Infusion' : 'Solid'}
+                            </Badge>
+                          </div>
+                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${status.bg} mt-1`}>
+                            <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className={`text-2xl sm:text-3xl font-bold ${status.color}`}>
+                            {(recipe.yield_percentage || 0).toFixed(1)}%
+                          </div>
+                          <span className="text-xs text-muted-foreground">Yield</span>
+                        </div>
+                      </div>
+
+                      {recipe.mode === 'liquid' && recipe.input_ingredients && recipe.input_ingredients.length > 0 && (
+                        <div className="bg-muted/30 rounded-lg p-2 sm:p-3 space-y-1 mb-3">
+                          <span className="text-xs font-medium text-muted-foreground">Ingredients:</span>
+                          {recipe.input_ingredients.map((ing, idx) => (
+                            <div key={idx} className="flex justify-between text-xs sm:text-sm">
+                              <span className="truncate">{ing.name}</span>
+                              <span className="font-medium shrink-0 ml-2">{ing.amount} {ing.unit}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Final Yield:</span>
+                          <div className="font-medium">{(recipe.prepared_weight || recipe.final_yield_ml || 0).toFixed(0)} {recipe.unit}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Cost/unit:</span>
+                          <div className="font-medium text-primary">${(recipe.cost_per_unit || 0).toFixed(4)}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-3 border-t border-border/50 mt-3">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => deleteRecipe(recipe.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        ) : (
+          <>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'solid' | 'liquid')}>
           <TabsList className="grid w-full grid-cols-2">
@@ -349,94 +462,102 @@ const YieldCalculator = () => {
 
           <TabsContent value="liquid" className="mt-4">
             <Card className="glass">
-              <CardHeader>
-                <CardTitle>Calculate Infusion Yield</CardTitle>
-                <CardDescription>Track yield loss from infusions, macerations, and liquid preparations</CardDescription>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Calculate Infusion Yield</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Track yield loss from infusions & liquid preparations</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Infusion Name</label>
+                  <label className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 block">Infusion Name</label>
                   <Input
                     placeholder="e.g., Sour Cherry Infused Vodka"
                     value={infusionName}
                     onChange={(e) => setInfusionName(e.target.value)}
+                    className="text-sm"
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-sm font-medium block">Input Ingredients</label>
+                <div className="space-y-2 sm:space-y-3">
+                  <label className="text-xs sm:text-sm font-medium block">Input Ingredients</label>
                   {liquidIngredients.map((ing, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <IngredientCombobox
-                        spirits={spirits}
-                        value={ing.name}
-                        onValueChange={(v) => updateLiquidIngredient(index, 'name', v)}
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Amount"
-                        value={ing.amount}
-                        onChange={(e) => updateLiquidIngredient(index, 'amount', e.target.value)}
-                        className="w-24"
-                      />
-                      <Select 
-                        value={ing.unit} 
-                        onValueChange={(v) => updateLiquidIngredient(index, 'unit', v)}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ml">ml</SelectItem>
-                          <SelectItem value="L">L</SelectItem>
-                          <SelectItem value="cl">cl</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {liquidIngredients.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeLiquidIngredient(index)}
+                    <div key={index} className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex-1">
+                        <IngredientCombobox
+                          spirits={spirits}
+                          value={ing.name}
+                          onValueChange={(v) => updateLiquidIngredient(index, 'name', v)}
+                        />
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          value={ing.amount}
+                          onChange={(e) => updateLiquidIngredient(index, 'amount', e.target.value)}
+                          className="w-20 sm:w-24 text-sm"
+                        />
+                        <Select 
+                          value={ing.unit} 
+                          onValueChange={(v) => updateLiquidIngredient(index, 'unit', v)}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                          <SelectTrigger className="w-16 sm:w-20 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ml">ml</SelectItem>
+                            <SelectItem value="L">L</SelectItem>
+                            <SelectItem value="cl">cl</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {liquidIngredients.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 h-8 w-8"
+                            onClick={() => removeLiquidIngredient(index)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" onClick={addLiquidIngredient}>
+                  <Button variant="outline" size="sm" onClick={addLiquidIngredient} className="text-xs sm:text-sm">
                     + Add Ingredient
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Final Yield (ml)</label>
+                    <label className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 block">Final Yield (ml)</label>
                     <Input
                       type="number"
                       placeholder="850"
                       value={finalYieldMl}
                       onChange={(e) => setFinalYieldMl(e.target.value)}
+                      className="text-sm"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                       Actual output after straining/filtering
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Total Cost ($)</label>
+                    <label className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 block">Total Cost ($)</label>
                     <Input
                       type="number"
                       step="0.01"
                       placeholder="25.00"
                       value={totalCost}
                       onChange={(e) => setTotalCost(e.target.value)}
+                      className="text-sm"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                       Combined cost of all ingredients
                     </p>
                   </div>
                 </div>
 
-                <Button onClick={handleCalculateLiquid} className="w-full">
+                <Button onClick={handleCalculateLiquid} className="w-full text-sm sm:text-base">
                   Calculate Infusion Yield
                 </Button>
               </CardContent>
@@ -447,16 +568,16 @@ const YieldCalculator = () => {
         {calculations.length > 0 && (
           <>
             <Card className="glass">
-              <CardHeader>
-                <CardTitle>Average Yield</CardTitle>
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">Average Yield</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Percent className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-muted-foreground">Overall Performance</span>
+                    <Percent className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">Overall Performance</span>
                   </div>
-                  <span className={`text-3xl font-bold ${getYieldStatus(averageYield).color}`}>
+                  <span className={`text-2xl sm:text-3xl font-bold ${getYieldStatus(averageYield).color}`}>
                     {averageYield.toFixed(1)}%
                   </span>
                 </div>
@@ -464,53 +585,58 @@ const YieldCalculator = () => {
             </Card>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Yield Calculations</h3>
+              <h3 className="font-semibold text-base sm:text-lg">Yield Calculations</h3>
               {calculations.map((calc) => {
                 const status = getYieldStatus(calc.yieldPercentage);
                 return (
                   <Card key={calc.id} className={`glass border ${status.border}`}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-lg">{calc.ingredient}</h4>
-                            <Badge variant="outline" className="text-xs">
+                    <CardContent className="pt-4 sm:pt-6">
+                      <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-semibold text-base sm:text-lg truncate">{calc.ingredient}</h4>
+                            <Badge variant="outline" className="text-xs shrink-0">
                               {calc.mode === 'liquid' ? 'Infusion' : 'Solid'}
                             </Badge>
                             {calc.savedToSpirits && (
-                              <Badge variant="secondary" className="gap-1">
+                              <Badge variant="secondary" className="gap-1 text-xs shrink-0">
                                 <Check className="h-3 w-3" />
-                                Saved
+                                Spirits
+                              </Badge>
+                            )}
+                            {calc.savedAsRecipe && (
+                              <Badge variant="secondary" className="gap-1 text-xs shrink-0 bg-green-500/20 text-green-600">
+                                <Check className="h-3 w-3" />
+                                Recipe
                               </Badge>
                             )}
                           </div>
-                          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${status.bg} mt-1`}>
+                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${status.bg} mt-1`}>
                             <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className={`text-3xl font-bold ${status.color}`}>
+                        <div className="text-right shrink-0">
+                          <div className={`text-2xl sm:text-3xl font-bold ${status.color}`}>
                             {calc.yieldPercentage.toFixed(1)}%
                           </div>
                           <span className="text-xs text-muted-foreground">Yield</span>
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        {/* Show input ingredients for liquid infusions */}
+                      <div className="space-y-2 sm:space-y-3">
                         {calc.mode === 'liquid' && calc.inputIngredients && (
-                          <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                          <div className="bg-muted/30 rounded-lg p-2 sm:p-3 space-y-1">
                             <span className="text-xs font-medium text-muted-foreground">Input Ingredients:</span>
                             {calc.inputIngredients.map((ing, idx) => (
-                              <div key={idx} className="flex justify-between text-sm">
-                                <span>{ing.name}</span>
-                                <span className="font-medium">{ing.amount} {ing.unit}</span>
+                              <div key={idx} className="flex justify-between text-xs sm:text-sm">
+                                <span className="truncate">{ing.name}</span>
+                                <span className="font-medium shrink-0 ml-2">{ing.amount} {ing.unit}</span>
                               </div>
                             ))}
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                           <div>
                             <span className="text-muted-foreground">
                               {calc.mode === 'liquid' ? 'Total Input:' : 'Raw Weight:'}
@@ -525,7 +651,7 @@ const YieldCalculator = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                           <div>
                             <span className="text-muted-foreground">
                               {calc.mode === 'liquid' ? 'Volume Lost:' : 'Wastage:'}
@@ -540,39 +666,54 @@ const YieldCalculator = () => {
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-border/50">
+                        <div className="pt-2 sm:pt-3 border-t border-border/50">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                              {calc.mode === 'liquid' ? 'Cost per ml:' : `True Usable Cost per ${calc.unit}:`}
+                            <span className="text-xs sm:text-sm font-medium">
+                              {calc.mode === 'liquid' ? 'Cost per ml:' : `True Cost per ${calc.unit}:`}
                             </span>
-                            <span className="text-lg font-bold text-primary">
+                            <span className="text-base sm:text-lg font-bold text-primary">
                               ${calc.usableCost.toFixed(calc.mode === 'liquid' ? 4 : 2)}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                             {calc.mode === 'liquid' 
-                              ? `Total value of ${calc.preparedWeight.toFixed(0)}ml output: $${(calc.usableCost * calc.preparedWeight).toFixed(2)}`
-                              : `Actual cost accounting for wastage: +$${(calc.usableCost - calc.costPerLb).toFixed(2)} per ${calc.unit}`
+                              ? `Total value of ${calc.preparedWeight.toFixed(0)}ml: $${(calc.usableCost * calc.preparedWeight).toFixed(2)}`
+                              : `Actual cost with wastage: +$${(calc.usableCost - calc.costPerLb).toFixed(2)} per ${calc.unit}`
                             }
                           </p>
                         </div>
 
-                        <div className="flex gap-2 pt-3">
+                        <div className="flex flex-wrap gap-2 pt-2 sm:pt-3">
+                          {!calc.savedAsRecipe && (
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              className="flex-1 gap-1.5 text-xs sm:text-sm"
+                              onClick={() => handleSaveAsRecipe(calc)}
+                              disabled={isSaving}
+                            >
+                              <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline">Save Recipe</span>
+                              <span className="sm:hidden">Recipe</span>
+                            </Button>
+                          )}
                           {!calc.savedToSpirits && (
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="flex-1 gap-2"
+                              className="flex-1 gap-1.5 text-xs sm:text-sm"
                               onClick={() => handleSaveToSpirits(calc)}
                               disabled={savingId === calc.id}
                             >
-                              <Save className="h-4 w-4" />
-                              {savingId === calc.id ? "Saving..." : "Save to Spirits List"}
+                              <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline">{savingId === calc.id ? "Saving..." : "Save to Spirits"}</span>
+                              <span className="sm:hidden">{savingId === calc.id ? "..." : "Spirits"}</span>
                             </Button>
                           )}
                           <Button 
                             variant="ghost" 
                             size="sm"
+                            className="shrink-0"
                             onClick={() => handleDelete(calc.id)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -585,6 +726,8 @@ const YieldCalculator = () => {
               })}
             </div>
           </>
+        )}
+        </>
         )}
       </div>
 

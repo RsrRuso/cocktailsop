@@ -16944,6 +16944,63 @@ export type Database = {
           },
         ]
       }
+      yield_recipes: {
+        Row: {
+          cost_per_unit: number | null
+          created_at: string
+          final_yield_ml: number | null
+          id: string
+          input_ingredients: Json | null
+          mode: string
+          name: string
+          notes: string | null
+          prepared_weight: number | null
+          raw_weight: number | null
+          total_cost: number | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+          wastage: number | null
+          yield_percentage: number | null
+        }
+        Insert: {
+          cost_per_unit?: number | null
+          created_at?: string
+          final_yield_ml?: number | null
+          id?: string
+          input_ingredients?: Json | null
+          mode?: string
+          name: string
+          notes?: string | null
+          prepared_weight?: number | null
+          raw_weight?: number | null
+          total_cost?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+          wastage?: number | null
+          yield_percentage?: number | null
+        }
+        Update: {
+          cost_per_unit?: number | null
+          created_at?: string
+          final_yield_ml?: number | null
+          id?: string
+          input_ingredients?: Json | null
+          mode?: string
+          name?: string
+          notes?: string | null
+          prepared_weight?: number | null
+          raw_weight?: number | null
+          total_cost?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+          wastage?: number | null
+          yield_percentage?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       workspace_members_with_owner: {
