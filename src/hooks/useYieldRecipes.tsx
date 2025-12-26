@@ -64,7 +64,7 @@ export const useYieldRecipes = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data: yieldRecipe, error } = await supabase
         .from('yield_recipes')
         .insert({
           user_id: user.id,
@@ -86,11 +86,35 @@ export const useYieldRecipes = () => {
         .single();
 
       if (error) throw error;
-      return data;
+
+      // Auto-add to master spirits list
+      const { data: existing } = await supabase
+        .from('master_spirits')
+        .select('id')
+        .eq('name', recipe.name)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from('master_spirits').insert({
+          name: recipe.name,
+          category: recipe.mode === 'solid' ? 'Yield Product' : 'Infusion',
+          bottle_size_ml: recipe.final_yield_ml || 0,
+          source_type: 'yield_calculator',
+          source_id: yieldRecipe.id,
+          unit: recipe.unit,
+          yield_percentage: recipe.yield_percentage,
+          cost_per_unit: recipe.cost_per_unit,
+          user_id: user.id
+        });
+      }
+
+      return yieldRecipe;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['yield-recipes'] });
-      toast.success("Yield recipe saved!");
+      queryClient.invalidateQueries({ queryKey: ['master-spirits'] });
+      toast.success("Yield recipe saved and added to spirits list!");
     },
     onError: (error) => {
       toast.error("Failed to save recipe: " + error.message);
@@ -99,6 +123,13 @@ export const useYieldRecipes = () => {
 
   const deleteRecipe = useMutation({
     mutationFn: async (id: string) => {
+      // Also delete from master spirits
+      await supabase
+        .from('master_spirits')
+        .delete()
+        .eq('source_id', id)
+        .eq('source_type', 'yield_calculator');
+
       const { error } = await supabase
         .from('yield_recipes')
         .delete()
@@ -108,6 +139,7 @@ export const useYieldRecipes = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['yield-recipes'] });
+      queryClient.invalidateQueries({ queryKey: ['master-spirits'] });
       toast.success("Recipe deleted");
     },
     onError: (error) => {
