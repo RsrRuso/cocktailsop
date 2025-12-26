@@ -815,17 +815,25 @@ const PurchaseOrders = () => {
       const varianceData = record?.variance_data;
       let allItems = varianceData?.items || [];
 
-      // If no variance data, try to use order items as all received
-      if (allItems.length === 0 && order.items && order.items.length > 0) {
-        allItems = order.items.map(item => ({
-          item_code: item.item_code,
-          item_name: item.item_name,
-          unit: item.unit,
-          ordered_qty: item.quantity,
-          received_qty: item.quantity,
-          unit_price: item.price_per_unit,
-          status: 'match'
-        }));
+      // If no variance data, fetch order items from database
+      if (allItems.length === 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: orderItems } = await (supabase as any)
+          .from('purchase_order_items')
+          .select('item_code, item_name, unit, quantity, price_per_unit')
+          .eq('order_id', order.id);
+        
+        if (orderItems && orderItems.length > 0) {
+          allItems = orderItems.map((item: any) => ({
+            item_code: item.item_code,
+            item_name: item.item_name,
+            unit: item.unit,
+            ordered_qty: item.quantity,
+            received_qty: item.quantity,
+            unit_price: item.price_per_unit,
+            status: 'match'
+          }));
+        }
       }
 
       // If still no items, show error
