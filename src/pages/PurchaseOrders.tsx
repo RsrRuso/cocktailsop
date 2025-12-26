@@ -800,15 +800,9 @@ const PurchaseOrders = () => {
     setShowViewDialog(true);
   };
 
-  // Export individual discrepancy PDF
+  // Export receiving report PDF (works for both discrepancy and archived orders)
   const exportDiscrepancyPDF = async (order: PurchaseOrder) => {
     try {
-      const varianceSummary = (order as any).variance_summary;
-      if (!varianceSummary) {
-        toast.error("No discrepancy data available");
-        return;
-      }
-
       // Fetch the full variance data from received records
       const { data: receivedRecords } = await supabase
         .from('po_received_records')
@@ -819,7 +813,26 @@ const PurchaseOrders = () => {
 
       const record = receivedRecords?.[0] as any;
       const varianceData = record?.variance_data;
-      const allItems = varianceData?.items || [];
+      let allItems = varianceData?.items || [];
+
+      // If no variance data, try to use order items as all received
+      if (allItems.length === 0 && order.items && order.items.length > 0) {
+        allItems = order.items.map(item => ({
+          item_code: item.item_code,
+          item_name: item.item_name,
+          unit: item.unit,
+          ordered_qty: item.quantity,
+          received_qty: item.quantity,
+          unit_price: item.price_per_unit,
+          status: 'match'
+        }));
+      }
+
+      // If still no items, show error
+      if (allItems.length === 0) {
+        toast.error("No receiving data available for this order");
+        return;
+      }
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -1352,7 +1365,8 @@ const PurchaseOrders = () => {
                         )}
                       </div>
                       <div className="flex gap-1">
-                        {hasDiscrepancy && (order as any).variance_summary && (
+                        {/* Reprint Receiving Report for any received order (discrepancy or archived) */}
+                        {hasReceived && (
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -1360,9 +1374,9 @@ const PurchaseOrders = () => {
                               e.stopPropagation();
                               exportDiscrepancyPDF(order);
                             }}
-                            title="Download Discrepancy Report"
+                            title="Reprint Receiving Report"
                           >
-                            <Download className="w-4 h-4 text-amber-500" />
+                            <Download className={`w-4 h-4 ${hasDiscrepancy ? 'text-amber-500' : 'text-emerald-500'}`} />
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" onClick={() => handleViewOrder(order)}>
