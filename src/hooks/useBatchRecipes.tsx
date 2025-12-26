@@ -61,16 +61,24 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // Fetch all user's recipes and filter client-side to avoid TypeScript deep instantiation issue
-      const { data, error } = await supabase
+      // Fetch batch recipes
+      const { data: batchData, error: batchError } = await supabase
         .from('batch_recipes')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (batchError) throw batchError;
       
+      // Also fetch cocktail SOPs and convert them to batch recipe format
+      const { data: sopsData, error: sopsError } = await supabase
+        .from('cocktail_sops')
+        .select('id, drink_name, recipe, total_ml, created_at, updated_at, user_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
       // Cast to any to handle group_id which may not be in generated types yet
-      const filtered = (data || []).filter((recipe: any) => {
+      const filtered = (batchData || []).filter((recipe: any) => {
         if (groupId) {
           return recipe.group_id === groupId;
         } else {
@@ -79,13 +87,47 @@ export const useBatchRecipes = (groupId?: string | null, staffMode?: boolean) =>
         }
       });
       
-      const result = filtered.map((recipe: any) => ({
+      const batchRecipes = filtered.map((recipe: any) => ({
         ...recipe,
         ingredients: recipe.ingredients as unknown as BatchIngredient[]
       })) as BatchRecipe[];
+
+      // Convert cocktail SOPs to BatchRecipe format (only for personal recipes view)
+      const sopRecipes: BatchRecipe[] = !groupId && !sopsError && sopsData ? sopsData.map((sop: any) => {
+        // Parse recipe JSON to extract ingredients
+        const recipeData = sop.recipe as any[] || [];
+        const ingredients: BatchIngredient[] = recipeData.map((ing: any, index: number) => ({
+          id: `sop-ing-${index}`,
+          name: ing.ingredient || ing.name || '',
+          amount: String(ing.amount || ing.ml || ''),
+          unit: ing.unit || 'ml'
+        }));
+
+        return {
+          id: `sop-${sop.id}`,
+          recipe_name: sop.drink_name,
+          description: `Cocktail SOP - ${sop.total_ml}ml total`,
+          current_serves: 1,
+          ingredients,
+          group_id: null,
+          created_at: sop.created_at,
+          updated_at: sop.updated_at,
+        };
+      }) : [];
+
+      // Combine batch recipes and SOP recipes, avoiding duplicates by name
+      const allRecipes = [...batchRecipes];
+      sopRecipes.forEach(sopRecipe => {
+        const exists = allRecipes.some(r => 
+          r.recipe_name.toLowerCase() === sopRecipe.recipe_name.toLowerCase()
+        );
+        if (!exists) {
+          allRecipes.push(sopRecipe);
+        }
+      });
       
-      recipesCache.set(cacheKey, { data: result, timestamp: Date.now() });
-      return result;
+      recipesCache.set(cacheKey, { data: allRecipes, timestamp: Date.now() });
+      return allRecipes;
     },
     initialData: hasValidCache ? cached.data : undefined,
     staleTime: CACHE_TIME,
