@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Percent, Save, Check, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Percent, Save, Check, Trash2, Beaker, Apple } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,19 +24,34 @@ interface YieldCalculation {
   usableCost: number;
   unit: string;
   savedToSpirits: boolean;
+  mode: 'solid' | 'liquid';
+  inputIngredients?: Array<{ name: string; amount: number; unit: string }>;
 }
 
 const YieldCalculator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [calculations, setCalculations] = useState<YieldCalculation[]>([]);
+  const [activeTab, setActiveTab] = useState<'solid' | 'liquid'>('solid');
+  
+  // Solid mode state
   const [ingredient, setIngredient] = useState("");
   const [rawWeight, setRawWeight] = useState("");
   const [preparedWeight, setPreparedWeight] = useState("");
   const [unit, setUnit] = useState("lbs");
   const [costPerLb, setCostPerLb] = useState("");
+  
+  // Liquid infusion mode state
+  const [infusionName, setInfusionName] = useState("");
+  const [liquidIngredients, setLiquidIngredients] = useState<Array<{ name: string; amount: string; unit: string }>>([
+    { name: "", amount: "", unit: "ml" }
+  ]);
+  const [finalYieldMl, setFinalYieldMl] = useState("");
+  const [totalCost, setTotalCost] = useState("");
+  
   const [savingId, setSavingId] = useState<string | null>(null);
 
+  // Solid ingredient calculation
   const handleCalculate = () => {
     if (!ingredient || !rawWeight || !preparedWeight || !costPerLb) {
       toast.error("Please fill in all fields");
@@ -65,7 +81,8 @@ const YieldCalculator = () => {
       costPerLb: cost,
       usableCost,
       unit,
-      savedToSpirits: false
+      savedToSpirits: false,
+      mode: 'solid'
     };
 
     setCalculations([newCalc, ...calculations]);
@@ -76,6 +93,84 @@ const YieldCalculator = () => {
     setCostPerLb("");
     
     toast.success("Yield calculated");
+  };
+
+  // Liquid infusion calculation
+  const handleCalculateLiquid = () => {
+    if (!infusionName || !finalYieldMl) {
+      toast.error("Please enter infusion name and final yield");
+      return;
+    }
+
+    const validIngredients = liquidIngredients.filter(ing => ing.name && ing.amount);
+    if (validIngredients.length === 0) {
+      toast.error("Please add at least one ingredient");
+      return;
+    }
+
+    // Calculate total input ml (convert all to ml)
+    const totalInputMl = validIngredients.reduce((sum, ing) => {
+      let amountMl = parseFloat(ing.amount);
+      if (ing.unit === 'L') amountMl *= 1000;
+      else if (ing.unit === 'cl') amountMl *= 10;
+      return sum + amountMl;
+    }, 0);
+
+    const finalMl = parseFloat(finalYieldMl);
+    const cost = parseFloat(totalCost) || 0;
+
+    if (finalMl > totalInputMl) {
+      toast.error("Final yield cannot exceed total input volume");
+      return;
+    }
+
+    const yieldPercentage = (finalMl / totalInputMl) * 100;
+    const wastage = totalInputMl - finalMl;
+    const costPerMl = cost > 0 ? cost / finalMl : 0;
+
+    const newCalc: YieldCalculation = {
+      id: Date.now().toString(),
+      ingredient: infusionName,
+      rawWeight: totalInputMl,
+      preparedWeight: finalMl,
+      yieldPercentage,
+      wastage,
+      costPerLb: cost,
+      usableCost: costPerMl,
+      unit: 'ml',
+      savedToSpirits: false,
+      mode: 'liquid',
+      inputIngredients: validIngredients.map(ing => ({
+        name: ing.name,
+        amount: parseFloat(ing.amount),
+        unit: ing.unit
+      }))
+    };
+
+    setCalculations([newCalc, ...calculations]);
+    
+    setInfusionName("");
+    setLiquidIngredients([{ name: "", amount: "", unit: "ml" }]);
+    setFinalYieldMl("");
+    setTotalCost("");
+    
+    toast.success("Infusion yield calculated");
+  };
+
+  const addLiquidIngredient = () => {
+    setLiquidIngredients([...liquidIngredients, { name: "", amount: "", unit: "ml" }]);
+  };
+
+  const updateLiquidIngredient = (index: number, field: 'name' | 'amount' | 'unit', value: string) => {
+    const updated = [...liquidIngredients];
+    updated[index][field] = value;
+    setLiquidIngredients(updated);
+  };
+
+  const removeLiquidIngredient = (index: number) => {
+    if (liquidIngredients.length > 1) {
+      setLiquidIngredients(liquidIngredients.filter((_, i) => i !== index));
+    }
   };
 
   const handleSaveToSpirits = async (calc: YieldCalculation) => {
@@ -101,16 +196,12 @@ const YieldCalculator = () => {
         return;
       }
 
-      // Convert to ml for bottle_size_ml
-      let bottleSizeMl = 1000; // Default 1L
-      if (calc.unit === 'lbs') bottleSizeMl = 1000;
-      else if (calc.unit === 'kg') bottleSizeMl = 1000;
-      else if (calc.unit === 'oz') bottleSizeMl = 1000;
-      else if (calc.unit === 'g') bottleSizeMl = 1000;
+      // For liquid mode, use the final yield as bottle size
+      const bottleSizeMl = calc.mode === 'liquid' ? calc.preparedWeight : 1000;
 
       const { error } = await supabase.from('master_spirits').insert({
         name: calc.ingredient,
-        category: 'Yield Product',
+        category: calc.mode === 'liquid' ? 'Infusion' : 'Yield Product',
         bottle_size_ml: bottleSizeMl,
         source_type: 'yield_calculator',
         yield_percentage: calc.yieldPercentage,
@@ -172,73 +263,185 @@ const YieldCalculator = () => {
           </div>
         </div>
 
-        <Card className="glass">
-          <CardHeader>
-            <CardTitle>Calculate Yield</CardTitle>
-            <CardDescription>Determine actual usable product after prep and waste</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Ingredient</label>
-              <Input
-                placeholder="e.g., Fresh Limes"
-                value={ingredient}
-                onChange={(e) => setIngredient(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Raw Weight</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="10"
-                  value={rawWeight}
-                  onChange={(e) => setRawWeight(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Prepared Weight</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="6.5"
-                  value={preparedWeight}
-                  onChange={(e) => setPreparedWeight(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Unit</label>
-                <Select value={unit} onValueChange={setUnit}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lbs">Pounds (lbs)</SelectItem>
-                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                    <SelectItem value="oz">Ounces (oz)</SelectItem>
-                    <SelectItem value="g">Grams (g)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Cost per {unit} ($)</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="4.50"
-                  value={costPerLb}
-                  onChange={(e) => setCostPerLb(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button onClick={handleCalculate} className="w-full">
-              Calculate Yield
-            </Button>
-          </CardContent>
-        </Card>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'solid' | 'liquid')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="solid" className="gap-2">
+              <Apple className="h-4 w-4" />
+              Solid Prep
+            </TabsTrigger>
+            <TabsTrigger value="liquid" className="gap-2">
+              <Beaker className="h-4 w-4" />
+              Liquid Infusion
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="solid" className="mt-4">
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle>Calculate Solid Yield</CardTitle>
+                <CardDescription>Determine actual usable product after prep and waste</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Ingredient</label>
+                  <Input
+                    placeholder="e.g., Fresh Limes"
+                    value={ingredient}
+                    onChange={(e) => setIngredient(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Raw Weight</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="10"
+                      value={rawWeight}
+                      onChange={(e) => setRawWeight(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Prepared Weight</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="6.5"
+                      value={preparedWeight}
+                      onChange={(e) => setPreparedWeight(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Unit</label>
+                    <Select value={unit} onValueChange={setUnit}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="lbs">Pounds (lbs)</SelectItem>
+                        <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                        <SelectItem value="oz">Ounces (oz)</SelectItem>
+                        <SelectItem value="g">Grams (g)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Cost per {unit} ($)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="4.50"
+                      value={costPerLb}
+                      onChange={(e) => setCostPerLb(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleCalculate} className="w-full">
+                  Calculate Yield
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="liquid" className="mt-4">
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle>Calculate Infusion Yield</CardTitle>
+                <CardDescription>Track yield loss from infusions, macerations, and liquid preparations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Infusion Name</label>
+                  <Input
+                    placeholder="e.g., Sour Cherry Infused Vodka"
+                    value={infusionName}
+                    onChange={(e) => setInfusionName(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium block">Input Ingredients</label>
+                  {liquidIngredients.map((ing, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Ingredient name"
+                        value={ing.name}
+                        onChange={(e) => updateLiquidIngredient(index, 'name', e.target.value)}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        value={ing.amount}
+                        onChange={(e) => updateLiquidIngredient(index, 'amount', e.target.value)}
+                        className="w-24"
+                      />
+                      <Select 
+                        value={ing.unit} 
+                        onValueChange={(v) => updateLiquidIngredient(index, 'unit', v)}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ml">ml</SelectItem>
+                          <SelectItem value="L">L</SelectItem>
+                          <SelectItem value="cl">cl</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {liquidIngredients.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeLiquidIngredient(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={addLiquidIngredient}>
+                    + Add Ingredient
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Final Yield (ml)</label>
+                    <Input
+                      type="number"
+                      placeholder="850"
+                      value={finalYieldMl}
+                      onChange={(e) => setFinalYieldMl(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Actual output after straining/filtering
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Total Cost ($)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="25.00"
+                      value={totalCost}
+                      onChange={(e) => setTotalCost(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Combined cost of all ingredients
+                    </p>
+                  </div>
+                </div>
+
+                <Button onClick={handleCalculateLiquid} className="w-full">
+                  Calculate Infusion Yield
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {calculations.length > 0 && (
           <>
@@ -270,6 +473,9 @@ const YieldCalculator = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-lg">{calc.ingredient}</h4>
+                            <Badge variant="outline" className="text-xs">
+                              {calc.mode === 'liquid' ? 'Infusion' : 'Solid'}
+                            </Badge>
                             {calc.savedToSpirits && (
                               <Badge variant="secondary" className="gap-1">
                                 <Check className="h-3 w-3" />
@@ -290,37 +496,63 @@ const YieldCalculator = () => {
                       </div>
 
                       <div className="space-y-3">
+                        {/* Show input ingredients for liquid infusions */}
+                        {calc.mode === 'liquid' && calc.inputIngredients && (
+                          <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                            <span className="text-xs font-medium text-muted-foreground">Input Ingredients:</span>
+                            {calc.inputIngredients.map((ing, idx) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span>{ing.name}</span>
+                                <span className="font-medium">{ing.amount} {ing.unit}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">Raw Weight:</span>
-                            <div className="font-medium">{calc.rawWeight} {calc.unit}</div>
+                            <span className="text-muted-foreground">
+                              {calc.mode === 'liquid' ? 'Total Input:' : 'Raw Weight:'}
+                            </span>
+                            <div className="font-medium">{calc.rawWeight.toFixed(1)} {calc.unit}</div>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Prepared Weight:</span>
-                            <div className="font-medium">{calc.preparedWeight} {calc.unit}</div>
+                            <span className="text-muted-foreground">
+                              {calc.mode === 'liquid' ? 'Final Yield:' : 'Prepared Weight:'}
+                            </span>
+                            <div className="font-medium">{calc.preparedWeight.toFixed(1)} {calc.unit}</div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">Wastage:</span>
-                            <div className="font-medium text-red-500">{calc.wastage.toFixed(2)} {calc.unit}</div>
+                            <span className="text-muted-foreground">
+                              {calc.mode === 'liquid' ? 'Volume Lost:' : 'Wastage:'}
+                            </span>
+                            <div className="font-medium text-red-500">{calc.wastage.toFixed(1)} {calc.unit}</div>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Cost per {calc.unit}:</span>
+                            <span className="text-muted-foreground">
+                              {calc.mode === 'liquid' ? 'Total Cost:' : `Cost per ${calc.unit}:`}
+                            </span>
                             <div className="font-medium">${calc.costPerLb.toFixed(2)}</div>
                           </div>
                         </div>
 
                         <div className="pt-3 border-t border-border/50">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">True Usable Cost per {calc.unit}:</span>
+                            <span className="text-sm font-medium">
+                              {calc.mode === 'liquid' ? 'Cost per ml:' : `True Usable Cost per ${calc.unit}:`}
+                            </span>
                             <span className="text-lg font-bold text-primary">
-                              ${calc.usableCost.toFixed(2)}
+                              ${calc.usableCost.toFixed(calc.mode === 'liquid' ? 4 : 2)}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Actual cost accounting for wastage: +${(calc.usableCost - calc.costPerLb).toFixed(2)} per {calc.unit}
+                            {calc.mode === 'liquid' 
+                              ? `Total value of ${calc.preparedWeight.toFixed(0)}ml output: $${(calc.usableCost * calc.preparedWeight).toFixed(2)}`
+                              : `Actual cost accounting for wastage: +$${(calc.usableCost - calc.costPerLb).toFixed(2)} per ${calc.unit}`
+                            }
                           </p>
                         </div>
 
