@@ -399,6 +399,24 @@ const POReceivedItems = () => {
       poOrderNumbers.set(po.id, po.order_number?.toLowerCase().trim() || '');
     });
 
+    const normalizeItemName = (name: string) =>
+      (name || '')
+        .toString()
+        .normalize('NFKC')
+        .replace(/\u00A0/g, ' ') // non‑breaking space
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const getItemKey = (row: any): string => {
+      const code = row?.item_code ?? row?.itemCode ?? row?.code;
+      if (code && String(code).trim()) {
+        return `code:${normalizeItemCode(String(code))}`;
+      }
+      const name = row?.item_name ?? row?.itemName ?? '';
+      return `name:${normalizeItemName(String(name))}`;
+    };
+
     allPurchaseOrderItems.forEach((item: any) => {
       const poId = item.purchase_order_id;
       const docNumber = poOrderNumbers.get(poId);
@@ -408,7 +426,7 @@ const POReceivedItems = () => {
         orderedByDoc.set(docNumber, new Map());
       }
       const docItems = orderedByDoc.get(docNumber)!;
-      const itemKey = item.item_name.toLowerCase().trim();
+      const itemKey = getItemKey(item);
       const existing = docItems.get(itemKey) || { qty: 0, value: 0, item_name: item.item_name };
       existing.qty += item.quantity || 0;
       existing.value += item.price_total || 0;
@@ -425,7 +443,7 @@ const POReceivedItems = () => {
         receivedByDoc.set(docNumber, new Map());
       }
       const docItems = receivedByDoc.get(docNumber)!;
-      const itemKey = item.item_name.toLowerCase().trim();
+      const itemKey = getItemKey(item);
       const existing = docItems.get(itemKey) || { qty: 0, value: 0, item_name: item.item_name };
       existing.qty += item.quantity || 0;
       existing.value += item.total_price || 0;
