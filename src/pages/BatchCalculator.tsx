@@ -18,7 +18,7 @@ import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarCha
 import { ShareAnalyticsDialog } from "@/components/batch/ShareAnalyticsDialog";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
-import { useBatchProductions, SubRecipeDepletionData } from "@/hooks/useBatchProductions";
+import { useBatchProductions, SubRecipeDepletionData, YieldDepletionData } from "@/hooks/useBatchProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { useGroupAdmin } from "@/hooks/useGroupAdmin";
@@ -641,6 +641,8 @@ const BatchCalculator = () => {
     } else {
       // Detect sub-recipes in ingredients and prepare depletion data
       const subRecipeDepletions: SubRecipeDepletionData[] = [];
+      // Detect yield products (infusions) in ingredients and prepare depletion data
+      const yieldDepletions: YieldDepletionData[] = [];
       
       if (subRecipes && subRecipes.length > 0) {
         calculation.scaledIngredients.forEach((ing) => {
@@ -658,6 +660,26 @@ const BatchCalculator = () => {
               subRecipeName: matchedSubRecipe.name,
               amountUsedMl: scaledAmount,
               ingredientBreakdown: breakdown
+            });
+          }
+        });
+      }
+
+      // Check for yield products (from yield calculator - stored as master spirits with source_type 'yield_calculator')
+      if (spirits && spirits.length > 0) {
+        calculation.scaledIngredients.forEach((ing) => {
+          // Check if this ingredient is a yield product
+          const matchedYieldProduct = spirits.find(
+            sp => sp.name.toLowerCase() === ing.name.toLowerCase() && sp.source_type === 'yield_calculator'
+          );
+          
+          if (matchedYieldProduct) {
+            const scaledAmount = parseFloat(ing.scaledAmount);
+            
+            yieldDepletions.push({
+              masterSpiritId: matchedYieldProduct.id,
+              masterSpiritName: matchedYieldProduct.name,
+              amountUsedMl: scaledAmount,
             });
           }
         });
@@ -686,6 +708,7 @@ const BatchCalculator = () => {
             unit: ing.unit,
           })),
           subRecipeDepletions: subRecipeDepletions.length > 0 ? subRecipeDepletions : undefined,
+          yieldDepletions: yieldDepletions.length > 0 ? yieldDepletions : undefined,
         }
       );
     }
@@ -3910,6 +3933,11 @@ const BatchCalculator = () => {
                               ? calculateSubRecipeBreakdown(matchedSubRecipe, parseFloat(ing.scaledAmount))
                               : null;
                             
+                            // Check if this is a yield product (infusion)
+                            const matchedYieldProduct = spirits?.find(
+                              (sp) => sp.name.toLowerCase() === ing.name.toLowerCase() && sp.source_type === 'yield_calculator'
+                            );
+                            
                             return (
                               <div key={ing.id} className="py-2 border-b border-border/50">
                                 <div className="flex justify-between items-start">
@@ -3919,6 +3947,11 @@ const BatchCalculator = () => {
                                       <span className="text-xs text-muted-foreground ml-2">
                                         ({ing.bottle_size_ml}ml btl)
                                       </span>
+                                    )}
+                                    {matchedYieldProduct && (
+                                      <Badge variant="outline" className="ml-2 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300">
+                                        Yield Product
+                                      </Badge>
                                     )}
 
                                     {subRecipeBreakdown && subRecipeBreakdown.length > 0 && (
@@ -3935,6 +3968,27 @@ const BatchCalculator = () => {
                                               </span>
                                             </div>
                                           ))}
+                                        </div>
+                                      </details>
+                                    )}
+
+                                    {matchedYieldProduct && (
+                                      <details className="mt-2">
+                                        <summary className="cursor-pointer text-xs text-amber-600 dark:text-amber-400">
+                                          Yield product depletion
+                                        </summary>
+                                        <div className="mt-2 space-y-1 pl-3 border-l border-amber-300 dark:border-amber-600">
+                                          <div className="flex items-center justify-between gap-3 text-xs">
+                                            <span className="text-muted-foreground">{matchedYieldProduct.name}</span>
+                                            <span className="font-medium tabular-nums text-amber-700 dark:text-amber-300">
+                                              {ing.scaledAmount} ml depleted
+                                            </span>
+                                          </div>
+                                          {matchedYieldProduct.yield_percentage && (
+                                            <div className="text-xs text-muted-foreground">
+                                              Yield: {matchedYieldProduct.yield_percentage.toFixed(1)}%
+                                            </div>
+                                          )}
                                         </div>
                                       </details>
                                     )}

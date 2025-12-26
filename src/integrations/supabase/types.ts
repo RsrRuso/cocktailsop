@@ -16893,6 +16893,57 @@ export type Database = {
         }
         Relationships: []
       }
+      yield_depletions: {
+        Row: {
+          amount_used_ml: number
+          depleted_at: string
+          depleted_by_user_id: string | null
+          id: string
+          ingredient_breakdown: Json | null
+          master_spirit_id: string | null
+          notes: string | null
+          production_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_used_ml?: number
+          depleted_at?: string
+          depleted_by_user_id?: string | null
+          id?: string
+          ingredient_breakdown?: Json | null
+          master_spirit_id?: string | null
+          notes?: string | null
+          production_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_used_ml?: number
+          depleted_at?: string
+          depleted_by_user_id?: string | null
+          id?: string
+          ingredient_breakdown?: Json | null
+          master_spirit_id?: string | null
+          notes?: string | null
+          production_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yield_depletions_master_spirit_id_fkey"
+            columns: ["master_spirit_id"]
+            isOneToOne: false
+            referencedRelation: "master_spirits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yield_depletions_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "batch_productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       workspace_members_with_owner: {
