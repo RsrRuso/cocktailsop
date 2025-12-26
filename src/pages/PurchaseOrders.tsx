@@ -821,15 +821,16 @@ const PurchaseOrders = () => {
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      // Header
-      doc.setFillColor(220, 38, 38); // Red for discrepancy
+      // Header - Green for receiving report
+      doc.setFillColor(34, 197, 94);
       doc.rect(0, 0, pageWidth, 35, 'F');
       
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text('DISCREPANCY REPORT', pageWidth / 2, 15, { align: 'center' });
+      doc.text('RECEIVING REPORT', pageWidth / 2, 15, { align: 'center' });
       
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
@@ -839,94 +840,126 @@ const PurchaseOrders = () => {
       doc.setTextColor(0, 0, 0);
       let yPos = 45;
       
-      // Summary section
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Discrepancy Summary', 14, yPos);
-      yPos += 8;
+      // Process items
+      const allItems = varianceData?.items || [];
+      const receivedItems = allItems.filter((item: any) => 
+        item.status === 'match' || item.status === 'over'
+      );
+      const discrepancyItems = allItems.filter((item: any) => 
+        item.status === 'short' || item.status === 'missing' || item.status === 'extra'
+      );
       
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
-      const summaryData = [
-        ['Total Items with Issues', String((varianceSummary.short || 0) + (varianceSummary.over || 0) + (varianceSummary.missing || 0))],
-        ['Missing (0 qty received)', String(varianceSummary.missing || 0)],
-        ['Short (less than ordered)', String(varianceSummary.short || 0)],
-        ['Over (more than ordered)', String(varianceSummary.over || 0)],
-        ['Matched', String(varianceSummary.matched || 0)]
-      ];
-      
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Category', 'Count']],
-        body: summaryData,
-        theme: 'striped',
-        headStyles: { fillColor: [220, 38, 38], textColor: 255 },
-        columnStyles: {
-          0: { cellWidth: 100 },
-          1: { cellWidth: 40, halign: 'center' }
-        },
-        margin: { left: 14 }
-      });
-      
-      yPos = (doc as any).lastAutoTable.finalY + 15;
-      
-      // Detailed items if available
-      if (varianceData?.items && Array.isArray(varianceData.items)) {
-        const discrepancyItems = varianceData.items.filter((item: any) => 
-          item.status === 'short' || item.status === 'over' || item.status === 'missing' || item.status === 'extra'
-        );
+      // Section 1: Received Items (green header)
+      if (receivedItems.length > 0) {
+        const receivedTable = receivedItems.map((item: any) => [
+          item.item_code || item.itemCode || '-',
+          item.item_name || item.itemName || 'Unknown',
+          'Received',
+          String(item.received_qty || item.receivedQty || 0),
+          formatCurrency(item.unit_price || item.unitPrice || 0),
+          formatCurrency((item.received_qty || item.receivedQty || 0) * (item.unit_price || item.unitPrice || 0))
+        ]);
         
-        if (discrepancyItems.length > 0) {
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Discrepancy Details', 14, yPos);
-          yPos += 8;
-          
-          const itemsTable = discrepancyItems.map((item: any) => [
-            item.itemName || item.item_name || 'Unknown',
-            String(item.orderedQty || item.ordered_qty || 0),
-            String(item.receivedQty || item.received_qty || 0),
-            String((item.receivedQty || item.received_qty || 0) - (item.orderedQty || item.ordered_qty || 0)),
-            (item.status || '').toUpperCase()
-          ]);
-          
-          autoTable(doc, {
-            startY: yPos,
-            head: [['Item Name', 'Ordered', 'Received', 'Variance', 'Status']],
-            body: itemsTable,
-            theme: 'striped',
-            headStyles: { fillColor: [220, 38, 38], textColor: 255 },
-            columnStyles: {
-              0: { cellWidth: 70 },
-              1: { cellWidth: 25, halign: 'center' },
-              2: { cellWidth: 25, halign: 'center' },
-              3: { cellWidth: 25, halign: 'center' },
-              4: { cellWidth: 30, halign: 'center' }
-            },
-            bodyStyles: { fontSize: 9 },
-            didParseCell: (data: any) => {
-              if (data.column.index === 4 && data.section === 'body') {
-                const status = data.cell.raw?.toString().toLowerCase();
-                if (status === 'short' || status === 'missing') {
-                  data.cell.styles.textColor = [220, 38, 38]; // Red
-                } else if (status === 'over' || status === 'extra') {
-                  data.cell.styles.textColor = [59, 130, 246]; // Blue
-                }
-              }
-            }
-          });
-        }
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Code', 'Item', 'Type', 'Qty', 'Unit Price', 'Total']],
+          body: receivedTable,
+          theme: 'striped',
+          headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 22 },
+            1: { cellWidth: 60 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 18, halign: 'center' },
+            4: { cellWidth: 28, halign: 'right' },
+            5: { cellWidth: 28, halign: 'right' }
+          },
+          bodyStyles: { fontSize: 8 },
+          alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 15;
       }
       
-      // Footer
-      const pageHeight = doc.internal.pageSize.getHeight();
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text('Generated by Purchase Order System', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      // Check if we need a new page for discrepancy section
+      if (yPos > pageHeight - 80 && discrepancyItems.length > 0) {
+        doc.addPage();
+        yPos = 20;
+      }
       
-      doc.save(`discrepancy-${order.order_number || 'report'}-${format(new Date(), 'yyyyMMdd-HHmm')}.pdf`);
-      toast.success("Discrepancy PDF downloaded");
+      // Section 2: Excluded Items / Discrepancies (red header)
+      if (discrepancyItems.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(220, 38, 38);
+        doc.text('Excluded Items (Pending)', 14, yPos);
+        yPos += 8;
+        
+        const discrepancyTable = discrepancyItems.map((item: any) => [
+          item.item_code || item.itemCode || '-',
+          item.item_name || item.itemName || 'Unknown',
+          'Pending',
+          String(item.ordered_qty || item.orderedQty || 0),
+          formatCurrency((item.ordered_qty || item.orderedQty || 0) * (item.unit_price || item.unitPrice || 0))
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Code', 'Item', 'Type', 'Qty', 'Value']],
+          body: discrepancyTable,
+          theme: 'striped',
+          headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 25 },
+            1: { cellWidth: 70 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 20, halign: 'center' },
+            4: { cellWidth: 30, halign: 'right' }
+          },
+          bodyStyles: { fontSize: 8 },
+          alternateRowStyles: { fillColor: [254, 242, 242] }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      }
+      
+      // Summary section at bottom
+      if (yPos > pageHeight - 50) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFillColor(245, 245, 245);
+      doc.roundedRect(14, yPos, pageWidth - 28, 30, 3, 3, 'F');
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Summary', 20, yPos + 10);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const summaryText = [
+        `Received: ${receivedItems.length} items`,
+        `Pending/Missing: ${discrepancyItems.length} items`,
+        `Matched: ${varianceSummary.matched || 0}`,
+        `Short: ${varianceSummary.short || 0}`,
+        `Missing: ${varianceSummary.missing || 0}`
+      ];
+      doc.text(summaryText.join('  |  '), 20, yPos + 20);
+      
+      // Footer with page numbers
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text('Generated by SpecVerse Procurement', 14, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+      }
+      
+      doc.save(`receiving-report-${order.order_number || 'report'}-${format(new Date(), 'yyyyMMdd-HHmm')}.pdf`);
+      toast.success("Receiving report PDF downloaded");
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error("Failed to generate PDF");
