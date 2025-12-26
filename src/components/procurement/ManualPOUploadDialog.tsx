@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, ArrowRight, Save, X, ShoppingCart, Wrench } from "lucide-react";
+import { FileText, ArrowRight, Save, X, ShoppingCart, Wrench, Wine } from "lucide-react";
 import { toast } from "sonner";
 
 interface ParsedPOItem {
@@ -64,9 +64,10 @@ export const ManualPOUploadDialog = ({
     space: /\s{2,}/
   };
 
-  // Detect document type from code
+  // Detect document type from code - ML (market), RQ (material), TR (transfer/spirits)
   const docType = useMemo(() => {
     const code = docNumber.toUpperCase();
+    if (code.startsWith('TR') || code.includes('-TR')) return 'transfer';
     if (code.startsWith('ML') || code.includes('-ML')) return 'market';
     if (code.startsWith('RQ') || code.includes('-RQ')) return 'material';
     return 'unknown';
@@ -244,10 +245,16 @@ export const ManualPOUploadDialog = ({
                 {docType !== 'unknown' && (
                   <Badge 
                     variant="outline" 
-                    className={`mt-1 ${docType === 'market' ? 'bg-blue-500/10 text-blue-500' : 'bg-orange-500/10 text-orange-500'}`}
+                    className={`mt-1 ${
+                      docType === 'market' ? 'bg-blue-500/10 text-blue-500' : 
+                      docType === 'material' ? 'bg-orange-500/10 text-orange-500' : 
+                      'bg-purple-500/10 text-purple-500'
+                    }`}
                   >
-                    {docType === 'market' ? <ShoppingCart className="w-3 h-3 mr-1" /> : <Wrench className="w-3 h-3 mr-1" />}
-                    {docType === 'market' ? 'Market List' : 'Material Request'}
+                    {docType === 'market' ? <ShoppingCart className="w-3 h-3 mr-1" /> : 
+                     docType === 'material' ? <Wrench className="w-3 h-3 mr-1" /> : 
+                     <Wine className="w-3 h-3 mr-1" />}
+                    {docType === 'market' ? 'Market List' : docType === 'material' ? 'Material Request' : 'Transfer (Spirits)'}
                   </Badge>
                 )}
               </div>
@@ -378,9 +385,16 @@ export const ManualPOUploadDialog = ({
                 <div className="text-2xl font-bold">{currencySymbol}{stats.totalValue.toFixed(2)}</div>
                 <div className="text-xs text-muted-foreground">Total Value</div>
               </Card>
-              <Card className={`p-3 text-center ${docType === 'market' ? 'bg-blue-500/10' : docType === 'material' ? 'bg-orange-500/10' : 'bg-primary/10'}`}>
+              <Card className={`p-3 text-center ${
+                docType === 'market' ? 'bg-blue-500/10' : 
+                docType === 'material' ? 'bg-orange-500/10' : 
+                docType === 'transfer' ? 'bg-purple-500/10' : 
+                'bg-primary/10'
+              }`}>
                 <div className="text-lg font-bold">{docNumber}</div>
-                <div className="text-xs text-muted-foreground capitalize">{docType}</div>
+                <div className="text-xs text-muted-foreground capitalize">
+                  {docType === 'transfer' ? 'Transfer (Spirits)' : docType}
+                </div>
               </Card>
             </div>
 
