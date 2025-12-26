@@ -800,6 +800,139 @@ const PurchaseOrders = () => {
     setShowViewDialog(true);
   };
 
+  // Export individual discrepancy PDF
+  const exportDiscrepancyPDF = async (order: PurchaseOrder) => {
+    try {
+      const varianceSummary = (order as any).variance_summary;
+      if (!varianceSummary) {
+        toast.error("No discrepancy data available");
+        return;
+      }
+
+      // Fetch the full variance data from received records
+      const { data: receivedRecords } = await supabase
+        .from('po_received_records')
+        .select('variance_data')
+        .eq('document_number', order.order_number)
+        .order('received_at', { ascending: false })
+        .limit(1);
+
+      const varianceData = (receivedRecords?.[0] as any)?.variance_data;
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Header
+      doc.setFillColor(220, 38, 38); // Red for discrepancy
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DISCREPANCY REPORT', pageWidth / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Order: ${order.order_number || 'N/A'} | ${order.supplier_name || 'Unknown Supplier'}`, pageWidth / 2, 25, { align: 'center' });
+      doc.text(`Generated: ${format(new Date(), 'MMM d, yyyy h:mm a')}`, pageWidth / 2, 31, { align: 'center' });
+      
+      doc.setTextColor(0, 0, 0);
+      let yPos = 45;
+      
+      // Summary section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Discrepancy Summary', 14, yPos);
+      yPos += 8;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      const summaryData = [
+        ['Total Items with Issues', String((varianceSummary.short || 0) + (varianceSummary.over || 0) + (varianceSummary.missing || 0))],
+        ['Missing (0 qty received)', String(varianceSummary.missing || 0)],
+        ['Short (less than ordered)', String(varianceSummary.short || 0)],
+        ['Over (more than ordered)', String(varianceSummary.over || 0)],
+        ['Matched', String(varianceSummary.matched || 0)]
+      ];
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Category', 'Count']],
+        body: summaryData,
+        theme: 'striped',
+        headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+        columnStyles: {
+          0: { cellWidth: 100 },
+          1: { cellWidth: 40, halign: 'center' }
+        },
+        margin: { left: 14 }
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Detailed items if available
+      if (varianceData?.items && Array.isArray(varianceData.items)) {
+        const discrepancyItems = varianceData.items.filter((item: any) => 
+          item.status === 'short' || item.status === 'over' || item.status === 'missing' || item.status === 'extra'
+        );
+        
+        if (discrepancyItems.length > 0) {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Discrepancy Details', 14, yPos);
+          yPos += 8;
+          
+          const itemsTable = discrepancyItems.map((item: any) => [
+            item.itemName || item.item_name || 'Unknown',
+            String(item.orderedQty || item.ordered_qty || 0),
+            String(item.receivedQty || item.received_qty || 0),
+            String((item.receivedQty || item.received_qty || 0) - (item.orderedQty || item.ordered_qty || 0)),
+            (item.status || '').toUpperCase()
+          ]);
+          
+          autoTable(doc, {
+            startY: yPos,
+            head: [['Item Name', 'Ordered', 'Received', 'Variance', 'Status']],
+            body: itemsTable,
+            theme: 'striped',
+            headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+            columnStyles: {
+              0: { cellWidth: 70 },
+              1: { cellWidth: 25, halign: 'center' },
+              2: { cellWidth: 25, halign: 'center' },
+              3: { cellWidth: 25, halign: 'center' },
+              4: { cellWidth: 30, halign: 'center' }
+            },
+            bodyStyles: { fontSize: 9 },
+            didParseCell: (data: any) => {
+              if (data.column.index === 4 && data.section === 'body') {
+                const status = data.cell.raw?.toString().toLowerCase();
+                if (status === 'short' || status === 'missing') {
+                  data.cell.styles.textColor = [220, 38, 38]; // Red
+                } else if (status === 'over' || status === 'extra') {
+                  data.cell.styles.textColor = [59, 130, 246]; // Blue
+                }
+              }
+            }
+          });
+        }
+      }
+      
+      // Footer
+      const pageHeight = doc.internal.pageSize.getHeight();
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text('Generated by Purchase Order System', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      
+      doc.save(`discrepancy-${order.order_number || 'report'}-${format(new Date(), 'yyyyMMdd-HHmm')}.pdf`);
+      toast.success("Discrepancy PDF downloaded");
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   // Calculate totals
   const totalSpent = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
   const totalItems = orders?.length || 0;
@@ -1156,6 +1289,19 @@ const PurchaseOrders = () => {
                         )}
                       </div>
                       <div className="flex gap-1">
+                        {hasDiscrepancy && (order as any).variance_summary && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              exportDiscrepancyPDF(order);
+                            }}
+                            title="Download Discrepancy Report"
+                          >
+                            <Download className="w-4 h-4 text-amber-500" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleViewOrder(order)}>
                           <Eye className="w-4 h-4" />
                         </Button>
