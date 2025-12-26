@@ -31,6 +31,13 @@ import {
   normalizeItemCode 
 } from "@/components/procurement/EnhancedReceivingDialog";
 import { ManualTextUploadDialog } from "@/components/procurement/ManualTextUploadDialog";
+import { 
+  useDailyPOSummary, 
+  normalizeItemName, 
+  itemsMatch, 
+  detectDocType,
+  getItemKey as getPOItemKey 
+} from "@/hooks/useDailyPOSummary";
 
 interface VarianceItem {
   item_code?: string;
@@ -309,6 +316,12 @@ const POReceivedItems = () => {
     };
   }, [recentReceived, allPurchaseOrders, allPurchaseOrderItems]);
 
+  // Daily PO Summary hook - summarizes POs by date with ML=market, RQ=material
+  const { dailySummary, allSummarizedItems, findMatchingPOItem } = useDailyPOSummary(
+    allPurchaseOrders,
+    allPurchaseOrderItems
+  );
+
   // Purchase order analytics hook - ONLY uses items from POs that have been received
   const purchaseOrderAnalytics = usePurchaseOrderAnalytics(receivedPurchaseOrders, receivedPurchaseOrderItems);
 
@@ -585,8 +598,10 @@ const POReceivedItems = () => {
         item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-  // Handle Transfer Document (TR prefix) - direct stock addition without PO comparison
-  // Items with same code/name are summed together
+  // Handle Transfer Document (TR prefix) - NEW LOGIC:
+  // 1. Check if items match PO items (by code OR name)
+  // 2. If match found: compare and show variance (SHORT/EXTRA/MISSING)
+  // 3. If no match: receive as Spirits category without comparison
   const handleTransferDocument = async (parsed: any, documentCode: string) => {
     if (!user) return;
     
@@ -600,6 +615,8 @@ const POReceivedItems = () => {
       quantity: number;
       price_per_unit: number;
       price_total: number;
+      matchedPOItem: any | null;
+      category: 'spirits' | 'market' | 'material';
     }>();
     
     (parsed.items || []).forEach((item: any) => {
@@ -608,13 +625,17 @@ const POReceivedItems = () => {
       // Use item_code as primary key, fallback to normalized name
       const key = itemCode 
         ? normalizeItemCode(itemCode) 
-        : itemName.toLowerCase().trim().replace(/\s+/g, ' ');
+        : normalizeItemName(itemName);
       
       if (!key) return;
       
       const existing = itemsMap.get(key);
       const qty = Number(item.quantity) || 0;
       const unitPrice = Number(item.price_per_unit) || 0;
+      
+      // Check if item matches any PO item (by code OR name)
+      const matchedPOItem = findMatchingPOItem({ item_code: itemCode, item_name: itemName });
+      const category = matchedPOItem ? matchedPOItem.category : 'spirits';
       
       if (existing) {
         // Sum quantities and recalculate total
@@ -627,7 +648,9 @@ const POReceivedItems = () => {
           unit: item.unit || 'EA',
           quantity: qty,
           price_per_unit: unitPrice,
-          price_total: qty * unitPrice
+          price_total: qty * unitPrice,
+          matchedPOItem,
+          category: category as 'spirits' | 'market' | 'material'
         });
       }
     });
@@ -639,11 +662,72 @@ const POReceivedItems = () => {
       return;
     }
     
+    // Separate matched vs unmatched items
+    const matchedItems = consolidatedItems.filter(i => i.matchedPOItem);
+    const unmatchedItems = consolidatedItems.filter(i => !i.matchedPOItem);
+    
+    // Generate variance data for matched items
+    const varianceItems: any[] = [];
+    matchedItems.forEach(item => {
+      const orderedQty = item.matchedPOItem?.quantity || 0;
+      const receivedQty = item.quantity;
+      const variance = receivedQty - orderedQty;
+      
+      let status: 'match' | 'short' | 'over' | 'extra' = 'match';
+      if (variance < 0) status = 'short';
+      else if (variance > 0) status = 'over';
+      
+      varianceItems.push({
+        item_code: item.item_code,
+        item_name: item.item_name,
+        unit: item.unit,
+        ordered_qty: orderedQty,
+        received_qty: receivedQty,
+        variance,
+        variance_pct: orderedQty > 0 ? (variance / orderedQty) * 100 : 0,
+        status,
+        category: item.category
+      });
+    });
+    
+    // Add unmatched items as "extra" (Spirits category)
+    unmatchedItems.forEach(item => {
+      varianceItems.push({
+        item_code: item.item_code,
+        item_name: item.item_name,
+        unit: item.unit,
+        ordered_qty: 0,
+        received_qty: item.quantity,
+        variance: item.quantity,
+        variance_pct: 100,
+        status: 'extra',
+        category: 'spirits'
+      });
+    });
+    
     // Calculate totals
     const totalQty = consolidatedItems.reduce((sum, i) => sum + i.quantity, 0);
     const totalValue = consolidatedItems.reduce((sum, i) => sum + i.price_total, 0);
     
-    // Save the transfer record (no variance data since no PO comparison)
+    // Build variance report
+    const varianceReport = matchedItems.length > 0 ? {
+      order_number: documentCode,
+      supplier: parsed.location || 'Stock Transfer',
+      items: varianceItems,
+      summary: {
+        total_ordered: varianceItems.reduce((sum, i) => sum + i.ordered_qty, 0),
+        total_received: varianceItems.reduce((sum, i) => sum + i.received_qty, 0),
+        total_variance: varianceItems.reduce((sum, i) => sum + i.variance, 0),
+        matched: varianceItems.filter(i => i.status === 'match').length,
+        short: varianceItems.filter(i => i.status === 'short').length,
+        over: varianceItems.filter(i => i.status === 'over').length,
+        missing: 0,
+        extra: varianceItems.filter(i => i.status === 'extra').length,
+        spirits_count: unmatchedItems.length
+      }
+    } : null;
+    
+    // Save the transfer record
     const { data: savedRecord, error: recordError } = await (supabase as any)
       .from('po_received_records')
       .insert({
@@ -656,7 +740,7 @@ const POReceivedItems = () => {
         total_quantity: totalQty,
         total_value: totalValue,
         status: 'received',
-        variance_data: null, // No variance for transfers
+        variance_data: varianceReport,
         received_by_name: staffMode && staffName ? staffName : (profile?.full_name || profile?.username || null),
         received_by_email: staffMode ? null : (profile?.email || user?.email || null)
       })
@@ -696,10 +780,26 @@ const POReceivedItems = () => {
     queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
     queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
     
-    toast.success(
-      `Transfer "${documentCode}" saved: ${consolidatedItems.length} items, ${totalQty} units added to stock`,
-      { duration: 5000 }
-    );
+    // Show appropriate message
+    const spiritsCount = unmatchedItems.length;
+    const matchedCount = matchedItems.length;
+    
+    if (spiritsCount > 0 && matchedCount > 0) {
+      toast.success(
+        `Transfer "${documentCode}" saved: ${matchedCount} items matched to PO, ${spiritsCount} items added as Spirits. Total: ${totalQty} units.`,
+        { duration: 6000 }
+      );
+    } else if (spiritsCount > 0) {
+      toast.success(
+        `Transfer "${documentCode}" saved: ${spiritsCount} Spirits items, ${totalQty} units added to stock.`,
+        { duration: 5000 }
+      );
+    } else {
+      toast.success(
+        `Transfer "${documentCode}" saved: ${matchedCount} items matched, ${totalQty} units. Check variance for discrepancies.`,
+        { duration: 5000 }
+      );
+    }
   };
 
   // Handle manual text upload confirmation
@@ -907,49 +1007,12 @@ const POReceivedItems = () => {
           }
           
           // ===== REGULAR PO DOCUMENT HANDLING =====
-          // Check if document code exists in any Purchase Order
-          let poQuery = supabase
-            .from('purchase_orders')
-            .select('id, order_number, supplier_name, order_date, user_id, workspace_id');
+          // NEW LOGIC: Don't check document code - compare items by item code OR item name
+          // Match against daily summarized PO items (at least one match required)
           
-          if (selectedWorkspaceId) {
-            poQuery = poQuery.eq('workspace_id', selectedWorkspaceId);
-          } else {
-            poQuery = poQuery.eq('user_id', user?.id).is('workspace_id', null);
-          }
-          
-          const { data: existingPOs } = await poQuery;
-          
-          // Find matching PO by document code
-          const matchedOrder = (existingPOs || []).find((po: any) => {
-            const poCode = normalizeItemCode(po.order_number || '');
-            return poCode === normalizedDocCode || 
-                   po.order_number?.toLowerCase().includes(documentCode.toLowerCase()) ||
-                   documentCode.toLowerCase().includes(po.order_number?.toLowerCase() || '');
-          });
-          
-          // REJECT if document code not found in any PO
-          if (!matchedOrder) {
-            toast.error(
-              `Upload rejected: Document code "${documentCode}" not found in any Purchase Order. Please create a PO with this document number first.`,
-              { duration: 8000 }
-            );
-            setIsUploading(false);
-            return;
-          }
-          
-          // Document code matched - process items
           const docType = detectDocumentType(documentCode);
-
-          // Fetch ordered items for variance check (this is what makes Discrepancy accurate)
-          const { data: poItems, error: poItemsError } = await supabase
-            .from('purchase_order_items')
-            .select('*')
-            .eq('purchase_order_id', matchedOrder.id);
-
-          if (poItemsError) throw poItemsError;
-          setPendingOrderItems(poItems || []);
-
+          
+          // Build matching maps from ALL summarized PO items
           const poItemsByCode = new Map<string, any>();
           const poItemsBySuffix = new Map<string, any>();
           const poItemsByName = new Map<string, any>();
@@ -964,7 +1027,8 @@ const POReceivedItems = () => {
             return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
           };
           
-          (poItems || []).forEach((poi: any) => {
+          // Index all summarized PO items for matching
+          allSummarizedItems.forEach((poi: any) => {
             if (poi.item_code) {
               poItemsByCode.set(normalizeItemCode(poi.item_code), poi);
               const suffix = extractNumericSuffix(poi.item_code);
@@ -980,28 +1044,30 @@ const POReceivedItems = () => {
 
           let marketCount = 0;
           let materialCount = 0;
+          let matchedCount = 0;
 
           const enhancedItems: ParsedReceivingItem[] = parsed.items.map((item: any) => {
             const itemCode = item.item_code || '';
-            const normalizedItemCode = itemCode ? normalizeItemCode(itemCode) : '';
-            const normalizedItemName = String(item.item_name || item.name || '').trim().toLowerCase();
-            const fuzzyItemName = normalizeFuzzyName(item.item_name || item.name || '');
+            const normalizedItemCodeVal = itemCode ? normalizeItemCode(itemCode) : '';
+            const itemNameRaw = item.item_name || item.name || '';
+            const normalizedItemNameVal = String(itemNameRaw).trim().toLowerCase();
+            const fuzzyItemName = normalizeFuzzyName(itemNameRaw);
             const itemSuffix = itemCode ? extractNumericSuffix(itemCode) : '';
 
-            // Multi-strategy matching
+            // Multi-strategy matching against ALL summarized PO items
             let matchedPOItem = null;
             
             // 1. Try exact code match
-            if (itemCode && poItemsByCode.has(normalizedItemCode)) {
-              matchedPOItem = poItemsByCode.get(normalizedItemCode);
+            if (itemCode && poItemsByCode.has(normalizedItemCodeVal)) {
+              matchedPOItem = poItemsByCode.get(normalizedItemCodeVal);
             }
             // 2. Try numeric suffix match (handles Z00007286 vs 200007286)
             if (!matchedPOItem && itemSuffix && itemSuffix.length >= 4 && poItemsBySuffix.has(itemSuffix)) {
               matchedPOItem = poItemsBySuffix.get(itemSuffix);
             }
             // 3. Try exact name match
-            if (!matchedPOItem && poItemsByName.has(normalizedItemName)) {
-              matchedPOItem = poItemsByName.get(normalizedItemName);
+            if (!matchedPOItem && poItemsByName.has(normalizedItemNameVal)) {
+              matchedPOItem = poItemsByName.get(normalizedItemNameVal);
             }
             // 4. Try fuzzy name match
             if (!matchedPOItem && poItemsByFuzzyName.has(fuzzyItemName)) {
@@ -1009,8 +1075,10 @@ const POReceivedItems = () => {
             }
 
             const matchedInPO = !!matchedPOItem;
+            if (matchedInPO) matchedCount++;
 
-            let itemDocType = detectDocumentType(itemCode);
+            // Determine item category from matched PO item or document type
+            let itemDocType = matchedPOItem?.category || detectDocumentType(itemCode);
             if (itemDocType === 'unknown' && (docType === 'market' || docType === 'material')) {
               itemDocType = docType;
             }
@@ -1020,18 +1088,37 @@ const POReceivedItems = () => {
 
             return {
               item_code: itemCode,
-              item_name: item.item_name || item.name || '',
+              item_name: itemNameRaw,
               unit: item.unit,
               quantity: item.quantity || 0,
               price_per_unit: item.price_per_unit || 0,
               price_total: (item.quantity || 0) * (item.price_per_unit || 0),
               delivery_date: item.delivery_date,
-              isReceived: true, // Auto-tick all items by default - user unticks what wasn't received
+              isReceived: true, // Auto-tick all items by default
               documentType: itemDocType,
               matchedInPO,
               matchedPOItem: matchedPOItem || undefined
             };
           });
+          
+          // At least ONE item must match to process (by item code OR item name)
+          if (matchedCount === 0) {
+            toast.error(
+              `Upload rejected: No items in "${documentCode}" match any PO items by code or name. Please verify items exist in your Purchase Orders.`,
+              { duration: 8000 }
+            );
+            setIsUploading(false);
+            return;
+          }
+          
+          // Build the ordered items for variance comparison from matched PO items
+          const orderedItemsForVariance: any[] = [];
+          enhancedItems.forEach(item => {
+            if (item.matchedPOItem) {
+              orderedItemsForVariance.push(item.matchedPOItem);
+            }
+          });
+          setPendingOrderItems(orderedItemsForVariance);
           
           // Determine overall document type
           const overallDocType: 'market' | 'material' | 'mixed' = 
@@ -1040,18 +1127,28 @@ const POReceivedItems = () => {
             marketCount > 0 ? 'market' :
             materialCount > 0 ? 'material' : 'mixed';
           
-          // Document code verified - store matched order and show enhanced dialog for confirmation
-          setPendingMatchedOrder(matchedOrder);
+          // Store matched order info (use first matched PO item's source or null)
+          const matchedPOInfo = enhancedItems.find(i => i.matchedPOItem)?.matchedPOItem;
+          setPendingMatchedOrder({
+            order_number: documentCode,
+            supplier_name: parsed.location || matchedPOInfo?.source_docs?.[0] || 'Unknown',
+            order_date: parsed.doc_date || new Date().toISOString()
+          });
+          
           setEnhancedReceivingData({
             doc_no: documentCode,
             doc_date: parsed.doc_date,
-            location: matchedOrder?.supplier_name || parsed.location,
+            location: parsed.location,
             items: enhancedItems,
             documentType: overallDocType
           });
           setShowEnhancedReceiving(true);
           
-          toast.success(`Document "${documentCode}" verified in PO. Review ${enhancedItems.length} items and confirm to save.`);
+          const unmatchedCount = parsed.items.length - matchedCount;
+          toast.success(
+            `Document "${documentCode}": ${matchedCount} items matched to PO${unmatchedCount > 0 ? `, ${unmatchedCount} not matched` : ''}. Review and confirm.`,
+            { duration: 5000 }
+          );
         } catch (err: any) {
           toast.error("Failed to process: " + err.message);
         } finally {
