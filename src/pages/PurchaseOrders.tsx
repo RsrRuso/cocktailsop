@@ -27,7 +27,6 @@ import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuid
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
-import { normalizeItemCode } from "@/components/procurement/EnhancedReceivingDialog";
 
 interface PurchaseOrderItem {
   id?: string;
@@ -811,132 +810,70 @@ const PurchaseOrders = () => {
     setShowViewDialog(true);
   };
 
-  // Export receiving report PDF using per-document comparison (same as Discrepancy Report)
+  // Export receiving report PDF (works for both discrepancy and archived orders)
   const exportDiscrepancyPDF = async (order: PurchaseOrder) => {
     try {
-      const docNumber = (order.order_number || '').toLowerCase().trim();
-      if (!docNumber) {
-        toast.error("No document number for this order");
-        return;
-      }
+      // Fetch ALL variance data from received records (not just limit 1)
+      // This ensures we get the same data that the UI displays for discrepancy counts
+      const { data: receivedRecords } = await supabase
+        .from('po_received_records')
+        .select('variance_data, received_date, total_value')
+        .eq('document_number', order.order_number)
+        .order('received_date', { ascending: false });
 
-      // Helper functions for item matching (same as POReceivedItems)
-      const normalizeItemName = (name: string) =>
-        (name || '')
-          .toString()
-          .normalize('NFKC')
-          .replace(/\u00A0/g, ' ')
-          .toLowerCase()
-          .replace(/\s+/g, ' ')
-          .trim();
-
-      const getItemKey = (row: any): string => {
-        const code = row?.item_code ?? row?.itemCode ?? row?.code;
-        if (code && String(code).trim()) {
-          return `code:${normalizeItemCode(String(code))}`;
-        }
-        const name = row?.item_name ?? row?.itemName ?? '';
-        return `name:${normalizeItemName(String(name))}`;
-      };
-
-      // Fetch ordered items from purchase_order_items
-      const { data: orderedItems } = await supabase
-        .from('purchase_order_items')
-        .select('*')
-        .eq('purchase_order_id', order.id);
-
-      // Fetch received items from purchase_order_received_items for this document
-      const { data: receivedItems } = await supabase
-        .from('purchase_order_received_items')
-        .select('*, po_received_records!inner(document_number)')
-        .ilike('po_received_records.document_number', docNumber);
-
-      // Build ordered map
-      const orderedMap = new Map<string, { qty: number; value: number; item_name: string; item_code: string; unit: string; unit_price: number }>();
-      (orderedItems || []).forEach((item: any) => {
-        const itemKey = getItemKey(item);
-        const existing = orderedMap.get(itemKey) || { 
-          qty: 0, value: 0, item_name: item.item_name, item_code: item.item_code || '', 
-          unit: item.unit || '', unit_price: item.price_per_unit || 0 
-        };
-        existing.qty += item.quantity || 0;
-        existing.value += item.price_total || 0;
-        orderedMap.set(itemKey, existing);
-      });
-
-      // Build received map
-      const receivedMap = new Map<string, { qty: number; value: number; item_name: string; item_code: string; unit: string; unit_price: number }>();
-      (receivedItems || []).forEach((item: any) => {
-        const itemKey = getItemKey(item);
-        const existing = receivedMap.get(itemKey) || { 
-          qty: 0, value: 0, item_name: item.item_name, item_code: item.item_code || '', 
-          unit: item.unit || '', unit_price: item.unit_price || 0 
-        };
-        existing.qty += item.quantity || 0;
-        existing.value += item.total_price || 0;
-        receivedMap.set(itemKey, existing);
-      });
-
-      // Compare and build allItems array with status
-      const allItems: Array<{
-        item_code: string;
-        item_name: string;
-        unit: string;
-        ordered_qty: number;
-        received_qty: number;
-        unit_price: number;
-        status: 'match' | 'short' | 'over' | 'missing' | 'extra';
-      }> = [];
-
-      // Process ordered items
-      orderedMap.forEach((ordered, itemKey) => {
-        const received = receivedMap.get(itemKey);
-        const receivedQty = received?.qty || 0;
-        const variance = ordered.qty - receivedQty;
+      // Merge all items from all received records to get complete picture
+      // Use a Map to deduplicate items by item_code, keeping the most recent status
+      const itemsMap = new Map<string, any>();
+      
+      (receivedRecords || []).forEach((record: any) => {
+        const varianceData = record?.variance_data;
+        const items = varianceData?.items || [];
         
-        let status: 'match' | 'short' | 'over' | 'missing' | 'extra' = 'match';
-        if (receivedQty === 0) {
-          status = 'missing';
-        } else if (variance > 0.5) {
-          status = 'short';
-        } else if (variance < -0.5) {
-          status = 'over';
-        }
-
-        allItems.push({
-          item_code: ordered.item_code,
-          item_name: ordered.item_name,
-          unit: ordered.unit,
-          ordered_qty: ordered.qty,
-          received_qty: receivedQty,
-          unit_price: received?.unit_price || ordered.unit_price,
-          status
+        items.forEach((item: any) => {
+          const key = item.item_code || item.itemCode || item.item_name || '';
+          // Keep the item with the most informative status (prefer discrepancy statuses)
+          const existing = itemsMap.get(key);
+          if (!existing) {
+            itemsMap.set(key, item);
+          } else {
+            // If current item has a discrepancy status and existing doesn't, use current
+            const currentHasDiscrepancy = ['short', 'missing', 'over', 'extra'].includes(item.status);
+            const existingHasDiscrepancy = ['short', 'missing', 'over', 'extra'].includes(existing.status);
+            if (currentHasDiscrepancy && !existingHasDiscrepancy) {
+              itemsMap.set(key, item);
+            }
+          }
         });
       });
+      
+      let allItems = Array.from(itemsMap.values());
 
-      // Check for extra received items not in order
-      receivedMap.forEach((received, itemKey) => {
-        if (!orderedMap.has(itemKey)) {
-          allItems.push({
-            item_code: received.item_code,
-            item_name: received.item_name,
-            unit: received.unit,
-            ordered_qty: 0,
-            received_qty: received.qty,
-            unit_price: received.unit_price,
-            status: 'extra'
-          });
+      // If no variance data, fetch order items from database
+      if (allItems.length === 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: orderItems } = await (supabase as any)
+          .from('purchase_order_items')
+          .select('item_code, item_name, unit, quantity, price_per_unit')
+          .eq('order_id', order.id);
+        
+        if (orderItems && orderItems.length > 0) {
+          allItems = orderItems.map((item: any) => ({
+            item_code: item.item_code,
+            item_name: item.item_name,
+            unit: item.unit,
+            ordered_qty: item.quantity,
+            received_qty: item.quantity,
+            unit_price: item.price_per_unit,
+            status: 'match'
+          }));
         }
-      });
+      }
 
-      // If no items at all, show error
+      // If still no items, show error
       if (allItems.length === 0) {
         toast.error("No receiving data available for this order");
         return;
       }
-
-      // Sort by item_code
-      allItems.sort((a, b) => (a.item_code || '').localeCompare(b.item_code || '', undefined, { numeric: true }));
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -956,7 +893,7 @@ const PurchaseOrders = () => {
       doc.setTextColor(80, 80, 80);
       doc.text(`Document: ${order.order_number || 'N/A'}    Date: ${format(new Date(), 'MMM d, yyyy, h:mm:ss a')}`, pageWidth / 2, 28, { align: 'center' });
       
-      // PDF-safe currency format
+      // PDF-safe currency format (avoid special characters that render incorrectly in PDF)
       const pdfCurrency = (amount: number) => {
         const parts = amount.toFixed(2).split('.');
         const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -970,31 +907,46 @@ const PurchaseOrders = () => {
       
       let yPos = 58;
       
-      // Separate items: received (match/over) vs pending (short/missing/extra)
-      const receivedItemsList = allItems.filter(item => 
-        item.status === 'match' || item.status === 'over'
-      );
+      // Separate items and sort by item_code to maintain consistent order
+      const receivedItems = allItems
+        .filter((item: any) => 
+          item.status === 'match' || item.status === 'over' || (item.received_qty || item.receivedQty) > 0
+        )
+        .sort((a: any, b: any) => {
+          const codeA = (a.item_code || a.itemCode || '').toString();
+          const codeB = (b.item_code || b.itemCode || '').toString();
+          return codeA.localeCompare(codeB, undefined, { numeric: true });
+        });
       
-      const pendingItems = allItems.filter(item => 
-        item.status === 'short' || item.status === 'missing' || item.status === 'extra'
-      );
+      const pendingItems = allItems
+        .filter((item: any) => 
+          item.status === 'short' || item.status === 'missing' || item.status === 'extra'
+        )
+        .sort((a: any, b: any) => {
+          const codeA = (a.item_code || a.itemCode || '').toString();
+          const codeB = (b.item_code || b.itemCode || '').toString();
+          return codeA.localeCompare(codeB, undefined, { numeric: true });
+        });
       
       const totalPlaced = allItems.length;
-      const receivedCount = receivedItemsList.length;
+      const receivedCount = receivedItems.length;
       const pendingCount = pendingItems.length;
       
       // Calculate totals
-      const receivedValue = receivedItemsList.reduce((sum, item) => {
-        return sum + (item.received_qty * item.unit_price);
+      const receivedValue = receivedItems.reduce((sum: number, item: any) => {
+        const qty = item.received_qty || item.receivedQty || 0;
+        const price = item.received_price || item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
+        return sum + (qty * price);
       }, 0);
       
       // Calculate deduction amount (value of excluded/pending items)
-      const deductionValue = pendingItems.reduce((sum, item) => {
-        const qty = item.status === 'extra' ? item.received_qty : item.ordered_qty;
-        return sum + (qty * item.unit_price);
+      const deductionValue = pendingItems.reduce((sum: number, item: any) => {
+        const qty = item.ordered_qty || item.orderedQty || item.quantity || 0;
+        const price = item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
+        return sum + (qty * price);
       }, 0);
       
-      // Summary section
+      // Summary section - increase height to fit deduction
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(200, 200, 200);
       doc.roundedRect(14, yPos, pageWidth - 28, 42, 3, 3, 'FD');
@@ -1023,21 +975,25 @@ const PurchaseOrders = () => {
       yPos += 52;
       
       // Received Items Section
-      if (receivedItemsList.length > 0) {
+      if (receivedItems.length > 0) {
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(34, 197, 94);
         doc.text('Received Items', 14, yPos);
         yPos += 6;
         
-        const receivedTable = receivedItemsList.map(item => [
-          item.item_code || '-',
-          item.item_name || 'Unknown',
-          `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
-          String(item.received_qty),
-          pdfCurrency(item.unit_price),
-          pdfCurrency(item.received_qty * item.unit_price)
-        ]);
+        const receivedTable = receivedItems.map((item: any) => {
+          const qty = item.received_qty || item.receivedQty || item.quantity || 0;
+          const price = item.received_price || item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
+          return [
+            item.item_code || item.itemCode || '-',
+            item.item_name || item.itemName || 'Unknown',
+            `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
+            String(qty),
+            pdfCurrency(price),
+            pdfCurrency(qty * price)
+          ];
+        });
         
         autoTable(doc, {
           startY: yPos,
@@ -1075,14 +1031,15 @@ const PurchaseOrders = () => {
         doc.text('Excluded Items (Pending)', 14, yPos);
         yPos += 6;
         
-        const pendingTable = pendingItems.map(item => {
-          const qty = item.status === 'extra' ? item.received_qty : item.ordered_qty;
+        const pendingTable = pendingItems.map((item: any) => {
+          const qty = item.ordered_qty || item.orderedQty || item.quantity || 0;
+          const price = item.ordered_price || item.unit_price || item.unitPrice || item.price_per_unit || 0;
           return [
-            item.item_code || '-',
-            item.item_name || 'Unknown',
+            item.item_code || item.itemCode || '-',
+            item.item_name || item.itemName || 'Unknown',
             `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
             String(qty),
-            pdfCurrency(qty * item.unit_price)
+            pdfCurrency(qty * price)
           ];
         });
         
