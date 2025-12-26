@@ -167,6 +167,9 @@ const StockMovementReport = lazy(() => import("@/pages/reports/StockMovementRepo
 const RevenueByCategory = lazy(() => import("@/pages/reports/RevenueByCategory"));
 const BreakevenReport = lazy(() => import("@/pages/reports/BreakevenReport"));
 const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
+// Lab Ops Module - Isolated bundle for independent scaling
+// This creates a separate JS chunk that only loads when accessing Lab Ops routes
+const LabOpsRoutes = lazy(() => import("@/modules/lab-ops/LabOpsRoutes"));
 const LabOps = lazy(() => import("@/pages/LabOps"));
 const LabOpsPromo = lazy(() => import("@/pages/LabOpsPromo"));
 const Livestream = lazy(() => import("@/pages/Livestream"));
@@ -423,11 +426,10 @@ const AppContent = () => {
           <Route path="/hr-dashboard/*" element={<HRDashboard />} />
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
+          {/* Lab Ops Module - Isolated Bundle for Independent Scaling */}
+          {/* All Lab Ops routes load as a separate chunk for better performance */}
           <Route path="/lab-ops" element={<LabOps />} />
           <Route path="/lab-ops-promo" element={<LabOpsPromo />} />
-          <Route path="/purchase-order-promo" element={<PurchaseOrderPromo />} />
-          <Route path="/live" element={<Livestream />} />
-          <Route path="/live/:id" element={<Livestream />} />
           <Route path="/staff-pos" element={<StaffPOS />} />
           <Route path="/staff-pos/print" element={<StaffPOSPrint />} />
           <Route path="/staff-install" element={<StaffInstall />} />
@@ -435,6 +437,9 @@ const AppContent = () => {
           <Route path="/lab-ops-staff-pin-access" element={<LabOpsStaffPinAccess />} />
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
+          <Route path="/purchase-order-promo" element={<PurchaseOrderPromo />} />
+          <Route path="/live" element={<Livestream />} />
+          <Route path="/live/:id" element={<Livestream />} />
           <Route path="/exam-center" element={<ExamCenter />} />
           <Route path="/exam/:categoryId" element={<ExamSession />} />
           <Route path="/certificate/:certificateId" element={<CertificateView />} />
