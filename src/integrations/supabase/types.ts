@@ -8483,31 +8483,46 @@ export type Database = {
           bottle_size_ml: number
           brand: string | null
           category: string | null
+          cost_per_unit: number | null
           created_at: string
           id: string
           name: string
+          source_id: string | null
+          source_type: string | null
+          unit: string | null
           updated_at: string
           user_id: string
+          yield_percentage: number | null
         }
         Insert: {
           bottle_size_ml?: number
           brand?: string | null
           category?: string | null
+          cost_per_unit?: number | null
           created_at?: string
           id?: string
           name: string
+          source_id?: string | null
+          source_type?: string | null
+          unit?: string | null
           updated_at?: string
           user_id: string
+          yield_percentage?: number | null
         }
         Update: {
           bottle_size_ml?: number
           brand?: string | null
           category?: string | null
+          cost_per_unit?: number | null
           created_at?: string
           id?: string
           name?: string
+          source_id?: string | null
+          source_type?: string | null
+          unit?: string | null
           updated_at?: string
           user_id?: string
+          yield_percentage?: number | null
         }
         Relationships: []
       }
@@ -14502,6 +14517,50 @@ export type Database = {
             columns: ["parent_draft_id"]
             isOneToOne: false
             referencedRelation: "studio_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_recipes: {
+        Row: {
+          created_at: string
+          description: string | null
+          group_id: string | null
+          id: string
+          ingredients: Json
+          name: string
+          total_yield_ml: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          group_id?: string | null
+          id?: string
+          ingredients?: Json
+          name: string
+          total_yield_ml?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          group_id?: string | null
+          id?: string
+          ingredients?: Json
+          name?: string
+          total_yield_ml?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_recipes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
             referencedColumns: ["id"]
           },
         ]

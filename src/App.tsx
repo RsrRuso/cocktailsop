@@ -64,6 +64,7 @@ const BatchRecipes = lazy(() => import("./pages/BatchRecipes"));
 const BatchQRSubmit = lazy(() => import("./pages/BatchQRSubmit"));
 const BatchView = lazy(() => import("./pages/BatchView"));
 const BatchActivity = lazy(() => import("./pages/BatchActivity"));
+const SubRecipes = lazy(() => import("./pages/SubRecipes"));
 const MasterSpirits = lazy(() => import("./pages/MasterSpirits"));
 const ABVCalculator = lazy(() => import("./pages/ABVCalculator"));
 const ScalingTool = lazy(() => import("./pages/ScalingTool"));
@@ -332,6 +333,7 @@ const AppContent = () => {
           <Route path="/batch-qr/:qrId" element={<BatchQRSubmit />} />
           <Route path="/batch-view/:productionId" element={<BatchView />} />
           <Route path="/batch-activity" element={<BatchActivity />} />
+          <Route path="/sub-recipes" element={<SubRecipes />} />
           <Route path="/master-spirits" element={<MasterSpirits />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
           <Route path="/scaling-tool" element={<ScalingTool />} />
