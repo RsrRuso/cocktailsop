@@ -2,14 +2,32 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, Edit2, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Download, Edit2, Trash2, ChevronDown, ChevronRight, Beaker } from "lucide-react";
 import { BatchProduction } from "@/hooks/useBatchProductions";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SubRecipeBreakdownItem {
+  id: string;
+  name: string;
+  amount: number;
+  unit: string;
+  scaled_amount: number;
+}
+
+interface SubRecipeDepletion {
+  id: string;
+  sub_recipe_id: string;
+  amount_used_ml: number;
+  ingredient_breakdown: SubRecipeBreakdownItem[];
+}
 
 interface ProductionCardProps {
   production: BatchProduction;
   canEditDelete: boolean;
   producerProfile: { avatar_url?: string; full_name?: string; username?: string } | null;
-  spirits: Array<{ name: string; bottle_size_ml: number }> | null;
+  spirits: Array<{ name: string; bottle_size_ml: number; source_type?: string }> | null;
   onDownloadPDF: (production: BatchProduction) => void;
   onEdit: (production: BatchProduction) => void;
   onDelete: (productionId: string) => void;
@@ -40,11 +58,39 @@ export const ProductionCard = ({
   getProductionIngredients,
 }: ProductionCardProps) => {
   const [ingredientsData, setIngredientsData] = useState<{
-    ingredients: Array<{ name: string; ml: number; bottles: number; leftoverMl: number }>;
+    ingredients: Array<{ 
+      name: string; 
+      ml: number; 
+      bottles: number; 
+      leftoverMl: number;
+      isSubRecipe?: boolean;
+      subRecipeBreakdown?: SubRecipeBreakdownItem[];
+    }>;
     totalMl: number;
     totalBottles: number;
     totalLeftoverMl: number;
   } | null>(null);
+  const [subRecipeDepletions, setSubRecipeDepletions] = useState<SubRecipeDepletion[]>([]);
+  const [expandedSubRecipes, setExpandedSubRecipes] = useState<Set<string>>(new Set());
+
+  // Fetch sub-recipe depletions for this production
+  useEffect(() => {
+    const fetchSubRecipeDepletions = async () => {
+      const { data, error } = await supabase
+        .from('sub_recipe_depletions')
+        .select('*')
+        .eq('production_id', production.id);
+      
+      if (!error && data) {
+        setSubRecipeDepletions(data.map((d: any) => ({
+          ...d,
+          ingredient_breakdown: d.ingredient_breakdown as SubRecipeBreakdownItem[]
+        })));
+      }
+    };
+
+    fetchSubRecipeDepletions();
+  }, [production.id]);
 
   useEffect(() => {
     const loadIngredients = async () => {
@@ -64,11 +110,20 @@ export const ProductionCard = ({
           const scaledMl = parseFloat(ing.scaled_amount || 0);
           totalMl += scaledMl;
 
+          // Check if this ingredient is a sub-recipe
           const matchingSpirit = spirits ? findMatchingSpirit(ing.ingredient_name, spirits) : null;
+          const isSubRecipe = matchingSpirit && (matchingSpirit as any).source_type === 'sub_recipe';
+          
+          // Find sub-recipe depletion for breakdown
+          const depletion = subRecipeDepletions.find(d => {
+            // Match by checking if there's a depletion with similar amount
+            return Math.abs(d.amount_used_ml - scaledMl) < 1;
+          });
+
           let bottles = 0;
           let leftoverMl = 0;
 
-          if (matchingSpirit && matchingSpirit.bottle_size_ml) {
+          if (matchingSpirit && matchingSpirit.bottle_size_ml && !isSubRecipe) {
             bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
             leftoverMl = scaledMl % matchingSpirit.bottle_size_ml;
             totalBottles += bottles;
@@ -82,6 +137,8 @@ export const ProductionCard = ({
             ml: scaledMl,
             bottles,
             leftoverMl,
+            isSubRecipe,
+            subRecipeBreakdown: depletion?.ingredient_breakdown || [],
           });
         });
 
@@ -98,7 +155,17 @@ export const ProductionCard = ({
     };
 
     loadIngredients();
-  }, [production.id, getProductionIngredients, spirits]);
+  }, [production.id, getProductionIngredients, spirits, subRecipeDepletions]);
+
+  const toggleSubRecipe = (name: string) => {
+    const newExpanded = new Set(expandedSubRecipes);
+    if (newExpanded.has(name)) {
+      newExpanded.delete(name);
+    } else {
+      newExpanded.add(name);
+    }
+    setExpandedSubRecipes(newExpanded);
+  };
 
   return (
     <Card className="p-3 sm:p-4 glass hover:bg-accent/10 transition-colors">
@@ -178,22 +245,59 @@ export const ProductionCard = ({
           </h5>
           <div className="space-y-2 mb-3">
             {ingredientsData.ingredients.map((ing, idx) => (
-              <div
-                key={idx}
-                className="flex justify-between items-center text-xs bg-muted/20 p-2 rounded"
-              >
-                <span className="font-medium truncate flex-1">{ing.name}</span>
-                <div className="flex gap-3 text-right">
-                  <span className="text-primary font-bold">{ing.ml.toFixed(0)} ml</span>
-                  {ing.bottles > 0 && (
-                    <>
-                      <span className="text-emerald-600 font-bold">{ing.bottles} btl</span>
-                      {ing.leftoverMl > 0 && (
-                        <span className="text-amber-600">+{ing.leftoverMl.toFixed(0)} ml</span>
+              <div key={idx}>
+                {ing.isSubRecipe && ing.subRecipeBreakdown && ing.subRecipeBreakdown.length > 0 ? (
+                  <Collapsible 
+                    open={expandedSubRecipes.has(ing.name)}
+                    onOpenChange={() => toggleSubRecipe(ing.name)}
+                  >
+                    <CollapsibleTrigger className="w-full">
+                      <div className="flex justify-between items-center text-xs bg-purple-500/20 p-2 rounded cursor-pointer hover:bg-purple-500/30 transition-colors">
+                        <div className="flex items-center gap-2">
+                          {expandedSubRecipes.has(ing.name) ? (
+                            <ChevronDown className="w-3 h-3" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3" />
+                          )}
+                          <Beaker className="w-3 h-3 text-purple-400" />
+                          <span className="font-medium truncate">{ing.name}</span>
+                          <Badge variant="secondary" className="text-[10px] bg-purple-500/30">Sub-Recipe</Badge>
+                        </div>
+                        <span className="text-primary font-bold">{ing.ml.toFixed(0)} ml</span>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-purple-500/30 pl-3">
+                        {ing.subRecipeBreakdown.map((subIng, subIdx) => (
+                          <div
+                            key={subIdx}
+                            className="flex justify-between items-center text-xs bg-muted/30 p-1.5 rounded"
+                          >
+                            <span className="text-muted-foreground truncate flex-1">{subIng.name}</span>
+                            <span className="text-primary/80 font-medium">
+                              {(subIng.scaled_amount || subIng.amount).toFixed(1)} {subIng.unit}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ) : (
+                  <div className="flex justify-between items-center text-xs bg-muted/20 p-2 rounded">
+                    <span className="font-medium truncate flex-1">{ing.name}</span>
+                    <div className="flex gap-3 text-right">
+                      <span className="text-primary font-bold">{ing.ml.toFixed(0)} ml</span>
+                      {ing.bottles > 0 && (
+                        <>
+                          <span className="text-emerald-600 font-bold">{ing.bottles} btl</span>
+                          {ing.leftoverMl > 0 && (
+                            <span className="text-amber-600">+{ing.leftoverMl.toFixed(0)} ml</span>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
