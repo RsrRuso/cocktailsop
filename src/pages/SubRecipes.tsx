@@ -33,12 +33,14 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  Layers
+  Layers,
+  ListOrdered
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSubRecipes, SubRecipeIngredient, SubRecipe } from "@/hooks/useSubRecipes";
+import { useSubRecipes, SubRecipeIngredient, SubRecipe, SubRecipePrepStep } from "@/hooks/useSubRecipes";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { motion, AnimatePresence } from "framer-motion";
+import { PrepStepsEditor, PrepStepsDisplay, PrepStep } from "@/components/batch/PrepStepsEditor";
 
 const SubRecipes = () => {
   const navigate = useNavigate();
@@ -62,6 +64,7 @@ const SubRecipes = () => {
   const [ingredients, setIngredients] = useState<SubRecipeIngredient[]>([
     { id: "1", name: "", amount: 0, unit: "ml" }
   ]);
+  const [prepSteps, setPrepSteps] = useState<PrepStep[]>([]);
 
   const filteredRecipes = subRecipes?.filter(recipe =>
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -70,6 +73,7 @@ const SubRecipes = () => {
   const resetForm = () => {
     setFormData({ name: "", description: "", total_yield_ml: 1000 });
     setIngredients([{ id: "1", name: "", amount: 0, unit: "ml" }]);
+    setPrepSteps([]);
     setEditingId(null);
     setShowDialog(false);
   };
@@ -83,6 +87,7 @@ const SubRecipes = () => {
         total_yield_ml: recipe.total_yield_ml,
       });
       setIngredients(recipe.ingredients.length > 0 ? recipe.ingredients : [{ id: "1", name: "", amount: 0, unit: "ml" }]);
+      setPrepSteps(recipe.prep_steps || []);
     } else {
       resetForm();
     }
@@ -117,11 +122,14 @@ const SubRecipes = () => {
       return;
     }
 
+    const validSteps = prepSteps.filter(step => step.description.trim());
+
     const recipeData = {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
       total_yield_ml: formData.total_yield_ml,
       ingredients: validIngredients,
+      prep_steps: validSteps,
       group_id: selectedGroupId,
     };
 
@@ -266,6 +274,27 @@ const SubRecipes = () => {
                         </div>
                       ))}
                     </div>
+                    
+                    {/* Prep Steps Display */}
+                    {calculatorRecipe.prep_steps && calculatorRecipe.prep_steps.length > 0 && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <ListOrdered className="h-4 w-4 text-primary" />
+                          <span className="text-xs font-medium text-muted-foreground">Preparation Steps:</span>
+                        </div>
+                        <div className="space-y-2">
+                          {calculatorRecipe.prep_steps.map((step) => (
+                            <div key={step.id} className="flex gap-2 items-start text-xs sm:text-sm">
+                              <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                                {step.step_number}
+                              </span>
+                              <p className="text-muted-foreground flex-1">{step.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="mt-3 pt-3 border-t text-[10px] sm:text-xs text-muted-foreground">
                       Based on {calculatorRecipe.total_yield_ml}ml total yield
                     </div>
@@ -344,6 +373,22 @@ const SubRecipes = () => {
                         </div>
                       ))}
                     </div>
+
+                    {/* Prep Steps Preview */}
+                    {recipe.prep_steps && recipe.prep_steps.length > 0 && (
+                      <div className="bg-primary/5 rounded-lg p-2 sm:p-3 mb-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <ListOrdered className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {recipe.prep_steps.length} Prep Step{recipe.prep_steps.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">
+                          {recipe.prep_steps[0]?.description}
+                          {recipe.prep_steps.length > 1 && ` (+${recipe.prep_steps.length - 1} more)`}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
@@ -522,6 +567,12 @@ const SubRecipes = () => {
                 </div>
               ))}
             </div>
+
+            {/* Prep Steps Section */}
+            <PrepStepsEditor
+              steps={prepSteps}
+              onStepsChange={setPrepSteps}
+            />
           </div>
 
           <DialogFooter>
