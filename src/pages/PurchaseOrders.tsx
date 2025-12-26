@@ -812,143 +812,173 @@ const PurchaseOrders = () => {
       // Fetch the full variance data from received records
       const { data: receivedRecords } = await supabase
         .from('po_received_records')
-        .select('variance_data')
+        .select('variance_data, received_date, total_value')
         .eq('document_number', order.order_number)
         .order('received_at', { ascending: false })
         .limit(1);
 
-      const varianceData = (receivedRecords?.[0] as any)?.variance_data;
+      const record = receivedRecords?.[0] as any;
+      const varianceData = record?.variance_data;
+      const allItems = varianceData?.items || [];
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       
-      // Header - Green for receiving report
-      doc.setFillColor(34, 197, 94);
-      doc.rect(0, 0, pageWidth, 35, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RECEIVING REPORT', pageWidth / 2, 15, { align: 'center' });
-      
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Order: ${order.order_number || 'N/A'} | ${order.supplier_name || 'Unknown Supplier'}`, pageWidth / 2, 25, { align: 'center' });
-      doc.text(`Generated: ${format(new Date(), 'MMM d, yyyy h:mm a')}`, pageWidth / 2, 31, { align: 'center' });
+      // Header - Light gray background
+      doc.setFillColor(245, 245, 245);
+      doc.rect(0, 0, pageWidth, 50, 'F');
       
       doc.setTextColor(0, 0, 0);
-      let yPos = 45;
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Receiving Report', pageWidth / 2, 18, { align: 'center' });
       
-      // Process items
-      const allItems = varianceData?.items || [];
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Document: ${order.order_number || 'N/A'}    Date: ${format(new Date(), 'MMM d, yyyy, h:mm:ss a')}`, pageWidth / 2, 28, { align: 'center' });
+      
+      // Determine type from order number
+      const orderCode = (order.order_number || '').toUpperCase();
+      const orderType = orderCode.startsWith('RQ') ? 'MATERIAL' : orderCode.startsWith('ML') ? 'MARKET' : 'ORDER';
+      doc.text(`Type: ${orderType}`, pageWidth / 2, 36, { align: 'center' });
+      
+      let yPos = 58;
+      
+      // Summary section
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(200, 200, 200);
+      doc.roundedRect(14, yPos, pageWidth - 28, 35, 3, 3, 'FD');
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Summary', 20, yPos + 10);
+      
+      // Separate items
       const receivedItems = allItems.filter((item: any) => 
-        item.status === 'match' || item.status === 'over'
+        item.status === 'match' || item.status === 'over' || (item.received_qty || item.receivedQty) > 0
       );
-      const discrepancyItems = allItems.filter((item: any) => 
+      const pendingItems = allItems.filter((item: any) => 
         item.status === 'short' || item.status === 'missing' || item.status === 'extra'
       );
       
-      // Section 1: Received Items (green header)
+      const totalPlaced = allItems.length;
+      const receivedCount = receivedItems.length;
+      const pendingCount = pendingItems.length;
+      
+      // Calculate totals
+      const receivedValue = receivedItems.reduce((sum: number, item: any) => {
+        const qty = item.received_qty || item.receivedQty || 0;
+        const price = item.unit_price || item.unitPrice || item.price_per_unit || 0;
+        return sum + (qty * price);
+      }, 0);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      
+      // Left column
+      doc.text(`Total Placed: ${totalPlaced}`, 20, yPos + 20);
+      doc.text(`Received (Ticked): ${receivedCount}`, 20, yPos + 27);
+      doc.text(`Pending (Excluded): ${pendingCount}`, 20, yPos + 34);
+      
+      // Right column
+      const isMarket = orderType === 'MARKET';
+      doc.text(`${isMarket ? 'Market' : 'Material'} Items: ${receivedCount}/${totalPlaced} (${formatCurrency(receivedValue)})`, 100, yPos + 20);
+      doc.text(`Total Value: ${formatCurrency(receivedValue)}`, 100, yPos + 34);
+      
+      yPos += 45;
+      
+      // Received Items Section
       if (receivedItems.length > 0) {
-        const receivedTable = receivedItems.map((item: any) => [
-          item.item_code || item.itemCode || '-',
-          item.item_name || item.itemName || 'Unknown',
-          'Received',
-          String(item.received_qty || item.receivedQty || 0),
-          formatCurrency(item.unit_price || item.unitPrice || 0),
-          formatCurrency((item.received_qty || item.receivedQty || 0) * (item.unit_price || item.unitPrice || 0))
-        ]);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 197, 94);
+        doc.text('Received Items', 14, yPos);
+        yPos += 6;
+        
+        const receivedTable = receivedItems.map((item: any) => {
+          const qty = item.received_qty || item.receivedQty || item.quantity || 0;
+          const price = item.unit_price || item.unitPrice || item.price_per_unit || 0;
+          return [
+            item.item_code || item.itemCode || '-',
+            item.item_name || item.itemName || 'Unknown',
+            `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
+            String(qty),
+            formatCurrency(price),
+            formatCurrency(qty * price)
+          ];
+        });
         
         autoTable(doc, {
           startY: yPos,
           head: [['Code', 'Item', 'Type', 'Qty', 'Unit Price', 'Total']],
           body: receivedTable,
           theme: 'striped',
-          headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold' },
+          headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold', fontSize: 8 },
           columnStyles: {
-            0: { cellWidth: 22 },
-            1: { cellWidth: 60 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 18, halign: 'center' },
-            4: { cellWidth: 28, halign: 'right' },
-            5: { cellWidth: 28, halign: 'right' }
+            0: { cellWidth: 22, fontSize: 7 },
+            1: { cellWidth: 58, fontSize: 7 },
+            2: { cellWidth: 28, fontSize: 7 },
+            3: { cellWidth: 15, halign: 'center', fontSize: 7 },
+            4: { cellWidth: 28, halign: 'right', fontSize: 7 },
+            5: { cellWidth: 28, halign: 'right', fontSize: 7 }
           },
-          bodyStyles: { fontSize: 8 },
-          alternateRowStyles: { fillColor: [245, 245, 245] }
+          bodyStyles: { fontSize: 7 },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 14, right: 14 }
         });
         
-        yPos = (doc as any).lastAutoTable.finalY + 15;
+        yPos = (doc as any).lastAutoTable.finalY + 10;
       }
       
-      // Check if we need a new page for discrepancy section
-      if (yPos > pageHeight - 80 && discrepancyItems.length > 0) {
+      // Check if we need a new page
+      if (yPos > pageHeight - 60 && pendingItems.length > 0) {
         doc.addPage();
         yPos = 20;
       }
       
-      // Section 2: Excluded Items / Discrepancies (red header)
-      if (discrepancyItems.length > 0) {
+      // Excluded Items (Pending) Section
+      if (pendingItems.length > 0) {
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(220, 38, 38);
         doc.text('Excluded Items (Pending)', 14, yPos);
-        yPos += 8;
+        yPos += 6;
         
-        const discrepancyTable = discrepancyItems.map((item: any) => [
-          item.item_code || item.itemCode || '-',
-          item.item_name || item.itemName || 'Unknown',
-          'Pending',
-          String(item.ordered_qty || item.orderedQty || 0),
-          formatCurrency((item.ordered_qty || item.orderedQty || 0) * (item.unit_price || item.unitPrice || 0))
-        ]);
+        const pendingTable = pendingItems.map((item: any) => {
+          const qty = item.ordered_qty || item.orderedQty || item.quantity || 0;
+          const price = item.unit_price || item.unitPrice || item.price_per_unit || 0;
+          return [
+            item.item_code || item.itemCode || '-',
+            item.item_name || item.itemName || 'Unknown',
+            `${isMarket ? 'Market' : 'Material'} (${orderCode.substring(0, 2)})`,
+            String(qty),
+            formatCurrency(qty * price)
+          ];
+        });
         
         autoTable(doc, {
           startY: yPos,
           head: [['Code', 'Item', 'Type', 'Qty', 'Value']],
-          body: discrepancyTable,
+          body: pendingTable,
           theme: 'striped',
-          headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' },
+          headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 8 },
           columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 70 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 20, halign: 'center' },
-            4: { cellWidth: 30, halign: 'right' }
+            0: { cellWidth: 25, fontSize: 7 },
+            1: { cellWidth: 70, fontSize: 7 },
+            2: { cellWidth: 30, fontSize: 7 },
+            3: { cellWidth: 20, halign: 'center', fontSize: 7 },
+            4: { cellWidth: 30, halign: 'right', fontSize: 7 }
           },
-          bodyStyles: { fontSize: 8 },
-          alternateRowStyles: { fillColor: [254, 242, 242] }
+          bodyStyles: { fontSize: 7 },
+          alternateRowStyles: { fillColor: [254, 242, 242] },
+          margin: { left: 14, right: 14 }
         });
-        
-        yPos = (doc as any).lastAutoTable.finalY + 15;
       }
       
-      // Summary section at bottom
-      if (yPos > pageHeight - 50) {
-        doc.addPage();
-        yPos = 20;
-      }
-      
-      doc.setFillColor(245, 245, 245);
-      doc.roundedRect(14, yPos, pageWidth - 28, 30, 3, 3, 'F');
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('Summary', 20, yPos + 10);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      const summaryText = [
-        `Received: ${receivedItems.length} items`,
-        `Pending/Missing: ${discrepancyItems.length} items`,
-        `Matched: ${varianceSummary.matched || 0}`,
-        `Short: ${varianceSummary.short || 0}`,
-        `Missing: ${varianceSummary.missing || 0}`
-      ];
-      doc.text(summaryText.join('  |  '), 20, yPos + 20);
-      
-      // Footer with page numbers
+      // Footer with page numbers on all pages
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
@@ -958,8 +988,8 @@ const PurchaseOrders = () => {
         doc.text(`Page ${i} of ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
       }
       
-      doc.save(`receiving-report-${order.order_number || 'report'}-${format(new Date(), 'yyyyMMdd-HHmm')}.pdf`);
-      toast.success("Receiving report PDF downloaded");
+      doc.save(`Receiving-Report-${order.order_number || 'report'}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+      toast.success("Receiving report downloaded");
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error("Failed to generate PDF");
