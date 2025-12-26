@@ -559,10 +559,8 @@ const BatchCalculator = () => {
       return;
     }
 
-    if (!selectedGroupId) {
-      toast.error("Please select a group before submitting batch");
-      return;
-    }
+    // Personal recipes (selectedGroupId = null) are allowed
+    // No group validation needed - null means personal recipes
 
     if (!producedByUserId) {
       toast.error("Please select who produced this batch");
