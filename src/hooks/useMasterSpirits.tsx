@@ -9,6 +9,11 @@ export interface MasterSpirit {
   category?: string;
   bottle_size_ml: number;
   user_id: string;
+  source_type?: string;
+  source_id?: string;
+  unit?: string;
+  yield_percentage?: number;
+  cost_per_unit?: number;
   created_at: string;
   updated_at: string;
 }

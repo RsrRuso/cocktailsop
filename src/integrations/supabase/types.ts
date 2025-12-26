@@ -14521,6 +14521,57 @@ export type Database = {
           },
         ]
       }
+      sub_recipe_depletions: {
+        Row: {
+          amount_used_ml: number
+          created_at: string
+          depleted_at: string
+          depleted_by_user_id: string | null
+          id: string
+          ingredient_breakdown: Json
+          notes: string | null
+          production_id: string | null
+          sub_recipe_id: string
+        }
+        Insert: {
+          amount_used_ml: number
+          created_at?: string
+          depleted_at?: string
+          depleted_by_user_id?: string | null
+          id?: string
+          ingredient_breakdown: Json
+          notes?: string | null
+          production_id?: string | null
+          sub_recipe_id: string
+        }
+        Update: {
+          amount_used_ml?: number
+          created_at?: string
+          depleted_at?: string
+          depleted_by_user_id?: string | null
+          id?: string
+          ingredient_breakdown?: Json
+          notes?: string | null
+          production_id?: string | null
+          sub_recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_recipe_depletions_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "batch_productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_recipe_depletions_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "sub_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sub_recipes: {
         Row: {
           created_at: string

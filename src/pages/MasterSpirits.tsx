@@ -177,16 +177,28 @@ const MasterSpirits = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredSpirits.map((spirit) => (
+              {filteredSpirits.map((spirit: any) => (
                 <Card key={spirit.id} className="glass p-4 hover:bg-accent/10 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg truncate">{spirit.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-base sm:text-lg truncate">{spirit.name}</h3>
+                        {spirit.source_type === 'sub_recipe' && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary rounded-full">
+                            Sub-Recipe
+                          </span>
+                        )}
+                        {spirit.source_type === 'yield' && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-600 rounded-full">
+                            Yield Product
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-muted-foreground mt-1">
                         {spirit.brand && <span>Brand: {spirit.brand}</span>}
                         {spirit.category && <span>Category: {spirit.category}</span>}
                         <span className="text-primary font-semibold">
-                          Bottle: {spirit.bottle_size_ml}ml
+                          {spirit.source_type === 'sub_recipe' ? 'Yield' : 'Bottle'}: {spirit.bottle_size_ml}ml
                         </span>
                       </div>
                     </div>

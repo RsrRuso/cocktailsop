@@ -28,6 +28,19 @@ export interface BatchProductionIngredient {
   unit: string;
 }
 
+export interface SubRecipeDepletionData {
+  subRecipeId: string;
+  subRecipeName: string;
+  amountUsedMl: number;
+  ingredientBreakdown: Array<{
+    id: string;
+    name: string;
+    amount: number;
+    unit: string;
+    scaled_amount: number;
+  }>;
+}
+
 // Module-level cache for instant loading
 let productionsCache: Map<string, { data: BatchProduction[]; timestamp: number }> = new Map();
 const CACHE_TIME = 2 * 60 * 1000; // 2 minutes
@@ -91,11 +104,13 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
     mutationFn: async ({
       production,
       ingredients,
-      outletId
+      outletId,
+      subRecipeDepletions
     }: {
       production: Omit<BatchProduction, 'id' | 'created_at' | 'user_id'>;
       ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
       outletId?: string; // LAB Ops outlet to sync inventory with
+      subRecipeDepletions?: SubRecipeDepletionData[]; // Sub-recipes used in this batch
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -172,12 +187,32 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
         }
       }
 
+      // Record sub-recipe depletions if any sub-recipes were used
+      if (subRecipeDepletions && subRecipeDepletions.length > 0) {
+        try {
+          for (const depletion of subRecipeDepletions) {
+            await supabase.from('sub_recipe_depletions').insert({
+              sub_recipe_id: depletion.subRecipeId,
+              production_id: productionData.id,
+              amount_used_ml: depletion.amountUsedMl,
+              ingredient_breakdown: JSON.parse(JSON.stringify(depletion.ingredientBreakdown)),
+              depleted_by_user_id: user.id,
+              notes: `Used in batch: ${production.batch_name}`
+            });
+          }
+          console.log('Sub-recipe depletions recorded:', subRecipeDepletions.length);
+        } catch (depletionError) {
+          console.warn('Sub-recipe depletion recording failed (non-blocking):', depletionError);
+        }
+      }
+
       return productionData;
     },
     onSuccess: async (data) => {
       // Clear module cache to ensure fresh data
       productionsCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
+      queryClient.invalidateQueries({ queryKey: ['sub-recipe-depletions'] });
       toast.success("Batch production recorded!");
 
       // Notify group members if part of a group using SECURITY DEFINER function

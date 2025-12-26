@@ -44,7 +44,7 @@ const SubRecipes = () => {
   const navigate = useNavigate();
   const { groups } = useMixologistGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const { subRecipes, isLoading, createSubRecipe, updateSubRecipe, deleteSubRecipe, calculateBreakdown } = useSubRecipes(selectedGroupId);
+  const { subRecipes, depletions, isLoading, createSubRecipe, updateSubRecipe, deleteSubRecipe, calculateBreakdown, getTotalDepletion } = useSubRecipes(selectedGroupId);
   
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -358,6 +358,22 @@ const SubRecipes = () => {
                           <span className="font-medium">Total Yield</span>
                           <span className="font-bold text-primary">{recipe.total_yield_ml} ml</span>
                         </div>
+                        
+                        {/* Depletion tracking */}
+                        {getTotalDepletion(recipe.id) > 0 && (
+                          <div className="pt-3 mt-3 border-t">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Total Used</span>
+                              <span className="font-medium text-orange-500">
+                                {getTotalDepletion(recipe.id).toFixed(0)} ml
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              From batch productions
+                            </div>
+                          </div>
+                        )}
+                        
                         <Badge variant="secondary" className="mt-2">
                           Added to Master Spirits
                         </Badge>
