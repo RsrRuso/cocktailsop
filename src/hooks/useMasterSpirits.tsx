@@ -83,6 +83,31 @@ export const useMasterSpirits = () => {
 
   const deleteSpirit = useMutation({
     mutationFn: async (id: string) => {
+      // First get the spirit to check its source_type
+      const { data: spirit, error: fetchError } = await supabase
+        .from('master_spirits')
+        .select('source_type, source_id')
+        .eq('id', id)
+        .maybeSingle();
+      
+      if (fetchError) throw fetchError;
+
+      // Delete the source item if it's a sub_recipe or yield_calculator item
+      if (spirit?.source_id) {
+        if (spirit.source_type === 'sub_recipe') {
+          await supabase
+            .from('sub_recipes')
+            .delete()
+            .eq('id', spirit.source_id);
+        } else if (spirit.source_type === 'yield_calculator') {
+          await supabase
+            .from('yield_recipes')
+            .delete()
+            .eq('id', spirit.source_id);
+        }
+      }
+
+      // Then delete the master spirit entry
       const { error } = await supabase
         .from('master_spirits')
         .delete()
@@ -92,6 +117,8 @@ export const useMasterSpirits = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['master-spirits'] });
+      queryClient.invalidateQueries({ queryKey: ['sub-recipes'] });
+      queryClient.invalidateQueries({ queryKey: ['yield-recipes'] });
       toast.success("Spirit deleted!");
     },
     onError: (error) => {
