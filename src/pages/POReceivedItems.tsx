@@ -180,8 +180,18 @@ const POReceivedItems = () => {
   // Currency symbols only - no conversion
   const currencySymbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$' };
   
+  // PDF-safe currency codes (avoid Unicode symbols that break in PDFs)
+  const pdfCurrencyCodes: Record<string, string> = { USD: 'USD', EUR: 'EUR', GBP: 'GBP', AED: 'AED', AUD: 'AUD' };
+  
   const formatCurrency = (amount: number) => {
     return `${currencySymbols[currency]}${amount.toFixed(2)}`;
+  };
+  
+  // PDF-safe currency formatter - uses text codes instead of Unicode symbols
+  const formatCurrencyPDFSafe = (amount: number) => {
+    const parts = amount.toFixed(2).split('.');
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return `${pdfCurrencyCodes[currency]} ${intPart}.${parts[1]}`;
   };
 
   // Fetch recent received records - workspace aware
@@ -1404,9 +1414,9 @@ const POReceivedItems = () => {
       head: [['Item', 'Previous Price', 'Current Price', 'Change', 'Change %', 'Date']],
       body: priceHistory.map((item: any) => [
         item.item_name,
-        `${currencySymbols[currency]}${(item.previous_price || 0).toFixed(2)}`,
-        `${currencySymbols[currency]}${(item.current_price || 0).toFixed(2)}`,
-        `${item.change_amount > 0 ? '+' : ''}${currencySymbols[currency]}${(item.change_amount || 0).toFixed(2)}`,
+        formatCurrencyPDFSafe(item.previous_price || 0),
+        formatCurrencyPDFSafe(item.current_price || 0),
+        `${item.change_amount > 0 ? '+' : ''}${formatCurrencyPDFSafe(item.change_amount || 0)}`,
         `${item.change_pct > 0 ? '+' : ''}${(item.change_pct || 0).toFixed(1)}%`,
         format(new Date(item.changed_at || item.date), 'PP')
       ]),
@@ -1794,6 +1804,7 @@ const POReceivedItems = () => {
               receivingAnalytics={receivingAnalytics}
               formatCurrency={formatCurrency}
               perDocumentComparison={perDocumentComparison}
+              currency={currency}
             />
 
             {/* Recent Received Records Section */}

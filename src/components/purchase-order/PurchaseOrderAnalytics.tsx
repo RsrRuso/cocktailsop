@@ -22,9 +22,10 @@ import type { AnalyticsSummary, ItemSummary, DateItemDetail } from "@/hooks/useP
 interface PurchaseOrderAnalyticsProps {
   analytics: AnalyticsSummary;
   formatCurrency: (amount: number) => string;
+  currency?: string;
 }
 
-export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOrderAnalyticsProps) => {
+export const PurchaseOrderAnalytics = ({ analytics, formatCurrency, currency = 'AED' }: PurchaseOrderAnalyticsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'market' | 'material' | 'combined' | 'dates'>('overview');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -49,12 +50,16 @@ export const PurchaseOrderAnalytics = ({ analytics, formatCurrency }: PurchaseOr
     setExpandedItems(newExpanded);
   };
 
+  // PDF-safe currency codes (avoid Unicode symbols that break in PDFs)
+  const pdfCurrencyCodes: Record<string, string> = { USD: 'USD', EUR: 'EUR', GBP: 'GBP', AED: 'AED', AUD: 'AUD' };
+
   // PDF-safe currency formatter (avoids special Unicode characters that break in PDFs)
   const formatCurrencyPDF = (amount: number): string => {
     // Use simple number formatting without locale to avoid any special characters
     const parts = amount.toFixed(2).split('.');
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return 'AED ' + intPart + '.' + parts[1];
+    const currencyCode = pdfCurrencyCodes[currency] || currency || 'AED';
+    return currencyCode + ' ' + intPart + '.' + parts[1];
   };
 
   // Download helpers

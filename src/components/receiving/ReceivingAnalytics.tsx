@@ -22,9 +22,10 @@ import type { ReceivingAnalyticsSummary, ReceivingItemSummary, ReceivingDateItem
 interface ReceivingAnalyticsProps {
   analytics: ReceivingAnalyticsSummary;
   formatCurrency: (amount: number) => string;
+  currency?: string;
 }
 
-export const ReceivingAnalytics = ({ analytics, formatCurrency }: ReceivingAnalyticsProps) => {
+export const ReceivingAnalytics = ({ analytics, formatCurrency, currency = 'AED' }: ReceivingAnalyticsProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'market' | 'material' | 'combined' | 'dates'>('overview');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -49,11 +50,15 @@ export const ReceivingAnalytics = ({ analytics, formatCurrency }: ReceivingAnaly
     setExpandedItems(newExpanded);
   };
 
+  // PDF-safe currency codes (avoid Unicode symbols that break in PDFs)
+  const pdfCurrencyCodes: Record<string, string> = { USD: 'USD', EUR: 'EUR', GBP: 'GBP', AED: 'AED', AUD: 'AUD' };
+
   // PDF-safe currency formatter
   const formatCurrencyPDF = (amount: number): string => {
     const parts = amount.toFixed(2).split('.');
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return 'AED ' + intPart + '.' + parts[1];
+    const currencyCode = pdfCurrencyCodes[currency] || currency || 'AED';
+    return currencyCode + ' ' + intPart + '.' + parts[1];
   };
 
   // Download helpers
