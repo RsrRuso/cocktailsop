@@ -57,11 +57,37 @@ export const ManualPOUploadDialog = ({
   const [items, setItems] = useState<ParsedPOItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const delimiterChar = {
-    tab: '\t',
-    comma: ',',
-    semicolon: ';',
-    space: /\s{2,}/
+  // Auto-detect delimiter from text
+  const detectDelimiter = (text: string): 'tab' | 'comma' | 'semicolon' | 'space' => {
+    const firstLine = text.split('\n')[0] || '';
+    if (firstLine.includes('\t')) return 'tab';
+    if (firstLine.includes(';')) return 'semicolon';
+    if (firstLine.includes(',')) return 'comma';
+    if (/\s{2,}/.test(firstLine)) return 'space';
+    return 'tab';
+  };
+
+  const parseWithDelimiter = (text: string, delim: 'tab' | 'comma' | 'semicolon' | 'space'): string[][] => {
+    const lines = text.trim().split('\n').filter(line => line.trim());
+    
+    return lines.map(line => {
+      switch (delim) {
+        case 'tab':
+          return line.split('\t').map(cell => cell.trim()).filter(c => c);
+        case 'comma':
+          return line.split(',').map(cell => cell.trim()).filter(c => c);
+        case 'semicolon':
+          return line.split(';').map(cell => cell.trim()).filter(c => c);
+        case 'space':
+          // Split by 2+ spaces or use intelligent splitting
+          const spaceSplit = line.split(/\s{2,}/).map(cell => cell.trim()).filter(c => c);
+          if (spaceSplit.length > 1) return spaceSplit;
+          // Fallback: split by single space but try to keep names together
+          return line.split(/\s+/).map(cell => cell.trim()).filter(c => c);
+        default:
+          return [line.trim()];
+      }
+    });
   };
 
   // Detect document type from code - ML (market), RQ (material), TR (transfer/spirits)
@@ -79,33 +105,45 @@ export const ManualPOUploadDialog = ({
       return;
     }
 
-    const lines = rawText.trim().split('\n').filter(line => line.trim());
-    const delim = delimiterChar[delimiter];
+    // Auto-detect delimiter if current one produces only 1 column
+    let bestDelimiter = delimiter;
+    let bestRows = parseWithDelimiter(rawText, delimiter);
+    const maxColsWithCurrent = Math.max(...bestRows.map(r => r.length), 0);
     
-    const rows = lines.map(line => {
-      if (typeof delim === 'string') {
-        return line.split(delim).map(cell => cell.trim());
-      } else {
-        return line.split(delim).map(cell => cell.trim());
+    if (maxColsWithCurrent <= 1) {
+      // Try to auto-detect a better delimiter
+      const detected = detectDelimiter(rawText);
+      const detectedRows = parseWithDelimiter(rawText, detected);
+      const detectedMaxCols = Math.max(...detectedRows.map(r => r.length), 0);
+      
+      if (detectedMaxCols > maxColsWithCurrent) {
+        bestDelimiter = detected;
+        bestRows = detectedRows;
+        setDelimiter(detected);
+        toast.info(`Auto-detected "${detected}" delimiter`);
       }
-    });
+    }
 
-    if (rows.length === 0) {
+    if (bestRows.length === 0) {
       toast.error("No data found in the pasted text");
       return;
     }
 
-    setParsedRows(rows);
+    setParsedRows(bestRows);
     
-    const maxCols = Math.max(...rows.map(r => r.length));
+    const maxCols = Math.max(...bestRows.map(r => r.length), 0);
     if (maxCols >= 5) {
       setColumnMap({ code: 0, name: 1, qty: 2, unit: 3, price: 4 });
     } else if (maxCols >= 3) {
-      setColumnMap({ code: -1, name: 0, qty: 1, unit: -1, price: 2 });
+      setColumnMap({ code: 0, name: 1, qty: 2, unit: -1, price: -1 });
+    } else if (maxCols >= 2) {
+      setColumnMap({ code: -1, name: 0, qty: 1, unit: -1, price: -1 });
+    } else {
+      setColumnMap({ code: -1, name: 0, qty: -1, unit: -1, price: -1 });
     }
     
     setStep('map');
-    toast.success(`Found ${rows.length} rows with up to ${maxCols} columns`);
+    toast.success(`Found ${bestRows.length} rows with ${maxCols} columns`);
   };
 
   const handleApplyMapping = () => {
