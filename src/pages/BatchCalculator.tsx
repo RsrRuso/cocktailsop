@@ -3661,6 +3661,45 @@ const BatchCalculator = () => {
                         // Reset batch timing
                         activityTracker.resetBatchTiming();
                         batchInputStartedRef.current = false;
+                      } else if (value.startsWith("sub-")) {
+                        // Handle sub-recipe selection
+                        const subRecipeId = value.replace("sub-", "");
+                        const subRecipe = subRecipes?.find(sr => sr.id === subRecipeId);
+                        if (subRecipe) {
+                          activityTracker.trackRecipeSelect(subRecipe.name);
+                          activityTracker.resetBatchTiming();
+                          batchInputStartedRef.current = false;
+                          
+                          setRecipeName(subRecipe.name);
+                          setBatchDescription(subRecipe.description || "");
+                          setCurrentServes("1");
+                          
+                          // Convert sub-recipe ingredients to batch ingredients
+                          const subRecipeIngredients = Array.isArray(subRecipe.ingredients) 
+                            ? subRecipe.ingredients.map((ing: any, index: number) => {
+                                const ingredient: Ingredient = {
+                                  id: `${Date.now()}-${index}`,
+                                  name: ing.name || "",
+                                  amount: String(ing.amount || ""),
+                                  unit: ing.unit || "ml"
+                                };
+                                
+                                if (spirits) {
+                                  const matchedSpirit = spirits.find(s => s.name === ingredient.name);
+                                  if (matchedSpirit) {
+                                    ingredient.bottle_size_ml = matchedSpirit.bottle_size_ml;
+                                    if (ingredient.amount) {
+                                      const liters = parseFloat(ingredient.amount) / 1000;
+                                      ingredient.bottles_needed = calculateBottles(liters, matchedSpirit.bottle_size_ml);
+                                    }
+                                  }
+                                }
+                                
+                                return ingredient;
+                              })
+                            : [{ id: "1", name: "", amount: "", unit: "ml" }];
+                          setIngredients(subRecipeIngredients);
+                        }
                       } else {
                         const recipe = recipes?.find(r => r.id === value);
                         if (recipe) {
@@ -3706,13 +3745,24 @@ const BatchCalculator = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
                       <SelectItem value="all">All Batches</SelectItem>
-                      {recipes && recipes.length > 0 ? (
-                        recipes.map((recipe) => (
-                          <SelectItem key={recipe.id} value={recipe.id}>
-                            {recipe.recipe_name}
-                          </SelectItem>
-                        ))
-                      ) : (
+                      {recipes && recipes.length > 0 && recipes.map((recipe) => (
+                        <SelectItem key={recipe.id} value={recipe.id}>
+                          {recipe.recipe_name}
+                        </SelectItem>
+                      ))}
+                      {subRecipes && subRecipes.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                            Sub-Recipes
+                          </div>
+                          {subRecipes.map((subRecipe) => (
+                            <SelectItem key={`sub-${subRecipe.id}`} value={`sub-${subRecipe.id}`}>
+                              {subRecipe.name} <span className="text-xs text-muted-foreground">(sub-recipe)</span>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {(!recipes || recipes.length === 0) && (!subRecipes || subRecipes.length === 0) && (
                         <div className="p-3 text-center text-sm text-muted-foreground">
                           No recipes yet. Create one first!
                         </div>
