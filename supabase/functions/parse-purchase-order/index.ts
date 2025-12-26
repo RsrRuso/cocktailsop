@@ -32,12 +32,12 @@ serve(async (req) => {
   try {
     const { content, pdfBase64, imageBase64, imageMimeType } = await req.json();
     
-    // Get OpenAI API key (user's own key)
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY not configured');
+    // Use Lovable AI Gateway with LOVABLE_API_KEY
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       return new Response(
-        JSON.stringify({ success: false, error: 'OpenAI API key not configured. Please add your OPENAI_API_KEY in project secrets.' }),
+        JSON.stringify({ success: false, error: 'Lovable AI not configured properly.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -72,9 +72,9 @@ IMPORTANT RULES:
 - Location can be: supplier name, vendor, ship-to address, or company name
 - If a field isn't present in the document, use null or empty string as appropriate`;
 
-    // If PDF or image base64 is provided, use GPT-4 Vision to parse it
+    // If PDF or image base64 is provided, use Gemini Vision to parse it
     if (pdfBase64 || imageBase64) {
-      console.log(pdfBase64 ? 'Parsing PDF with OpenAI GPT-4...' : 'Parsing image with OpenAI GPT-4...');
+      console.log(pdfBase64 ? 'Parsing PDF with Lovable AI (Gemini)...' : 'Parsing image with Lovable AI (Gemini)...');
 
       // Determine the data URL based on content type
       let dataUrl: string;
@@ -85,14 +85,14 @@ IMPORTANT RULES:
         dataUrl = `data:${mimeType};base64,${imageBase64}`;
       }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'google/gemini-2.5-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { 
@@ -103,15 +103,28 @@ IMPORTANT RULES:
               ]
             }
           ],
-          max_tokens: 4000,
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI API error:', response.status, errorText);
+        console.error('Lovable AI error:', response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a moment.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'AI credits exhausted. Please add credits to your workspace.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         return new Response(
-          JSON.stringify({ success: false, error: 'Failed to parse document with OpenAI. Check your API key.' }),
+          JSON.stringify({ success: false, error: 'Failed to parse document with AI.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -119,7 +132,7 @@ IMPORTANT RULES:
       const aiData = await response.json();
       const aiContent = aiData.choices?.[0]?.message?.content || '';
       
-      console.log('OpenAI response:', aiContent);
+      console.log('Lovable AI response:', aiContent);
       
       // Extract JSON from the response
       let parsed: ParsedOrder;
@@ -142,7 +155,7 @@ IMPORTANT RULES:
       const totalAmount = parsed.items?.reduce((sum, item) => sum + (item.price_total || 0), 0) || 0;
       parsed.total_amount = totalAmount;
 
-      console.log(`OpenAI parsed ${parsed.items?.length || 0} items, total: ${totalAmount}`);
+      console.log(`Lovable AI parsed ${parsed.items?.length || 0} items, total: ${totalAmount}`);
 
       return new Response(
         JSON.stringify({ success: true, data: parsed }),
@@ -158,7 +171,7 @@ IMPORTANT RULES:
       );
     }
 
-    console.log('Parsing text content with OpenAI GPT-4...');
+    console.log('Parsing text content with Lovable AI (Gemini)...');
 
     const textSystemPrompt = `You are an intelligent purchase order/invoice parser. Extract structured data from ANY text format - CSV, tab-separated, pasted tables, etc.
 
@@ -189,27 +202,40 @@ IMPORTANT RULES:
 - Dates can be in any format - convert to DD/MM/YYYY
 - If a field isn't present, use null or empty string as appropriate`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: textSystemPrompt },
           { role: 'user', content: `Parse this purchase order/invoice text and extract all items:\n\n${content}` }
         ],
-        max_tokens: 4000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a moment.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'AI credits exhausted. Please add credits to your workspace.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to parse content with OpenAI' }),
+        JSON.stringify({ success: false, error: 'Failed to parse content with AI' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -217,7 +243,7 @@ IMPORTANT RULES:
     const aiData = await response.json();
     const aiContent = aiData.choices?.[0]?.message?.content || '';
     
-    console.log('OpenAI response for text:', aiContent);
+    console.log('Lovable AI response for text:', aiContent);
     
     let parsed: ParsedOrder;
     try {
@@ -238,7 +264,7 @@ IMPORTANT RULES:
     const totalAmount = parsed.items?.reduce((sum, item) => sum + (item.price_total || 0), 0) || 0;
     parsed.total_amount = totalAmount;
 
-    console.log(`OpenAI parsed ${parsed.items?.length || 0} items from text, total: ${totalAmount}`);
+    console.log(`Lovable AI parsed ${parsed.items?.length || 0} items from text, total: ${totalAmount}`);
 
     return new Response(
       JSON.stringify({ success: true, data: parsed }),
