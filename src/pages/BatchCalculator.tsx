@@ -3706,6 +3706,14 @@ const BatchCalculator = () => {
                     </Button>
                     <Button
                       variant="outline"
+                      onClick={() => navigate("/sub-recipes")}
+                      className="glass-hover"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Sub-Recipes
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={() => navigate("/master-spirits")}
                       className="glass-hover"
                     >
