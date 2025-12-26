@@ -41,6 +41,17 @@ export interface SubRecipeDepletionData {
   }>;
 }
 
+export interface YieldDepletionData {
+  masterSpiritId: string;
+  masterSpiritName: string;
+  amountUsedMl: number;
+  ingredientBreakdown?: Array<{
+    name: string;
+    amount: number;
+    unit: string;
+  }>;
+}
+
 // Module-level cache for instant loading
 let productionsCache: Map<string, { data: BatchProduction[]; timestamp: number }> = new Map();
 const CACHE_TIME = 2 * 60 * 1000; // 2 minutes
@@ -105,12 +116,14 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       production,
       ingredients,
       outletId,
-      subRecipeDepletions
+      subRecipeDepletions,
+      yieldDepletions
     }: {
       production: Omit<BatchProduction, 'id' | 'created_at' | 'user_id'>;
       ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
       outletId?: string; // LAB Ops outlet to sync inventory with
       subRecipeDepletions?: SubRecipeDepletionData[]; // Sub-recipes used in this batch
+      yieldDepletions?: YieldDepletionData[]; // Yield products used in this batch
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -206,6 +219,28 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
         }
       }
 
+      // Record yield product depletions if any yield products were used
+      if (yieldDepletions && yieldDepletions.length > 0) {
+        try {
+          for (const depletion of yieldDepletions) {
+            await supabase.from('yield_depletions').insert({
+              master_spirit_id: depletion.masterSpiritId,
+              production_id: productionData.id,
+              amount_used_ml: depletion.amountUsedMl,
+              ingredient_breakdown: depletion.ingredientBreakdown 
+                ? JSON.parse(JSON.stringify(depletion.ingredientBreakdown)) 
+                : [],
+              depleted_by_user_id: user.id,
+              notes: `Used in batch: ${production.batch_name}`,
+              user_id: user.id
+            });
+          }
+          console.log('Yield depletions recorded:', yieldDepletions.length);
+        } catch (depletionError) {
+          console.warn('Yield depletion recording failed (non-blocking):', depletionError);
+        }
+      }
+
       return productionData;
     },
     onSuccess: async (data) => {
@@ -213,6 +248,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       productionsCache.clear();
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       queryClient.invalidateQueries({ queryKey: ['sub-recipe-depletions'] });
+      queryClient.invalidateQueries({ queryKey: ['yield-depletions'] });
       toast.success("Batch production recorded!");
 
       // Notify group members if part of a group using SECURITY DEFINER function
