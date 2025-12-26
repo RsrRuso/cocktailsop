@@ -3762,6 +3762,14 @@ const BatchCalculator = () => {
                     </Button>
                     <Button
                       variant="outline"
+                      onClick={() => navigate("/yield-calculator")}
+                      className="glass-hover"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Yield Calculator
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={() => navigate("/master-spirits")}
                       className="glass-hover"
                     >
