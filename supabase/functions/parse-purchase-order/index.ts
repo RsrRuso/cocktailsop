@@ -92,7 +92,7 @@ IMPORTANT RULES:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           messages: [
             { role: 'system', content: systemPrompt },
             { 
@@ -196,7 +196,7 @@ IMPORTANT RULES:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: textSystemPrompt },
           { role: 'user', content: `Parse this purchase order/invoice text and extract all items:\n\n${content}` }
