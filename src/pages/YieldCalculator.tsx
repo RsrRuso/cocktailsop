@@ -12,6 +12,7 @@ import { ArrowLeft, Percent, Save, Check, Trash2, Beaker, Apple } from "lucide-r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 
 interface YieldCalculation {
   id: string;
@@ -31,6 +32,7 @@ interface YieldCalculation {
 const YieldCalculator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { spirits } = useMasterSpirits();
   const [calculations, setCalculations] = useState<YieldCalculation[]>([]);
   const [activeTab, setActiveTab] = useState<'solid' | 'liquid'>('solid');
   
@@ -364,12 +366,21 @@ const YieldCalculator = () => {
                   <label className="text-sm font-medium block">Input Ingredients</label>
                   {liquidIngredients.map((ing, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <Input
-                        placeholder="Ingredient name"
+                      <Select
                         value={ing.name}
-                        onChange={(e) => updateLiquidIngredient(index, 'name', e.target.value)}
-                        className="flex-1"
-                      />
+                        onValueChange={(v) => updateLiquidIngredient(index, 'name', v)}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select ingredient" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {spirits?.map((spirit) => (
+                            <SelectItem key={spirit.id} value={spirit.name}>
+                              {spirit.name} {spirit.brand ? `(${spirit.brand})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Input
                         type="number"
                         placeholder="Amount"
