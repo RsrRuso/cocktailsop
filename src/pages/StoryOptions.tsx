@@ -1,21 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { 
-  Camera, Video, MessageCircle, Music2, Sparkles, 
-  Wand2, Brain, TrendingUp, Zap, Mic, 
-  ImageIcon, Hash, Users, Clock, ChevronRight,
-  Loader2, RefreshCw, Star, Target
+import {
+  Camera,
+  Video,
+  MessageCircle,
+  Music2,
+  Sparkles,
+  Wand2,
+  Brain,
+  TrendingUp,
+  Zap,
+  Mic,
+  ImageIcon,
+  Hash,
+  Users,
+  Clock,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+  Star,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicStatusDialog from "@/components/MusicStatusDialog";
 import LivestreamStartDialog from "@/components/LivestreamStartDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 interface AIInsight {
   type: string;
@@ -346,11 +362,10 @@ const StoryOptions = () => {
         </motion.div>
       </div>
 
-      <CreateStatusDialog 
-        open={showStatusDialog} 
-        onOpenChange={setShowStatusDialog} 
-      />
-      
+      <Suspense fallback={null}>
+        <CreateStatusDialog open={showStatusDialog} onOpenChange={setShowStatusDialog} />
+      </Suspense>
+
       <MusicStatusDialog
         open={showMusicStatusDialog}
         onOpenChange={setShowMusicStatusDialog}
