@@ -3770,7 +3770,17 @@ function RecipesModule({ outletId }: { outletId: string }) {
       .select("*")
       .eq("outlet_id", outletId)
       .order("name");
-    setMenuItems(data || []);
+    
+    // Remove duplicates by name (keep first occurrence)
+    const uniqueItems = (data || []).reduce((acc: typeof data, item) => {
+      const exists = acc?.find(i => i.name?.trim().toLowerCase() === item.name?.trim().toLowerCase());
+      if (!exists) {
+        acc?.push(item);
+      }
+      return acc;
+    }, [] as typeof data);
+    
+    setMenuItems(uniqueItems || []);
   };
 
   const fetchInventoryItems = async () => {
