@@ -285,7 +285,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
                 <SVLogo size="sm" clickable={false} />
-                <span className="text-2xl sm:text-3xl font-black text-foreground tracking-tight uppercase">
+                <span className="text-2xl sm:text-3xl font-instagram font-black text-foreground tracking-tight">
                   SPECVERSE
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
