@@ -3769,17 +3769,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
       .from("lab_ops_menu_items")
       .select("*")
       .eq("outlet_id", outletId)
+      .eq("is_active", true)
       .order("name");
-    
+
     // Remove duplicates by name (keep first occurrence)
     const uniqueItems = (data || []).reduce((acc: typeof data, item) => {
-      const exists = acc?.find(i => i.name?.trim().toLowerCase() === item.name?.trim().toLowerCase());
+      const exists = acc?.find(
+        (i) => i.name?.trim().toLowerCase() === item.name?.trim().toLowerCase()
+      );
       if (!exists) {
         acc?.push(item);
       }
       return acc;
     }, [] as typeof data);
-    
+
     setMenuItems(uniqueItems || []);
   };
 
