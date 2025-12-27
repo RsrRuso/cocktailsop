@@ -18,6 +18,7 @@ import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
 import { SmartPourerModule } from "@/components/smart-pourer/SmartPourerModule";
 import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
 import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
+import { InventoryAnalysis } from "@/components/lab-ops/InventoryAnalysis";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -2776,8 +2777,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
       )}
 
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
-        <TabsList className="w-full grid grid-cols-5">
+        <TabsList className="w-full grid grid-cols-6">
           <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="po-received">PO Received</TabsTrigger>
           <TabsTrigger value="spillage">Spillage</TabsTrigger>
           <TabsTrigger value="movements">Movements</TabsTrigger>
@@ -2948,7 +2950,24 @@ function InventoryModule({ outletId }: { outletId: string }) {
           </Card>
         </TabsContent>
 
-        {/* PO Received Tab */}
+        {/* Inventory Analysis Tab */}
+        <TabsContent value="inventory" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Inventory Analysis
+              </CardTitle>
+              <CardDescription>
+                Cost, pricing, profit analysis with par level comparisons
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InventoryAnalysis outletId={outletId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="po-received" className="mt-4">
           <Card>
             <CardHeader>
