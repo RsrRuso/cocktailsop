@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Beaker, Plus, RefreshCw, Check, AlertTriangle, 
-  TrendingDown, Package 
+  TrendingDown, Package, Users 
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -28,28 +30,75 @@ interface BatchRecipe {
   totalSold: number;
 }
 
+interface MixologistGroup {
+  id: string;
+  name: string;
+}
+
 export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState<BatchRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [groups, setGroups] = useState<MixologistGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  // Fetch user's groups
+  const fetchGroups = async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch groups user is a member of
+      const { data: memberData } = await supabase
+        .from('mixologist_group_members')
+        .select('group_id, mixologist_groups!inner(id, name)')
+        .eq('user_id', user.id);
+      
+      const groupList = memberData?.map((m: any) => ({
+        id: m.mixologist_groups.id,
+        name: m.mixologist_groups.name
+      })) || [];
+      
+      setGroups(groupList);
+      
+      // Auto-select first group if none selected
+      if (!selectedGroupId && groupList.length > 0) {
+        setSelectedGroupId(groupList[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroups();
+  }, [user]);
 
   const fetchData = async () => {
+    if (!selectedGroupId) {
+      setRecipes([]);
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      // Fetch all batch recipes with their productions
+      // Fetch batch recipes with their productions - filter by selected group
       const { data: productions, error: prodError } = await supabase
         .from('batch_productions')
         .select(`
           id,
           target_serves,
           target_liters,
+          group_id,
           batch_recipes!inner (
             id,
             recipe_name,
             current_serves,
             ingredients
           )
-        `);
+        `)
+        .eq('group_id', selectedGroupId);
 
       if (prodError) throw prodError;
 
@@ -161,7 +210,7 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
 
   useEffect(() => {
     fetchData();
-  }, [outletId]);
+  }, [outletId, selectedGroupId]);
 
   const syncToMenu = async (recipe: BatchRecipe) => {
     setSyncingId(recipe.id);
@@ -226,7 +275,7 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && selectedGroupId) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="w-6 h-6 animate-spin text-primary" />
@@ -241,181 +290,215 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Batch Recipes</div>
-            <div className="text-2xl font-bold">{recipes.length}</div>
-            <div className="text-xs text-muted-foreground">{syncedCount} synced</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Total Produced</div>
-            <div className="text-2xl font-bold text-primary">{totalServes}</div>
-            <div className="text-xs text-muted-foreground">serves</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Total Sold</div>
-            <div className="text-2xl font-bold text-green-400">{totalSold}</div>
-            <div className="text-xs text-muted-foreground">serves</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Remaining</div>
-            <div className={`text-2xl font-bold ${totalRemaining < 10 ? 'text-red-400' : 'text-amber-400'}`}>
-              {totalRemaining}
-            </div>
-            <div className="text-xs text-muted-foreground">serves left</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={fetchData}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-        {recipes.some(r => !r.isSynced) && (
-          <Button size="sm" onClick={syncAllToMenu}>
-            <Plus className="w-4 h-4 mr-2" />
-            Sync All to Menu
-          </Button>
-        )}
-      </div>
-
-      {/* Recipe List */}
-      <ScrollArea className="h-[400px]">
-        <div className="space-y-3">
-          {recipes.length === 0 ? (
-            <Card className="bg-card/30 border-dashed">
-              <CardContent className="p-8 text-center">
-                <Beaker className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="text-muted-foreground">No batch productions found</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Create batches in the Batch Calculator first
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            recipes.map((recipe) => {
-              const depletionPercent = recipe.totalProduced > 0 
-                ? Math.min(100, (recipe.totalSold / recipe.totalProduced) * 100) 
-                : 0;
-              const isLowStock = recipe.remainingServes < 10;
-              const isOutOfStock = recipe.remainingServes <= 0;
-
-              return (
-                <Card 
-                  key={recipe.id} 
-                  className={`bg-card/50 border-border/50 hover:bg-card/70 transition-colors ${
-                    isOutOfStock ? 'border-red-500/50' : isLowStock ? 'border-amber-500/50' : ''
-                  }`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{recipe.recipe_name}</h4>
-                          {recipe.isSynced && (
-                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                              <Check className="w-3 h-3 mr-1" />
-                              Synced
-                            </Badge>
-                          )}
-                          {isOutOfStock && (
-                            <Badge variant="destructive">
-                              <AlertTriangle className="w-3 h-3 mr-1" />
-                              Out of Stock
-                            </Badge>
-                          )}
-                          {!isOutOfStock && isLowStock && (
-                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                              <TrendingDown className="w-3 h-3 mr-1" />
-                              Low Stock
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {recipe.servingMl}ml per serve
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={recipe.isSynced ? "outline" : "default"}
-                        onClick={() => syncToMenu(recipe)}
-                        disabled={syncingId === recipe.id}
-                      >
-                        {syncingId === recipe.id ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : recipe.isSynced ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-1" />
-                            Update
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4 mr-1" />
-                            Sync
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-3">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Produced</div>
-                        <div className="font-medium">{recipe.totalProduced}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Sold</div>
-                        <div className="font-medium text-green-400">{recipe.totalSold}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Remaining</div>
-                        <div className={`font-medium ${
-                          isOutOfStock ? 'text-red-400' : isLowStock ? 'text-amber-400' : 'text-foreground'
-                        }`}>
-                          {Math.max(0, recipe.remainingServes)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Depletion</span>
-                        <span>{Math.round(depletionPercent)}%</span>
-                      </div>
-                      <Progress 
-                        value={depletionPercent}
-                        className={`h-2 ${depletionPercent >= 90 ? '[&>div]:bg-red-500' : depletionPercent >= 70 ? '[&>div]:bg-amber-500' : ''}`}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Info */}
-      <Card className="bg-card/30 border-border/50">
-        <CardContent className="p-3">
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Package className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <p>
-              Synced batches appear as menu items. Sales automatically deduct from remaining serves.
-              Low stock alerts at &lt;10 serves.
-            </p>
+      {/* Group Selector */}
+      <Card className="bg-card/50 border-primary/30">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Select Group</span>
           </div>
+          <Select value={selectedGroupId || ""} onValueChange={setSelectedGroupId}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a group to sync batches from" />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((group) => (
+                <SelectItem key={group.id} value={group.id}>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    {group.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {groups.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              No groups found. Join or create a group in the Batch Calculator first.
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      {selectedGroupId && (
+        <>
+          {/* Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">Batch Recipes</div>
+                <div className="text-2xl font-bold">{recipes.length}</div>
+                <div className="text-xs text-muted-foreground">{syncedCount} synced</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">Total Produced</div>
+                <div className="text-2xl font-bold text-primary">{totalServes}</div>
+                <div className="text-xs text-muted-foreground">serves</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">Total Sold</div>
+                <div className="text-2xl font-bold text-green-400">{totalSold}</div>
+                <div className="text-xs text-muted-foreground">serves</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground">Remaining</div>
+                <div className={`text-2xl font-bold ${totalRemaining < 10 ? 'text-red-400' : 'text-amber-400'}`}>
+                  {totalRemaining}
+                </div>
+                <div className="text-xs text-muted-foreground">serves left</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+            {recipes.some(r => !r.isSynced) && (
+              <Button size="sm" onClick={syncAllToMenu}>
+                <Plus className="w-4 h-4 mr-2" />
+                Sync All to Menu
+              </Button>
+            )}
+          </div>
+
+          {/* Recipe List */}
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-3">
+              {recipes.length === 0 ? (
+                <Card className="bg-card/30 border-dashed">
+                  <CardContent className="p-8 text-center">
+                    <Beaker className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">No batch productions found</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Create batches in the Batch Calculator first
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                recipes.map((recipe) => {
+                  const depletionPercent = recipe.totalProduced > 0 
+                    ? Math.min(100, (recipe.totalSold / recipe.totalProduced) * 100) 
+                    : 0;
+                  const isLowStock = recipe.remainingServes < 10;
+                  const isOutOfStock = recipe.remainingServes <= 0;
+
+                  return (
+                    <Card 
+                      key={recipe.id} 
+                      className={`bg-card/50 border-border/50 hover:bg-card/70 transition-colors ${
+                        isOutOfStock ? 'border-red-500/50' : isLowStock ? 'border-amber-500/50' : ''
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold">{recipe.recipe_name}</h4>
+                              {recipe.isSynced && (
+                                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Synced
+                                </Badge>
+                              )}
+                              {isOutOfStock && (
+                                <Badge variant="destructive">
+                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                  Out of Stock
+                                </Badge>
+                              )}
+                              {!isOutOfStock && isLowStock && (
+                                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                  <TrendingDown className="w-3 h-3 mr-1" />
+                                  Low Stock
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {recipe.servingMl}ml per serve
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={recipe.isSynced ? "outline" : "default"}
+                            onClick={() => syncToMenu(recipe)}
+                            disabled={syncingId === recipe.id}
+                          >
+                            {syncingId === recipe.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : recipe.isSynced ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-1" />
+                                Update
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4 mr-1" />
+                                Sync
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 mb-3">
+                          <div>
+                            <div className="text-xs text-muted-foreground">Produced</div>
+                            <div className="font-medium">{recipe.totalProduced}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Sold</div>
+                            <div className="font-medium text-green-400">{recipe.totalSold}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Remaining</div>
+                            <div className={`font-medium ${
+                              isOutOfStock ? 'text-red-400' : isLowStock ? 'text-amber-400' : 'text-foreground'
+                            }`}>
+                              {Math.max(0, recipe.remainingServes)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Depletion</span>
+                            <span>{Math.round(depletionPercent)}%</span>
+                          </div>
+                          <Progress 
+                            value={depletionPercent}
+                            className={`h-2 ${depletionPercent >= 90 ? '[&>div]:bg-red-500' : depletionPercent >= 70 ? '[&>div]:bg-amber-500' : ''}`}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Info */}
+          <Card className="bg-card/30 border-border/50">
+            <CardContent className="p-3">
+              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                <Package className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <p>
+                  Synced batches appear as menu items. Sales automatically deduct from remaining serves.
+                  Low stock alerts at &lt;10 serves.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
