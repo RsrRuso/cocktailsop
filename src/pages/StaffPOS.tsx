@@ -76,6 +76,7 @@ interface MenuItem {
   base_price: number;
   category_id: string;
   remaining_serves: number | null;
+  recipe_id?: string | null;
 }
 
 export default function StaffPOS() {
@@ -580,12 +581,17 @@ export default function StaffPOS() {
   const fetchMenuItems = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_menu_items")
-      .select("id, name, base_price, category_id, remaining_serves")
+      .select(`
+        id, name, base_price, category_id, remaining_serves, recipe_id,
+        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(id)
+      `)
       .eq("outlet_id", outletId)
       .eq("is_active", true);
-    setMenuItems((data || []).map(item => ({
+    setMenuItems((data || []).map((item: any) => ({
       ...item,
-      remaining_serves: item.remaining_serves ?? null
+      remaining_serves: item.remaining_serves ?? null,
+      // Use recipe_id from menu item OR from lab_ops_recipes table
+      recipe_id: item.recipe_id || item.lab_ops_recipes?.[0]?.id || null
     })));
   };
 
@@ -1021,8 +1027,8 @@ export default function StaffPOS() {
     }
     
     // Real-time ingredient deduction based on recipe
-    if ((item as any).recipe_id) {
-      deductRecipeIngredients((item as any).recipe_id, 1);
+    if (item.recipe_id) {
+      deductRecipeIngredients(item.recipe_id, 1);
     }
     
     // Auto-navigate to bill on mobile
