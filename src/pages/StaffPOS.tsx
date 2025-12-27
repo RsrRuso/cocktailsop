@@ -77,6 +77,10 @@ interface MenuItem {
   category_id: string;
   remaining_serves: number | null;
   recipe_id?: string | null;
+  // For inventory-linked items (like bottled water)
+  inventory_item_id?: string | null;
+  inventory_stock?: number | null;
+  stock_level_id?: string | null;
 }
 
 export default function StaffPOS() {
@@ -582,17 +586,49 @@ export default function StaffPOS() {
     const { data } = await supabase
       .from("lab_ops_menu_items")
       .select(`
-        id, name, base_price, category_id, remaining_serves, recipe_id,
+        id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
         lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(id)
       `)
       .eq("outlet_id", outletId)
       .eq("is_active", true);
-    setMenuItems((data || []).map((item: any) => ({
-      ...item,
-      remaining_serves: item.remaining_serves ?? null,
-      // Use recipe_id from menu item OR from lab_ops_recipes table
-      recipe_id: item.recipe_id || item.lab_ops_recipes?.[0]?.id || null
-    })));
+    
+    // For items with inventory_item_id, fetch current stock from lab_ops_stock_levels
+    const itemsWithInventory = (data || []).filter((item: any) => item.inventory_item_id);
+    let stockMap: Record<string, { quantity: number; stock_level_id: string }> = {};
+    
+    if (itemsWithInventory.length > 0) {
+      const inventoryItemIds = itemsWithInventory.map((item: any) => item.inventory_item_id);
+      const { data: stockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("id, inventory_item_id, quantity")
+        .in("inventory_item_id", inventoryItemIds);
+      
+      if (stockLevels) {
+        // Group by inventory_item_id and sum quantities
+        for (const sl of stockLevels) {
+          if (stockMap[sl.inventory_item_id]) {
+            stockMap[sl.inventory_item_id].quantity += Number(sl.quantity || 0);
+          } else {
+            stockMap[sl.inventory_item_id] = { 
+              quantity: Number(sl.quantity || 0), 
+              stock_level_id: sl.id 
+            };
+          }
+        }
+      }
+    }
+    
+    setMenuItems((data || []).map((item: any) => {
+      const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
+      return {
+        ...item,
+        remaining_serves: item.remaining_serves ?? null,
+        recipe_id: item.recipe_id || item.lab_ops_recipes?.[0]?.id || null,
+        inventory_item_id: item.inventory_item_id || null,
+        inventory_stock: invStock ? invStock.quantity : null,
+        stock_level_id: invStock ? invStock.stock_level_id : null,
+      };
+    }));
   };
 
   const fetchOutletStaff = async (outletId: string) => {
@@ -1010,8 +1046,20 @@ export default function StaffPOS() {
       }]);
     }
     
-    // Optimistically update local remaining stock
-    if (item.remaining_serves !== null && item.remaining_serves > 0) {
+    // Handle inventory-linked items (like bottled water) - deduct from lab_ops_stock_levels
+    if (item.inventory_item_id && item.inventory_stock !== null && item.inventory_stock > 0) {
+      const newStock = Math.max(0, item.inventory_stock - 1);
+      setMenuItems(prev => prev.map(m => 
+        m.id === item.id && m.inventory_stock !== null
+          ? { ...m, inventory_stock: newStock }
+          : m
+      ));
+      
+      // Deduct from stock levels in database
+      deductInventoryStock(item.inventory_item_id, 1, item.stock_level_id);
+    }
+    // Handle batch-recipe based items (remaining_serves) 
+    else if (item.remaining_serves !== null && item.remaining_serves > 0) {
       setMenuItems(prev => prev.map(m => 
         m.id === item.id && m.remaining_serves !== null
           ? { ...m, remaining_serves: Math.max(0, m.remaining_serves - 1) }
@@ -1033,6 +1081,43 @@ export default function StaffPOS() {
     
     // Auto-navigate to bill on mobile
     setMobileView("bill");
+  };
+
+  // Deduct inventory stock for inventory-linked items (like bottled water)
+  const deductInventoryStock = async (inventoryItemId: string, qty: number, stockLevelId?: string | null) => {
+    try {
+      // Get current stock level
+      const { data: stockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("id, quantity, location_id")
+        .eq("inventory_item_id", inventoryItemId)
+        .gt("quantity", 0)
+        .order("quantity", { ascending: false })
+        .limit(1);
+
+      if (stockLevels?.length) {
+        const stockLevel = stockLevels[0];
+        const newQuantity = Math.max(0, Number(stockLevel.quantity) - qty);
+        
+        // Update stock level
+        await supabase
+          .from("lab_ops_stock_levels")
+          .update({ quantity: newQuantity })
+          .eq("id", stockLevel.id);
+
+        // Record movement
+        await supabase.from("lab_ops_stock_movements").insert({
+          inventory_item_id: inventoryItemId,
+          from_location_id: stockLevel.location_id,
+          qty: qty,
+          movement_type: "sale",
+          reference_type: "pos_sale",
+          notes: `POS sale deduction`
+        });
+      }
+    } catch (error) {
+      console.error("Inventory stock deduction error:", error);
+    }
   };
 
   // Deduct recipe ingredients from inventory in real-time
@@ -1098,8 +1183,27 @@ export default function StaffPOS() {
       return o;
     }).filter(o => o.qty > 0));
     
-    // Update remaining stock when quantity changes
-    if (menuItem && menuItem.remaining_serves !== null) {
+    // Handle inventory-linked items
+    if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+      const newStock = delta > 0 
+        ? Math.max(0, menuItem.inventory_stock - 1)
+        : menuItem.inventory_stock + 1;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.inventory_stock !== null
+          ? { ...m, inventory_stock: newStock }
+          : m
+      ));
+      
+      // Update database
+      if (delta > 0) {
+        deductInventoryStock(menuItem.inventory_item_id, 1, menuItem.stock_level_id);
+      } else {
+        restoreInventoryStock(menuItem.inventory_item_id, 1);
+      }
+    }
+    // Handle batch-recipe based items (remaining_serves)
+    else if (menuItem && menuItem.remaining_serves !== null) {
       const newRemaining = delta > 0 
         ? Math.max(0, menuItem.remaining_serves - 1)
         : menuItem.remaining_serves + 1;
@@ -1125,8 +1229,22 @@ export default function StaffPOS() {
     
     setOrderItems(orderItems.filter(o => o.menu_item_id !== itemId));
     
-    // Restore stock when item is removed
-    if (removedItem && menuItem && menuItem.remaining_serves !== null) {
+    // Restore inventory stock when item is removed
+    if (removedItem && menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+      const restoredAmount = removedItem.qty;
+      const newStock = menuItem.inventory_stock + restoredAmount;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.inventory_stock !== null
+          ? { ...m, inventory_stock: newStock }
+          : m
+      ));
+      
+      // Restore in database
+      restoreInventoryStock(menuItem.inventory_item_id, restoredAmount);
+    }
+    // Restore remaining_serves when item is removed
+    else if (removedItem && menuItem && menuItem.remaining_serves !== null) {
       const restoredAmount = removedItem.qty;
       const newRemaining = menuItem.remaining_serves + restoredAmount;
       
@@ -1142,6 +1260,42 @@ export default function StaffPOS() {
         .update({ remaining_serves: newRemaining })
         .eq("id", itemId)
         .then(() => {});
+    }
+  };
+
+  // Restore inventory stock (for item removal/quantity decrease)
+  const restoreInventoryStock = async (inventoryItemId: string, qty: number) => {
+    try {
+      // Get current stock level
+      const { data: stockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("id, quantity, location_id")
+        .eq("inventory_item_id", inventoryItemId)
+        .order("quantity", { ascending: false })
+        .limit(1);
+
+      if (stockLevels?.length) {
+        const stockLevel = stockLevels[0];
+        const newQuantity = Number(stockLevel.quantity) + qty;
+        
+        // Update stock level
+        await supabase
+          .from("lab_ops_stock_levels")
+          .update({ quantity: newQuantity })
+          .eq("id", stockLevel.id);
+
+        // Record movement (adjustment for return)
+        await supabase.from("lab_ops_stock_movements").insert({
+          inventory_item_id: inventoryItemId,
+          to_location_id: stockLevel.location_id,
+          qty: qty,
+          movement_type: "adjustment",
+          reference_type: "pos_return",
+          notes: `POS order item removed/reduced`
+        });
+      }
+    } catch (error) {
+      console.error("Inventory stock restore error:", error);
     }
   };
 
@@ -2200,9 +2354,11 @@ export default function StaffPOS() {
                 <div className="grid grid-cols-2 gap-1 p-1">
                   {filteredItems.map(item => {
                     const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
-                    const hasStock = item.remaining_serves !== null;
-                    const isLowStock = hasStock && item.remaining_serves !== null && item.remaining_serves <= 5;
-                    const isOutOfStock = hasStock && item.remaining_serves === 0;
+                    // Use inventory_stock for inventory-linked items, otherwise remaining_serves
+                    const displayStock = item.inventory_stock !== null ? item.inventory_stock : item.remaining_serves;
+                    const hasStock = displayStock !== null;
+                    const isLowStock = hasStock && displayStock !== null && displayStock <= 5;
+                    const isOutOfStock = hasStock && displayStock === 0;
                     return (
                       <Button
                         key={item.id}
@@ -2234,7 +2390,7 @@ export default function StaffPOS() {
                                     ? 'bg-amber-800/30 text-amber-900'
                                     : 'bg-green-500/20 text-green-400'
                             }`}>
-                              {isOutOfStock ? 'OUT' : item.remaining_serves}
+                              {isOutOfStock ? 'OUT' : displayStock}
                             </span>
                           )}
                         </div>

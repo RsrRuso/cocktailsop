@@ -6057,6 +6057,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          inventory_item_id: string | null
           is_active: boolean | null
           is_bar_item: boolean | null
           is_package: boolean | null
@@ -6081,6 +6082,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          inventory_item_id?: string | null
           is_active?: boolean | null
           is_bar_item?: boolean | null
           is_package?: boolean | null
@@ -6105,6 +6107,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          inventory_item_id?: string | null
           is_active?: boolean | null
           is_bar_item?: boolean | null
           is_package?: boolean | null
@@ -6133,6 +6136,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_menu_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
             referencedColumns: ["id"]
           },
           {
