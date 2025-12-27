@@ -17,6 +17,7 @@ import { BLEPourerIntegration } from "@/components/lab-ops/BLEPourerIntegration"
 import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
 import { SmartPourerModule } from "@/components/smart-pourer/SmartPourerModule";
 import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
+import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -2775,9 +2776,10 @@ function InventoryModule({ outletId }: { outletId: string }) {
       )}
 
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="items">Items</TabsTrigger>
           <TabsTrigger value="po-received">PO Received</TabsTrigger>
+          <TabsTrigger value="spillage">Spillage</TabsTrigger>
           <TabsTrigger value="movements">Movements</TabsTrigger>
           <TabsTrigger value="stocktakes">Stock Takes</TabsTrigger>
         </TabsList>
@@ -2960,6 +2962,24 @@ function InventoryModule({ outletId }: { outletId: string }) {
             </CardHeader>
             <CardContent>
               <POReceivedStock outletId={outletId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Spillage Tab */}
+        <TabsContent value="spillage" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Spillage & Wastage
+              </CardTitle>
+              <CardDescription>
+                Record spillage, breakage and wastage to keep stock accurate
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SpillageTracking outletId={outletId} />
             </CardContent>
           </Card>
         </TabsContent>
