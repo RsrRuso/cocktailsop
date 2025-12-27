@@ -3776,10 +3776,16 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const fetchInventoryItems = async () => {
     const { data } = await supabase
       .from("lab_ops_inventory_items")
-      .select("*, lab_ops_inventory_item_costs(*)")
+      .select("*, lab_ops_inventory_item_costs(*), lab_ops_stock_levels(quantity)")
       .eq("outlet_id", outletId)
       .order("name");
-    setInventoryItems(data || []);
+    
+    // Calculate total stock for each item
+    const itemsWithStock = (data || []).map(item => ({
+      ...item,
+      totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0)
+    }));
+    setInventoryItems(itemsWithStock);
   };
 
   const createRecipe = async () => {
@@ -3986,10 +3992,17 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     {ingredients.map((ing, idx) => (
                       <div key={idx} className="flex gap-2 items-center">
                         <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
-                          <SelectTrigger className="flex-1"><SelectValue placeholder="Ingredient" /></SelectTrigger>
+                          <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
                           <SelectContent>
                             {inventoryItems.map((inv) => (
-                              <SelectItem key={inv.id} value={inv.id}>{inv.name}</SelectItem>
+                              <SelectItem key={inv.id} value={inv.id}>
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span>{inv.name}</span>
+                                  <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
+                                    ({inv.totalStock || 0} {inv.base_unit})
+                                  </span>
+                                </div>
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
