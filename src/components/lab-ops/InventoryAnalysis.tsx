@@ -142,22 +142,27 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
       };
 
       const current_stock = stockLevels[item.id] || 0;
-      const cost_per_item = summary.received_qty > 0 
-        ? summary.received_cost / summary.received_qty 
-        : Number(item.unit_cost || 0);
       
+      // Use cost price from item for costing (unit_cost is the purchase/cost price)
+      const cost_per_item = Number(item.unit_cost || 0);
+      
+      // Sale price is the menu item selling price - calculate without VAT/tax
       const sale_price = Number(item.sale_price || 0);
       const tax_rate = Number(item.tax_rate || 0);
       const vat_rate = Number(item.vat_rate || 0);
       const total_tax = tax_rate + vat_rate;
-      const sale_price_before_tax = sale_price / (1 + total_tax / 100);
+      
+      // Selling price without VAT/tax (net selling price)
+      const sale_price_before_tax = total_tax > 0 
+        ? sale_price / (1 + total_tax / 100) 
+        : sale_price;
+      
+      // Profit = Selling price (without VAT/tax) - Cost price
       const profit_per_item = sale_price_before_tax - cost_per_item;
       const total_profit = profit_per_item * summary.sold_qty;
 
       // Par level calculations
-      // Par from receiving: average daily receiving * safety days (7)
       const par_from_receiving = summary.received_qty > 0 ? Math.ceil(summary.received_qty / 7) : 0;
-      // Par from sales: average daily sales * safety days (7) + buffer
       const par_from_sales = summary.sold_qty > 0 ? Math.ceil((summary.sold_qty / 7) * 1.2) : 0;
       const par_difference = par_from_receiving - par_from_sales;
 
@@ -277,56 +282,56 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Summary Cards - Mobile optimized */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <ArrowDownRight className="h-4 w-4 text-blue-500" />
-              <span className="text-sm text-muted-foreground">Total Received</span>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+              <ArrowDownRight className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Total Received</span>
             </div>
-            <p className="text-2xl font-bold">{totals.received_qty}</p>
-            <p className="text-sm text-muted-foreground">{formatPrice(totals.received_cost)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{totals.received_qty}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{formatPrice(totals.received_cost)}</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <ArrowUpRight className="h-4 w-4 text-green-500" />
-              <span className="text-sm text-muted-foreground">Total Sold</span>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+              <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Total Sold</span>
             </div>
-            <p className="text-2xl font-bold">{totals.sold_qty}</p>
-            <p className="text-sm text-muted-foreground">{formatPrice(totals.sold_revenue)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{totals.sold_qty}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{formatPrice(totals.sold_revenue)}</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-amber-500" />
-              <span className="text-sm text-muted-foreground">Total Profit</span>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Total Profit</span>
             </div>
-            <p className="text-2xl font-bold">{formatPrice(totals.total_profit)}</p>
-            <p className="text-sm text-muted-foreground">{averages.avg_margin.toFixed(1)}% margin</p>
+            <p className="text-lg sm:text-2xl font-bold">{formatPrice(totals.total_profit)}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{averages.avg_margin.toFixed(1)}% margin</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="h-4 w-4 text-purple-500" />
-              <span className="text-sm text-muted-foreground">Avg Profit/Item</span>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Avg Profit/Item</span>
             </div>
-            <p className="text-2xl font-bold">{formatPrice(averages.avg_profit_per_item)}</p>
-            <p className="text-sm text-muted-foreground">Cost: {formatPrice(averages.avg_cost)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{formatPrice(averages.avg_profit_per_item)}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Cost: {formatPrice(averages.avg_cost)}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search and Export */}
-      <div className="flex gap-2 items-center">
+      {/* Search and Export - Mobile optimized */}
+      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -336,30 +341,65 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
             className="pl-9"
           />
         </div>
-        <Button onClick={exportPDF} variant="outline" size="sm">
+        <Button onClick={exportPDF} variant="outline" size="sm" className="w-full sm:w-auto">
           <BarChart3 className="h-4 w-4 mr-1" /> Export PDF
         </Button>
       </div>
 
-      {/* Analysis Tabs */}
+      {/* Analysis Tabs - Mobile optimized */}
       <Tabs value={analysisTab} onValueChange={setAnalysisTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="pricing">Cost & Pricing</TabsTrigger>
-          <TabsTrigger value="par">Par Analysis</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm py-2">Overview</TabsTrigger>
+          <TabsTrigger value="pricing" className="text-xs sm:text-sm py-2">Cost & Pricing</TabsTrigger>
+          <TabsTrigger value="par" className="text-xs sm:text-sm py-2">Par Analysis</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
+        {/* Overview Tab - Mobile card layout */}
         <TabsContent value="overview" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5" />
+            <CardHeader className="pb-2 px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 Inventory Overview
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px]">
+            <CardContent className="px-3 sm:px-6">
+              {/* Mobile: Card layout */}
+              <div className="block sm:hidden space-y-3 max-h-[400px] overflow-y-auto">
+                {filteredData.map((item) => (
+                  <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="font-medium text-sm mb-2">{item.name}</p>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Stock</p>
+                        <p className="font-semibold">{item.current_stock}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Received</p>
+                        <p className="font-semibold text-blue-500">+{item.received_qty}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Sold</p>
+                        <p className="font-semibold text-green-500">{item.sold_qty}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between mt-2 pt-2 border-t text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Revenue: </span>
+                        <span>{formatPrice(item.sold_revenue)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Profit: </span>
+                        <span className={`font-semibold ${item.total_profit >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          {formatPrice(item.total_profit)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: Table layout */}
+              <ScrollArea className="hidden sm:block h-[400px]">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -391,27 +431,65 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
           </Card>
         </TabsContent>
 
-        {/* Cost & Pricing Tab */}
+        {/* Cost & Pricing Tab - Mobile optimized */}
         <TabsContent value="pricing" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+            <CardHeader className="pb-2 px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
                 Cost & Pricing Analysis
               </CardTitle>
-              <CardDescription>
-                Unit cost, sale price, VAT/tax, and profit calculations
+              <CardDescription className="text-xs sm:text-sm">
+                Cost price vs selling price (without VAT/tax)
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px]">
+            <CardContent className="px-3 sm:px-6">
+              {/* Mobile: Card layout */}
+              <div className="block sm:hidden space-y-3 max-h-[400px] overflow-y-auto">
+                {filteredData.map((item) => (
+                  <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Tax: {item.tax_rate}% | VAT: {item.vat_rate}%
+                        </p>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingItem(item)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
+                        <p className="text-muted-foreground">Cost Price</p>
+                        <p className="font-semibold text-red-400">{formatPrice(item.cost_per_item)}</p>
+                      </div>
+                      <div className="p-2 rounded bg-green-500/10 border border-green-500/20">
+                        <p className="text-muted-foreground">Sell (Net)</p>
+                        <p className="font-semibold text-green-400">{formatPrice(item.sale_price_before_tax)}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t text-xs">
+                      <span className="text-muted-foreground">Gross: {formatPrice(item.sale_price)}</span>
+                      <div>
+                        <span className="text-muted-foreground">Profit: </span>
+                        <span className={`font-bold ${item.profit_per_item >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          {formatPrice(item.profit_per_item)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: Table layout */}
+              <ScrollArea className="hidden sm:block h-[400px]">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead className="text-right">Cost/Unit</TableHead>
-                      <TableHead className="text-right">Sale Price</TableHead>
-                      <TableHead className="text-right">Before Tax</TableHead>
+                      <TableHead className="text-right">Cost Price</TableHead>
+                      <TableHead className="text-right">Sell (Gross)</TableHead>
+                      <TableHead className="text-right">Sell (Net)</TableHead>
                       <TableHead className="text-right">Profit/Unit</TableHead>
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
@@ -427,9 +505,9 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">{formatPrice(item.cost_per_item)}</TableCell>
-                        <TableCell className="text-right">{formatPrice(item.sale_price)}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatPrice(item.sale_price_before_tax)}</TableCell>
+                        <TableCell className="text-right text-red-400">{formatPrice(item.cost_per_item)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatPrice(item.sale_price)}</TableCell>
+                        <TableCell className="text-right text-green-400">{formatPrice(item.sale_price_before_tax)}</TableCell>
                         <TableCell className={`text-right font-semibold ${item.profit_per_item >= 0 ? "text-green-500" : "text-red-500"}`}>
                           {formatPrice(item.profit_per_item)}
                         </TableCell>
@@ -447,20 +525,63 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
           </Card>
         </TabsContent>
 
-        {/* Par Analysis Tab */}
+        {/* Par Analysis Tab - Mobile optimized */}
         <TabsContent value="par" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+            <CardHeader className="pb-2 px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
                 Par Level Analysis
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Compare par levels based on receiving vs sales patterns
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px]">
+            <CardContent className="px-3 sm:px-6">
+              {/* Mobile: Card layout */}
+              <div className="block sm:hidden space-y-3 max-h-[400px] overflow-y-auto">
+                {filteredData.map((item) => {
+                  const status = item.par_difference > 2 ? "over" : item.par_difference < -2 ? "under" : "balanced";
+                  return (
+                    <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <Badge
+                          variant={status === "balanced" ? "default" : status === "over" ? "secondary" : "destructive"}
+                          className="text-xs"
+                        >
+                          {status === "over" && <TrendingUp className="h-3 w-3 mr-1" />}
+                          {status === "under" && <TrendingDown className="h-3 w-3 mr-1" />}
+                          {status === "balanced" && <Minus className="h-3 w-3 mr-1" />}
+                          {status === "over" ? "Over" : status === "under" ? "Under" : "OK"}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Current</p>
+                          <p className="font-semibold">{item.par_level}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Receiving</p>
+                          <p className="font-semibold text-blue-500">{item.par_from_receiving}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Sales</p>
+                          <p className="font-semibold text-green-500">{item.par_from_sales}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Diff</p>
+                          <p className={`font-semibold ${item.par_difference > 0 ? "text-blue-500" : item.par_difference < 0 ? "text-amber-500" : ""}`}>
+                            {item.par_difference > 0 ? "+" : ""}{item.par_difference}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: Table layout */}
+              <ScrollArea className="hidden sm:block h-[400px]">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -506,30 +627,30 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
             </CardContent>
           </Card>
 
-          {/* Par Summary */}
+          {/* Par Summary - Mobile optimized */}
           <Card className="mt-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Par Level Summary</CardTitle>
+            <CardHeader className="pb-2 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-sm">Par Level Summary</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <p className="text-2xl font-bold text-green-500">
+            <CardContent className="px-3 sm:px-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                <div className="p-2 sm:p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-lg sm:text-2xl font-bold text-green-500">
                     {filteredData.filter((i) => Math.abs(i.par_difference) <= 2).length}
                   </p>
                   <p className="text-xs text-muted-foreground">Balanced</p>
                 </div>
-                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <p className="text-2xl font-bold text-blue-500">
+                <div className="p-2 sm:p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-lg sm:text-2xl font-bold text-blue-500">
                     {filteredData.filter((i) => i.par_difference > 2).length}
                   </p>
-                  <p className="text-xs text-muted-foreground">Over-stocked</p>
+                  <p className="text-xs text-muted-foreground">Over</p>
                 </div>
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-2xl font-bold text-amber-500">
+                <div className="p-2 sm:p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <p className="text-lg sm:text-2xl font-bold text-amber-500">
                     {filteredData.filter((i) => i.par_difference < -2).length}
                   </p>
-                  <p className="text-xs text-muted-foreground">Under-stocked</p>
+                  <p className="text-xs text-muted-foreground">Under</p>
                 </div>
               </div>
             </CardContent>
