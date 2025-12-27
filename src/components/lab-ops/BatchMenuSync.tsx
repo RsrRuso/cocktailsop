@@ -70,6 +70,53 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
     }
   };
 
+  // When group changes, remove menu items from other groups
+  const handleGroupChange = async (newGroupId: string) => {
+    if (newGroupId === selectedGroupId) return;
+    
+    try {
+      // Get all batch recipe IDs from the new group
+      const { data: newGroupProductions } = await supabase
+        .from('batch_productions')
+        .select('batch_recipes!inner(id)')
+        .eq('group_id', newGroupId);
+      
+      const newGroupRecipeIds = new Set(
+        newGroupProductions?.map((p: any) => p.batch_recipes.id) || []
+      );
+      
+      // Get all synced menu items for this outlet
+      const { data: menuItems } = await supabase
+        .from('lab_ops_menu_items')
+        .select('id, batch_recipe_id')
+        .eq('outlet_id', outletId)
+        .not('batch_recipe_id', 'is', null);
+      
+      // Find menu items that belong to OTHER groups (not in new group)
+      const itemsToRemove = menuItems?.filter(
+        item => item.batch_recipe_id && !newGroupRecipeIds.has(item.batch_recipe_id)
+      ) || [];
+      
+      // Delete menu items from other groups
+      if (itemsToRemove.length > 0) {
+        const idsToRemove = itemsToRemove.map(item => item.id);
+        await supabase
+          .from('lab_ops_menu_items')
+          .delete()
+          .in('id', idsToRemove);
+        
+        toast({
+          title: "Group changed",
+          description: `Removed ${itemsToRemove.length} menu items from previous group`
+        });
+      }
+    } catch (error) {
+      console.error('Error cleaning up menu items:', error);
+    }
+    
+    setSelectedGroupId(newGroupId);
+  };
+
   useEffect(() => {
     fetchGroups();
   }, [user]);
@@ -297,7 +344,7 @@ export function BatchMenuSync({ outletId }: BatchMenuSyncProps) {
             <Users className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium">Select Group</span>
           </div>
-          <Select value={selectedGroupId || ""} onValueChange={setSelectedGroupId}>
+          <Select value={selectedGroupId || ""} onValueChange={handleGroupChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a group to sync batches from" />
             </SelectTrigger>
