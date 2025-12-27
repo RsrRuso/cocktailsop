@@ -5772,8 +5772,12 @@ export type Database = {
           name: string
           outlet_id: string
           par_level: number | null
+          sale_price: number | null
           sku: string | null
+          tax_rate: number | null
+          unit_cost: number | null
           updated_at: string | null
+          vat_rate: number | null
         }
         Insert: {
           base_unit?: string | null
@@ -5784,8 +5788,12 @@ export type Database = {
           name: string
           outlet_id: string
           par_level?: number | null
+          sale_price?: number | null
           sku?: string | null
+          tax_rate?: number | null
+          unit_cost?: number | null
           updated_at?: string | null
+          vat_rate?: number | null
         }
         Update: {
           base_unit?: string | null
@@ -5796,8 +5804,12 @@ export type Database = {
           name?: string
           outlet_id?: string
           par_level?: number | null
+          sale_price?: number | null
           sku?: string | null
+          tax_rate?: number | null
+          unit_cost?: number | null
           updated_at?: string | null
+          vat_rate?: number | null
         }
         Relationships: [
           {
@@ -7628,7 +7640,9 @@ export type Database = {
           qty: number
           reference_id: string | null
           reference_type: string | null
+          sale_price: number | null
           to_location_id: string | null
+          unit_cost: number | null
         }
         Insert: {
           created_at?: string | null
@@ -7641,7 +7655,9 @@ export type Database = {
           qty: number
           reference_id?: string | null
           reference_type?: string | null
+          sale_price?: number | null
           to_location_id?: string | null
+          unit_cost?: number | null
         }
         Update: {
           created_at?: string | null
@@ -7654,7 +7670,9 @@ export type Database = {
           qty?: number
           reference_id?: string | null
           reference_type?: string | null
+          sale_price?: number | null
           to_location_id?: string | null
+          unit_cost?: number | null
         }
         Relationships: [
           {
