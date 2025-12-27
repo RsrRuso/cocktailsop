@@ -3746,6 +3746,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [recipeYield, setRecipeYield] = useState("1");
   const [recipeInstructions, setRecipeInstructions] = useState("");
   const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string }[]>([]);
+  const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
 
   useEffect(() => {
     fetchRecipes();
@@ -3929,7 +3930,36 @@ function RecipesModule({ outletId }: { outletId: string }) {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div>
-                  <Label>Menu Item</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label>Menu Item</Label>
+                    {selectedMenuItem && (
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setEditingMenuItemInRecipe(menuItems.find(m => m.id === selectedMenuItem))}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 px-2 text-xs text-destructive"
+                          onClick={async () => {
+                            if (!confirm("Delete this menu item?")) return;
+                            await supabase.from("lab_ops_menu_item_stations").delete().eq("menu_item_id", selectedMenuItem);
+                            await supabase.from("lab_ops_menu_items").delete().eq("id", selectedMenuItem);
+                            setSelectedMenuItem("");
+                            fetchMenuItems();
+                            toast({ title: "Menu item deleted" });
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />Delete
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <Select value={selectedMenuItem} onValueChange={setSelectedMenuItem}>
                     <SelectTrigger><SelectValue placeholder="Select menu item" /></SelectTrigger>
                     <SelectContent>
@@ -4085,6 +4115,67 @@ function RecipesModule({ outletId }: { outletId: string }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Menu Item Dialog */}
+      <Dialog open={!!editingMenuItemInRecipe} onOpenChange={(open) => !open && setEditingMenuItemInRecipe(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Menu Item</DialogTitle>
+          </DialogHeader>
+          {editingMenuItemInRecipe && (
+            <div className="space-y-4 py-4">
+              <div>
+                <Label>Name</Label>
+                <Input 
+                  value={editingMenuItemInRecipe.name} 
+                  onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, name: e.target.value })} 
+                />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Textarea 
+                  value={editingMenuItemInRecipe.description || ""} 
+                  onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, description: e.target.value })} 
+                />
+              </div>
+              <div>
+                <Label>Price</Label>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  value={editingMenuItemInRecipe.base_price} 
+                  onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, base_price: parseFloat(e.target.value) })} 
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={editingMenuItemInRecipe.is_active} 
+                  onCheckedChange={(checked) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, is_active: checked })}
+                />
+                <Label>Active</Label>
+              </div>
+              <Button 
+                onClick={async () => {
+                  await supabase.from("lab_ops_menu_items")
+                    .update({
+                      name: editingMenuItemInRecipe.name,
+                      description: editingMenuItemInRecipe.description,
+                      base_price: editingMenuItemInRecipe.base_price,
+                      is_active: editingMenuItemInRecipe.is_active,
+                    })
+                    .eq("id", editingMenuItemInRecipe.id);
+                  setEditingMenuItemInRecipe(null);
+                  fetchMenuItems();
+                  toast({ title: "Menu item updated" });
+                }} 
+                className="w-full"
+              >
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
