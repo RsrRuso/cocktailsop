@@ -2534,6 +2534,10 @@ function InventoryModule({ outletId }: { outletId: string }) {
         sku: editingItem.sku?.trim() || null,
         base_unit: editingItem.base_unit,
         par_level: parseFloat(editingItem.par_level) || 0,
+        unit_cost: parseFloat(editingItem.unit_cost) || 0,
+        sale_price: parseFloat(editingItem.sale_price) || 0,
+        tax_rate: parseFloat(editingItem.tax_rate) || 0,
+        vat_rate: parseFloat(editingItem.vat_rate) || 0,
       })
       .eq("id", editingItem.id);
 
@@ -2777,14 +2781,17 @@ function InventoryModule({ outletId }: { outletId: string }) {
       )}
 
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
-        <TabsList className="w-full grid grid-cols-6">
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="po-received">PO Received</TabsTrigger>
-          <TabsTrigger value="spillage">Spillage</TabsTrigger>
-          <TabsTrigger value="movements">Movements</TabsTrigger>
-          <TabsTrigger value="stocktakes">Stock Takes</TabsTrigger>
-        </TabsList>
+        {/* Mobile-friendly scrollable tabs */}
+        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <TabsList className="inline-flex h-auto p-1 gap-1 min-w-max w-auto">
+            <TabsTrigger value="items" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Items</TabsTrigger>
+            <TabsTrigger value="inventory" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Inventory</TabsTrigger>
+            <TabsTrigger value="po-received" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">PO Received</TabsTrigger>
+            <TabsTrigger value="spillage" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Spillage</TabsTrigger>
+            <TabsTrigger value="movements" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Movements</TabsTrigger>
+            <TabsTrigger value="stocktakes" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Stock Takes</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Items Tab */}
         <TabsContent value="items" className="mt-4">
@@ -3220,6 +3227,56 @@ function InventoryModule({ outletId }: { outletId: string }) {
                   onChange={(e) => setEditingItem({ ...editingItem, par_level: e.target.value })} 
                 />
               </div>
+              
+              {/* Cost & Pricing Section */}
+              <div className="border-t pt-4 mt-4">
+                <p className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" /> Cost & Pricing
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Cost Price</Label>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      placeholder="0.00"
+                      value={editingItem.unit_cost || ""} 
+                      onChange={(e) => setEditingItem({ ...editingItem, unit_cost: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sale Price</Label>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      placeholder="0.00"
+                      value={editingItem.sale_price || ""} 
+                      onChange={(e) => setEditingItem({ ...editingItem, sale_price: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Tax Rate (%)</Label>
+                    <Input 
+                      type="number" 
+                      step="0.1"
+                      placeholder="0"
+                      value={editingItem.tax_rate || ""} 
+                      onChange={(e) => setEditingItem({ ...editingItem, tax_rate: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">VAT Rate (%)</Label>
+                    <Input 
+                      type="number" 
+                      step="0.1"
+                      placeholder="0"
+                      value={editingItem.vat_rate || ""} 
+                      onChange={(e) => setEditingItem({ ...editingItem, vat_rate: e.target.value })} 
+                    />
+                  </div>
+                </div>
+              </div>
+              
               <Button onClick={updateInventoryItem} className="w-full">Save Changes</Button>
             </div>
           )}
