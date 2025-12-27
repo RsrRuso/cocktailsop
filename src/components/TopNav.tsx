@@ -286,7 +286,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               >
                 <SVLogo size="sm" clickable={false} />
                 <span className="text-2xl sm:text-3xl font-instagram font-black text-foreground tracking-tight">
-                  SPECVERSE
+                  SpecVerse
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
