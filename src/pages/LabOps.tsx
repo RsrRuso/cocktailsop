@@ -2382,10 +2382,12 @@ function MenuModule({ outletId }: { outletId: string }) {
 function InventoryModule({ outletId }: { outletId: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const [items, setItems] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [stockTakes, setStockTakes] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
+  const [poLatestUnitPrice, setPoLatestUnitPrice] = useState<Record<string, number>>({});
   const [showAddItem, setShowAddItem] = useState(false);
   const [showStockTake, setShowStockTake] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
@@ -2424,6 +2426,21 @@ function InventoryModule({ outletId }: { outletId: string }) {
       .eq("outlet_id", outletId)
       .order("name");
     setItems(data || []);
+
+    // Latest PO received unit price per item (fallback display when unit_cost is 0)
+    const { data: poPrices } = await supabase
+      .from("purchase_order_received_items")
+      .select("item_name, unit_price, created_at")
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    const latestMap: Record<string, number> = {};
+    (poPrices || []).forEach((r: any) => {
+      const name = String(r.item_name || "").trim();
+      if (!name) return;
+      if (latestMap[name] == null) latestMap[name] = Number(r.unit_price || 0);
+    });
+    setPoLatestUnitPrice(latestMap);
   };
 
   const fetchLocations = async () => {
@@ -2924,28 +2941,44 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
                       return (
-                        <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{item.name}</p>
-                              {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                        <div
+                          key={item.id}
+                          className={`p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium truncate">{item.name}</p>
+                                {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                              </div>
+                              <p className="text-xs text-muted-foreground break-all">
+                                {item.sku || "No SKU"} • {item.base_unit}
+                              </p>
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                <Badge variant="secondary" className="gap-1">
+                                  Cost: {formatPrice(Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0))}
+                                </Badge>
+                                <Badge variant="outline" className="gap-1">
+                                  Sell: {formatPrice(Number(item.sale_price || 0))}
+                                </Badge>
+                              </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">{item.sku || "No SKU"} • {item.base_unit}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right mr-2">
-                              <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
-                              <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-2">
+                              <div className="text-right mr-1 sm:mr-2">
+                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
+                                <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
+                              </div>
+                              <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
                             </div>
-                            <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
                           </div>
                         </div>
                       );

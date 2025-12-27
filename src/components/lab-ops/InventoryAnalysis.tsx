@@ -62,6 +62,7 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [stockLevels, setStockLevels] = useState<Record<string, number>>({});
   const [movementSummary, setMovementSummary] = useState<MovementSummary[]>([]);
+  const [poLatestUnitPrice, setPoLatestUnitPrice] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -93,6 +94,21 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
         .from("lab_ops_stock_movements")
         .select("inventory_item_id, movement_type, qty, unit_cost, sale_price")
         .in("inventory_item_id", (itemsData || []).map(i => i.id));
+
+      // Fetch latest PO received unit prices (used as fallback cost when inventory items/movements have 0)
+      const { data: poPrices } = await supabase
+        .from("purchase_order_received_items")
+        .select("item_name, unit_price, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+
+      const latestMap: Record<string, number> = {};
+      (poPrices || []).forEach((r: any) => {
+        const name = String(r.item_name || "").trim();
+        if (!name) return;
+        if (latestMap[name] == null) latestMap[name] = Number(r.unit_price || 0);
+      });
+      setPoLatestUnitPrice(latestMap);
 
       setItems(itemsData || []);
 
@@ -142,21 +158,22 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
       };
 
       const current_stock = stockLevels[item.id] || 0;
-      
-      // Use cost price from item for costing (unit_cost is the purchase/cost price)
-      const cost_per_item = Number(item.unit_cost || 0);
-      
+
+      // Cost per item: prefer item.unit_cost, otherwise fallback to latest PO received unit price
+      const poCost = poLatestUnitPrice[item.name] || 0;
+      const cost_per_item = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poCost);
+
       // Sale price is the menu item selling price - calculate without VAT/tax
       const sale_price = Number(item.sale_price || 0);
       const tax_rate = Number(item.tax_rate || 0);
       const vat_rate = Number(item.vat_rate || 0);
       const total_tax = tax_rate + vat_rate;
-      
+
       // Selling price without VAT/tax (net selling price)
-      const sale_price_before_tax = total_tax > 0 
-        ? sale_price / (1 + total_tax / 100) 
+      const sale_price_before_tax = total_tax > 0
+        ? sale_price / (1 + total_tax / 100)
         : sale_price;
-      
+
       // Profit = Selling price (without VAT/tax) - Cost price
       const profit_per_item = sale_price_before_tax - cost_per_item;
       const total_profit = profit_per_item * summary.sold_qty;
