@@ -197,19 +197,22 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
           name: newItemName,
           sku: newItemSku || null,
           base_unit: baseUnit || approvalItem.unit || 'unit',
-          par_level: parseInt(parLevel) || 0
+          par_level: parseInt(parLevel) || 0,
+          // Pick cost directly from PO received item price
+          unit_cost: Number(approvalItem.unit_price || 0),
         })
         .select('id')
         .single();
 
       if (itemError) throw itemError;
 
-      // Create stock movement
+      // Create stock movement (store unit_cost so Analysis can calculate correctly)
       await supabase.from('lab_ops_stock_movements').insert({
         inventory_item_id: newItem.id,
         to_location_id: selectedLocation,
         qty: approvalItem.quantity,
         movement_type: 'purchase',
+        unit_cost: Number(approvalItem.unit_price || 0),
         reference_type: 'po_receiving_approved',
         reference_id: approvalItem.po_record_id,
         notes: `Approved from PO: ${approvalItem.document_number}`,
