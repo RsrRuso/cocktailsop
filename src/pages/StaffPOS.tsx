@@ -81,6 +81,8 @@ interface MenuItem {
   inventory_item_id?: string | null;
   inventory_stock?: number | null;
   stock_level_id?: string | null;
+  // Calculated servings from recipe ingredients (bottle stock × servings per bottle)
+  calculated_servings?: number | null;
 }
 
 export default function StaffPOS() {
@@ -587,7 +589,10 @@ export default function StaffPOS() {
       .from("lab_ops_menu_items")
       .select(`
         id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
-        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(id)
+        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(
+          id,
+          lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id)
+        )
       `)
       .eq("outlet_id", outletId)
       .eq("is_active", true);
@@ -618,15 +623,64 @@ export default function StaffPOS() {
       }
     }
     
+    // Collect all inventory_item_ids from recipe ingredients for stock calculation
+    const recipeInventoryIds = new Set<string>();
+    (data || []).forEach((item: any) => {
+      const recipe = item.lab_ops_recipes?.[0];
+      if (recipe?.lab_ops_recipe_ingredients) {
+        recipe.lab_ops_recipe_ingredients.forEach((ing: any) => {
+          if (ing.inventory_item_id) {
+            recipeInventoryIds.add(ing.inventory_item_id);
+          }
+        });
+      }
+    });
+    
+    // Fetch stock levels for recipe ingredients
+    let recipeStockMap: Record<string, number> = {};
+    if (recipeInventoryIds.size > 0) {
+      const { data: recipeStockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("inventory_item_id, quantity")
+        .in("inventory_item_id", Array.from(recipeInventoryIds));
+      
+      if (recipeStockLevels) {
+        for (const sl of recipeStockLevels) {
+          recipeStockMap[sl.inventory_item_id] = (recipeStockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
+        }
+      }
+    }
+    
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
+      
+      // Calculate available servings from recipe ingredients
+      let calculatedServings: number | null = null;
+      const recipe = item.lab_ops_recipes?.[0];
+      if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
+        // Find minimum servings across all ingredients (limiting ingredient)
+        let minServings = Infinity;
+        for (const ing of recipe.lab_ops_recipe_ingredients) {
+          if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
+            const bottleStock = recipeStockMap[ing.inventory_item_id] || 0;
+            const servingsPerBottle = Math.floor(ing.bottle_size / ing.qty);
+            const totalServings = bottleStock * servingsPerBottle;
+            minServings = Math.min(minServings, totalServings);
+          }
+        }
+        if (minServings !== Infinity) {
+          calculatedServings = minServings;
+        }
+      }
+      
       return {
         ...item,
         remaining_serves: item.remaining_serves ?? null,
-        recipe_id: item.recipe_id || item.lab_ops_recipes?.[0]?.id || null,
+        recipe_id: item.recipe_id || recipe?.id || null,
         inventory_item_id: item.inventory_item_id || null,
         inventory_stock: invStock ? invStock.quantity : null,
         stock_level_id: invStock ? invStock.stock_level_id : null,
+        calculated_servings: calculatedServings,
       };
     }));
   };
@@ -2354,8 +2408,12 @@ export default function StaffPOS() {
                 <div className="grid grid-cols-2 gap-1 p-1">
                   {filteredItems.map(item => {
                     const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
-                    // Use inventory_stock for inventory-linked items, otherwise remaining_serves
-                    const displayStock = item.inventory_stock !== null ? item.inventory_stock : item.remaining_serves;
+                    // Priority: calculated_servings (recipe-based) > inventory_stock > remaining_serves
+                    const displayStock = item.calculated_servings !== null && item.calculated_servings !== undefined
+                      ? item.calculated_servings
+                      : item.inventory_stock !== null 
+                        ? item.inventory_stock 
+                        : item.remaining_serves;
                     const hasStock = displayStock !== null;
                     const isLowStock = hasStock && displayStock !== null && displayStock <= 5;
                     const isOutOfStock = hasStock && displayStock === 0;
