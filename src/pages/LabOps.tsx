@@ -4523,13 +4523,18 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       {recipe.lab_ops_recipe_ingredients?.length > 0 && (
                         <div className="mt-4 pt-4 border-t">
                           <p className="text-sm font-medium mb-2">Ingredients:</p>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="space-y-1">
                             {recipe.lab_ops_recipe_ingredients.map((ing: any) => {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
+                              const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+                              const ingredientCost = unitCost * (ing.qty || 0);
                               return (
-                                <Badge key={ing.id} variant="outline">
-                                  {invItem?.name}: {ing.qty} {ing.unit}
-                                </Badge>
+                                <div key={ing.id} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
+                                  <span className="flex-1">{invItem?.name || 'Unknown'}</span>
+                                  <span className="text-muted-foreground mx-2">{ing.qty} {ing.unit}</span>
+                                  <span className="text-xs text-muted-foreground">@ {formatPrice(unitCost)}</span>
+                                  <span className="font-medium ml-2 text-primary">{formatPrice(ingredientCost)}</span>
+                                </div>
                               );
                             })}
                           </div>
