@@ -3,6 +3,10 @@
 
 const RECOVERY_FLAG = "sv__chunk_recovery_attempted";
 const DEV_CLEANUP_FLAG = "sv__dev_sw_cleanup_done";
+const RECOVERY_LAST_TS = "sv__chunk_recovery_last_ts";
+const RECOVERY_COUNT = "sv__chunk_recovery_count";
+const RECOVERY_COOLDOWN_MS = 30_000;
+const RECOVERY_MAX_WITHIN_COOLDOWN = 2;
 
 function isChunkLoadError(message: string) {
   return /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk \d+ failed|ChunkLoadError/i.test(
@@ -28,7 +32,30 @@ function forceReloadWithCacheBust() {
   window.location.replace(url.toString());
 }
 
+function canAttemptRecoveryNow() {
+  try {
+    const now = Date.now();
+    const last = Number(localStorage.getItem(RECOVERY_LAST_TS) || 0);
+    const count = Number(localStorage.getItem(RECOVERY_COUNT) || 0);
+
+    if (last && now - last < RECOVERY_COOLDOWN_MS && count >= RECOVERY_MAX_WITHIN_COOLDOWN) {
+      return false;
+    }
+
+    // If we're outside the cooldown window, reset the count
+    const nextCount = last && now - last < RECOVERY_COOLDOWN_MS ? count + 1 : 1;
+    localStorage.setItem(RECOVERY_LAST_TS, String(now));
+    localStorage.setItem(RECOVERY_COUNT, String(nextCount));
+    return true;
+  } catch {
+    return true; // fail-open
+  }
+}
+
 async function recoverFromStaleCache() {
+  // Guard against infinite reload loops (especially on mobile Safari)
+  if (!canAttemptRecoveryNow()) return;
+
   if (sessionStorage.getItem(RECOVERY_FLAG)) return;
   sessionStorage.setItem(RECOVERY_FLAG, "1");
 
