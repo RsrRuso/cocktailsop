@@ -924,8 +924,11 @@ function POSModule({ outletId }: { outletId: string }) {
       const u = unit.toLowerCase();
       if (u === "oz") return qty * 29.5735;
       if (u === "l" || u === "ltr" || u === "liter" || u === "litre") return qty * 1000;
-      // Default: use existing normalization for ml-style inputs (e.g., 0.03 -> 30)
-      return getNormalizedQty(qty, u, bottleSize);
+      // Inline normalization: convert 0.03 to 30 if qty < 1 and bottleSize >= 100
+      if (qty < 1 && bottleSize >= 100 && (u === 'ml' || u === 'g')) {
+        return qty * 1000;
+      }
+      return qty;
     };
 
     // Calculate available servings for each menu item
