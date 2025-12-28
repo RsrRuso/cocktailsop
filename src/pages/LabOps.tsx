@@ -40,7 +40,7 @@ import {
   Download, Video, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin, ArrowRightLeft
 } from "lucide-react";
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 import { CurrencySelector } from "@/components/lab-ops/CurrencySelector";
@@ -2391,6 +2391,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showStockTake, setShowStockTake] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
+  const [showDeployStock, setShowDeployStock] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -2411,6 +2412,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [stockQty, setStockQty] = useState("");
   const [stockLocation, setStockLocation] = useState("");
   const [stockNotes, setStockNotes] = useState("");
+  const [deployFromLocation, setDeployFromLocation] = useState("");
+  const [deployToLocation, setDeployToLocation] = useState("");
+  const [deployQty, setDeployQty] = useState("");
 
   useEffect(() => {
     fetchItems();
@@ -2738,6 +2742,84 @@ function InventoryModule({ outletId }: { outletId: string }) {
     toast({ title: "Stock added" });
   };
 
+  const deployStock = async () => {
+    if (!selectedItem || !deployQty || !deployFromLocation || !deployToLocation) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+    
+    if (deployFromLocation === deployToLocation) {
+      toast({ title: "From and To locations must be different", variant: "destructive" });
+      return;
+    }
+
+    const qty = parseFloat(deployQty);
+    if (qty <= 0) {
+      toast({ title: "Quantity must be greater than 0", variant: "destructive" });
+      return;
+    }
+
+    // Check available stock at source location
+    const sourceStock = selectedItem.lab_ops_stock_levels?.find((sl: any) => sl.location_id === deployFromLocation);
+    const availableQty = sourceStock?.quantity || 0;
+    
+    if (qty > availableQty) {
+      toast({ title: `Not enough stock. Available: ${availableQty} ${selectedItem.base_unit}`, variant: "destructive" });
+      return;
+    }
+
+    try {
+      // Reduce stock from source location
+      await supabase
+        .from("lab_ops_stock_levels")
+        .update({ quantity: availableQty - qty })
+        .eq("inventory_item_id", selectedItem.id)
+        .eq("location_id", deployFromLocation);
+
+      // Add stock to destination location
+      const { data: destStock } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("*")
+        .eq("inventory_item_id", selectedItem.id)
+        .eq("location_id", deployToLocation)
+        .single();
+
+      if (destStock) {
+        await supabase
+          .from("lab_ops_stock_levels")
+          .update({ quantity: (destStock.quantity || 0) + qty })
+          .eq("id", destStock.id);
+      } else {
+        await supabase.from("lab_ops_stock_levels").insert({
+          inventory_item_id: selectedItem.id,
+          location_id: deployToLocation,
+          quantity: qty,
+        });
+      }
+
+      // Record movement as transfer
+      await supabase.from("lab_ops_stock_movements").insert({
+        inventory_item_id: selectedItem.id,
+        from_location_id: deployFromLocation,
+        to_location_id: deployToLocation,
+        qty: qty,
+        movement_type: "transfer",
+        notes: `Deployed from ${locations.find(l => l.id === deployFromLocation)?.name || 'Unknown'} to ${locations.find(l => l.id === deployToLocation)?.name || 'Unknown'}`,
+      });
+
+      setDeployQty("");
+      setDeployFromLocation("");
+      setDeployToLocation("");
+      setShowDeployStock(false);
+      setSelectedItem(null);
+      fetchItems();
+      fetchMovements();
+      toast({ title: "Stock deployed successfully" });
+    } catch (error: any) {
+      toast({ title: "Error deploying stock", description: error.message, variant: "destructive" });
+    }
+  };
+
   const startStockTake = async () => {
     if (!outletId) {
       toast({ title: "Please select an outlet first", variant: "destructive" });
@@ -2971,6 +3053,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
                               </div>
                               <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
                                 <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowDeployStock(true); }} title="Deploy Stock">
+                                <ArrowRightLeft className="h-4 w-4" />
                               </Button>
                               <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
                                 <Edit className="h-4 w-4" />
@@ -3231,6 +3316,79 @@ function InventoryModule({ outletId }: { outletId: string }) {
               <Textarea value={stockNotes} onChange={(e) => setStockNotes(e.target.value)} />
             </div>
             <Button onClick={addStock} className="w-full">Add Stock</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deploy Stock Dialog */}
+      <Dialog open={showDeployStock} onOpenChange={setShowDeployStock}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5" />
+              Deploy Stock: {selectedItem?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Current stock by location */}
+            {selectedItem?.lab_ops_stock_levels?.length > 0 && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground mb-2">Current Stock by Location:</p>
+                <div className="space-y-1">
+                  {selectedItem.lab_ops_stock_levels.map((sl: any) => {
+                    const loc = locations.find(l => l.id === sl.location_id);
+                    return (
+                      <div key={sl.id} className="flex justify-between text-sm">
+                        <span>{loc?.name || 'Unknown'}</span>
+                        <span className="font-semibold">{sl.quantity} {selectedItem.base_unit}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div>
+              <Label>From Location</Label>
+              <Select value={deployFromLocation} onValueChange={setDeployFromLocation}>
+                <SelectTrigger><SelectValue placeholder="Select source location" /></SelectTrigger>
+                <SelectContent>
+                  {locations.filter(loc => 
+                    selectedItem?.lab_ops_stock_levels?.some((sl: any) => sl.location_id === loc.id && sl.quantity > 0)
+                  ).map((loc) => {
+                    const stock = selectedItem?.lab_ops_stock_levels?.find((sl: any) => sl.location_id === loc.id);
+                    return (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name} ({stock?.quantity || 0} available)
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>To Location</Label>
+              <Select value={deployToLocation} onValueChange={setDeployToLocation}>
+                <SelectTrigger><SelectValue placeholder="Select destination location" /></SelectTrigger>
+                <SelectContent>
+                  {locations.filter(loc => loc.id !== deployFromLocation).map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Quantity to Deploy</Label>
+              <Input 
+                type="number" 
+                value={deployQty} 
+                onChange={(e) => setDeployQty(e.target.value)} 
+                placeholder={`Max: ${selectedItem?.lab_ops_stock_levels?.find((sl: any) => sl.location_id === deployFromLocation)?.quantity || 0}`}
+              />
+            </div>
+            <Button onClick={deployStock} className="w-full" disabled={!deployFromLocation || !deployToLocation || !deployQty}>
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Deploy Stock
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
