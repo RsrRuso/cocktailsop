@@ -2575,6 +2575,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [stockTakes, setStockTakes] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
   const [poLatestUnitPrice, setPoLatestUnitPrice] = useState<Record<string, number>>({});
+  const [menuItemServingRatios, setMenuItemServingRatios] = useState<Record<string, { serving_ratio_ml: number; bottle_ratio_ml: number }>>({});
   const [showAddItem, setShowAddItem] = useState(false);
   const [showStockTake, setShowStockTake] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
@@ -2632,6 +2633,24 @@ function InventoryModule({ outletId }: { outletId: string }) {
       if (latestMap[name] == null) latestMap[name] = Number(r.unit_price || 0);
     });
     setPoLatestUnitPrice(latestMap);
+
+    // Fetch menu items with serving ratios to map inventory items to servings
+    const { data: menuItems } = await supabase
+      .from("lab_ops_menu_items")
+      .select("name, serving_ratio_ml, bottle_ratio_ml")
+      .eq("outlet_id", outletId);
+    
+    const ratioMap: Record<string, { serving_ratio_ml: number; bottle_ratio_ml: number }> = {};
+    (menuItems || []).forEach((m: any) => {
+      const name = String(m.name || "").trim().toLowerCase();
+      if (name && m.serving_ratio_ml && m.bottle_ratio_ml) {
+        ratioMap[name] = {
+          serving_ratio_ml: Number(m.serving_ratio_ml),
+          bottle_ratio_ml: Number(m.bottle_ratio_ml)
+        };
+      }
+    });
+    setMenuItemServingRatios(ratioMap);
   };
 
   const fetchLocations = async () => {
@@ -3209,6 +3228,22 @@ function InventoryModule({ outletId }: { outletId: string }) {
                     {filteredItems.map((item) => {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
+                      
+                      // Check if this inventory item has serving ratios from a matching menu item
+                      const itemNameLower = String(item.name || "").trim().toLowerCase();
+                      const servingRatio = menuItemServingRatios[itemNameLower];
+                      
+                      // Calculate servings if ratio exists and unit is bottle-like
+                      const isBottleUnit = ['bottle', 'bot', 'btl', 'bottles'].includes((item.base_unit || '').toLowerCase());
+                      let displayStock = stock;
+                      let displayUnit = item.base_unit;
+                      
+                      if (servingRatio && isBottleUnit && servingRatio.serving_ratio_ml > 0) {
+                        const servingsPerBottle = Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml);
+                        displayStock = Math.floor(stock * servingsPerBottle);
+                        displayUnit = 'servings';
+                      }
+                      
                       return (
                         <div
                           key={item.id}
@@ -3230,12 +3265,20 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Badge variant="outline" className="gap-1">
                                   Sell: {formatPrice(Number(item.sale_price || 0))}
                                 </Badge>
+                                {servingRatio && isBottleUnit && (
+                                  <Badge variant="default" className="gap-1 bg-primary/20 text-primary">
+                                    {Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml)} srv/bottle
+                                  </Badge>
+                                )}
                               </div>
                             </div>
 
                             <div className="flex items-center justify-between sm:justify-end gap-2">
                               <div className="text-right mr-1 sm:mr-2">
-                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
+                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{displayStock} {displayUnit}</p>
+                                {servingRatio && isBottleUnit && (
+                                  <p className="text-xs text-muted-foreground">({stock} {item.base_unit})</p>
+                                )}
                                 <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                               </div>
                               <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
@@ -3285,6 +3328,22 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const totalStock = itemStockLevels.reduce((sum: number, sl: any) => sum + (sl.quantity || 0), 0);
                       const unitCost = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0);
                       const totalValue = totalStock * unitCost;
+                      
+                      // Check if this inventory item has serving ratios from a matching menu item
+                      const itemNameLower = String(item.name || "").trim().toLowerCase();
+                      const servingRatio = menuItemServingRatios[itemNameLower];
+                      
+                      // Calculate servings if ratio exists and unit is bottle-like
+                      const isBottleUnit = ['bottle', 'bot', 'btl', 'bottles'].includes((item.base_unit || '').toLowerCase());
+                      let displayStock = totalStock;
+                      let displayUnit = item.base_unit;
+                      
+                      if (servingRatio && isBottleUnit && servingRatio.serving_ratio_ml > 0) {
+                        const servingsPerBottle = Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml);
+                        displayStock = Math.floor(totalStock * servingsPerBottle);
+                        displayUnit = 'servings';
+                      }
+                      
                       return (
                         <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
                           <div className="flex items-center justify-between">
@@ -3298,10 +3357,18 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Badge variant="outline" className="text-xs">
                                   Total Value: {formatPrice(totalValue)}
                                 </Badge>
+                                {servingRatio && isBottleUnit && (
+                                  <Badge variant="default" className="text-xs bg-primary/20 text-primary">
+                                    {Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml)} srv/bottle
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                             <div className="text-right ml-3">
-                              <p className="font-semibold text-lg">{totalStock} {item.base_unit}</p>
+                              <p className="font-semibold text-lg">{displayStock} {displayUnit}</p>
+                              {servingRatio && isBottleUnit && (
+                                <p className="text-xs text-muted-foreground">({totalStock} {item.base_unit})</p>
+                              )}
                               <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
                             </div>
                           </div>
