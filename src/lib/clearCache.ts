@@ -1,95 +1,134 @@
 import { toast } from "sonner";
 
-// Clear all IndexedDB databases
+// Force delete all IndexedDB databases immediately
 const clearIndexedDB = async (): Promise<void> => {
   try {
-    // Get all database names if supported
-    if ('indexedDB' in window && 'databases' in indexedDB) {
-      const databases = await (indexedDB as any).databases();
-      await Promise.all(
-        databases.map((db: { name: string }) => 
-          new Promise<void>((resolve, reject) => {
+    if ('indexedDB' in window) {
+      // Get all database names if supported
+      if ('databases' in indexedDB) {
+        const databases = await (indexedDB as any).databases();
+        console.log(`Found ${databases.length} IndexedDB databases to delete`);
+        
+        for (const db of databases) {
+          try {
             const request = indexedDB.deleteDatabase(db.name);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-            request.onblocked = () => resolve(); // Continue even if blocked
-          })
-        )
-      );
-    } else {
-      // Fallback: try to delete known database names
-      const knownDBs = ['app-cache', 'supabase-cache', 'workbox-precache', 'stories', 'posts', 'reels', 'profiles'];
-      await Promise.all(
-        knownDBs.map(dbName => 
-          new Promise<void>((resolve) => {
-            const request = indexedDB.deleteDatabase(dbName);
-            request.onsuccess = () => resolve();
-            request.onerror = () => resolve();
-            request.onblocked = () => resolve();
-          })
-        )
-      );
+            request.onsuccess = () => console.log(`Deleted IndexedDB: ${db.name}`);
+            request.onerror = () => console.warn(`Failed to delete IndexedDB: ${db.name}`);
+            request.onblocked = () => {
+              console.warn(`IndexedDB blocked: ${db.name}, forcing close`);
+            };
+          } catch (e) {
+            console.warn(`Error deleting ${db.name}:`, e);
+          }
+        }
+      }
+      
+      // Also try known database names as fallback
+      const knownDBs = [
+        'app-cache', 'supabase-cache', 'workbox-precache', 
+        'stories', 'posts', 'reels', 'profiles', 'keyval-store',
+        'firebaseLocalStorageDb', 'localforage', 'idb-keyval'
+      ];
+      
+      for (const dbName of knownDBs) {
+        try {
+          indexedDB.deleteDatabase(dbName);
+        } catch (e) {
+          // Ignore errors for known DBs
+        }
+      }
     }
   } catch (error) {
     console.warn("IndexedDB clear warning:", error);
   }
 };
 
+// Clear all browser caches aggressively
+const clearAllCaches = async (): Promise<number> => {
+  let count = 0;
+  if ('caches' in window) {
+    try {
+      const cacheNames = await caches.keys();
+      console.log(`Found ${cacheNames.length} cache storage entries`);
+      await Promise.all(
+        cacheNames.map(async (cacheName) => {
+          await caches.delete(cacheName);
+          count++;
+          console.log(`Deleted cache: ${cacheName}`);
+        })
+      );
+    } catch (e) {
+      console.warn("Cache clear error:", e);
+    }
+  }
+  return count;
+};
+
+// Unregister all service workers immediately
+const unregisterServiceWorkers = async (): Promise<number> => {
+  let count = 0;
+  if ('serviceWorker' in navigator) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      console.log(`Found ${registrations.length} service workers`);
+      
+      for (const registration of registrations) {
+        const success = await registration.unregister();
+        if (success) {
+          count++;
+          console.log(`Unregistered service worker: ${registration.scope}`);
+        }
+      }
+    } catch (e) {
+      console.warn("Service worker unregister error:", e);
+    }
+  }
+  return count;
+};
+
 export const clearAppCache = async () => {
-  const loadingToast = toast.loading("Clearing cache...");
+  const loadingToast = toast.loading("Clearing all cache & old files...");
   
   try {
-    // Clear service worker caches
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames.map(cacheName => caches.delete(cacheName))
-      );
-      console.log(`Cleared ${cacheNames.length} cache storage entries`);
-    }
+    // Run all cache clearing operations in parallel for speed
+    const [cacheCount, swCount] = await Promise.all([
+      clearAllCaches(),
+      unregisterServiceWorkers(),
+      clearIndexedDB()
+    ]);
 
-    // Unregister service workers
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(
-        registrations.map(registration => registration.unregister())
-      );
-      console.log(`Unregistered ${registrations.length} service workers`);
-    }
-
-    // Clear IndexedDB
-    await clearIndexedDB();
-    console.log("Cleared IndexedDB databases");
-
-    // Clear localStorage (except theme preference and auth tokens for graceful reload)
+    // Clear localStorage (preserve only theme and auth)
     const theme = localStorage.getItem('theme');
     const authToken = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
-    localStorage.clear();
-    if (theme) {
-      localStorage.setItem('theme', theme);
-    }
-    if (authToken) {
-      localStorage.setItem('sb-cbfqwaqwliehgxsdueem-auth-token', authToken);
-    }
-    console.log("Cleared localStorage");
+    const keysToRemove = Object.keys(localStorage).filter(
+      key => key !== 'theme' && !key.startsWith('sb-')
+    );
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log(`Removed ${keysToRemove.length} localStorage items`);
 
-    // Clear sessionStorage
+    // Clear sessionStorage completely
+    const sessionCount = sessionStorage.length;
     sessionStorage.clear();
-    console.log("Cleared sessionStorage");
+    console.log(`Cleared ${sessionCount} sessionStorage items`);
 
     toast.dismiss(loadingToast);
-    toast.success("Cache cleared successfully! Reloading...");
+    toast.success(`Cleared ${cacheCount} caches, ${swCount} service workers. Reloading...`);
     
-    // Force hard reload after a short delay
+    // Force immediate hard reload with cache bust
     setTimeout(() => {
-      // Add cache-busting parameter to force fresh load
-      const url = new URL(window.location.href);
-      url.searchParams.set('_cb', Date.now().toString());
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('_nocache', Date.now().toString());
       window.location.replace(url.toString());
-    }, 800);
+    }, 500);
+    
   } catch (error) {
     console.error("Error clearing cache:", error);
     toast.dismiss(loadingToast);
-    toast.error("Failed to clear cache. Please try again.");
+    toast.error("Cache clear failed. Forcing reload...");
+    
+    // Even on error, force reload
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   }
 };
