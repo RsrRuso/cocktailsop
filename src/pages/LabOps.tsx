@@ -4777,15 +4777,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
                   onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, description: e.target.value })} 
                 />
               </div>
-              <div>
-                <Label>Price</Label>
-                <Input 
-                  type="number" 
-                  step="0.01" 
-                  value={editingMenuItemInRecipe.base_price} 
-                  onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, base_price: parseFloat(e.target.value) })} 
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Price is synced from recipe costing
+              </p>
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={editingMenuItemInRecipe.is_active} 
@@ -4799,7 +4793,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     .update({
                       name: editingMenuItemInRecipe.name,
                       description: editingMenuItemInRecipe.description,
-                      base_price: editingMenuItemInRecipe.base_price,
                       is_active: editingMenuItemInRecipe.is_active,
                     })
                     .eq("id", editingMenuItemInRecipe.id);
