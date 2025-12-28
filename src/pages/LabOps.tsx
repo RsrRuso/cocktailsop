@@ -4155,23 +4155,34 @@ function RecipesModule({ outletId }: { outletId: string }) {
       .single();
 
     if (!error && recipe) {
-      // Add ingredients
+      // Calculate and sync selling price to the menu item
+      const sellingPrice = calculateSellingPrice();
+      await supabase.from("lab_ops_menu_items").update({
+        base_price: sellingPrice,
+      }).eq("id", selectedMenuItem);
+
+      // Add ingredients (deduplicated)
+      const insertedItemIds = new Set<string>();
       for (const ing of ingredients) {
-        await supabase.from("lab_ops_recipe_ingredients").insert({
-          recipe_id: recipe.id,
-          inventory_item_id: ing.itemId,
-          qty: ing.qty,
-          unit: ing.unit,
-        });
+        if (ing.itemId && !insertedItemIds.has(ing.itemId)) {
+          insertedItemIds.add(ing.itemId);
+          await supabase.from("lab_ops_recipe_ingredients").insert({
+            recipe_id: recipe.id,
+            inventory_item_id: ing.itemId,
+            qty: ing.qty,
+            unit: ing.unit,
+          });
+        }
       }
 
-      toast({ title: "Recipe created" });
+      toast({ title: "Recipe created & price synced to menu" });
       setShowAddRecipe(false);
       setSelectedMenuItem("");
       setRecipeYield("1");
       setRecipeInstructions("");
       setIngredients([]);
       fetchRecipes();
+      fetchMenuItems();
     }
   };
 
@@ -4191,26 +4202,36 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setMarkupPercent(String(recipe.markup_percent ?? 30));
     setVatPercent(String(recipe.vat_percent ?? 5));
     setServiceChargePercent(String(recipe.service_charge_percent ?? 0));
-    setIngredients(
-      (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => {
-        const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-        const direct = Number(invItem?.unit_cost || 0);
-        const fromCostsTable = Number(invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
-        const fromPo = Number(invItem?.name ? poLatestUnitPrice?.[String(invItem.name)] : 0);
-        const unitCost = direct > 0 ? direct : (fromCostsTable > 0 ? fromCostsTable : fromPo);
-        return {
-          itemId: ing.inventory_item_id,
-          qty: ing.qty || 0,
-          unit: ing.unit || "ml",
-          costPrice: (unitCost || 0) * (ing.qty || 0),
-        };
-      })
-    );
+    // Deduplicate ingredients by inventory_item_id (keep first occurrence with summed qty)
+    const rawIngredients = recipe.lab_ops_recipe_ingredients || [];
+    const deduplicatedIngredients: { itemId: string; qty: number; unit: string; costPrice: number }[] = [];
+    const seenItemIds = new Set<string>();
+    
+    for (const ing of rawIngredients) {
+      if (seenItemIds.has(ing.inventory_item_id)) continue;
+      seenItemIds.add(ing.inventory_item_id);
+      
+      const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
+      const direct = Number(invItem?.unit_cost || 0);
+      const fromCostsTable = Number(invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
+      const fromPo = Number(invItem?.name ? poLatestUnitPrice?.[String(invItem.name)] : 0);
+      const unitCost = direct > 0 ? direct : (fromCostsTable > 0 ? fromCostsTable : fromPo);
+      deduplicatedIngredients.push({
+        itemId: ing.inventory_item_id,
+        qty: ing.qty || 0,
+        unit: ing.unit || "ml",
+        costPrice: (unitCost || 0) * (ing.qty || 0),
+      });
+    }
+    setIngredients(deduplicatedIngredients);
     setShowAddRecipe(true);
   };
 
   const updateRecipe = async () => {
     if (!selectedRecipe || !selectedMenuItem || ingredients.length === 0) return;
+
+    // Calculate selling price from recipe
+    const sellingPrice = calculateSellingPrice();
 
     // Update recipe with markup, VAT, and service charge
     await supabase.from("lab_ops_recipes").update({
@@ -4222,10 +4243,17 @@ function RecipesModule({ outletId }: { outletId: string }) {
       service_charge_percent: parseFloat(serviceChargePercent) || 0,
     }).eq("id", selectedRecipe.id);
 
-    // Delete existing ingredients and insert new ones
+    // Sync selling price to the menu item
+    await supabase.from("lab_ops_menu_items").update({
+      base_price: sellingPrice,
+    }).eq("id", selectedMenuItem);
+
+    // Delete existing ingredients and insert new ones (deduplicated)
     await supabase.from("lab_ops_recipe_ingredients").delete().eq("recipe_id", selectedRecipe.id);
+    const insertedItemIds = new Set<string>();
     for (const ing of ingredients) {
-      if (ing.itemId) {
+      if (ing.itemId && !insertedItemIds.has(ing.itemId)) {
+        insertedItemIds.add(ing.itemId);
         await supabase.from("lab_ops_recipe_ingredients").insert({
           recipe_id: selectedRecipe.id,
           inventory_item_id: ing.itemId,
@@ -4235,9 +4263,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
       }
     }
 
-    toast({ title: "Recipe updated" });
+    toast({ title: "Recipe updated & price synced to menu" });
     closeDialog();
     fetchRecipes();
+    fetchMenuItems();
   };
 
   const closeDialog = () => {
