@@ -2070,6 +2070,8 @@ function MenuModule({ outletId }: { outletId: string }) {
         base_price: editingItem.base_price,
         category_id: editingItem.category_id,
         is_active: editingItem.is_active,
+        serving_ratio_ml: editingItem.serving_ratio_ml || null,
+        bottle_ratio_ml: editingItem.bottle_ratio_ml || null,
       })
       .eq("id", editingItem.id);
 
@@ -2483,7 +2485,7 @@ function MenuModule({ outletId }: { outletId: string }) {
 
       {/* Edit Item Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Menu Item</DialogTitle>
           </DialogHeader>
@@ -2512,6 +2514,48 @@ function MenuModule({ outletId }: { outletId: string }) {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Serving Ratio Section - For spirits/bottles */}
+              <div className="border-t pt-4 mt-4">
+                <p className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <Wine className="h-4 w-4" /> Serving Ratio (for spirits/bottles)
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Serving Size (ml)</Label>
+                    <Input 
+                      type="number" 
+                      step="1"
+                      placeholder="30"
+                      value={editingItem.serving_ratio_ml || ""} 
+                      onChange={(e) => setEditingItem({ ...editingItem, serving_ratio_ml: parseFloat(e.target.value) || null })} 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">ml per serving</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Bottle Size (ml)</Label>
+                    <Input 
+                      type="number" 
+                      step="1"
+                      placeholder="750"
+                      value={editingItem.bottle_ratio_ml || ""} 
+                      onChange={(e) => setEditingItem({ ...editingItem, bottle_ratio_ml: parseFloat(e.target.value) || null })} 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">ml per bottle</p>
+                  </div>
+                </div>
+                {editingItem.serving_ratio_ml && editingItem.bottle_ratio_ml && editingItem.serving_ratio_ml > 0 && (
+                  <div className="mt-3 p-2 bg-primary/10 rounded-lg">
+                    <p className="text-sm text-center">
+                      <span className="font-semibold text-primary">
+                        {Math.floor(editingItem.bottle_ratio_ml / editingItem.serving_ratio_ml)} servings
+                      </span>
+                      <span className="text-muted-foreground"> per bottle</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+              
               <Button onClick={updateMenuItem} className="w-full">Save Changes</Button>
             </div>
           )}
@@ -4973,7 +5017,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
       {/* Edit Menu Item Dialog */}
       <Dialog open={!!editingMenuItemInRecipe} onOpenChange={(open) => !open && setEditingMenuItemInRecipe(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Menu Item</DialogTitle>
           </DialogHeader>
@@ -4996,6 +5040,48 @@ function RecipesModule({ outletId }: { outletId: string }) {
               <p className="text-xs text-muted-foreground">
                 Price is synced from recipe costing
               </p>
+              
+              {/* Serving Ratio Section - For spirits/bottles */}
+              <div className="border-t pt-4 mt-4">
+                <p className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <Wine className="h-4 w-4" /> Serving Ratio (for spirits/bottles)
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Serving Size (ml)</Label>
+                    <Input 
+                      type="number" 
+                      step="1"
+                      placeholder="30"
+                      value={editingMenuItemInRecipe.serving_ratio_ml || ""} 
+                      onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, serving_ratio_ml: parseFloat(e.target.value) || null })} 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">ml per serving</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Bottle Size (ml)</Label>
+                    <Input 
+                      type="number" 
+                      step="1"
+                      placeholder="750"
+                      value={editingMenuItemInRecipe.bottle_ratio_ml || ""} 
+                      onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, bottle_ratio_ml: parseFloat(e.target.value) || null })} 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">ml per bottle</p>
+                  </div>
+                </div>
+                {editingMenuItemInRecipe.serving_ratio_ml && editingMenuItemInRecipe.bottle_ratio_ml && editingMenuItemInRecipe.serving_ratio_ml > 0 && (
+                  <div className="mt-3 p-2 bg-primary/10 rounded-lg">
+                    <p className="text-sm text-center">
+                      <span className="font-semibold text-primary">
+                        {Math.floor(editingMenuItemInRecipe.bottle_ratio_ml / editingMenuItemInRecipe.serving_ratio_ml)} servings
+                      </span>
+                      <span className="text-muted-foreground"> per bottle</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+              
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={editingMenuItemInRecipe.is_active} 
@@ -5010,6 +5096,8 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       name: editingMenuItemInRecipe.name,
                       description: editingMenuItemInRecipe.description,
                       is_active: editingMenuItemInRecipe.is_active,
+                      serving_ratio_ml: editingMenuItemInRecipe.serving_ratio_ml || null,
+                      bottle_ratio_ml: editingMenuItemInRecipe.bottle_ratio_ml || null,
                     })
                     .eq("id", editingMenuItemInRecipe.id);
                   setEditingMenuItemInRecipe(null);

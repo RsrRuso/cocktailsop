@@ -6063,6 +6063,7 @@ export type Database = {
         Row: {
           base_price: number
           batch_recipe_id: string | null
+          bottle_ratio_ml: number | null
           category_id: string | null
           created_at: string | null
           default_serving_ml: number | null
@@ -6080,6 +6081,7 @@ export type Database = {
           recipe_id: string | null
           remaining_serves: number | null
           serving_ml: number | null
+          serving_ratio_ml: number | null
           sub_category: string | null
           tax_rate: number | null
           total_produced_serves: number | null
@@ -6088,6 +6090,7 @@ export type Database = {
         Insert: {
           base_price: number
           batch_recipe_id?: string | null
+          bottle_ratio_ml?: number | null
           category_id?: string | null
           created_at?: string | null
           default_serving_ml?: number | null
@@ -6105,6 +6108,7 @@ export type Database = {
           recipe_id?: string | null
           remaining_serves?: number | null
           serving_ml?: number | null
+          serving_ratio_ml?: number | null
           sub_category?: string | null
           tax_rate?: number | null
           total_produced_serves?: number | null
@@ -6113,6 +6117,7 @@ export type Database = {
         Update: {
           base_price?: number
           batch_recipe_id?: string | null
+          bottle_ratio_ml?: number | null
           category_id?: string | null
           created_at?: string | null
           default_serving_ml?: number | null
@@ -6130,6 +6135,7 @@ export type Database = {
           recipe_id?: string | null
           remaining_serves?: number | null
           serving_ml?: number | null
+          serving_ratio_ml?: number | null
           sub_category?: string | null
           tax_rate?: number | null
           total_produced_serves?: number | null

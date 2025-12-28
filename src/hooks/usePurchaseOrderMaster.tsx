@@ -140,6 +140,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
   });
 
   // Add received item - linked by record_id for proper isolation
+  // Also converts bottles to servings for items with serving_ratio_ml/bottle_ratio_ml
   const addReceivedItem = useMutation({
     mutationFn: async (item: {
       purchase_order_id?: string;
@@ -152,6 +153,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       received_date?: string;
       document_number?: string;
       record_id?: string;
+      outlet_id?: string; // Optional: for lab ops integration
     }) => {
       const receivedDate = item.received_date || new Date().toISOString().split('T')[0];
       
@@ -175,6 +177,43 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         .single();
       
       if (error) throw error;
+      
+      // === SERVING CONVERSION FOR BOTTLES ===
+      // If unit is BOT/bottle, try to find matching menu item and convert to servings
+      const isBottle = ['BOT', 'bottle', 'BOTTLE', 'btl', 'BTL'].includes(item.unit?.toUpperCase() || '');
+      if (isBottle && item.quantity > 0) {
+        // Find matching menu item by name (case-insensitive)
+        const { data: menuItems } = await supabase
+          .from('lab_ops_menu_items')
+          .select('id, name, serving_ratio_ml, bottle_ratio_ml, remaining_serves')
+          .ilike('name', item.item_name.trim());
+        
+        if (menuItems && menuItems.length > 0) {
+          for (const menuItem of menuItems) {
+            const servingRatio = Number(menuItem.serving_ratio_ml) || 30;
+            const bottleRatio = Number(menuItem.bottle_ratio_ml) || 750;
+            
+            // Calculate servings: bottles × (bottle_size / serving_size)
+            const servingsPerBottle = Math.floor(bottleRatio / servingRatio);
+            const totalNewServings = item.quantity * servingsPerBottle;
+            
+            // Update menu item's remaining_serves
+            const currentServes = Number(menuItem.remaining_serves) || 0;
+            const newTotalServes = currentServes + totalNewServings;
+            
+            await supabase
+              .from('lab_ops_menu_items')
+              .update({ 
+                remaining_serves: newTotalServes,
+                total_produced_serves: newTotalServes // Also update total produced
+              })
+              .eq('id', menuItem.id);
+            
+            console.log(`Converted ${item.quantity} bottles of ${item.item_name} to ${totalNewServings} servings (${servingsPerBottle} servings/bottle)`);
+          }
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
