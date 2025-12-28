@@ -1419,6 +1419,47 @@ export default function StaffPOS() {
 
       if (itemsError) throw itemsError;
 
+      // Deduct stock for recipe-based items (bottle_size / pour_qty logic)
+      for (const orderItem of orderItems) {
+        const menuItem = menuItems.find(m => m.id === orderItem.menu_item_id);
+        if (!menuItem) continue;
+        
+        // Handle direct inventory items (like bottled water)
+        if (menuItem.inventory_item_id && menuItem.stock_level_id) {
+          await supabase
+            .from("lab_ops_stock_levels")
+            .update({ quantity: Math.max(0, (menuItem.inventory_stock || 0) - orderItem.qty) })
+            .eq("id", menuItem.stock_level_id);
+        }
+        
+        // Handle recipe-based items - deduct fractional bottle amounts
+        const recipe = (menuItem as any).lab_ops_recipes?.[0];
+        if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
+          for (const ing of recipe.lab_ops_recipe_ingredients) {
+            if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
+              // Each serving uses (pourQty / bottleSize) bottles
+              const bottleFraction = ing.qty / ing.bottle_size;
+              const bottlesToDeduct = bottleFraction * orderItem.qty;
+              
+              // Deduct from stock level
+              const { data: stockLevel } = await supabase
+                .from("lab_ops_stock_levels")
+                .select("id, quantity")
+                .eq("inventory_item_id", ing.inventory_item_id)
+                .limit(1)
+                .single();
+              
+              if (stockLevel) {
+                await supabase
+                  .from("lab_ops_stock_levels")
+                  .update({ quantity: Math.max(0, stockLevel.quantity - bottlesToDeduct) })
+                  .eq("id", stockLevel.id);
+              }
+            }
+          }
+        }
+      }
+
       // Update order subtotal if adding to existing order
       if (isExistingOrder) {
         const { data: allItems } = await supabase
