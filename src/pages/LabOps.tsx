@@ -4166,10 +4166,12 @@ function RecipesModule({ outletId }: { outletId: string }) {
       for (const ing of ingredients) {
         if (ing.itemId && !insertedItemIds.has(ing.itemId)) {
           insertedItemIds.add(ing.itemId);
+          // Normalize qty before saving (convert 0.03 to 30 if needed)
+          const normalizedQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize || 750);
           await supabase.from("lab_ops_recipe_ingredients").insert({
             recipe_id: recipe.id,
             inventory_item_id: ing.itemId,
-            qty: ing.qty,
+            qty: normalizedQty,
             unit: ing.unit,
             bottle_size: ing.bottleSize || 750,
           });
@@ -4256,10 +4258,12 @@ function RecipesModule({ outletId }: { outletId: string }) {
     for (const ing of ingredients) {
       if (ing.itemId && !insertedItemIds.has(ing.itemId)) {
         insertedItemIds.add(ing.itemId);
+        // Normalize qty before saving (convert 0.03 to 30 if needed)
+        const normalizedQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize || 750);
         await supabase.from("lab_ops_recipe_ingredients").insert({
           recipe_id: selectedRecipe.id,
           inventory_item_id: ing.itemId,
-          qty: ing.qty,
+          qty: normalizedQty,
           unit: ing.unit,
           bottle_size: ing.bottleSize || 750,
         });
@@ -4289,9 +4293,26 @@ function RecipesModule({ outletId }: { outletId: string }) {
   };
 
   // Calculate servings from bottle size / qty
-  const calculateServings = (bottleSize: number, qty: number): number => {
+  // Auto-normalize: if qty is very small (< 1) and bottle is large, user likely meant ml not L
+  const calculateServings = (bottleSize: number, qty: number, unit: string = 'ml'): number => {
     if (!qty || qty <= 0) return 0;
-    return Math.floor(bottleSize / qty);
+    
+    // Normalize qty: if user entered L-sized value (< 1) for ml unit with large bottle, convert
+    let normalizedQty = qty;
+    if (qty < 1 && bottleSize >= 100 && (unit === 'ml' || unit === 'g')) {
+      // User likely entered 0.03 meaning 30ml, or 0.05 meaning 50ml
+      normalizedQty = qty * 1000;
+    }
+    
+    return Math.floor(bottleSize / normalizedQty);
+  };
+  
+  // Get normalized qty for display (converts 0.03 to 30 if needed)
+  const getNormalizedQty = (qty: number, unit: string, bottleSize: number): number => {
+    if (qty < 1 && bottleSize >= 100 && (unit === 'ml' || unit === 'g')) {
+      return qty * 1000;
+    }
+    return qty;
   };
 
   // Helper to get unit cost from inventory item (match the cost shown in the Items/Inventory tabs)
@@ -4444,7 +4465,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     {ingredients.map((ing, idx) => {
                       const invItem = inventoryItems.find(i => i.id === ing.itemId);
                       const unitCost = getItemUnitCost(invItem);
-                      const servings = calculateServings(ing.bottleSize, ing.qty);
+                      const servings = calculateServings(ing.bottleSize, ing.qty, ing.unit);
+                      const displayQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize);
+                      const wasNormalized = displayQty !== ing.qty && ing.qty > 0;
                       return (
                         <div key={idx} className="space-y-1">
                           <div className="flex gap-2 items-center flex-wrap">
@@ -4500,6 +4523,11 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           {ing.itemId && (
                             <div className="flex items-center justify-between text-xs text-muted-foreground pl-2 flex-wrap gap-2">
                               <span>Unit cost: {formatPrice(unitCost)}</span>
+                              {wasNormalized && (
+                                <span className="text-blue-500 font-medium">
+                                  = {displayQty} {ing.unit}/serve
+                                </span>
+                              )}
                               <span className="text-yellow-500 font-medium">
                                 {servings > 0 ? `${servings} servings/bottle` : '-'}
                               </span>
