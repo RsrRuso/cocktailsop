@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getServingsDisplay, formatQty } from "@/lib/servings";
 
 interface POReceivedStockProps {
   outletId: string;
@@ -388,21 +389,35 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                             Items ({record.total_items}):
                           </p>
                           <div className="space-y-1">
-                            {record.items.slice(0, 3).map((item, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-sm">
-                                <span className="truncate">{item.name}</span>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{item.quantity}
-                                  </Badge>
-                                  {item.location && (
-                                    <span className="text-xs text-muted-foreground">
-                                      → {item.location}
-                                    </span>
-                                  )}
+                            {record.items.slice(0, 3).map((item, idx) => {
+                              const servings = getServingsDisplay({
+                                quantity: item.quantity,
+                                unit: item.unit,
+                                label: item.name,
+                                defaultServingMl: 30,
+                                defaultBottleMl: 750,
+                              });
+                              return (
+                                <div key={idx} className="flex items-center justify-between text-sm">
+                                  <span className="truncate">{item.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{formatQty(item.quantity)} {item.unit || "unit"}
+                                    </Badge>
+                                    {servings.converted && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ({formatQty(servings.displayQty)} srv)
+                                      </span>
+                                    )}
+                                    {item.location && (
+                                      <span className="text-xs text-muted-foreground">
+                                        → {item.location}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                             {record.items.length > 3 && (
                               <p className="text-xs text-muted-foreground">
                                 +{record.items.length - 3} more items
@@ -451,7 +466,15 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                 </div>
               </Card>
 
-              {filteredPending.map((item) => (
+              {filteredPending.map((item) => {
+                const servings = getServingsDisplay({
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  label: item.item_name,
+                  defaultServingMl: 30,
+                  defaultBottleMl: 750,
+                });
+                return (
                 <Card key={item.id} className="p-3 sm:p-4 border-l-4 border-l-amber-500">
                   {/* Header with name and quantity badge */}
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -462,9 +485,16 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                         Pending
                       </Badge>
                     </div>
-                    <Badge variant="secondary" className="text-sm sm:text-base font-bold px-2 sm:px-3 py-1 shrink-0">
-                      {item.quantity} {item.unit || 'BOT'}
-                    </Badge>
+                    <div className="text-right shrink-0">
+                      <Badge variant="secondary" className="text-sm sm:text-base font-bold px-2 sm:px-3 py-1">
+                        {formatQty(item.quantity)} {item.unit || 'BOT'}
+                      </Badge>
+                      {servings.converted && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          ({formatQty(servings.displayQty)} servings)
+                        </p>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Details */}
@@ -519,7 +549,8 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                     </div>
                   </div>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>

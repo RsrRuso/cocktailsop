@@ -1319,17 +1319,9 @@ const POReceivedItems = () => {
         const location = locations?.find((loc) => loc.outlet_id === matchedItem.outlet_id);
         const locationId = location?.id;
 
-        // For spirit items (BOT unit), convert bottles to servings
-        // e.g., 6 bottles × 750ml ÷ 30ml = 150 servings
-        const isSpirit = matchedItem.base_unit === 'BOT' ||
-                        (item.unit && item.unit.toLowerCase().includes('bot'));
-        const bottleSizeMl = 750; // Standard bottle size
-        const pourSizeMl = 30;    // Standard pour size
-
-        // Convert to servings if spirit, otherwise keep raw quantity
-        const stockQuantity = isSpirit
-          ? Math.floor((item.quantity * bottleSizeMl) / pourSizeMl)
-          : item.quantity;
+        // Store raw bottle quantity - do NOT convert to servings.
+        // Serving calculation is done at display time using bottle_ratio_ml / serving_ratio_ml.
+        const stockQuantity = item.quantity;
 
         await supabase.from('lab_ops_stock_movements').insert({
           inventory_item_id: matchedItem.id,
@@ -1338,9 +1330,7 @@ const POReceivedItems = () => {
           movement_type: 'purchase',
           reference_type: 'po_receiving',
           reference_id: recordId,
-          notes: isSpirit
-            ? `PO Receiving: ${item.quantity} bottles → ${stockQuantity} servings`
-            : `PO Receiving: ${item.item_name}`,
+          notes: `PO Receiving: ${item.item_name}`,
           created_by: user?.id
         });
 
