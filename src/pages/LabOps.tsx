@@ -4147,6 +4147,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
         version_number: 1,
         yield_qty: parseFloat(recipeYield) || 1,
         instructions: recipeInstructions || null,
+        markup_percent: parseFloat(markupPercent) || 30,
+        vat_percent: parseFloat(vatPercent) || 5,
+        service_charge_percent: parseFloat(serviceChargePercent) || 0,
       })
       .select()
       .single();
@@ -4185,6 +4188,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setSelectedMenuItem(recipe.menu_item_id);
     setRecipeYield(String(recipe.yield_qty || 1));
     setRecipeInstructions(recipe.instructions || "");
+    setMarkupPercent(String(recipe.markup_percent ?? 30));
+    setVatPercent(String(recipe.vat_percent ?? 5));
+    setServiceChargePercent(String(recipe.service_charge_percent ?? 0));
     setIngredients(
       (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => {
         const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
@@ -4206,11 +4212,14 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const updateRecipe = async () => {
     if (!selectedRecipe || !selectedMenuItem || ingredients.length === 0) return;
 
-    // Update recipe
+    // Update recipe with markup, VAT, and service charge
     await supabase.from("lab_ops_recipes").update({
       menu_item_id: selectedMenuItem,
       yield_qty: parseFloat(recipeYield) || 1,
       instructions: recipeInstructions || null,
+      markup_percent: parseFloat(markupPercent) || 0,
+      vat_percent: parseFloat(vatPercent) || 0,
+      service_charge_percent: parseFloat(serviceChargePercent) || 0,
     }).eq("id", selectedRecipe.id);
 
     // Delete existing ingredients and insert new ones
