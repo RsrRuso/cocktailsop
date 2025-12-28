@@ -7025,8 +7025,11 @@ export type Database = {
           id: string
           instructions: string | null
           is_active: boolean | null
+          markup_percent: number | null
           menu_item_id: string
+          service_charge_percent: number | null
           updated_at: string | null
+          vat_percent: number | null
           version_number: number | null
           yield_qty: number | null
           yield_unit: string | null
@@ -7036,8 +7039,11 @@ export type Database = {
           id?: string
           instructions?: string | null
           is_active?: boolean | null
+          markup_percent?: number | null
           menu_item_id: string
+          service_charge_percent?: number | null
           updated_at?: string | null
+          vat_percent?: number | null
           version_number?: number | null
           yield_qty?: number | null
           yield_unit?: string | null
@@ -7047,8 +7053,11 @@ export type Database = {
           id?: string
           instructions?: string | null
           is_active?: boolean | null
+          markup_percent?: number | null
           menu_item_id?: string
+          service_charge_percent?: number | null
           updated_at?: string | null
+          vat_percent?: number | null
           version_number?: number | null
           yield_qty?: number | null
           yield_unit?: string | null
