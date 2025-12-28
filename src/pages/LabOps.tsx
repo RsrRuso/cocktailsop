@@ -4051,6 +4051,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
   const [vatPercent, setVatPercent] = useState("0");
   const [serviceChargePercent, setServiceChargePercent] = useState("0");
+  const [markupPercent, setMarkupPercent] = useState("30");
 
   useEffect(() => {
     fetchRecipes();
@@ -4220,6 +4221,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setIngredients([]);
     setVatPercent("0");
     setServiceChargePercent("0");
+    setMarkupPercent("30");
   };
 
   const addIngredient = () => {
@@ -4265,12 +4267,14 @@ function RecipesModule({ outletId }: { outletId: string }) {
     return ingredients.reduce((sum, ing) => sum + (ing.costPrice || 0), 0);
   };
 
-  // Calculate selling price with VAT and service charge
+  // Calculate selling price with markup, VAT and service charge
   const calculateSellingPrice = () => {
     const selfCost = calculateTotalSelfCost();
-    const vat = (selfCost * parseFloat(vatPercent || "0")) / 100;
-    const serviceCharge = (selfCost * parseFloat(serviceChargePercent || "0")) / 100;
-    return selfCost + vat + serviceCharge;
+    const markup = (selfCost * parseFloat(markupPercent || "0")) / 100;
+    const subtotal = selfCost + markup;
+    const vat = (subtotal * parseFloat(vatPercent || "0")) / 100;
+    const serviceCharge = (subtotal * parseFloat(serviceChargePercent || "0")) / 100;
+    return subtotal + vat + serviceCharge;
   };
 
   const calculateRecipeCost = (recipe: any) => {
@@ -4430,7 +4434,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
                         <span className="text-lg font-bold text-primary">{formatPrice(calculateTotalSelfCost())}</span>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-xs">Markup %</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              step="1"
+                              value={markupPercent}
+                              onChange={(e) => setMarkupPercent(e.target.value)}
+                              className="h-8"
+                            />
+                            <Percent className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
                         <div>
                           <Label className="text-xs">VAT %</Label>
                           <div className="flex items-center gap-1">
@@ -4445,7 +4462,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           </div>
                         </div>
                         <div>
-                          <Label className="text-xs">Service Charge %</Label>
+                          <Label className="text-xs">Service %</Label>
                           <div className="flex items-center gap-1">
                             <Input
                               type="number"
@@ -4461,12 +4478,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
                       <div className="border-t pt-3 space-y-1">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>VAT ({vatPercent}%)</span>
-                          <span>{formatPrice((calculateTotalSelfCost() * parseFloat(vatPercent || "0")) / 100)}</span>
+                          <span>Markup ({markupPercent}%)</span>
+                          <span>{formatPrice((calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100)}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Service Charge ({serviceChargePercent}%)</span>
-                          <span>{formatPrice((calculateTotalSelfCost() * parseFloat(serviceChargePercent || "0")) / 100)}</span>
+                          <span>Subtotal</span>
+                          <span>{formatPrice(calculateTotalSelfCost() + (calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>VAT ({vatPercent}%)</span>
+                          <span>{formatPrice(((calculateTotalSelfCost() + (calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100) * parseFloat(vatPercent || "0")) / 100)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Service ({serviceChargePercent}%)</span>
+                          <span>{formatPrice(((calculateTotalSelfCost() + (calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100) * parseFloat(serviceChargePercent || "0")) / 100)}</span>
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t">
                           <span className="font-semibold">Suggested Selling Price</span>
