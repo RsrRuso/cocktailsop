@@ -4048,7 +4048,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
   const [recipeYield, setRecipeYield] = useState("1");
   const [recipeInstructions, setRecipeInstructions] = useState("");
-  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string; costPrice: number }[]>([]);
+  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string; costPrice: number; bottleSize: number }[]>([]);
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
   const [vatPercent, setVatPercent] = useState("0");
   const [serviceChargePercent, setServiceChargePercent] = useState("0");
@@ -4171,6 +4171,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
             inventory_item_id: ing.itemId,
             qty: ing.qty,
             unit: ing.unit,
+            bottle_size: ing.bottleSize || 750,
           });
         }
       }
@@ -4204,7 +4205,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setServiceChargePercent(String(recipe.service_charge_percent ?? 0));
     // Deduplicate ingredients by inventory_item_id (keep first occurrence with summed qty)
     const rawIngredients = recipe.lab_ops_recipe_ingredients || [];
-    const deduplicatedIngredients: { itemId: string; qty: number; unit: string; costPrice: number }[] = [];
+    const deduplicatedIngredients: { itemId: string; qty: number; unit: string; costPrice: number; bottleSize: number }[] = [];
     const seenItemIds = new Set<string>();
     
     for (const ing of rawIngredients) {
@@ -4221,6 +4222,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
         qty: ing.qty || 0,
         unit: ing.unit || "ml",
         costPrice: (unitCost || 0) * (ing.qty || 0),
+        bottleSize: ing.bottle_size || 750,
       });
     }
     setIngredients(deduplicatedIngredients);
@@ -4282,7 +4284,13 @@ function RecipesModule({ outletId }: { outletId: string }) {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml", costPrice: 0 }]);
+    setIngredients([...ingredients, { itemId: "", qty: 0, unit: "ml", costPrice: 0, bottleSize: 750 }]);
+  };
+
+  // Calculate servings from bottle size / qty
+  const calculateServings = (bottleSize: number, qty: number): number => {
+    if (!qty || qty <= 0) return 0;
+    return Math.floor(bottleSize / qty);
   };
 
   // Helper to get unit cost from inventory item (match the cost shown in the Items/Inventory tabs)
@@ -4435,11 +4443,12 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     {ingredients.map((ing, idx) => {
                       const invItem = inventoryItems.find(i => i.id === ing.itemId);
                       const unitCost = getItemUnitCost(invItem);
+                      const servings = calculateServings(ing.bottleSize, ing.qty);
                       return (
                         <div key={idx} className="space-y-1">
-                          <div className="flex gap-2 items-center">
+                          <div className="flex gap-2 items-center flex-wrap">
                             <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
-                              <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
+                              <SelectTrigger className="flex-1 min-w-[120px]"><SelectValue placeholder="Select from stock" /></SelectTrigger>
                               <SelectContent>
                                 {inventoryItems.map((inv) => (
                                   <SelectItem key={inv.id} value={inv.id}>
@@ -4457,12 +4466,12 @@ function RecipesModule({ outletId }: { outletId: string }) {
                               type="number"
                               step="0.01"
                               placeholder="Qty"
-                              className="w-20"
+                              className="w-16"
                               value={ing.qty}
                               onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
                             />
                             <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
-                              <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="w-16"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="g">g</SelectItem>
                                 <SelectItem value="kg">kg</SelectItem>
@@ -4472,13 +4481,27 @@ function RecipesModule({ outletId }: { outletId: string }) {
                                 <SelectItem value="dash">dash</SelectItem>
                               </SelectContent>
                             </Select>
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                step="1"
+                                placeholder="Bottle"
+                                className="w-16"
+                                value={ing.bottleSize}
+                                onChange={(e) => updateIngredient(idx, "bottleSize", parseFloat(e.target.value) || 750)}
+                              />
+                              <span className="text-xs text-muted-foreground">{ing.unit}</span>
+                            </div>
                             <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
                           {ing.itemId && (
-                            <div className="flex items-center justify-between text-xs text-muted-foreground pl-2">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground pl-2 flex-wrap gap-2">
                               <span>Unit cost: {formatPrice(unitCost)}</span>
+                              <span className="text-yellow-500 font-medium">
+                                {servings > 0 ? `${servings} servings/bottle` : '-'}
+                              </span>
                               <span className="text-primary font-medium">Cost: {formatPrice(ing.costPrice)}</span>
                             </div>
                           )}
