@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw, Camera } from "lucide-react";
+import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw, Camera, Edit2 } from "lucide-react";
+import { EditReceivingDialog } from "@/components/procurement/EditReceivingDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { ReceivingAnalytics } from "@/components/receiving/ReceivingAnalytics";
@@ -157,8 +158,8 @@ const POReceivedItems = () => {
   const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
   const [showManualUpload, setShowManualUpload] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-
-  // Workspace state - use staff workspace if in staffMode, otherwise from localStorage
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [showEditReceiving, setShowEditReceiving] = useState(false);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     if (staffWorkspaceId) return staffWorkspaceId;
     return localStorage.getItem('po-workspace-id') || null;
@@ -2190,6 +2191,17 @@ const POReceivedItems = () => {
                           </div>
                         </div>
                         <div className="flex gap-0.5 shrink-0">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7" 
+                            onClick={() => {
+                              setEditingRecord(record);
+                              setShowEditReceiving(true);
+                            }}
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-blue-500" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRecordContent(record)}>
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
@@ -3041,6 +3053,16 @@ const POReceivedItems = () => {
             }
           }, 100);
         }}
+      />
+
+      {/* Edit Receiving Dialog */}
+      <EditReceivingDialog
+        open={showEditReceiving}
+        onOpenChange={setShowEditReceiving}
+        record={editingRecord}
+        userId={user?.id || ''}
+        workspaceId={effectiveWorkspaceId}
+        currencySymbol={currencySymbols[currency]}
       />
 
     </div>
