@@ -4078,7 +4078,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
     
     const { data } = await supabase
       .from("lab_ops_recipes")
-      .select("*, lab_ops_menu_items(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
+      .select("*, lab_ops_menu_items!lab_ops_recipes_menu_item_id_fkey(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
       .in("menu_item_id", menuItemIds)
       .order("created_at", { ascending: false });
     
