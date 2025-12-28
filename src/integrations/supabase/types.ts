@@ -6979,6 +6979,7 @@ export type Database = {
       }
       lab_ops_recipe_ingredients: {
         Row: {
+          bottle_size: number | null
           created_at: string | null
           id: string
           inventory_item_id: string
@@ -6987,6 +6988,7 @@ export type Database = {
           unit: string
         }
         Insert: {
+          bottle_size?: number | null
           created_at?: string | null
           id?: string
           inventory_item_id: string
@@ -6995,6 +6997,7 @@ export type Database = {
           unit: string
         }
         Update: {
+          bottle_size?: number | null
           created_at?: string | null
           id?: string
           inventory_item_id?: string

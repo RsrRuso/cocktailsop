@@ -4261,6 +4261,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
           inventory_item_id: ing.itemId,
           qty: ing.qty,
           unit: ing.unit,
+          bottle_size: ing.bottleSize || 750,
         });
       }
     }
