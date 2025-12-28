@@ -869,21 +869,24 @@ function POSModule({ outletId }: { outletId: string }) {
     // Fetch menu items with recipes and their ingredients
     const { data } = await supabase
       .from("lab_ops_menu_items")
-      .select(`
-        *, 
-        lab_ops_categories(name),
-        lab_ops_recipes(
-          id,
-          lab_ops_recipe_ingredients(
-            inventory_item_id,
-            qty,
-            bottle_size
+      .select(
+        `
+          *,
+          lab_ops_categories(name),
+          lab_ops_recipes(
+            id,
+            lab_ops_recipe_ingredients(
+              inventory_item_id,
+              qty,
+              unit,
+              bottle_size
+            )
           )
-        )
-      `)
+        `
+      )
       .eq("outlet_id", outletId)
       .eq("is_active", true);
-    
+
     // Get all inventory item IDs from recipes
     const recipeInventoryIds = new Set<string>();
     for (const item of data || []) {
@@ -896,7 +899,7 @@ function POSModule({ outletId }: { outletId: string }) {
         }
       }
     }
-    
+
     // Fetch stock levels for recipe ingredients
     let recipeStockMap: Record<string, number> = {};
     if (recipeInventoryIds.size > 0) {
@@ -904,40 +907,77 @@ function POSModule({ outletId }: { outletId: string }) {
         .from("lab_ops_stock_levels")
         .select("inventory_item_id, quantity")
         .in("inventory_item_id", Array.from(recipeInventoryIds));
-      
+
       if (recipeStockLevels) {
         for (const sl of recipeStockLevels) {
           recipeStockMap[sl.inventory_item_id] = (recipeStockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
         }
       }
     }
-    
+
+    const isBottleUnit = (unit: string) => {
+      const u = unit.toLowerCase();
+      return u === "bottle" || u === "bottles" || u === "bot" || u === "unit" || u === "units" || u === "piece" || u === "pieces" || u === "pc" || u === "pcs";
+    };
+
+    const normalizeToMl = (qty: number, unit: string, bottleSize: number) => {
+      const u = unit.toLowerCase();
+      if (u === "oz") return qty * 29.5735;
+      if (u === "l" || u === "ltr" || u === "liter" || u === "litre") return qty * 1000;
+      // Default: use existing normalization for ml-style inputs (e.g., 0.03 -> 30)
+      return getNormalizedQty(qty, u, bottleSize);
+    };
+
     // Calculate available servings for each menu item
     const itemsWithServings = (data || []).map((item: any) => {
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
+
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
         // Find minimum servings across all ingredients (limiting ingredient)
         let minServings = Infinity;
+
         for (const ing of recipe.lab_ops_recipe_ingredients) {
-          if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
-            const bottleStock = recipeStockMap[ing.inventory_item_id] || 0;
-            const servingsPerBottle = Math.floor(ing.bottle_size / ing.qty);
-            const totalServings = bottleStock * servingsPerBottle;
-            minServings = Math.min(minServings, totalServings);
+          const inventoryItemId = ing.inventory_item_id as string | null;
+          if (!inventoryItemId) continue;
+
+          const bottleStock = recipeStockMap[inventoryItemId] || 0;
+          const qty = Number(ing.qty || 0);
+          const unit = String(ing.unit || "ml");
+          const bottleSize = Number(ing.bottle_size || 0);
+
+          if (qty <= 0) continue;
+
+          // Heuristic: if someone entered "1 ml" for a 750ml bottle item, treat it as 1 bottle per sale.
+          const treatAsBottle = isBottleUnit(unit) || (unit.toLowerCase() === "ml" && qty === 1 && bottleSize >= 500);
+
+          if (treatAsBottle) {
+            const servingsFromThisIngredient = bottleStock > 0 ? Math.floor(bottleStock / qty) : 0;
+            minServings = Math.min(minServings, servingsFromThisIngredient);
+            continue;
           }
+
+          if (bottleSize <= 0) continue;
+
+          const pourMl = normalizeToMl(qty, unit, bottleSize);
+          if (pourMl <= 0) continue;
+
+          const servingsPerBottle = Math.floor(bottleSize / pourMl);
+          const totalServings = bottleStock * servingsPerBottle;
+          minServings = Math.min(minServings, totalServings);
         }
+
         if (minServings !== Infinity) {
-          calculatedServings = minServings;
+          calculatedServings = Math.max(0, minServings);
         }
       }
-      
+
       return {
         ...item,
         calculated_servings: calculatedServings,
       };
     });
-    
+
     setMenuItems(itemsWithServings);
   };
 
