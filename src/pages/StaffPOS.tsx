@@ -654,18 +654,17 @@ export default function StaffPOS() {
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
       
-      // Calculate available servings from recipe ingredients
+      // Stock is stored as SERVINGS, so just get the stock directly
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
         // Find minimum servings across all ingredients (limiting ingredient)
         let minServings = Infinity;
         for (const ing of recipe.lab_ops_recipe_ingredients) {
-          if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
-            const bottleStock = recipeStockMap[ing.inventory_item_id] || 0;
-            const servingsPerBottle = Math.floor(ing.bottle_size / ing.qty);
-            const totalServings = bottleStock * servingsPerBottle;
-            minServings = Math.min(minServings, totalServings);
+          if (ing.inventory_item_id) {
+            // Stock is already stored as servings - use directly
+            const servingsInStock = recipeStockMap[ing.inventory_item_id] || 0;
+            minServings = Math.min(minServings, Math.floor(servingsInStock));
           }
         }
         if (minServings !== Infinity) {
@@ -1175,30 +1174,22 @@ export default function StaffPOS() {
   };
 
   // Deduct recipe ingredients from inventory in real-time
-  // Converts pour amount (ml) to fractional bottles consumed
-  const deductRecipeIngredients = async (recipeId: string, servings: number) => {
+  // Stock is stored as SERVINGS, so we simply subtract servings directly
+  const deductRecipeIngredients = async (recipeId: string, servingsToDeduct: number) => {
     try {
-      // Fetch recipe ingredients including bottle_size for conversion
+      // Fetch recipe ingredients
       const { data: ingredients } = await supabase
         .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit, bottle_size")
+        .select("inventory_item_id, qty, unit")
         .eq("recipe_id", recipeId);
 
       if (!ingredients?.length) return;
 
-      // Deduct each ingredient from stock (convert ml to bottles)
+      // Deduct servings directly from stock (stock is already in servings)
       for (const ingredient of ingredients) {
         if (!ingredient.inventory_item_id) continue;
         
-        const pourMl = ingredient.qty || 0;
-        const bottleSize = ingredient.bottle_size || 750;
-        
-        // Convert pour amount to fractional bottles: (30ml pour / 750ml bottle) × servings
-        const bottlesToDeduct = bottleSize > 0 ? (pourMl / bottleSize) * servings : 0;
-        
-        if (bottlesToDeduct <= 0) continue;
-        
-        // Get current stock level
+        // Get current stock level (stored as servings)
         const { data: stockLevels } = await supabase
           .from("lab_ops_stock_levels")
           .select("id, quantity, location_id")
@@ -1209,23 +1200,23 @@ export default function StaffPOS() {
 
         if (stockLevels?.length) {
           const stockLevel = stockLevels[0];
-          const newQuantity = Math.max(0, stockLevel.quantity - bottlesToDeduct);
+          const newQuantity = Math.max(0, stockLevel.quantity - servingsToDeduct);
           
-          // Update stock level (in bottles)
+          // Update stock level (in servings)
           await supabase
             .from("lab_ops_stock_levels")
             .update({ quantity: newQuantity })
             .eq("id", stockLevel.id);
 
-          // Record movement (qty in bottles for consistency)
+          // Record movement (qty in servings)
           await supabase.from("lab_ops_stock_movements").insert({
             inventory_item_id: ingredient.inventory_item_id,
             from_location_id: stockLevel.location_id,
-            qty: bottlesToDeduct,
+            qty: servingsToDeduct,
             movement_type: "sale",
             reference_type: "recipe_consumption",
             reference_id: recipeId,
-            notes: `Recipe consumption: ${pourMl}ml × ${servings} serving(s)`
+            notes: `Sold ${servingsToDeduct} serving(s)`
           });
         }
       }
