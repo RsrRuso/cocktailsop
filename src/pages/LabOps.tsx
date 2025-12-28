@@ -4310,12 +4310,16 @@ function RecipesModule({ outletId }: { outletId: string }) {
       const fromCostsTable = Number(invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
       const fromPo = Number(invItem?.name ? poLatestUnitPrice?.[String(invItem.name)] : 0);
       const unitCost = direct > 0 ? direct : (fromCostsTable > 0 ? fromCostsTable : fromPo);
+      const bottleSize = ing.bottle_size || 750;
+      const qty = ing.qty || 0;
+      // Cost per serving = (pour amount / bottle size) × bottle cost
+      const costPrice = bottleSize > 0 && qty > 0 ? (qty / bottleSize) * unitCost : 0;
       deduplicatedIngredients.push({
         itemId: ing.inventory_item_id,
-        qty: ing.qty || 0,
+        qty: qty,
         unit: ing.unit || "ml",
-        costPrice: (unitCost || 0) * (ing.qty || 0),
-        bottleSize: ing.bottle_size || 750,
+        costPrice: costPrice,
+        bottleSize: bottleSize,
       });
     }
     setIngredients(deduplicatedIngredients);
