@@ -4437,22 +4437,25 @@ function RecipesModule({ outletId }: { outletId: string }) {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     
-    // Auto-calculate cost price when item, qty, or bottleSize changes
-    if (field === "itemId" || field === "qty" || field === "bottleSize") {
+    // Auto-calculate cost price when item, qty, unit, or bottleSize changes
+    if (field === "itemId" || field === "qty" || field === "unit" || field === "bottleSize") {
       const itemId = field === "itemId" ? value : updated[index].itemId;
       const qty = field === "qty" ? value : updated[index].qty;
+      const unit = field === "unit" ? value : updated[index].unit;
       const bottleSize = field === "bottleSize" ? value : (updated[index].bottleSize || 750);
       const invItem = inventoryItems.find(i => i.id === itemId);
       const bottleCost = getItemUnitCost(invItem);
-      
+
       // Cost per serve = (pour amount / bottle size) × bottle cost
-      // This gives the cost of just the amount used in one serving
-      if (bottleSize > 0 && qty > 0) {
-        updated[index].costPrice = (qty / bottleSize) * bottleCost;
+      // Use normalized pour amount (e.g., 0.03 -> 30 for 750ml bottles when unit is ml/g)
+      const normalizedQty = getNormalizedQty(Number(qty || 0), unit, bottleSize);
+      if (bottleSize > 0 && normalizedQty > 0) {
+        updated[index].costPrice = (normalizedQty / bottleSize) * bottleCost;
       } else {
         updated[index].costPrice = 0;
       }
     }
+    
     
     setIngredients(updated);
   };
@@ -4582,8 +4585,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       const wasNormalized = displayQty !== ing.qty && ing.qty > 0;
                       
                       // Calculate total servings from stock: (totalStock bottles × bottleSize) / pourAmount
+                      // Use normalized pour amount so 0.03 (L) is treated as 30 (ml) when bottle is 750ml.
                       const totalStock = invItem?.totalStock || 0;
-                      const totalServingsFromStock = ing.qty > 0 ? Math.floor((totalStock * ing.bottleSize) / ing.qty) : 0;
+                      const pourAmount = displayQty; // already normalized via getNormalizedQty()
+                      const totalServingsFromStock = pourAmount > 0 ? Math.floor((totalStock * ing.bottleSize) / pourAmount) : 0;
                       
                       return (
                         <div key={idx} className="space-y-1">
