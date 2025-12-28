@@ -887,30 +887,35 @@ function POSModule({ outletId }: { outletId: string }) {
       .eq("outlet_id", outletId)
       .eq("is_active", true);
 
-    // Get all inventory item IDs from recipes
-    const recipeInventoryIds = new Set<string>();
+    // Get all inventory item IDs from recipes AND direct inventory links
+    const allInventoryIds = new Set<string>();
     for (const item of data || []) {
+      // Direct inventory link (for items like water bottles sold as whole unit)
+      if (item.inventory_item_id) {
+        allInventoryIds.add(item.inventory_item_id);
+      }
+      // Recipe ingredients
       const recipe = item.lab_ops_recipes?.[0];
       if (recipe?.lab_ops_recipe_ingredients) {
         for (const ing of recipe.lab_ops_recipe_ingredients) {
           if (ing.inventory_item_id) {
-            recipeInventoryIds.add(ing.inventory_item_id);
+            allInventoryIds.add(ing.inventory_item_id);
           }
         }
       }
     }
 
-    // Fetch stock levels for recipe ingredients
-    let recipeStockMap: Record<string, number> = {};
-    if (recipeInventoryIds.size > 0) {
-      const { data: recipeStockLevels } = await supabase
+    // Fetch stock levels for all inventory items
+    let stockMap: Record<string, number> = {};
+    if (allInventoryIds.size > 0) {
+      const { data: stockLevels } = await supabase
         .from("lab_ops_stock_levels")
         .select("inventory_item_id, quantity")
-        .in("inventory_item_id", Array.from(recipeInventoryIds));
+        .in("inventory_item_id", Array.from(allInventoryIds));
 
-      if (recipeStockLevels) {
-        for (const sl of recipeStockLevels) {
-          recipeStockMap[sl.inventory_item_id] = (recipeStockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
+      if (stockLevels) {
+        for (const sl of stockLevels) {
+          stockMap[sl.inventory_item_id] = (stockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
         }
       }
     }
@@ -936,22 +941,28 @@ function POSModule({ outletId }: { outletId: string }) {
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
 
+      // CASE 1: Direct inventory link (items sold as whole unit, like water bottles)
+      if (item.inventory_item_id && (!recipe || !recipe.lab_ops_recipe_ingredients?.length)) {
+        calculatedServings = Math.floor(stockMap[item.inventory_item_id] || 0);
+        return { ...item, calculated_servings: calculatedServings };
+      }
+
+      // CASE 2: Recipe-based items
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
-        // Find minimum servings across all ingredients (limiting ingredient)
         let minServings = Infinity;
 
         for (const ing of recipe.lab_ops_recipe_ingredients) {
           const inventoryItemId = ing.inventory_item_id as string | null;
           if (!inventoryItemId) continue;
 
-          const bottleStock = recipeStockMap[inventoryItemId] || 0;
+          const bottleStock = stockMap[inventoryItemId] || 0;
           const qty = Number(ing.qty || 0);
           const unit = String(ing.unit || "ml");
           const bottleSize = Number(ing.bottle_size || 0);
 
           if (qty <= 0) continue;
 
-          // Heuristic: if someone entered "1 ml" for a 750ml bottle item, treat it as 1 bottle per sale.
+          // Heuristic: if unit is bottle or "1 ml" for 750ml item, treat as 1 bottle per sale
           const treatAsBottle = isBottleUnit(unit) || (unit.toLowerCase() === "ml" && qty === 1 && bottleSize >= 500);
 
           if (treatAsBottle) {
@@ -965,8 +976,9 @@ function POSModule({ outletId }: { outletId: string }) {
           const pourMl = normalizeToMl(qty, unit, bottleSize);
           if (pourMl <= 0) continue;
 
-          const servingsPerBottle = Math.floor(bottleSize / pourMl);
-          const totalServings = bottleStock * servingsPerBottle;
+          // servings = (bottles in stock × bottle size) / pour amount
+          const totalMl = bottleStock * bottleSize;
+          const totalServings = Math.floor(totalMl / pourMl);
           minServings = Math.min(minServings, totalServings);
         }
 
