@@ -4342,13 +4342,21 @@ function RecipesModule({ outletId }: { outletId: string }) {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     
-    // Auto-calculate cost price when item or qty changes
-    if (field === "itemId" || field === "qty") {
+    // Auto-calculate cost price when item, qty, or bottleSize changes
+    if (field === "itemId" || field === "qty" || field === "bottleSize") {
       const itemId = field === "itemId" ? value : updated[index].itemId;
       const qty = field === "qty" ? value : updated[index].qty;
+      const bottleSize = field === "bottleSize" ? value : (updated[index].bottleSize || 750);
       const invItem = inventoryItems.find(i => i.id === itemId);
-      const unitCost = getItemUnitCost(invItem);
-      updated[index].costPrice = unitCost * qty;
+      const bottleCost = getItemUnitCost(invItem);
+      
+      // Cost per serve = (pour amount / bottle size) × bottle cost
+      // This gives the cost of just the amount used in one serving
+      if (bottleSize > 0 && qty > 0) {
+        updated[index].costPrice = (qty / bottleSize) * bottleCost;
+      } else {
+        updated[index].costPrice = 0;
+      }
     }
     
     setIngredients(updated);
@@ -4379,8 +4387,14 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
     for (const ing of recipeIngredients) {
       const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-      const cost = getItemUnitCost(invItem);
-      totalCost += cost * (ing.qty || 0);
+      const bottleCost = getItemUnitCost(invItem);
+      const bottleSize = ing.bottle_size || 750;
+      const qty = ing.qty || 0;
+      
+      // Cost per serve = (pour amount / bottle size) × bottle cost
+      if (bottleSize > 0 && qty > 0) {
+        totalCost += (qty / bottleSize) * bottleCost;
+      }
     }
 
     return totalCost;
