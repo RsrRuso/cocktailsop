@@ -45,6 +45,7 @@ import {
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 import { CurrencySelector } from "@/components/lab-ops/CurrencySelector";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatQty, getServingsDisplay } from "@/lib/servings";
 
 interface Outlet {
   id: string;
@@ -3229,20 +3230,20 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
                       
-                      // Check if this inventory item has serving ratios from a matching menu item
+                      // Convert bottle stock to servings (prefer menu ratio, fallback to parsing bottle size from name)
                       const itemNameLower = String(item.name || "").trim().toLowerCase();
-                      const servingRatio = menuItemServingRatios[itemNameLower];
-                      
-                      // Calculate servings if ratio exists and unit is bottle-like
-                      const isBottleUnit = ['bottle', 'bot', 'btl', 'bottles'].includes((item.base_unit || '').toLowerCase());
-                      let displayStock = stock;
-                      let displayUnit = item.base_unit;
-                      
-                      if (servingRatio && isBottleUnit && servingRatio.serving_ratio_ml > 0) {
-                        const servingsPerBottle = Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml);
-                        displayStock = Math.floor(stock * servingsPerBottle);
-                        displayUnit = 'servings';
-                      }
+                      const ratio = menuItemServingRatios[itemNameLower];
+                      const servings = getServingsDisplay({
+                        quantity: stock,
+                        unit: item.base_unit,
+                        label: item.name,
+                        ratio,
+                        defaultServingMl: 30,
+                        defaultBottleMl: 750,
+                      });
+
+                      const displayStock = servings.displayQty;
+                      const displayUnit = servings.displayUnit;
                       
                       return (
                         <div
@@ -3265,9 +3266,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Badge variant="outline" className="gap-1">
                                   Sell: {formatPrice(Number(item.sale_price || 0))}
                                 </Badge>
-                                {servingRatio && isBottleUnit && (
+                                {servings.converted && servings.servingsPerBottle != null && (
                                   <Badge variant="default" className="gap-1 bg-primary/20 text-primary">
-                                    {Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml)} srv/bottle
+                                    {servings.servingsPerBottle} srv/bottle
                                   </Badge>
                                 )}
                               </div>
@@ -3275,9 +3276,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
 
                             <div className="flex items-center justify-between sm:justify-end gap-2">
                               <div className="text-right mr-1 sm:mr-2">
-                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{displayStock} {displayUnit}</p>
-                                {servingRatio && isBottleUnit && (
-                                  <p className="text-xs text-muted-foreground">({stock} {item.base_unit})</p>
+                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{formatQty(displayStock)} {displayUnit}</p>
+                                {servings.converted && (
+                                  <p className="text-xs text-muted-foreground">({formatQty(stock)} {item.base_unit})</p>
                                 )}
                                 <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                               </div>
@@ -3329,20 +3330,20 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const unitCost = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0);
                       const totalValue = totalStock * unitCost;
                       
-                      // Check if this inventory item has serving ratios from a matching menu item
+                      // Convert bottle stock to servings (prefer menu ratio, fallback to parsing bottle size from name)
                       const itemNameLower = String(item.name || "").trim().toLowerCase();
-                      const servingRatio = menuItemServingRatios[itemNameLower];
-                      
-                      // Calculate servings if ratio exists and unit is bottle-like
-                      const isBottleUnit = ['bottle', 'bot', 'btl', 'bottles'].includes((item.base_unit || '').toLowerCase());
-                      let displayStock = totalStock;
-                      let displayUnit = item.base_unit;
-                      
-                      if (servingRatio && isBottleUnit && servingRatio.serving_ratio_ml > 0) {
-                        const servingsPerBottle = Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml);
-                        displayStock = Math.floor(totalStock * servingsPerBottle);
-                        displayUnit = 'servings';
-                      }
+                      const ratio = menuItemServingRatios[itemNameLower];
+                      const servings = getServingsDisplay({
+                        quantity: totalStock,
+                        unit: item.base_unit,
+                        label: item.name,
+                        ratio,
+                        defaultServingMl: 30,
+                        defaultBottleMl: 750,
+                      });
+
+                      const displayStock = servings.displayQty;
+                      const displayUnit = servings.displayUnit;
                       
                       return (
                         <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
@@ -3357,18 +3358,19 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Badge variant="outline" className="text-xs">
                                   Total Value: {formatPrice(totalValue)}
                                 </Badge>
-                                {servingRatio && isBottleUnit && (
+                                {servings.converted && servings.servingsPerBottle != null && (
                                   <Badge variant="default" className="text-xs bg-primary/20 text-primary">
-                                    {Math.floor(servingRatio.bottle_ratio_ml / servingRatio.serving_ratio_ml)} srv/bottle
+                                    {servings.servingsPerBottle} srv/bottle
                                   </Badge>
                                 )}
                               </div>
                             </div>
                             <div className="text-right ml-3">
-                              <p className="font-semibold text-lg">{displayStock} {displayUnit}</p>
-                              {servingRatio && isBottleUnit && (
-                                <p className="text-xs text-muted-foreground">({totalStock} {item.base_unit})</p>
-                              )}
+                              <p className="font-semibold text-lg">{formatQty(displayStock)} {displayUnit}</p>
+                              {servings.converted && (
+                                <p className="text-xs text-muted-foreground">({formatQty(totalStock)} {item.base_unit})</p>
+                              )
+                              }
                               <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
                             </div>
                           </div>
