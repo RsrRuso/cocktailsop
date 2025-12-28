@@ -1895,13 +1895,13 @@ function MenuModule({ outletId }: { outletId: string }) {
   };
 
   const createMenuItem = async () => {
-    if (!newItemName.trim() || !newItemPrice) return;
+    if (!newItemName.trim()) return;
 
     await supabase.from("lab_ops_menu_items").insert({
       outlet_id: outletId,
       name: newItemName.trim(),
       description: newItemDescription.trim() || null,
-      base_price: parseFloat(newItemPrice),
+      base_price: 0, // Price will be set from Recipe costing
       category_id: newItemCategory || null,
     });
 
@@ -2130,10 +2130,6 @@ function MenuModule({ outletId }: { outletId: string }) {
                           <Textarea value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} />
                         </div>
                         <div>
-                          <Label>Price</Label>
-                          <Input type="number" step="0.01" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} />
-                        </div>
-                        <div>
                           <Label>Category</Label>
                           <Select value={newItemCategory} onValueChange={setNewItemCategory}>
                             <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
@@ -2144,6 +2140,7 @@ function MenuModule({ outletId }: { outletId: string }) {
                             </SelectContent>
                           </Select>
                         </div>
+                        <p className="text-xs text-muted-foreground">Price will be set from Recipe costing</p>
                         <Button onClick={createMenuItem} className="w-full">Create Item</Button>
                       </div>
                     </DialogContent>
@@ -4053,6 +4050,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [vatPercent, setVatPercent] = useState("0");
   const [serviceChargePercent, setServiceChargePercent] = useState("0");
   const [markupPercent, setMarkupPercent] = useState("30");
+  const [manualSellingPrice, setManualSellingPrice] = useState("");
 
   useEffect(() => {
     fetchRecipes();
@@ -4155,8 +4153,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
       .single();
 
     if (!error && recipe) {
-      // Calculate and sync selling price to the menu item
-      const sellingPrice = calculateSellingPrice();
+      // Use manual price if set, otherwise calculated price
+      const sellingPrice = manualSellingPrice && parseFloat(manualSellingPrice) > 0 
+        ? parseFloat(manualSellingPrice) 
+        : calculateSellingPrice();
       await supabase.from("lab_ops_menu_items").update({
         base_price: sellingPrice,
       }).eq("id", selectedMenuItem);
@@ -4234,8 +4234,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const updateRecipe = async () => {
     if (!selectedRecipe || !selectedMenuItem || ingredients.length === 0) return;
 
-    // Calculate selling price from recipe
-    const sellingPrice = calculateSellingPrice();
+    // Use manual price if set, otherwise calculated price
+    const sellingPrice = manualSellingPrice && parseFloat(manualSellingPrice) > 0 
+      ? parseFloat(manualSellingPrice) 
+      : calculateSellingPrice();
 
     // Update recipe with markup, VAT, and service charge
     await supabase.from("lab_ops_recipes").update({
@@ -4286,6 +4288,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setVatPercent("0");
     setServiceChargePercent("0");
     setMarkupPercent("30");
+    setManualSellingPrice("");
   };
 
   const addIngredient = () => {
@@ -4611,6 +4614,24 @@ function RecipesModule({ outletId }: { outletId: string }) {
                         <div className="flex items-center justify-between pt-2 border-t">
                           <span className="font-semibold">Suggested Selling Price</span>
                           <span className="text-xl font-bold text-green-500">{formatPrice(calculateSellingPrice())}</span>
+                        </div>
+                        
+                        <div className="pt-3 border-t mt-3">
+                          <Label className="text-sm font-medium">Manual Selling Price (Optional)</Label>
+                          <p className="text-xs text-muted-foreground mb-2">Override the suggested price with your own</p>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={manualSellingPrice}
+                            onChange={(e) => setManualSellingPrice(e.target.value)}
+                            placeholder={calculateSellingPrice().toFixed(2)}
+                            className="h-10"
+                          />
+                          {manualSellingPrice && parseFloat(manualSellingPrice) > 0 && (
+                            <p className="text-xs text-primary mt-1">
+                              Menu item will use: {formatPrice(parseFloat(manualSellingPrice))}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </CardContent>
