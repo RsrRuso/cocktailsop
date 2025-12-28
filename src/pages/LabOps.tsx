@@ -18,7 +18,7 @@ import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
 import { SmartPourerModule } from "@/components/smart-pourer/SmartPourerModule";
 import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
 import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
-import { InventoryAnalysis } from "@/components/lab-ops/InventoryAnalysis";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -2990,20 +2990,43 @@ function InventoryModule({ outletId }: { outletId: string }) {
           </Card>
         </TabsContent>
 
-        {/* Inventory Analysis Tab */}
+        {/* Inventory Tab - Simple Stock View */}
         <TabsContent value="inventory" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Inventory Analysis
+                <Package className="h-5 w-5" />
+                Current Stock Levels
               </CardTitle>
               <CardDescription>
-                Cost, pricing, profit analysis with par level comparisons
+                View and manage stock quantities for all items
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <InventoryAnalysis outletId={outletId} />
+              <div className="space-y-3">
+                {items.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No inventory items found. Add items in the Items tab.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                    {items.map((item) => {
+                      const itemStockLevels = item.lab_ops_stock_levels || [];
+                      const totalStock = itemStockLevels.reduce((sum: number, sl: any) => sum + (sl.quantity || 0), 0);
+                      return (
+                        <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                          <div>
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'} • {item.base_unit}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">{totalStock} {item.base_unit}</p>
+                            <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
