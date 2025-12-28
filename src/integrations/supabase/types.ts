@@ -7140,52 +7140,73 @@ export type Database = {
       }
       lab_ops_sales: {
         Row: {
+          cost_price: number | null
           created_at: string
+          gross_amount: number | null
           id: string
           item_name: string
           ml_per_serving: number
+          net_amount: number | null
           order_id: string | null
           outlet_id: string
           pos_transaction_id: string | null
           quantity: number
+          service_charge_amount: number | null
+          service_charge_percentage: number | null
           sold_at: string
           sold_by: string | null
           spirit_type: string | null
           total_ml_sold: number
           total_price: number | null
           unit_price: number | null
+          vat_amount: number | null
+          vat_percentage: number | null
         }
         Insert: {
+          cost_price?: number | null
           created_at?: string
+          gross_amount?: number | null
           id?: string
           item_name: string
           ml_per_serving: number
+          net_amount?: number | null
           order_id?: string | null
           outlet_id: string
           pos_transaction_id?: string | null
           quantity?: number
+          service_charge_amount?: number | null
+          service_charge_percentage?: number | null
           sold_at?: string
           sold_by?: string | null
           spirit_type?: string | null
           total_ml_sold: number
           total_price?: number | null
           unit_price?: number | null
+          vat_amount?: number | null
+          vat_percentage?: number | null
         }
         Update: {
+          cost_price?: number | null
           created_at?: string
+          gross_amount?: number | null
           id?: string
           item_name?: string
           ml_per_serving?: number
+          net_amount?: number | null
           order_id?: string | null
           outlet_id?: string
           pos_transaction_id?: string | null
           quantity?: number
+          service_charge_amount?: number | null
+          service_charge_percentage?: number | null
           sold_at?: string
           sold_by?: string | null
           spirit_type?: string | null
           total_ml_sold?: number
           total_price?: number | null
           unit_price?: number | null
+          vat_amount?: number | null
+          vat_percentage?: number | null
         }
         Relationships: [
           {
