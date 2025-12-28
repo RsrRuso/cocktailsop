@@ -866,12 +866,79 @@ function POSModule({ outletId }: { outletId: string }) {
   };
 
   const fetchMenuItems = async () => {
+    // Fetch menu items with recipes and their ingredients
     const { data } = await supabase
       .from("lab_ops_menu_items")
-      .select("*, lab_ops_categories(name)")
+      .select(`
+        *, 
+        lab_ops_categories(name),
+        lab_ops_recipes(
+          id,
+          lab_ops_recipe_ingredients(
+            inventory_item_id,
+            qty,
+            bottle_size
+          )
+        )
+      `)
       .eq("outlet_id", outletId)
       .eq("is_active", true);
-    setMenuItems(data || []);
+    
+    // Get all inventory item IDs from recipes
+    const recipeInventoryIds = new Set<string>();
+    for (const item of data || []) {
+      const recipe = item.lab_ops_recipes?.[0];
+      if (recipe?.lab_ops_recipe_ingredients) {
+        for (const ing of recipe.lab_ops_recipe_ingredients) {
+          if (ing.inventory_item_id) {
+            recipeInventoryIds.add(ing.inventory_item_id);
+          }
+        }
+      }
+    }
+    
+    // Fetch stock levels for recipe ingredients
+    let recipeStockMap: Record<string, number> = {};
+    if (recipeInventoryIds.size > 0) {
+      const { data: recipeStockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("inventory_item_id, quantity")
+        .in("inventory_item_id", Array.from(recipeInventoryIds));
+      
+      if (recipeStockLevels) {
+        for (const sl of recipeStockLevels) {
+          recipeStockMap[sl.inventory_item_id] = (recipeStockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
+        }
+      }
+    }
+    
+    // Calculate available servings for each menu item
+    const itemsWithServings = (data || []).map((item: any) => {
+      let calculatedServings: number | null = null;
+      const recipe = item.lab_ops_recipes?.[0];
+      if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
+        // Find minimum servings across all ingredients (limiting ingredient)
+        let minServings = Infinity;
+        for (const ing of recipe.lab_ops_recipe_ingredients) {
+          if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
+            const bottleStock = recipeStockMap[ing.inventory_item_id] || 0;
+            const servingsPerBottle = Math.floor(ing.bottle_size / ing.qty);
+            const totalServings = bottleStock * servingsPerBottle;
+            minServings = Math.min(minServings, totalServings);
+          }
+        }
+        if (minServings !== Infinity) {
+          calculatedServings = minServings;
+        }
+      }
+      
+      return {
+        ...item,
+        calculated_servings: calculatedServings,
+      };
+    });
+    
+    setMenuItems(itemsWithServings);
   };
 
   const fetchCategories = async () => {
@@ -1312,25 +1379,49 @@ function POSModule({ outletId }: { outletId: string }) {
           ) : (
             <ScrollArea className="h-96">
               <div className="grid grid-cols-2 gap-2">
-                {filteredMenuItems.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant="outline"
-                    className="h-auto py-3 flex-col items-start text-left"
-                    onClick={() => {
-                      if (modifiers.length > 0) {
-                        setSelectedMenuItem(item);
-                        setShowModifiers(true);
-                      } else {
-                        addItemToOrder(item);
-                      }
-                    }}
-                    disabled={!selectedTable}
-                  >
-                    <span className="font-medium text-sm truncate w-full">{item.name}</span>
-                    <span className="text-xs text-primary">{formatPrice(Number(item.base_price))}</span>
-                  </Button>
-                ))}
+                {filteredMenuItems.map((item) => {
+                  const hasServings = item.calculated_servings !== null && item.calculated_servings !== undefined;
+                  const isLowStock = hasServings && item.calculated_servings <= 5;
+                  const isOutOfStock = hasServings && item.calculated_servings === 0;
+                  
+                  return (
+                    <Button
+                      key={item.id}
+                      variant="outline"
+                      className={`h-auto py-3 flex-col items-start text-left relative ${
+                        isOutOfStock 
+                          ? 'bg-muted/50 border-muted text-muted-foreground opacity-60 cursor-not-allowed' 
+                          : ''
+                      }`}
+                      onClick={() => {
+                        if (isOutOfStock) return;
+                        if (modifiers.length > 0) {
+                          setSelectedMenuItem(item);
+                          setShowModifiers(true);
+                        } else {
+                          addItemToOrder(item);
+                        }
+                      }}
+                      disabled={!selectedTable || isOutOfStock}
+                    >
+                      <span className="font-medium text-sm truncate w-full">{item.name}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs text-primary">{formatPrice(Number(item.base_price))}</span>
+                        {hasServings && (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            isOutOfStock 
+                              ? 'bg-red-500/20 text-red-400' 
+                              : isLowStock 
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {isOutOfStock ? 'OUT' : item.calculated_servings}
+                          </span>
+                        )}
+                      </div>
+                    </Button>
+                  );
+                })}
               </div>
             </ScrollArea>
           )}
@@ -4482,9 +4573,14 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     {ingredients.map((ing, idx) => {
                       const invItem = inventoryItems.find(i => i.id === ing.itemId);
                       const unitCost = getItemUnitCost(invItem);
-                      const servings = calculateServings(ing.bottleSize, ing.qty, ing.unit);
+                      const servingsPerBottle = calculateServings(ing.bottleSize, ing.qty, ing.unit);
                       const displayQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize);
                       const wasNormalized = displayQty !== ing.qty && ing.qty > 0;
+                      
+                      // Calculate total servings from stock: (totalStock bottles × bottleSize) / pourAmount
+                      const totalStock = invItem?.totalStock || 0;
+                      const totalServingsFromStock = ing.qty > 0 ? Math.floor((totalStock * ing.bottleSize) / ing.qty) : 0;
+                      
                       return (
                         <div key={idx} className="space-y-1">
                           <div className="flex gap-2 items-center flex-wrap">
@@ -4496,7 +4592,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                                     <div className="flex items-center justify-between w-full gap-2">
                                       <span>{inv.name}</span>
                                       <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
-                                        ({inv.totalStock || 0} {inv.base_unit})
+                                        ({inv.totalStock || 0} BOT)
                                       </span>
                                     </div>
                                   </SelectItem>
@@ -4546,7 +4642,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
                                 </span>
                               )}
                               <span className="text-yellow-500 font-medium">
-                                {servings > 0 ? `${servings} servings/bottle` : '-'}
+                                {servingsPerBottle > 0 ? `${servingsPerBottle} servings/bottle` : '-'}
+                              </span>
+                              <span className="text-green-500 font-medium">
+                                {totalServingsFromStock > 0 ? `${totalServingsFromStock} total servings` : '-'}
                               </span>
                               <span className="text-primary font-medium">Cost: {formatPrice(ing.costPrice)}</span>
                             </div>
