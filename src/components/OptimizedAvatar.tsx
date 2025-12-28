@@ -1,9 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
-import { useEffect, useState, memo, useMemo } from "react";
+import { useEffect, useState, memo, useLayoutEffect } from "react";
 import StatusRing from "./StatusRing";
 import { useUserStatus } from "@/hooks/useUserStatus";
-import { getCachedAvatar, preloadAvatar, isAvatarPreloaded } from "@/lib/avatarCache";
+import { getCachedAvatar, preloadAvatar, isAvatarPreloaded, markAvatarLoaded } from "@/lib/avatarCache";
 
 interface OptimizedAvatarProps {
   src: string | null | undefined;
@@ -29,29 +29,45 @@ const OptimizedAvatar = memo(({
   showOnlineIndicator = true,
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(() => isAvatarPreloaded(src || ''));
+  // Start with loaded=true if already cached for instant display
+  const [isLoaded, setIsLoaded] = useState(() => {
+    if (!src) return true;
+    return isAvatarPreloaded(src);
+  });
 
   // Only fetch status if explicitly requested
   const { data: status } = useUserStatus(showStatus && userId ? userId : null);
 
-  // Get cached URL or trigger preload
-  const cachedSrc = useMemo(() => {
-    if (!src) return null;
-    const cached = getCachedAvatar(src);
-    if (cached) return cached;
-    // Trigger background preload
-    preloadAvatar(src).then(() => setIsLoaded(true));
-    return src;
+  // Get cached URL - use synchronous check first
+  const cachedSrc = src ? (getCachedAvatar(src) || src) : null;
+
+  // Preload immediately on mount using useLayoutEffect for sync behavior
+  useLayoutEffect(() => {
+    if (!src) return;
+    
+    if (isAvatarPreloaded(src)) {
+      setIsLoaded(true);
+      return;
+    }
+
+    // Start preloading immediately
+    preloadAvatar(src).then(() => {
+      setIsLoaded(true);
+    });
   }, [src]);
 
-  // If src changes, reset states
+  // Reset error state when src changes
   useEffect(() => {
     setImageError(false);
-    setIsLoaded(isAvatarPreloaded(src || ''));
   }, [src]);
 
   // Only render image if src exists and no error
   const shouldShowImage = !!cachedSrc && !imageError;
+
+  const handleImageLoad = () => {
+    setIsLoaded(true);
+    if (src) markAvatarLoaded(src);
+  };
 
   const avatar = (
     <Avatar className={className}>
@@ -61,18 +77,20 @@ const OptimizedAvatar = memo(({
           src={cachedSrc}
           alt={alt}
           loading="eager"
-          decoding="async"
+          decoding="sync"
           fetchPriority="high"
-          onLoad={() => setIsLoaded(true)}
+          onLoad={handleImageLoad}
           onError={() => setImageError(true)}
-          style={{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.15s' }}
+          className={isLoaded ? 'opacity-100' : 'opacity-0'}
+          style={{ transition: 'opacity 0.1s ease-out' }}
         />
       )}
-      <AvatarFallback>{fallback || <User className="w-4 h-4" />}</AvatarFallback>
+      <AvatarFallback className={isLoaded ? 'hidden' : ''}>
+        {fallback || <User className="w-4 h-4" />}
+      </AvatarFallback>
     </Avatar>
   );
 
-  // Simple render without birthday overhead
   return (
     <StatusRing 
       hasStatus={!!status}

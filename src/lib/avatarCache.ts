@@ -2,26 +2,35 @@
 const avatarBlobCache = new Map<string, string>();
 const avatarLoadPromises = new Map<string, Promise<string>>();
 const preloadedUrls = new Set<string>();
+const loadedFromBrowser = new Set<string>();
 
-// Cache key from URL
+// Cache key from URL - simplified for speed
 const getCacheKey = (url: string): string => {
   if (!url) return '';
-  // Use the path part of the URL as key (after the last /)
-  try {
-    const urlObj = new URL(url);
-    return urlObj.pathname + urlObj.search;
-  } catch {
-    return url;
-  }
+  return url;
 };
 
-// Preload a single avatar and cache it as blob
+// Mark avatar as loaded (called when browser loads it)
+export const markAvatarLoaded = (url: string): void => {
+  if (!url) return;
+  const cacheKey = getCacheKey(url);
+  loadedFromBrowser.add(cacheKey);
+  preloadedUrls.add(cacheKey);
+  avatarBlobCache.set(cacheKey, url);
+};
+
+// Preload a single avatar with priority
 export const preloadAvatar = async (url: string): Promise<string> => {
   if (!url) return '';
   
   const cacheKey = getCacheKey(url);
   
-  // Return cached blob URL immediately
+  // Already loaded
+  if (preloadedUrls.has(cacheKey) || loadedFromBrowser.has(cacheKey)) {
+    return url;
+  }
+  
+  // Return cached immediately
   if (avatarBlobCache.has(cacheKey)) {
     return avatarBlobCache.get(cacheKey)!;
   }
@@ -31,13 +40,11 @@ export const preloadAvatar = async (url: string): Promise<string> => {
     return avatarLoadPromises.get(cacheKey)!;
   }
   
-  // Create new loading promise
+  // Create new loading promise with high priority
   const loadPromise = new Promise<string>((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     
     img.onload = () => {
-      // Store original URL in cache (browser will cache the actual image)
       avatarBlobCache.set(cacheKey, url);
       preloadedUrls.add(cacheKey);
       avatarLoadPromises.delete(cacheKey);
@@ -46,9 +53,12 @@ export const preloadAvatar = async (url: string): Promise<string> => {
     
     img.onerror = () => {
       avatarLoadPromises.delete(cacheKey);
-      resolve(url); // Return original URL on error
+      resolve(url);
     };
     
+    // Set priority hints
+    img.fetchPriority = 'high';
+    img.decoding = 'sync';
     img.src = url;
   });
   
@@ -63,22 +73,19 @@ export const getCachedAvatar = (url: string): string | null => {
   return avatarBlobCache.get(cacheKey) || null;
 };
 
-// Check if avatar is preloaded
+// Check if avatar is preloaded - faster check
 export const isAvatarPreloaded = (url: string): boolean => {
   if (!url) return false;
-  return preloadedUrls.has(getCacheKey(url));
+  const cacheKey = getCacheKey(url);
+  return preloadedUrls.has(cacheKey) || loadedFromBrowser.has(cacheKey) || avatarBlobCache.has(cacheKey);
 };
 
-// Batch preload avatars
+// Batch preload avatars with concurrency
 export const preloadAvatars = async (urls: (string | null | undefined)[]): Promise<void> => {
   const validUrls = urls.filter((url): url is string => !!url && !isAvatarPreloaded(url));
   
-  // Preload in parallel, max 10 at a time
-  const batchSize = 10;
-  for (let i = 0; i < validUrls.length; i += batchSize) {
-    const batch = validUrls.slice(i, i + batchSize);
-    await Promise.all(batch.map(preloadAvatar));
-  }
+  // Preload all at once for speed
+  await Promise.all(validUrls.map(preloadAvatar));
 };
 
 // Preload avatar URLs from feed data
@@ -94,25 +101,27 @@ export const preloadFeedAvatars = (items: any[]): void => {
     }
   });
   
-  // Preload in background without blocking
+  // Preload immediately
   preloadAvatars(urls).catch(() => {});
 };
 
 // Clear cache (for logout)
 export const clearAvatarCache = (): void => {
-  avatarBlobCache.forEach((blobUrl) => {
-    if (blobUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(blobUrl);
-    }
-  });
   avatarBlobCache.clear();
   avatarLoadPromises.clear();
   preloadedUrls.clear();
+  loadedFromBrowser.clear();
 };
 
-// Preload current user's avatar immediately on auth
+// Preload current user's avatar immediately on auth - highest priority
 export const preloadCurrentUserAvatar = (avatarUrl: string | null, coverUrl?: string | null): void => {
   if (avatarUrl) {
+    // Immediate synchronous preload for current user
+    const img = new Image();
+    img.fetchPriority = 'high';
+    img.decoding = 'sync';
+    img.onload = () => markAvatarLoaded(avatarUrl);
+    img.src = avatarUrl;
     preloadAvatar(avatarUrl);
   }
   if (coverUrl) {
