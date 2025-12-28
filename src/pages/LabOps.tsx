@@ -4607,6 +4607,22 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           <p className="font-semibold text-green-600">{formatPrice(profit)}</p>
                         </div>
                       </div>
+                      
+                      {/* Markup, VAT, Service Charge */}
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="text-center p-1.5 bg-amber-500/10 rounded border border-amber-500/20">
+                          <p className="text-[10px] text-muted-foreground">Markup</p>
+                          <p className="text-sm font-medium text-amber-500">{recipe.markup_percent ?? 0}%</p>
+                        </div>
+                        <div className="text-center p-1.5 bg-blue-500/10 rounded border border-blue-500/20">
+                          <p className="text-[10px] text-muted-foreground">VAT</p>
+                          <p className="text-sm font-medium text-blue-500">{recipe.vat_percent ?? 5}%</p>
+                        </div>
+                        <div className="text-center p-1.5 bg-purple-500/10 rounded border border-purple-500/20">
+                          <p className="text-[10px] text-muted-foreground">Service</p>
+                          <p className="text-sm font-medium text-purple-500">{recipe.service_charge_percent ?? 0}%</p>
+                        </div>
+                      </div>
 
                       {recipe.lab_ops_recipe_ingredients?.length > 0 && (
                         <div className="mt-4 pt-4 border-t">
