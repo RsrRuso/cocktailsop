@@ -367,7 +367,7 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
       <Tabs value={analysisTab} onValueChange={setAnalysisTab}>
         <TabsList className="grid w-full grid-cols-3 h-auto">
           <TabsTrigger value="overview" className="text-xs sm:text-sm py-2">Overview</TabsTrigger>
-          <TabsTrigger value="pricing" className="text-xs sm:text-sm py-2">Cost & Pricing</TabsTrigger>
+          <TabsTrigger value="pricing" className="text-xs sm:text-sm py-2">Product Costs</TabsTrigger>
           <TabsTrigger value="par" className="text-xs sm:text-sm py-2">Par Analysis</TabsTrigger>
         </TabsList>
 
@@ -448,16 +448,16 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
           </Card>
         </TabsContent>
 
-        {/* Cost & Pricing Tab - Mobile optimized */}
+        {/* Cost & Pricing Tab - Simplified for Stock Products */}
         <TabsContent value="pricing" className="mt-4">
           <Card>
             <CardHeader className="pb-2 px-3 sm:px-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                Cost & Pricing Analysis
+                Product Cost Management
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Cost price vs selling price (without VAT/tax)
+                Unit cost per product - used for recipe cost calculation
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-6">
@@ -469,31 +469,22 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
                       <div>
                         <p className="font-medium text-sm">{item.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Tax: {item.tax_rate}% | VAT: {item.vat_rate}%
+                          {item.sku || 'No SKU'} • {item.base_unit}
                         </p>
                       </div>
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingItem(item)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
-                        <p className="text-muted-foreground">Cost Price</p>
-                        <p className="font-semibold text-red-400">{formatPrice(item.cost_per_item)}</p>
-                      </div>
-                      <div className="p-2 rounded bg-green-500/10 border border-green-500/20">
-                        <p className="text-muted-foreground">Sell (Net)</p>
-                        <p className="font-semibold text-green-400">{formatPrice(item.sale_price_before_tax)}</p>
-                      </div>
+                    <div className="p-3 rounded bg-amber-500/10 border border-amber-500/20">
+                      <p className="text-xs text-muted-foreground mb-1">Cost per Unit</p>
+                      <p className="text-lg font-bold text-amber-400">{formatPrice(item.cost_per_item)}</p>
                     </div>
                     <div className="flex justify-between items-center mt-2 pt-2 border-t text-xs">
-                      <span className="text-muted-foreground">Gross: {formatPrice(item.sale_price)}</span>
-                      <div>
-                        <span className="text-muted-foreground">Profit: </span>
-                        <span className={`font-bold ${item.profit_per_item >= 0 ? "text-green-500" : "text-red-500"}`}>
-                          {formatPrice(item.profit_per_item)}
-                        </span>
-                      </div>
+                      <span className="text-muted-foreground">Stock: {item.current_stock} {item.base_unit}</span>
+                      <span className="text-muted-foreground">
+                        Total Value: {formatPrice(item.cost_per_item * item.current_stock)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -503,31 +494,24 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead className="text-right">Cost Price</TableHead>
-                      <TableHead className="text-right">Sell (Gross)</TableHead>
-                      <TableHead className="text-right">Sell (Net)</TableHead>
-                      <TableHead className="text-right">Profit/Unit</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead className="text-right">Cost per Unit</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
+                      <TableHead className="text-right">Stock Value</TableHead>
+                      <TableHead className="text-center">Edit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredData.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          <div>
-                            <p>{item.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Tax: {item.tax_rate}% | VAT: {item.vat_rate}%
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right text-red-400">{formatPrice(item.cost_per_item)}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatPrice(item.sale_price)}</TableCell>
-                        <TableCell className="text-right text-green-400">{formatPrice(item.sale_price_before_tax)}</TableCell>
-                        <TableCell className={`text-right font-semibold ${item.profit_per_item >= 0 ? "text-green-500" : "text-red-500"}`}>
-                          {formatPrice(item.profit_per_item)}
-                        </TableCell>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{item.sku || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">{item.base_unit}</TableCell>
+                        <TableCell className="text-right font-semibold text-amber-400">{formatPrice(item.cost_per_item)}</TableCell>
+                        <TableCell className="text-right">{item.current_stock}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatPrice(item.cost_per_item * item.current_stock)}</TableCell>
                         <TableCell className="text-center">
                           <Button size="icon" variant="ghost" onClick={() => setEditingItem(item)}>
                             <Edit className="h-4 w-4" />
@@ -538,6 +522,21 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
                   </TableBody>
                 </Table>
               </ScrollArea>
+            </CardContent>
+          </Card>
+          
+          {/* Info about recipe costing */}
+          <Card className="mt-4 bg-muted/30 border-dashed">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Calculator className="h-5 w-5 text-primary mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium mb-1">Recipe Cost Calculation</p>
+                  <p className="text-muted-foreground text-xs">
+                    These product costs are used when creating recipes. The total recipe cost is calculated by summing all ingredient costs. VAT, service charges, and other fees are added at the menu item level.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -683,53 +682,32 @@ export function InventoryAnalysis({ outletId }: InventoryAnalysisProps) {
           </DialogHeader>
           {editingItem && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Unit Cost</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={editingItem.unit_cost}
-                    onChange={(e) => setEditingItem({ ...editingItem, unit_cost: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div>
-                  <Label>Sale Price</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={editingItem.sale_price}
-                    onChange={(e) => setEditingItem({ ...editingItem, sale_price: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Tax Rate (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={editingItem.tax_rate}
-                    onChange={(e) => setEditingItem({ ...editingItem, tax_rate: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div>
-                  <Label>VAT Rate (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={editingItem.vat_rate}
-                    onChange={(e) => setEditingItem({ ...editingItem, vat_rate: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
+              <div>
+                <Label>Unit Cost (Cost per {editingItem.base_unit})</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editingItem.unit_cost}
+                  onChange={(e) => setEditingItem({ ...editingItem, unit_cost: parseFloat(e.target.value) || 0 })}
+                  className="text-lg font-semibold"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This cost will be used when calculating recipe costs
+                </p>
               </div>
               <div className="p-3 bg-muted rounded-lg text-sm">
-                <p className="font-medium mb-1">Preview:</p>
-                <p>Before Tax: {formatPrice(editingItem.sale_price / (1 + (editingItem.tax_rate + editingItem.vat_rate) / 100))}</p>
-                <p>Profit/Unit: {formatPrice((editingItem.sale_price / (1 + (editingItem.tax_rate + editingItem.vat_rate) / 100)) - editingItem.unit_cost)}</p>
+                <p className="font-medium mb-2">Stock Value Preview:</p>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Current Stock:</span>
+                  <span>{stockLevels[editingItem.id] || 0} {editingItem.base_unit}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Value:</span>
+                  <span className="font-semibold">{formatPrice(editingItem.unit_cost * (stockLevels[editingItem.id] || 0))}</span>
+                </div>
               </div>
               <Button onClick={updateItemPricing} className="w-full">
-                Save Pricing
+                Save Cost
               </Button>
             </div>
           )}
