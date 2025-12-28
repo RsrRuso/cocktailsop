@@ -4747,12 +4747,14 @@ function RecipesModule({ outletId }: { outletId: string }) {
                             {recipe.lab_ops_recipe_ingredients.map((ing: any) => {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
                               const unitCost = getItemUnitCost(invItem);
-                              const ingredientCost = unitCost * (ing.qty || 0);
+                              const bottleSize = ing.bottle_size || 750;
+                              // Cost per serving = (pour amount / bottle size) × bottle cost
+                              const ingredientCost = bottleSize > 0 ? (ing.qty / bottleSize) * unitCost : 0;
                               return (
                                 <div key={ing.id} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                                   <span className="flex-1">{invItem?.name || 'Unknown'}</span>
                                   <span className="text-muted-foreground mx-2">{ing.qty} {ing.unit}</span>
-                                  <span className="text-xs text-muted-foreground">@ {formatPrice(unitCost)}</span>
+                                  <span className="text-xs text-muted-foreground">@ {formatPrice(unitCost)}/bottle</span>
                                   <span className="font-medium ml-2 text-primary">{formatPrice(ingredientCost)}</span>
                                 </div>
                               );
