@@ -1174,51 +1174,67 @@ export default function StaffPOS() {
   };
 
   // Deduct recipe ingredients from inventory in real-time
-  // Stock is stored as SERVINGS, so we simply subtract servings directly
+  // Spirits are tracked in SERVINGS (1 serving = 30ml). We deduct based on the recipe pour amount.
   const deductRecipeIngredients = async (recipeId: string, servingsToDeduct: number) => {
     try {
-      // Fetch recipe ingredients
+      const POUR_SIZE_ML = 30;
+
+      const toMl = (qty: number, unit: string) => {
+        const u = (unit || "ml").toLowerCase();
+        if (u === "l" || u === "ltr" || u === "liter" || u === "litre") return qty * 1000;
+        if (u === "oz") return qty * 29.5735;
+        return qty;
+      };
+
+      // Fetch recipe ingredients (include base_unit to know if the inventory item is a spirit)
       const { data: ingredients } = await supabase
         .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit")
+        .select("inventory_item_id, qty, unit, lab_ops_inventory_items(base_unit)")
         .eq("recipe_id", recipeId);
 
       if (!ingredients?.length) return;
 
-      // Deduct servings directly from stock (stock is already in servings)
-      for (const ingredient of ingredients) {
-        if (!ingredient.inventory_item_id) continue;
-        
-        // Get current stock level (stored as servings)
+      for (const ingredient of ingredients as any[]) {
+        const inventoryItemId = ingredient.inventory_item_id as string | null;
+        if (!inventoryItemId) continue;
+
+        const isSpirit = ingredient.lab_ops_inventory_items?.base_unit === "BOT";
+        if (!isSpirit) continue; // only deduct from spirits tracked in servings
+
+        const pourMl = toMl(Number(ingredient.qty || 0), String(ingredient.unit || "ml"));
+        if (pourMl <= 0) continue;
+
+        const servingsPerMenuItem = pourMl / POUR_SIZE_ML;
+        const servingsToSubtract = servingsToDeduct * servingsPerMenuItem;
+
         const { data: stockLevels } = await supabase
           .from("lab_ops_stock_levels")
           .select("id, quantity, location_id")
-          .eq("inventory_item_id", ingredient.inventory_item_id)
+          .eq("inventory_item_id", inventoryItemId)
           .gt("quantity", 0)
           .order("quantity", { ascending: false })
           .limit(1);
 
-        if (stockLevels?.length) {
-          const stockLevel = stockLevels[0];
-          const newQuantity = Math.max(0, stockLevel.quantity - servingsToDeduct);
-          
-          // Update stock level (in servings)
-          await supabase
-            .from("lab_ops_stock_levels")
-            .update({ quantity: newQuantity })
-            .eq("id", stockLevel.id);
+        if (!stockLevels?.length) continue;
 
-          // Record movement (qty in servings)
-          await supabase.from("lab_ops_stock_movements").insert({
-            inventory_item_id: ingredient.inventory_item_id,
-            from_location_id: stockLevel.location_id,
-            qty: servingsToDeduct,
-            movement_type: "sale",
-            reference_type: "recipe_consumption",
-            reference_id: recipeId,
-            notes: `Sold ${servingsToDeduct} serving(s)`
-          });
-        }
+        const stockLevel = stockLevels[0];
+        const currentQty = Number(stockLevel.quantity || 0);
+        const newQuantity = Math.max(0, currentQty - servingsToSubtract);
+
+        await supabase
+          .from("lab_ops_stock_levels")
+          .update({ quantity: newQuantity })
+          .eq("id", stockLevel.id);
+
+        await supabase.from("lab_ops_stock_movements").insert({
+          inventory_item_id: inventoryItemId,
+          from_location_id: stockLevel.location_id,
+          qty: servingsToSubtract,
+          movement_type: "sale",
+          reference_type: "recipe_consumption",
+          reference_id: recipeId,
+          notes: `Sold ${servingsToDeduct} item(s) → -${servingsToSubtract.toFixed(2)} serving(s)`,
+        });
       }
     } catch (error) {
       console.error("Recipe ingredient deduction error:", error);

@@ -1316,50 +1316,53 @@ const POReceivedItems = () => {
       
       if (matchedItem) {
         // Found match - create stock movement
-        const location = locations?.find(loc => loc.outlet_id === matchedItem.outlet_id);
-        
+        const location = locations?.find((loc) => loc.outlet_id === matchedItem.outlet_id);
+        const locationId = location?.id;
+
         // For spirit items (BOT unit), convert bottles to servings
         // e.g., 6 bottles × 750ml ÷ 30ml = 150 servings
-        const isSpirit = matchedItem.base_unit === 'BOT' || 
+        const isSpirit = matchedItem.base_unit === 'BOT' ||
                         (item.unit && item.unit.toLowerCase().includes('bot'));
         const bottleSizeMl = 750; // Standard bottle size
         const pourSizeMl = 30;    // Standard pour size
-        
+
         // Convert to servings if spirit, otherwise keep raw quantity
-        const stockQuantity = isSpirit 
+        const stockQuantity = isSpirit
           ? Math.floor((item.quantity * bottleSizeMl) / pourSizeMl)
           : item.quantity;
-        
+
         await supabase.from('lab_ops_stock_movements').insert({
           inventory_item_id: matchedItem.id,
-          to_location_id: location?.id || null,
+          to_location_id: locationId || null,
           qty: stockQuantity,
           movement_type: 'purchase',
           reference_type: 'po_receiving',
           reference_id: recordId,
-          notes: isSpirit 
+          notes: isSpirit
             ? `PO Receiving: ${item.quantity} bottles → ${stockQuantity} servings`
             : `PO Receiving: ${item.item_name}`,
           created_by: user?.id
         });
-        
-        // Update stock levels
+
+        // Update stock levels (only when we have a valid location)
+        if (!locationId) continue;
+
         const { data: existingLevel } = await supabase
           .from('lab_ops_stock_levels')
           .select('id, quantity')
           .eq('inventory_item_id', matchedItem.id)
-          .eq('location_id', location?.id)
-          .single();
-        
+          .eq('location_id', locationId)
+          .maybeSingle();
+
         if (existingLevel) {
           await supabase
             .from('lab_ops_stock_levels')
             .update({ quantity: (existingLevel.quantity || 0) + stockQuantity })
             .eq('id', existingLevel.id);
-        } else if (location) {
+        } else {
           await supabase.from('lab_ops_stock_levels').insert({
             inventory_item_id: matchedItem.id,
-            location_id: location.id,
+            location_id: locationId,
             quantity: stockQuantity
           });
         }
