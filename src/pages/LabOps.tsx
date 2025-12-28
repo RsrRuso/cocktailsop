@@ -4848,6 +4848,26 @@ function RecipesModule({ outletId }: { outletId: string }) {
                 const foodCostPct = calculateFoodCostPercent(recipe);
                 const price = recipe.lab_ops_menu_items?.base_price || 0;
                 const profit = price - cost;
+                
+                // Calculate total servings from recipe ingredients (bottle_size / pour_qty × stock)
+                let totalServings: number | null = null;
+                if (recipe.lab_ops_recipe_ingredients?.length > 0) {
+                  let minServings = Infinity;
+                  for (const ing of recipe.lab_ops_recipe_ingredients) {
+                    const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
+                    const bottleStock = invItem?.totalStock || 0;
+                    const bottleSize = ing.bottle_size || 750;
+                    const pourQty = getNormalizedQty(ing.qty || 0, ing.unit || 'ml', bottleSize);
+                    if (pourQty > 0 && bottleSize > 0) {
+                      const servingsPerBottle = Math.floor(bottleSize / pourQty);
+                      const servingsFromIngredient = bottleStock * servingsPerBottle;
+                      minServings = Math.min(minServings, servingsFromIngredient);
+                    }
+                  }
+                  if (minServings !== Infinity) {
+                    totalServings = minServings;
+                  }
+                }
 
                 return (
                   <Card key={recipe.id}>
@@ -4855,9 +4875,14 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold">{recipe.lab_ops_menu_items?.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Version {recipe.version_number} • Yield: {recipe.yield_qty}
-                          </p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Version {recipe.version_number} • Yield: {recipe.yield_qty}</span>
+                            {totalServings !== null && (
+                              <Badge variant="secondary" className="text-xs">
+                                {totalServings} servings
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <Badge variant={parseFloat(foodCostPct) > 35 ? "destructive" : "default"} className="shrink-0">
@@ -4911,14 +4936,26 @@ function RecipesModule({ outletId }: { outletId: string }) {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
                               const unitCost = getItemUnitCost(invItem);
                               const bottleSize = ing.bottle_size || 750;
+                              const pourQty = getNormalizedQty(ing.qty || 0, ing.unit || 'ml', bottleSize);
+                              // Servings per bottle = bottle size / pour amount
+                              const servingsPerBottle = pourQty > 0 ? Math.floor(bottleSize / pourQty) : 0;
+                              // Total servings from stock = stock × servings per bottle
+                              const bottleStock = invItem?.totalStock || 0;
+                              const totalFromStock = servingsPerBottle * bottleStock;
                               // Cost per serving = (pour amount / bottle size) × bottle cost
-                              const ingredientCost = bottleSize > 0 ? (ing.qty / bottleSize) * unitCost : 0;
+                              const ingredientCost = bottleSize > 0 ? (pourQty / bottleSize) * unitCost : 0;
                               return (
-                                <div key={ing.id} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
-                                  <span className="flex-1">{invItem?.name || 'Unknown'}</span>
-                                  <span className="text-muted-foreground mx-2">{ing.qty} {ing.unit}</span>
-                                  <span className="text-xs text-muted-foreground">@ {formatPrice(unitCost)}/bottle</span>
-                                  <span className="font-medium ml-2 text-primary">{formatPrice(ingredientCost)}</span>
+                                <div key={ing.id} className="flex flex-col gap-1 text-sm bg-muted/30 rounded px-2 py-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="flex-1 font-medium">{invItem?.name || 'Unknown'}</span>
+                                    <span className="font-medium text-primary">{formatPrice(ingredientCost)}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>{pourQty} {ing.unit} @ {formatPrice(unitCost)}/bottle</span>
+                                    <span className="text-amber-500 font-medium">
+                                      {servingsPerBottle} srv/bottle • {totalFromStock} total
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })}
