@@ -4040,6 +4040,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
+  const [poLatestUnitPrice, setPoLatestUnitPrice] = useState<Record<string, number>>({});
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   
@@ -4119,6 +4120,21 @@ function RecipesModule({ outletId }: { outletId: string }) {
       totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0)
     }));
     setInventoryItems(itemsWithStock);
+
+    // Latest PO received unit price per item (fallback when unit_cost is 0)
+    const { data: poPrices } = await supabase
+      .from("purchase_order_received_items")
+      .select("item_name, unit_price, created_at")
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    const latestMap: Record<string, number> = {};
+    (poPrices || []).forEach((r: any) => {
+      const name = String(r.item_name || "").trim();
+      if (!name) return;
+      if (latestMap[name] == null) latestMap[name] = Number(r.unit_price || 0);
+    });
+    setPoLatestUnitPrice(latestMap);
   };
 
   const createRecipe = async () => {
@@ -4172,12 +4188,15 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setIngredients(
       (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => {
         const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-        const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+        const direct = Number(invItem?.unit_cost || 0);
+        const fromCostsTable = Number(invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
+        const fromPo = Number(invItem?.name ? poLatestUnitPrice?.[String(invItem.name)] : 0);
+        const unitCost = direct > 0 ? direct : (fromCostsTable > 0 ? fromCostsTable : fromPo);
         return {
           itemId: ing.inventory_item_id,
           qty: ing.qty || 0,
           unit: ing.unit || "ml",
-          costPrice: unitCost * (ing.qty || 0),
+          costPrice: (unitCost || 0) * (ing.qty || 0),
         };
       })
     );
@@ -4228,17 +4247,23 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml", costPrice: 0 }]);
   };
 
-  // Helper to get unit cost from inventory item (check both direct unit_cost and costs table)
+  // Helper to get unit cost from inventory item (match the cost shown in the Items/Inventory tabs)
   const getItemUnitCost = (invItem: any) => {
     if (!invItem) return 0;
-    // First check direct unit_cost on item
-    if (invItem.unit_cost && Number(invItem.unit_cost) > 0) {
-      return Number(invItem.unit_cost);
-    }
-    // Then check costs table
-    if (invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost) {
-      return Number(invItem.lab_ops_inventory_item_costs[0].unit_cost);
-    }
+
+    // 1) Direct unit_cost on item
+    const direct = Number(invItem.unit_cost || 0);
+    if (direct > 0) return direct;
+
+    // 2) Costs table (if present)
+    const fromCostsTable = Number(invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
+    if (fromCostsTable > 0) return fromCostsTable;
+
+    // 3) Fallback: latest PO unit price map keyed by item name
+    const nameKey = String(invItem.name || "");
+    const fromPo = Number(poLatestUnitPrice?.[nameKey] || 0);
+    if (fromPo > 0) return fromPo;
+
     return 0;
   };
 
