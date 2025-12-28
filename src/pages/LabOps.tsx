@@ -3096,15 +3096,27 @@ function InventoryModule({ outletId }: { outletId: string }) {
                     {items.map((item) => {
                       const itemStockLevels = item.lab_ops_stock_levels || [];
                       const totalStock = itemStockLevels.reduce((sum: number, sl: any) => sum + (sl.quantity || 0), 0);
+                      const unitCost = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0);
+                      const totalValue = totalStock * unitCost;
                       return (
-                        <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                          <div>
-                            <p className="font-medium text-sm">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'} • {item.base_unit}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold">{totalStock} {item.base_unit}</p>
-                            <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
+                        <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'} • {item.base_unit}</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  Unit Cost: {formatPrice(unitCost)}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  Total Value: {formatPrice(totalValue)}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-right ml-3">
+                              <p className="font-semibold text-lg">{totalStock} {item.base_unit}</p>
+                              <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
+                            </div>
                           </div>
                         </div>
                       );
