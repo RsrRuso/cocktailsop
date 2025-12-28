@@ -4059,13 +4059,28 @@ function RecipesModule({ outletId }: { outletId: string }) {
   }, [outletId]);
 
   const fetchRecipes = async () => {
+    if (!outletId) return;
+    
+    // First get all menu item IDs for this outlet
+    const { data: menuItemsData } = await supabase
+      .from("lab_ops_menu_items")
+      .select("id")
+      .eq("outlet_id", outletId);
+    
+    const menuItemIds = menuItemsData?.map(m => m.id) || [];
+    
+    if (menuItemIds.length === 0) {
+      setRecipes([]);
+      return;
+    }
+    
     const { data } = await supabase
       .from("lab_ops_recipes")
       .select("*, lab_ops_menu_items(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
+      .in("menu_item_id", menuItemIds)
       .order("created_at", { ascending: false });
     
-    const filtered = data?.filter(r => r.lab_ops_menu_items?.outlet_id === outletId) || [];
-    setRecipes(filtered);
+    setRecipes(data || []);
   };
 
   const fetchMenuItems = async () => {
@@ -4211,6 +4226,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml", costPrice: 0 }]);
   };
 
+  // Helper to get unit cost from inventory item (check both direct unit_cost and costs table)
+  const getItemUnitCost = (invItem: any) => {
+    if (!invItem) return 0;
+    // First check direct unit_cost on item
+    if (invItem.unit_cost && Number(invItem.unit_cost) > 0) {
+      return Number(invItem.unit_cost);
+    }
+    // Then check costs table
+    if (invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost) {
+      return Number(invItem.lab_ops_inventory_item_costs[0].unit_cost);
+    }
+    return 0;
+  };
+
   const updateIngredient = (index: number, field: string, value: any) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
@@ -4220,7 +4249,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
       const itemId = field === "itemId" ? value : updated[index].itemId;
       const qty = field === "qty" ? value : updated[index].qty;
       const invItem = inventoryItems.find(i => i.id === itemId);
-      const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+      const unitCost = getItemUnitCost(invItem);
       updated[index].costPrice = unitCost * qty;
     }
     
@@ -4250,7 +4279,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
     for (const ing of recipeIngredients) {
       const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-      const cost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+      const cost = getItemUnitCost(invItem);
       totalCost += cost * (ing.qty || 0);
     }
 
@@ -4338,7 +4367,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                   <div className="space-y-2">
                     {ingredients.map((ing, idx) => {
                       const invItem = inventoryItems.find(i => i.id === ing.itemId);
-                      const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+                      const unitCost = getItemUnitCost(invItem);
                       return (
                         <div key={idx} className="space-y-1">
                           <div className="flex gap-2 items-center">
@@ -4526,7 +4555,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           <div className="space-y-1">
                             {recipe.lab_ops_recipe_ingredients.map((ing: any) => {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-                              const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+                              const unitCost = getItemUnitCost(invItem);
                               const ingredientCost = unitCost * (ing.qty || 0);
                               return (
                                 <div key={ing.id} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
