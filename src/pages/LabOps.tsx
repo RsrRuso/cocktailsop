@@ -4047,8 +4047,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
   const [recipeYield, setRecipeYield] = useState("1");
   const [recipeInstructions, setRecipeInstructions] = useState("");
-  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string }[]>([]);
+  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string; costPrice: number }[]>([]);
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
+  const [vatPercent, setVatPercent] = useState("0");
+  const [serviceChargePercent, setServiceChargePercent] = useState("0");
 
   useEffect(() => {
     fetchRecipes();
@@ -4152,11 +4154,16 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setRecipeYield(String(recipe.yield_qty || 1));
     setRecipeInstructions(recipe.instructions || "");
     setIngredients(
-      (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => ({
-        itemId: ing.inventory_item_id,
-        qty: ing.qty || 0,
-        unit: ing.unit || "ml",
-      }))
+      (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => {
+        const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
+        const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+        return {
+          itemId: ing.inventory_item_id,
+          qty: ing.qty || 0,
+          unit: ing.unit || "ml",
+          costPrice: unitCost * (ing.qty || 0),
+        };
+      })
     );
     setShowAddRecipe(true);
   };
@@ -4196,20 +4203,45 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setRecipeYield("1");
     setRecipeInstructions("");
     setIngredients([]);
+    setVatPercent("0");
+    setServiceChargePercent("0");
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml" }]);
+    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml", costPrice: 0 }]);
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Auto-calculate cost price when item or qty changes
+    if (field === "itemId" || field === "qty") {
+      const itemId = field === "itemId" ? value : updated[index].itemId;
+      const qty = field === "qty" ? value : updated[index].qty;
+      const invItem = inventoryItems.find(i => i.id === itemId);
+      const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+      updated[index].costPrice = unitCost * qty;
+    }
+    
     setIngredients(updated);
   };
 
   const removeIngredient = (index: number) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
+  };
+
+  // Calculate total self cost from ingredients
+  const calculateTotalSelfCost = () => {
+    return ingredients.reduce((sum, ing) => sum + (ing.costPrice || 0), 0);
+  };
+
+  // Calculate selling price with VAT and service charge
+  const calculateSellingPrice = () => {
+    const selfCost = calculateTotalSelfCost();
+    const vat = (selfCost * parseFloat(vatPercent || "0")) / 100;
+    const serviceCharge = (selfCost * parseFloat(serviceChargePercent || "0")) / 100;
+    return selfCost + vat + serviceCharge;
   };
 
   const calculateRecipeCost = (recipe: any) => {
@@ -4304,49 +4336,117 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    {ingredients.map((ing, idx) => (
-                      <div key={idx} className="flex gap-2 items-center">
-                        <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
-                          <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
-                          <SelectContent>
-                            {inventoryItems.map((inv) => (
-                              <SelectItem key={inv.id} value={inv.id}>
-                                <div className="flex items-center justify-between w-full gap-2">
-                                  <span>{inv.name}</span>
-                                  <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
-                                    ({inv.totalStock || 0} {inv.base_unit})
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Qty"
-                          className="w-20"
-                          value={ing.qty}
-                          onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
-                        />
-                        <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
-                          <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="g">g</SelectItem>
-                            <SelectItem value="kg">kg</SelectItem>
-                            <SelectItem value="ml">ml</SelectItem>
-                            <SelectItem value="L">L</SelectItem>
-                            <SelectItem value="piece">pc</SelectItem>
-                            <SelectItem value="dash">dash</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                    {ingredients.map((ing, idx) => {
+                      const invItem = inventoryItems.find(i => i.id === ing.itemId);
+                      const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex gap-2 items-center">
+                            <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
+                              <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
+                              <SelectContent>
+                                {inventoryItems.map((inv) => (
+                                  <SelectItem key={inv.id} value={inv.id}>
+                                    <div className="flex items-center justify-between w-full gap-2">
+                                      <span>{inv.name}</span>
+                                      <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
+                                        ({inv.totalStock || 0} {inv.base_unit})
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Qty"
+                              className="w-20"
+                              value={ing.qty}
+                              onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
+                            />
+                            <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
+                              <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="g">g</SelectItem>
+                                <SelectItem value="kg">kg</SelectItem>
+                                <SelectItem value="ml">ml</SelectItem>
+                                <SelectItem value="L">L</SelectItem>
+                                <SelectItem value="piece">pc</SelectItem>
+                                <SelectItem value="dash">dash</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {ing.itemId && (
+                            <div className="flex items-center justify-between text-xs text-muted-foreground pl-2">
+                              <span>Unit cost: {formatPrice(unitCost)}</span>
+                              <span className="text-primary font-medium">Cost: {formatPrice(ing.costPrice)}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+
+                {/* Cost Summary Section */}
+                {ingredients.length > 0 && (
+                  <Card className="bg-muted/30 border-dashed">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Total Self Cost</span>
+                        <span className="text-lg font-bold text-primary">{formatPrice(calculateTotalSelfCost())}</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">VAT %</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={vatPercent}
+                              onChange={(e) => setVatPercent(e.target.value)}
+                              className="h-8"
+                            />
+                            <Percent className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Service Charge %</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={serviceChargePercent}
+                              onChange={(e) => setServiceChargePercent(e.target.value)}
+                              className="h-8"
+                            />
+                            <Percent className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-3 space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>VAT ({vatPercent}%)</span>
+                          <span>{formatPrice((calculateTotalSelfCost() * parseFloat(vatPercent || "0")) / 100)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Service Charge ({serviceChargePercent}%)</span>
+                          <span>{formatPrice((calculateTotalSelfCost() * parseFloat(serviceChargePercent || "0")) / 100)}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <span className="font-semibold">Suggested Selling Price</span>
+                          <span className="text-xl font-bold text-green-500">{formatPrice(calculateSellingPrice())}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <div>
                   <Label>Instructions</Label>
