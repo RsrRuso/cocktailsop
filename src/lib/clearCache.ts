@@ -87,48 +87,27 @@ const unregisterServiceWorkers = async (): Promise<number> => {
 };
 
 export const clearAppCache = async () => {
-  const loadingToast = toast.loading("Clearing all cache & old files...");
+  // Show brief toast and immediately reload - don't wait for async operations
+  toast.success("Clearing cache...");
   
-  try {
-    // Run all cache clearing operations in parallel for speed
-    const [cacheCount, swCount] = await Promise.all([
-      clearAllCaches(),
-      unregisterServiceWorkers(),
-      clearIndexedDB()
-    ]);
-
-    // Clear localStorage (preserve only theme and auth)
-    const theme = localStorage.getItem('theme');
-    const authToken = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
-    const keysToRemove = Object.keys(localStorage).filter(
-      key => key !== 'theme' && !key.startsWith('sb-')
-    );
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    console.log(`Removed ${keysToRemove.length} localStorage items`);
-
-    // Clear sessionStorage completely
-    const sessionCount = sessionStorage.length;
-    sessionStorage.clear();
-    console.log(`Cleared ${sessionCount} sessionStorage items`);
-
-    toast.dismiss(loadingToast);
-    toast.success(`Cleared ${cacheCount} caches, ${swCount} service workers. Reloading...`);
-    
-    // Force immediate hard reload with cache bust
-    setTimeout(() => {
-      const url = new URL(window.location.origin + window.location.pathname);
-      url.searchParams.set('_nocache', Date.now().toString());
-      window.location.replace(url.toString());
-    }, 500);
-    
-  } catch (error) {
-    console.error("Error clearing cache:", error);
-    toast.dismiss(loadingToast);
-    toast.error("Cache clear failed. Forcing reload...");
-    
-    // Even on error, force reload
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
-  }
+  // Clear localStorage quickly (preserve auth)
+  const keysToRemove = Object.keys(localStorage).filter(
+    key => key !== 'theme' && !key.startsWith('sb-')
+  );
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+  
+  // Clear sessionStorage
+  sessionStorage.clear();
+  
+  // Start background clearing (don't await)
+  Promise.all([
+    clearAllCaches(),
+    unregisterServiceWorkers(),
+    clearIndexedDB()
+  ]).catch(() => {});
+  
+  // Immediately reload with cache bust - no delay
+  const url = new URL(window.location.origin + window.location.pathname);
+  url.searchParams.set('_nocache', Date.now().toString());
+  window.location.replace(url.toString());
 };
