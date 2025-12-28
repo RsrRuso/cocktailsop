@@ -3230,7 +3230,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
                       
-                      // Convert bottle stock to servings (prefer menu ratio, fallback to parsing bottle size from name)
+                      // Display: bottles primary, servings secondary
                       const itemNameLower = String(item.name || "").trim().toLowerCase();
                       const ratio = menuItemServingRatios[itemNameLower];
                       const servings = getServingsDisplay({
@@ -3241,9 +3241,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
                         defaultServingMl: 30,
                         defaultBottleMl: 750,
                       });
-
-                      const displayStock = servings.displayQty;
-                      const displayUnit = servings.displayUnit;
                       
                       return (
                         <div
@@ -3276,9 +3273,11 @@ function InventoryModule({ outletId }: { outletId: string }) {
 
                             <div className="flex items-center justify-between sm:justify-end gap-2">
                               <div className="text-right mr-1 sm:mr-2">
-                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{formatQty(displayStock)} {displayUnit}</p>
+                                {/* Primary: bottles */}
+                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{formatQty(stock)} {item.base_unit}</p>
+                                {/* Secondary: servings if applicable */}
                                 {servings.converted && (
-                                  <p className="text-xs text-muted-foreground">({formatQty(stock)} {item.base_unit})</p>
+                                  <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
                                 )}
                                 <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                               </div>
@@ -3330,7 +3329,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const unitCost = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0);
                       const totalValue = totalStock * unitCost;
                       
-                      // Convert bottle stock to servings (prefer menu ratio, fallback to parsing bottle size from name)
+                      // Display: bottles primary, servings secondary
                       const itemNameLower = String(item.name || "").trim().toLowerCase();
                       const ratio = menuItemServingRatios[itemNameLower];
                       const servings = getServingsDisplay({
@@ -3341,9 +3340,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
                         defaultServingMl: 30,
                         defaultBottleMl: 750,
                       });
-
-                      const displayStock = servings.displayQty;
-                      const displayUnit = servings.displayUnit;
                       
                       return (
                         <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
@@ -3366,11 +3362,12 @@ function InventoryModule({ outletId }: { outletId: string }) {
                               </div>
                             </div>
                             <div className="text-right ml-3">
-                              <p className="font-semibold text-lg">{formatQty(displayStock)} {displayUnit}</p>
+                              {/* Primary: bottles */}
+                              <p className="font-semibold text-lg">{formatQty(totalStock)} {item.base_unit}</p>
+                              {/* Secondary: servings if applicable */}
                               {servings.converted && (
-                                <p className="text-xs text-muted-foreground">({formatQty(totalStock)} {item.base_unit})</p>
-                              )
-                              }
+                                <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
+                              )}
                               <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
                             </div>
                           </div>
