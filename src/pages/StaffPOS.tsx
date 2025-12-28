@@ -654,7 +654,7 @@ export default function StaffPOS() {
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
       
-      // Stock is stored as SERVINGS, so just get the stock directly
+      // Stock is stored as BOTTLES, convert to servings using recipe ingredient data
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
@@ -662,9 +662,12 @@ export default function StaffPOS() {
         let minServings = Infinity;
         for (const ing of recipe.lab_ops_recipe_ingredients) {
           if (ing.inventory_item_id) {
-            // Stock is already stored as servings - use directly
-            const servingsInStock = recipeStockMap[ing.inventory_item_id] || 0;
-            minServings = Math.min(minServings, Math.floor(servingsInStock));
+            const bottleStock = recipeStockMap[ing.inventory_item_id] || 0;
+            const bottleSize = Number(ing.bottle_size) || 750; // Default 750ml
+            const pourAmount = Number(ing.qty) || 30; // Default 30ml pour
+            // Calculate servings: (bottles × bottle_size) / pour_amount
+            const servingsInStock = Math.floor((bottleStock * bottleSize) / pourAmount);
+            minServings = Math.min(minServings, servingsInStock);
           }
         }
         if (minServings !== Infinity) {
