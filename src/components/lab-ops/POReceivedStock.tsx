@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { getServingsDisplay, formatQty } from "@/lib/servings";
+import { getServingsDisplay, formatQty, isSpiritItem } from "@/lib/servings";
+import { detectBottleSizeMl, POUR_SIZE_ML } from "@/lib/spiritServings";
 
 interface POReceivedStockProps {
   outletId: string;
@@ -190,14 +191,33 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
     }
 
     try {
-      // Create new inventory item
+      // Detect if this is a spirit item and unit is bottles
+      const isSpirit = isSpiritItem(newItemName);
+      const isBottleUnit = ['BOT', 'bottle', 'BOTTLE', 'btl', 'BTL', 'bottles'].includes(
+        (baseUnit || approvalItem.unit || '').toUpperCase()
+      );
+      
+      // Calculate quantity to store:
+      // For spirits in bottles: convert to servings (bottles × bottle_ml ÷ 30)
+      // For others: store as-is
+      let quantityToStore = approvalItem.quantity;
+      let bottleSizeMl = 750; // Default
+      
+      if (isSpirit && isBottleUnit) {
+        bottleSizeMl = detectBottleSizeMl(newItemName);
+        // Convert bottles to servings: (bottles × bottle_ml) ÷ pour_size
+        quantityToStore = Math.floor((approvalItem.quantity * bottleSizeMl) / POUR_SIZE_ML);
+        console.log(`Spirit conversion: ${approvalItem.quantity} bottles × ${bottleSizeMl}ml ÷ ${POUR_SIZE_ML}ml = ${quantityToStore} servings`);
+      }
+
+      // Create new inventory item - store base_unit as 'serving' for spirits
       const { data: newItem, error: itemError } = await supabase
         .from('lab_ops_inventory_items')
         .insert({
           outlet_id: outletId,
           name: newItemName,
           sku: newItemSku || null,
-          base_unit: baseUnit || approvalItem.unit || 'unit',
+          base_unit: isSpirit && isBottleUnit ? 'serving' : (baseUnit || approvalItem.unit || 'unit'),
           par_level: parseInt(parLevel) || 0,
           // Pick cost directly from PO received item price
           unit_cost: Number(approvalItem.unit_price || 0),
@@ -207,20 +227,22 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
 
       if (itemError) throw itemError;
 
-      // Create stock movement (store unit_cost so Analysis can calculate correctly)
+      // Create stock movement
       await supabase.from('lab_ops_stock_movements').insert({
         inventory_item_id: newItem.id,
         to_location_id: selectedLocation,
-        qty: approvalItem.quantity,
+        qty: quantityToStore,
         movement_type: 'purchase',
         unit_cost: Number(approvalItem.unit_price || 0),
         reference_type: 'po_receiving_approved',
         reference_id: approvalItem.po_record_id,
-        notes: `Approved from PO: ${approvalItem.document_number}`,
+        notes: isSpirit && isBottleUnit 
+          ? `Approved from PO: ${approvalItem.document_number} (${approvalItem.quantity} bottles → ${quantityToStore} servings)`
+          : `Approved from PO: ${approvalItem.document_number}`,
         created_by: user?.id
       });
 
-      // Update stock levels
+      // Update stock levels with servings for spirits
       const { data: existingLevel } = await supabase
         .from('lab_ops_stock_levels')
         .select('id, quantity')
@@ -231,13 +253,13 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
       if (existingLevel) {
         await supabase
           .from('lab_ops_stock_levels')
-          .update({ quantity: existingLevel.quantity + approvalItem.quantity })
+          .update({ quantity: existingLevel.quantity + quantityToStore })
           .eq('id', existingLevel.id);
       } else {
         await supabase.from('lab_ops_stock_levels').insert({
           inventory_item_id: newItem.id,
           location_id: selectedLocation,
-          quantity: approvalItem.quantity
+          quantity: quantityToStore
         });
       }
 
@@ -251,7 +273,10 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
         })
         .eq('id', approvalItem.id);
 
-      toast.success(`Item "${newItemName}" added to inventory`);
+      const successMsg = isSpirit && isBottleUnit
+        ? `"${newItemName}" added: ${approvalItem.quantity} bottles → ${quantityToStore} servings`
+        : `Item "${newItemName}" added to inventory`;
+      toast.success(successMsg);
       setApprovalItem(null);
       resetApprovalForm();
       fetchData();
