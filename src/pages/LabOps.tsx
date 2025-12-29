@@ -3075,11 +3075,17 @@ function InventoryModule({ outletId }: { outletId: string }) {
           <CardContent className="p-3">
             <ScrollArea className="h-24">
               <div className="flex gap-2 flex-wrap pr-3">
-                {lowStockItems.map((item) => (
-                  <Badge key={item.id} variant="destructive" className="text-xs">
-                    {item.name}: {getTotalStock(item)} / {item.par_level}
-                  </Badge>
-                ))}
+                {lowStockItems.map((item) => {
+                  const stock = getTotalStock(item);
+                  const baseUnit = String(item.base_unit || '').toLowerCase();
+                  const isServingUnit = baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv';
+                  const unitLabel = isServingUnit ? 'srv' : '';
+                  return (
+                    <Badge key={item.id} variant="destructive" className="text-xs">
+                      {item.name}: {formatQty(stock)}{unitLabel && ` ${unitLabel}`} / {item.par_level}
+                    </Badge>
+                  );
+                })}
               </div>
             </ScrollArea>
           </CardContent>
@@ -3230,10 +3236,14 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
                       
-                      // Display: bottles primary, servings secondary
+                      // Check if stock is stored as servings directly (from PO receiving conversion)
+                      const baseUnit = String(item.base_unit || '').toLowerCase();
+                      const isServingUnit = baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv';
+                      
+                      // For non-serving items: Calculate servings display from bottle conversion
                       const itemNameLower = String(item.name || "").trim().toLowerCase();
                       const ratio = menuItemServingRatios[itemNameLower];
-                      const servings = getServingsDisplay({
+                      const servings = isServingUnit ? null : getServingsDisplay({
                         quantity: stock,
                         unit: item.base_unit,
                         label: item.name,
@@ -3254,7 +3264,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
                               </div>
                               <p className="text-xs text-muted-foreground break-all">
-                                {item.sku || "No SKU"} • {item.base_unit}
+                                {item.sku || "No SKU"} • {isServingUnit ? 'servings' : item.base_unit}
                               </p>
                               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                                 <Badge variant="secondary" className="gap-1">
@@ -3263,7 +3273,12 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Badge variant="outline" className="gap-1">
                                   Sell: {formatPrice(Number(item.sale_price || 0))}
                                 </Badge>
-                                {servings.converted && servings.servingsPerBottle != null && (
+                                {isServingUnit && (
+                                  <Badge variant="default" className="gap-1 bg-green-500/20 text-green-500">
+                                    Spirit (30ml pour)
+                                  </Badge>
+                                )}
+                                {!isServingUnit && servings?.converted && servings.servingsPerBottle != null && (
                                   <Badge variant="default" className="gap-1 bg-primary/20 text-primary">
                                     {servings.servingsPerBottle} srv/bottle
                                   </Badge>
@@ -3273,13 +3288,25 @@ function InventoryModule({ outletId }: { outletId: string }) {
 
                             <div className="flex items-center justify-between sm:justify-end gap-2">
                               <div className="text-right mr-1 sm:mr-2">
-                                {/* Primary: bottles */}
-                                <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{formatQty(stock)} {item.base_unit}</p>
-                                {/* Secondary: servings if applicable */}
-                                {servings.converted && (
-                                  <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
+                                {/* For serving units: show servings as primary */}
+                                {isServingUnit ? (
+                                  <>
+                                    <p className={`font-semibold text-lg ${isLow ? "text-red-500" : "text-green-500"}`}>
+                                      {formatQty(stock)} servings
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    {/* Primary: bottles/units */}
+                                    <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{formatQty(stock)} {item.base_unit}</p>
+                                    {/* Secondary: servings if applicable */}
+                                    {servings?.converted && (
+                                      <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
+                                  </>
                                 )}
-                                <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                               </div>
                               <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
                                 <Plus className="h-4 w-4" />
@@ -3329,10 +3356,14 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const unitCost = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0);
                       const totalValue = totalStock * unitCost;
                       
-                      // Display: bottles primary, servings secondary
+                      // Check if stock is stored as servings directly (from PO receiving conversion)
+                      const baseUnit = String(item.base_unit || '').toLowerCase();
+                      const isServingUnit = baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv';
+                      
+                      // For non-serving items: Calculate servings display from bottle conversion
                       const itemNameLower = String(item.name || "").trim().toLowerCase();
                       const ratio = menuItemServingRatios[itemNameLower];
-                      const servings = getServingsDisplay({
+                      const servings = isServingUnit ? null : getServingsDisplay({
                         quantity: totalStock,
                         unit: item.base_unit,
                         label: item.name,
@@ -3346,7 +3377,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'} • {item.base_unit}</p>
+                              <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'} • {isServingUnit ? 'servings' : item.base_unit}</p>
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <Badge variant="secondary" className="text-xs">
                                   Unit Cost: {formatPrice(unitCost)}
@@ -3354,7 +3385,12 @@ function InventoryModule({ outletId }: { outletId: string }) {
                                 <Badge variant="outline" className="text-xs">
                                   Total Value: {formatPrice(totalValue)}
                                 </Badge>
-                                {servings.converted && servings.servingsPerBottle != null && (
+                                {isServingUnit && (
+                                  <Badge variant="default" className="text-xs bg-green-500/20 text-green-500">
+                                    Spirit (30ml pour)
+                                  </Badge>
+                                )}
+                                {!isServingUnit && servings?.converted && servings.servingsPerBottle != null && (
                                   <Badge variant="default" className="text-xs bg-primary/20 text-primary">
                                     {servings.servingsPerBottle} srv/bottle
                                   </Badge>
@@ -3362,13 +3398,23 @@ function InventoryModule({ outletId }: { outletId: string }) {
                               </div>
                             </div>
                             <div className="text-right ml-3">
-                              {/* Primary: bottles */}
-                              <p className="font-semibold text-lg">{formatQty(totalStock)} {item.base_unit}</p>
-                              {/* Secondary: servings if applicable */}
-                              {servings.converted && (
-                                <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
+                              {/* For serving units: show servings as primary */}
+                              {isServingUnit ? (
+                                <>
+                                  <p className="font-semibold text-lg text-green-500">{formatQty(totalStock)} servings</p>
+                                  <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Primary: bottles/units */}
+                                  <p className="font-semibold text-lg">{formatQty(totalStock)} {item.base_unit}</p>
+                                  {/* Secondary: servings if applicable */}
+                                  {servings?.converted && (
+                                    <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
+                                </>
                               )}
-                              <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
                             </div>
                           </div>
                         </div>
