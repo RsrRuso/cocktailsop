@@ -169,7 +169,7 @@ export const observeForPrefetch = (element: Element, callback: () => void) => {
 };
 
 // Initialize performance optimizations
-export const initFastLoad = () => {
+export const initFastLoad = async () => {
   // Add resource hints immediately
   const hints = [
     { rel: 'preconnect', href: 'https://cbfqwaqwliehgxsdueem.supabase.co' },
@@ -187,28 +187,9 @@ export const initFastLoad = () => {
     }
   });
   
-  // IMMEDIATE prefetch - don't wait for idle
-  import('@/lib/routePrefetch').then(({ prefetchImmediate }) => {
-    prefetchImmediate();
-  });
-  
-  // Full prefetch after page loads
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
-        prefetchAllCritical();
-      });
-    });
-  } else {
-    setTimeout(() => {
-      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
-        prefetchAllCritical();
-      });
-    }, 500); // Reduced from 1000ms
-  }
+  // Use static imports for route prefetch - avoids Vite dynamic import warnings
+  // The actual prefetching is handled by RoutePreloader component
   
   // Preload critical routes
   preloadCriticalRoutes();
-  
-  console.log('⚡ Fast load optimizations initialized');
 };
