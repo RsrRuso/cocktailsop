@@ -48,7 +48,7 @@ export function IngredientSummaryDashboard({ recipes, inventoryItems }: Ingredie
 
     for (const recipe of recipes) {
       const recipeIngredients = recipe.lab_ops_recipe_ingredients || [];
-      const recipeName = recipe.lab_ops_menu_items?.name || 'Unknown Recipe';
+      const recipeName = recipe.menu_item?.name || recipe.lab_ops_menu_items?.name || 'Unknown Recipe';
 
       for (const ing of recipeIngredients) {
         const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
@@ -57,8 +57,9 @@ export function IngredientSummaryDashboard({ recipes, inventoryItems }: Ingredie
         const existing = usageMap.get(ing.inventory_item_id);
         const unitCost = invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
         const bottleSize = ing.bottle_size || invItem.bottle_size_ml || 750;
-        const costPerMl = bottleSize > 0 ? unitCost / bottleSize : unitCost;
+        const costPerMl = unitCost;
         const ingredientCost = ing.qty * costPerMl;
+
 
         if (existing) {
           existing.totalQtyUsed += ing.qty || 0;
