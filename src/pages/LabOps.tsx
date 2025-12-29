@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getLabOpsFromCache, labOpsCache } from "@/lib/routePrefetch";
-import { detectBottleSizeFromName, formatBottleSize, calculateServings, STANDARD_POUR_ML } from "@/lib/bottleSizeDetection";
+import { detectBottleSizeFromName, formatBottleSize, calculateServings, STANDARD_POUR_ML, isLikelySpirit } from "@/lib/bottleSizeDetection";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
@@ -3847,6 +3847,12 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [recipeInstructions, setRecipeInstructions] = useState("");
   const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string }[]>([]);
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
+  
+  // Advanced pricing states
+  const [markupPercent, setMarkupPercent] = useState("400");
+  const [vatPercent, setVatPercent] = useState("5");
+  const [servicePercent, setServicePercent] = useState("15");
+  const [manualSellingPrice, setManualSellingPrice] = useState("");
 
   useEffect(() => {
     fetchRecipes();
@@ -4017,7 +4023,18 @@ function RecipesModule({ outletId }: { outletId: string }) {
     for (const ing of recipeIngredients) {
       const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
       const cost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
-      totalCost += cost * (ing.qty || 0);
+      const bottleSize = invItem?.bottle_size_ml || 750; // Default to 750ml
+      const isSpirit = invItem?.category?.toLowerCase() === 'spirits' || 
+                       isLikelySpirit(invItem?.name || '', invItem?.category);
+      
+      if (isSpirit && ing.unit === 'ml') {
+        // For spirits: cost per ml = unit_cost / bottle_size_ml
+        const costPerMl = bottleSize > 0 ? cost / bottleSize : 0;
+        totalCost += costPerMl * (ing.qty || 0);
+      } else {
+        // For non-spirits: use unit cost directly
+        totalCost += cost * (ing.qty || 0);
+      }
     }
 
     return totalCost;
@@ -4027,6 +4044,55 @@ function RecipesModule({ outletId }: { outletId: string }) {
     const cost = calculateRecipeCost(recipe);
     const price = recipe.lab_ops_menu_items?.base_price || 0;
     return price > 0 ? ((cost / price) * 100).toFixed(1) : "0.0";
+  };
+
+  // Calculate ingredient cost with servings info for display
+  const getIngredientCostInfo = (ing: { itemId: string; qty: number; unit: string }) => {
+    const invItem = inventoryItems.find(i => i.id === ing.itemId);
+    if (!invItem) return { cost: 0, servingsPerBottle: 0, costPerServing: 0, unitCost: 0 };
+    
+    const unitCost = invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+    const bottleSize = invItem.bottle_size_ml || 750;
+    const isSpirit = invItem.category?.toLowerCase() === 'spirits' || 
+                     isLikelySpirit(invItem.name || '', invItem.category);
+    
+    const servingsPerBottle = isSpirit ? Math.floor(bottleSize / STANDARD_POUR_ML) : 0;
+    const costPerServing = servingsPerBottle > 0 ? unitCost / servingsPerBottle : unitCost;
+    
+    let ingredientCost = 0;
+    if (isSpirit && ing.unit === 'ml') {
+      const costPerMl = bottleSize > 0 ? unitCost / bottleSize : 0;
+      ingredientCost = costPerMl * (ing.qty || 0);
+    } else {
+      ingredientCost = unitCost * (ing.qty || 0);
+    }
+    
+    return { cost: ingredientCost, servingsPerBottle, costPerServing, unitCost, isSpirit, bottleSize };
+  };
+
+  // Calculate suggested selling price with markup, VAT, and service
+  const calculateSuggestedPrice = (selfCost: number) => {
+    const markup = parseFloat(markupPercent) || 0;
+    const vat = parseFloat(vatPercent) || 0;
+    const service = parseFloat(servicePercent) || 0;
+    
+    const markupAmount = selfCost * (markup / 100);
+    const subtotal = selfCost + markupAmount;
+    const vatAmount = subtotal * (vat / 100);
+    const serviceAmount = subtotal * (service / 100);
+    const total = subtotal + vatAmount + serviceAmount;
+    
+    return { markupAmount, subtotal, vatAmount, serviceAmount, total };
+  };
+
+  // Calculate live cost from current ingredients in form
+  const calculateLiveCost = () => {
+    let totalCost = 0;
+    for (const ing of ingredients) {
+      const info = getIngredientCostInfo(ing);
+      totalCost += info.cost;
+    }
+    return totalCost;
   };
 
   return (
@@ -4101,50 +4167,178 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    {ingredients.map((ing, idx) => (
-                      <div key={idx} className="flex gap-2 items-center">
-                        <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
-                          <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
-                          <SelectContent>
-                            {inventoryItems.map((inv) => (
-                              <SelectItem key={inv.id} value={inv.id}>
-                                <div className="flex items-center justify-between w-full gap-2">
-                                  <span>{inv.name}</span>
-                                  <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
-                                    ({inv.totalStock || 0} {inv.base_unit})
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Qty"
-                          className="w-20"
-                          value={ing.qty}
-                          onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
-                        />
-                        <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
-                          <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="g">g</SelectItem>
-                            <SelectItem value="kg">kg</SelectItem>
-                            <SelectItem value="ml">ml</SelectItem>
-                            <SelectItem value="L">L</SelectItem>
-                            <SelectItem value="piece">pc</SelectItem>
-                            <SelectItem value="dash">dash</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {ingredients.map((ing, idx) => {
+                      const info = getIngredientCostInfo(ing);
+                      const invItem = inventoryItems.find(i => i.id === ing.itemId);
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex gap-2 items-center">
+                            <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Select from stock" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {inventoryItems.map((inv) => {
+                                  const stockInfo = inv.category?.toLowerCase() === 'spirits' || isLikelySpirit(inv.name || '', inv.category)
+                                    ? `(${Math.floor((inv.totalStock || 0) * (inv.bottle_size_ml || 750) / STANDARD_POUR_ML)} BOT)`
+                                    : `(${inv.totalStock || 0} ${inv.base_unit || 'units'})`;
+                                  return (
+                                    <SelectItem key={inv.id} value={inv.id}>
+                                      <div className="flex items-center gap-2">
+                                        <span className="truncate">{inv.name}</span>
+                                        <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
+                                          {stockInfo}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Qty"
+                              className="w-20"
+                              value={ing.qty}
+                              onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
+                            />
+                            <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
+                              <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="g">g</SelectItem>
+                                <SelectItem value="kg">kg</SelectItem>
+                                <SelectItem value="ml">ml</SelectItem>
+                                <SelectItem value="L">L</SelectItem>
+                                <SelectItem value="piece">pc</SelectItem>
+                                <SelectItem value="dash">dash</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              placeholder="Bottle ml"
+                              className="w-20"
+                              value={info.bottleSize || 750}
+                              disabled
+                              title="Bottle size in ml"
+                            />
+                            <span className="text-xs text-muted-foreground w-8">ml</span>
+                            <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {ing.itemId && invItem && (
+                            <div className="flex items-center gap-3 text-xs pl-2">
+                              <span className="text-muted-foreground">
+                                Unit cost: {formatPrice(info.unitCost)}
+                              </span>
+                              {info.isSpirit && info.servingsPerBottle > 0 && (
+                                <span className="text-amber-500 font-medium">
+                                  {info.servingsPerBottle} servings/bottle
+                                </span>
+                              )}
+                              <span className="text-primary font-medium ml-auto flex items-center gap-1">
+                                <Edit className="h-3 w-3" />
+                                Cost: {formatPrice(info.cost)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+
+                {/* Live Cost & Pricing Summary */}
+                {ingredients.length > 0 && ingredients.some(ing => ing.itemId) && (
+                  <div className="p-4 bg-muted/50 rounded-lg border border-primary/20 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Total Self Cost</span>
+                      <span className="text-lg font-bold text-primary">{formatPrice(calculateLiveCost())}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Markup %</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={markupPercent}
+                            onChange={(e) => setMarkupPercent(e.target.value)}
+                            className="h-8"
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">VAT %</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={vatPercent}
+                            onChange={(e) => setVatPercent(e.target.value)}
+                            className="h-8"
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Service %</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={servicePercent}
+                            onChange={(e) => setServicePercent(e.target.value)}
+                            className="h-8"
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const liveCost = calculateLiveCost();
+                      const pricing = calculateSuggestedPrice(liveCost);
+                      return (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Markup ({markupPercent}%)</span>
+                            <span>{formatPrice(pricing.markupAmount)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Subtotal</span>
+                            <span>{formatPrice(pricing.subtotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>VAT ({vatPercent}%)</span>
+                            <span>{formatPrice(pricing.vatAmount)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Service ({servicePercent}%)</span>
+                            <span>{formatPrice(pricing.serviceAmount)}</span>
+                          </div>
+                          <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                            <span>Suggested Selling Price</span>
+                            <span className="text-primary">{formatPrice(pricing.total)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="pt-2 border-t">
+                      <Label className="text-xs text-muted-foreground">Manual Selling Price (Optional)</Label>
+                      <p className="text-xs text-muted-foreground mb-1">Override the suggested price with your own</p>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder={formatPrice(calculateSuggestedPrice(calculateLiveCost()).total)}
+                        value={manualSellingPrice}
+                        onChange={(e) => setManualSellingPrice(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label>Instructions</Label>
