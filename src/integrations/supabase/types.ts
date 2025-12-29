@@ -5772,8 +5772,12 @@ export type Database = {
           name: string
           outlet_id: string
           par_level: number | null
+          sale_price: number | null
           sku: string | null
+          tax_rate: number | null
+          unit_cost: number | null
           updated_at: string | null
+          vat_rate: number | null
         }
         Insert: {
           base_unit?: string | null
@@ -5784,8 +5788,12 @@ export type Database = {
           name: string
           outlet_id: string
           par_level?: number | null
+          sale_price?: number | null
           sku?: string | null
+          tax_rate?: number | null
+          unit_cost?: number | null
           updated_at?: string | null
+          vat_rate?: number | null
         }
         Update: {
           base_unit?: string | null
@@ -5796,8 +5804,12 @@ export type Database = {
           name?: string
           outlet_id?: string
           par_level?: number | null
+          sale_price?: number | null
           sku?: string | null
+          tax_rate?: number | null
+          unit_cost?: number | null
           updated_at?: string | null
+          vat_rate?: number | null
         }
         Relationships: [
           {
@@ -6051,6 +6063,7 @@ export type Database = {
         Row: {
           base_price: number
           batch_recipe_id: string | null
+          bottle_ratio_ml: number | null
           category_id: string | null
           created_at: string | null
           default_serving_ml: number | null
@@ -6068,6 +6081,7 @@ export type Database = {
           recipe_id: string | null
           remaining_serves: number | null
           serving_ml: number | null
+          serving_ratio_ml: number | null
           sub_category: string | null
           tax_rate: number | null
           total_produced_serves: number | null
@@ -6076,6 +6090,7 @@ export type Database = {
         Insert: {
           base_price: number
           batch_recipe_id?: string | null
+          bottle_ratio_ml?: number | null
           category_id?: string | null
           created_at?: string | null
           default_serving_ml?: number | null
@@ -6093,6 +6108,7 @@ export type Database = {
           recipe_id?: string | null
           remaining_serves?: number | null
           serving_ml?: number | null
+          serving_ratio_ml?: number | null
           sub_category?: string | null
           tax_rate?: number | null
           total_produced_serves?: number | null
@@ -6101,6 +6117,7 @@ export type Database = {
         Update: {
           base_price?: number
           batch_recipe_id?: string | null
+          bottle_ratio_ml?: number | null
           category_id?: string | null
           created_at?: string | null
           default_serving_ml?: number | null
@@ -6118,6 +6135,7 @@ export type Database = {
           recipe_id?: string | null
           remaining_serves?: number | null
           serving_ml?: number | null
+          serving_ratio_ml?: number | null
           sub_category?: string | null
           tax_rate?: number | null
           total_produced_serves?: number | null
@@ -6967,6 +6985,7 @@ export type Database = {
       }
       lab_ops_recipe_ingredients: {
         Row: {
+          bottle_size: number | null
           created_at: string | null
           id: string
           inventory_item_id: string
@@ -6975,6 +6994,7 @@ export type Database = {
           unit: string
         }
         Insert: {
+          bottle_size?: number | null
           created_at?: string | null
           id?: string
           inventory_item_id: string
@@ -6983,6 +7003,7 @@ export type Database = {
           unit: string
         }
         Update: {
+          bottle_size?: number | null
           created_at?: string | null
           id?: string
           inventory_item_id?: string
@@ -7013,8 +7034,11 @@ export type Database = {
           id: string
           instructions: string | null
           is_active: boolean | null
+          markup_percent: number | null
           menu_item_id: string
+          service_charge_percent: number | null
           updated_at: string | null
+          vat_percent: number | null
           version_number: number | null
           yield_qty: number | null
           yield_unit: string | null
@@ -7024,8 +7048,11 @@ export type Database = {
           id?: string
           instructions?: string | null
           is_active?: boolean | null
+          markup_percent?: number | null
           menu_item_id: string
+          service_charge_percent?: number | null
           updated_at?: string | null
+          vat_percent?: number | null
           version_number?: number | null
           yield_qty?: number | null
           yield_unit?: string | null
@@ -7035,8 +7062,11 @@ export type Database = {
           id?: string
           instructions?: string | null
           is_active?: boolean | null
+          markup_percent?: number | null
           menu_item_id?: string
+          service_charge_percent?: number | null
           updated_at?: string | null
+          vat_percent?: number | null
           version_number?: number | null
           yield_qty?: number | null
           yield_unit?: string | null
@@ -7128,52 +7158,73 @@ export type Database = {
       }
       lab_ops_sales: {
         Row: {
+          cost_price: number | null
           created_at: string
+          gross_amount: number | null
           id: string
           item_name: string
           ml_per_serving: number
+          net_amount: number | null
           order_id: string | null
           outlet_id: string
           pos_transaction_id: string | null
           quantity: number
+          service_charge_amount: number | null
+          service_charge_percentage: number | null
           sold_at: string
           sold_by: string | null
           spirit_type: string | null
           total_ml_sold: number
           total_price: number | null
           unit_price: number | null
+          vat_amount: number | null
+          vat_percentage: number | null
         }
         Insert: {
+          cost_price?: number | null
           created_at?: string
+          gross_amount?: number | null
           id?: string
           item_name: string
           ml_per_serving: number
+          net_amount?: number | null
           order_id?: string | null
           outlet_id: string
           pos_transaction_id?: string | null
           quantity?: number
+          service_charge_amount?: number | null
+          service_charge_percentage?: number | null
           sold_at?: string
           sold_by?: string | null
           spirit_type?: string | null
           total_ml_sold: number
           total_price?: number | null
           unit_price?: number | null
+          vat_amount?: number | null
+          vat_percentage?: number | null
         }
         Update: {
+          cost_price?: number | null
           created_at?: string
+          gross_amount?: number | null
           id?: string
           item_name?: string
           ml_per_serving?: number
+          net_amount?: number | null
           order_id?: string | null
           outlet_id?: string
           pos_transaction_id?: string | null
           quantity?: number
+          service_charge_amount?: number | null
+          service_charge_percentage?: number | null
           sold_at?: string
           sold_by?: string | null
           spirit_type?: string | null
           total_ml_sold?: number
           total_price?: number | null
           unit_price?: number | null
+          vat_amount?: number | null
+          vat_percentage?: number | null
         }
         Relationships: [
           {
@@ -7628,7 +7679,9 @@ export type Database = {
           qty: number
           reference_id: string | null
           reference_type: string | null
+          sale_price: number | null
           to_location_id: string | null
+          unit_cost: number | null
         }
         Insert: {
           created_at?: string | null
@@ -7641,7 +7694,9 @@ export type Database = {
           qty: number
           reference_id?: string | null
           reference_type?: string | null
+          sale_price?: number | null
           to_location_id?: string | null
+          unit_cost?: number | null
         }
         Update: {
           created_at?: string | null
@@ -7654,7 +7709,9 @@ export type Database = {
           qty?: number
           reference_id?: string | null
           reference_type?: string | null
+          sale_price?: number | null
           to_location_id?: string | null
+          unit_cost?: number | null
         }
         Relationships: [
           {

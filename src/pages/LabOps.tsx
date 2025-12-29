@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { getLabOpsFromCache, labOpsCache } from "@/lib/routePrefetch";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
@@ -352,8 +353,21 @@ export default function LabOps() {
     }
   };
 
+  // Load from cache FIRST for instant display, then fetch fresh data
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+    
+    // Try cache first for instant display
+    const cachedOutlets = getLabOpsFromCache();
+    if (cachedOutlets && cachedOutlets.length > 0) {
+      setOutlets(cachedOutlets);
+      setSelectedOutlet(cachedOutlets[0]);
+      setIsLoading(false);
+      
+      // Fetch fresh data in background
+      fetchOutlets();
+    } else {
+      // No cache - fetch normally
       fetchOutlets();
     }
   }, [user]);
