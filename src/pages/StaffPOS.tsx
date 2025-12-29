@@ -1204,7 +1204,8 @@ export default function StaffPOS() {
     }
     
     // Real-time ingredient deduction based on recipe
-    if (item.recipe_id) {
+    // IMPORTANT: Skip recipe deduction for inventory-linked items (they use direct stock deduction above)
+    if (item.recipe_id && !item.inventory_item_id) {
       deductRecipeIngredients(item.recipe_id, 1);
     }
     
@@ -1469,7 +1470,8 @@ export default function StaffPOS() {
     }
     
     // Handle recipe ingredient deduction/restore
-    if (menuItem?.recipe_id && delta !== 0) {
+    // IMPORTANT: Skip for inventory-linked items (they use direct stock deduction)
+    if (menuItem?.recipe_id && !menuItem?.inventory_item_id && delta !== 0) {
       if (delta > 0) {
         deductRecipeIngredients(menuItem.recipe_id, absDelta);
       } else {
@@ -1521,7 +1523,8 @@ export default function StaffPOS() {
         .update({ remaining_serves: newRemaining })
         .eq("id", itemId)
         .then(() => {});
-    } else if (menuItem?.calculated_servings !== null && menuItem?.recipe_id) {
+    } else if (menuItem?.calculated_servings !== null && menuItem?.recipe_id && !menuItem?.inventory_item_id) {
+      // Only restore recipe ingredients for non-inventory-linked items
       restoreRecipeIngredients(menuItem.recipe_id, restoredAmount);
     }
   };
