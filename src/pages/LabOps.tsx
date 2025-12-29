@@ -3765,7 +3765,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
   const [recipeYield, setRecipeYield] = useState("1");
   const [recipeInstructions, setRecipeInstructions] = useState("");
-  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string; bottle_size?: number }[]>([]);
+  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string }[]>([]);
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
   const [showSummaryDashboard, setShowSummaryDashboard] = useState(false);
 
@@ -3858,7 +3858,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
           inventory_item_id: ing.itemId,
           qty: ing.qty,
           unit: ing.unit,
-          bottle_size: ing.bottle_size ?? null,
         });
       }
 
@@ -3890,7 +3889,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
         itemId: ing.inventory_item_id,
         qty: ing.qty || 0,
         unit: ing.unit || "ml",
-        bottle_size: ing.bottle_size ? Number(ing.bottle_size) : 750,
       }))
     );
     setShowAddRecipe(true);
@@ -3915,7 +3913,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
           inventory_item_id: ing.itemId,
           qty: ing.qty,
           unit: ing.unit,
-          bottle_size: ing.bottle_size ?? null,
         });
       }
     }
@@ -3935,7 +3932,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml", bottle_size: 750 }]);
+    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml" }]);
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
