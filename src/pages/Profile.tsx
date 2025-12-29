@@ -24,7 +24,7 @@ import FollowingDialog from "@/components/FollowingDialog";
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
 const ProfessionalDashboard = lazy(() => import("@/components/profile/ProfessionalDashboard"));
-const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
+import CreateStatusDialog from "@/components/CreateStatusDialog";
 
 const Profile = () => {
   const navigate = useNavigate();

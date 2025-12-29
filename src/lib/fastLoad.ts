@@ -3,6 +3,8 @@
  * Aggressive caching, preloading, and performance optimizations
  */
 
+import { prefetchImmediate, prefetchAllCritical } from '@/lib/routePrefetch';
+
 // Preload critical routes on app start
 const criticalRoutes = ['/home', '/profile', '/explore', '/messages'];
 
@@ -188,22 +190,16 @@ export const initFastLoad = () => {
   });
   
   // IMMEDIATE prefetch - don't wait for idle
-  import('@/lib/routePrefetch').then(({ prefetchImmediate }) => {
-    prefetchImmediate();
-  });
+  prefetchImmediate();
   
   // Full prefetch after page loads
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
-      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
-        prefetchAllCritical();
-      });
+      prefetchAllCritical();
     });
   } else {
     setTimeout(() => {
-      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
-        prefetchAllCritical();
-      });
+      prefetchAllCritical();
     }, 500); // Reduced from 1000ms
   }
   
