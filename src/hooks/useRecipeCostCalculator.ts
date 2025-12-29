@@ -74,8 +74,9 @@ export function useRecipeCostCalculator(
       const bottleSize = ing.bottle_size || invItem.bottle_size_ml || defaultBottleSize;
       const unitCost = invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
       
-      // Calculate cost per ml (assuming unit_cost is per bottle/unit)
-      const costPerMl = bottleSize > 0 ? unitCost / bottleSize : unitCost;
+      // unit_cost is stored as per-ml cost in Lab Ops
+      const costPerMl = unitCost;
+
       
       // Convert quantity to ml
       const unitMultiplier = UNIT_TO_ML[ing.unit] || 1;

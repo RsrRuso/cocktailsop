@@ -21,6 +21,7 @@ import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
 import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
 import { RecipeCostPreview } from "@/components/lab-ops/RecipeCostPreview";
 import { IngredientSummaryDashboard } from "@/components/lab-ops/IngredientSummaryDashboard";
+import { RecipeCostCard } from "@/components/lab-ops/RecipeCostCard";
 import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -4107,69 +4108,15 @@ function RecipesModule({ outletId }: { outletId: string }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {recipes.map((recipe) => {
-                const cost = calculateRecipeCost(recipe);
-                const foodCostPct = calculateFoodCostPercent(recipe);
-                const price = recipe.menu_item?.base_price || 0;
-                const profit = price - cost;
-
-                return (
-                  <Card key={recipe.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold">{recipe.menu_item?.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Version {recipe.version_number} • Yield: {recipe.yield_qty}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge variant={parseFloat(foodCostPct) > 35 ? "destructive" : "default"} className="shrink-0">
-                            {foodCostPct}%
-                          </Badge>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditRecipe(recipe)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteRecipe(recipe.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 mt-4">
-                        <div className="text-center p-2 bg-muted/50 rounded">
-                          <p className="text-xs text-muted-foreground">Cost</p>
-                          <p className="font-semibold">{formatPrice(cost)}</p>
-                        </div>
-                        <div className="text-center p-2 bg-muted/50 rounded">
-                          <p className="text-xs text-muted-foreground">Price</p>
-                          <p className="font-semibold">{formatPrice(price)}</p>
-                        </div>
-                        <div className="text-center p-2 bg-muted/50 rounded">
-                          <p className="text-xs text-muted-foreground">Profit</p>
-                          <p className="font-semibold text-green-600">{formatPrice(profit)}</p>
-                        </div>
-                      </div>
-
-                      {recipe.lab_ops_recipe_ingredients?.length > 0 && (
-                        <div className="mt-4 pt-4 border-t">
-                          <p className="text-sm font-medium mb-2">Ingredients:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {recipe.lab_ops_recipe_ingredients.map((ing: any) => {
-                              const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-                              return (
-                                <Badge key={ing.id} variant="outline">
-                                  {invItem?.name}: {ing.qty} {ing.unit}
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {recipes.map((recipe) => (
+                <RecipeCostCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  inventoryItems={inventoryItems}
+                  onEdit={() => openEditRecipe(recipe)}
+                  onDelete={() => deleteRecipe(recipe.id)}
+                />
+              ))}
             </div>
           )}
         </CardContent>
