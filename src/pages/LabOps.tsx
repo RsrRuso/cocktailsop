@@ -3773,12 +3773,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
   }, [outletId]);
 
   const fetchRecipes = async () => {
-    const { data } = await supabase
+    if (!outletId) return;
+    
+    const { data, error } = await supabase
       .from("lab_ops_recipes")
       .select("*, lab_ops_menu_items(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
       .order("created_at", { ascending: false });
     
+    if (error) {
+      console.error("Error fetching recipes:", error);
+      return;
+    }
+    
     const filtered = data?.filter(r => r.lab_ops_menu_items?.outlet_id === outletId) || [];
+    console.log("Recipes fetched:", data?.length, "Filtered for outlet:", filtered.length, "OutletId:", outletId);
     setRecipes(filtered);
   };
 
