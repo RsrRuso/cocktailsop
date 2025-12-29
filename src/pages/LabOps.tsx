@@ -19,6 +19,9 @@ import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
 import { SmartPourerModule } from "@/components/smart-pourer/SmartPourerModule";
 import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
 import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
+import { RecipeCostPreview } from "@/components/lab-ops/RecipeCostPreview";
+import { IngredientSummaryDashboard } from "@/components/lab-ops/IngredientSummaryDashboard";
+import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -3759,8 +3762,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
   const [recipeYield, setRecipeYield] = useState("1");
   const [recipeInstructions, setRecipeInstructions] = useState("");
-  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string }[]>([]);
+  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string; bottle_size?: number }[]>([]);
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
+  const [showSummaryDashboard, setShowSummaryDashboard] = useState(false);
 
   useEffect(() => {
     fetchRecipes();
@@ -3911,7 +3915,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml" }]);
+    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml", bottle_size: 750 }]);
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
