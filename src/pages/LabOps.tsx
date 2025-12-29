@@ -3782,8 +3782,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
     
     const { data, error } = await supabase
       .from("lab_ops_recipes")
-      .select("*, lab_ops_menu_items!inner(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
-      .eq("lab_ops_menu_items.outlet_id", outletId)
+      .select(
+        "*, menu_item:lab_ops_menu_items!lab_ops_recipes_menu_item_id_fkey!inner(id, name, base_price, outlet_id), lab_ops_recipe_ingredients(*)"
+      )
+      .eq("menu_item.outlet_id", outletId)
       .order("created_at", { ascending: false });
     
     if (error) {
@@ -3956,7 +3958,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
   const calculateFoodCostPercent = (recipe: any) => {
     const cost = calculateRecipeCost(recipe);
-    const price = recipe.lab_ops_menu_items?.base_price || 0;
+    const price = recipe.menu_item?.base_price || 0;
     return price > 0 ? ((cost / price) * 100).toFixed(1) : "0.0";
   };
 
@@ -4108,7 +4110,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
               {recipes.map((recipe) => {
                 const cost = calculateRecipeCost(recipe);
                 const foodCostPct = calculateFoodCostPercent(recipe);
-                const price = recipe.lab_ops_menu_items?.base_price || 0;
+                const price = recipe.menu_item?.base_price || 0;
                 const profit = price - cost;
 
                 return (
@@ -4116,7 +4118,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold">{recipe.lab_ops_menu_items?.name}</h3>
+                          <h3 className="font-semibold">{recipe.menu_item?.name}</h3>
                           <p className="text-sm text-muted-foreground">
                             Version {recipe.version_number} • Yield: {recipe.yield_qty}
                           </p>
