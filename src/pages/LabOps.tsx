@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getLabOpsFromCache, labOpsCache } from "@/lib/routePrefetch";
+import { detectBottleSizeFromName, formatBottleSize, calculateServings, STANDARD_POUR_ML } from "@/lib/bottleSizeDetection";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
@@ -2419,6 +2420,8 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [newItemUnit, setNewItemUnit] = useState("piece");
   const [newItemParLevel, setNewItemParLevel] = useState("");
   const [newItemCost, setNewItemCost] = useState("");
+  const [newItemBottleSize, setNewItemBottleSize] = useState<string>("");
+  const [detectedBottleSize, setDetectedBottleSize] = useState<number | null>(null);
   const [stockQty, setStockQty] = useState("");
   const [stockLocation, setStockLocation] = useState("");
   const [stockNotes, setStockNotes] = useState("");
@@ -2503,35 +2506,33 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const createItem = async () => {
     if (!newItemName.trim()) return;
 
-    await supabase.from("lab_ops_inventory_items").insert({
+    // Use manual bottle size if provided, otherwise use detected
+    const bottleSizeMl = newItemBottleSize 
+      ? parseFloat(newItemBottleSize) 
+      : detectedBottleSize;
+
+    const { data: insertedItem, error } = await supabase.from("lab_ops_inventory_items").insert({
       outlet_id: outletId,
       name: newItemName.trim(),
       sku: newItemSku.trim() || null,
       base_unit: newItemUnit,
       par_level: parseFloat(newItemParLevel) || 0,
-    });
+      bottle_size_ml: bottleSizeMl || null,
+    }).select().single();
 
-    if (newItemCost) {
-      // Create cost record
-      const { data: newItem } = await supabase
-        .from("lab_ops_inventory_items")
-        .select("id")
-        .eq("outlet_id", outletId)
-        .eq("name", newItemName.trim())
-        .single();
-      
-      if (newItem) {
-        await supabase.from("lab_ops_inventory_item_costs").insert({
-          inventory_item_id: newItem.id,
-          unit_cost: parseFloat(newItemCost),
-        });
-      }
+    if (!error && insertedItem && newItemCost) {
+      await supabase.from("lab_ops_inventory_item_costs").insert({
+        inventory_item_id: insertedItem.id,
+        unit_cost: parseFloat(newItemCost),
+      });
     }
 
     setNewItemName("");
     setNewItemSku("");
     setNewItemParLevel("");
     setNewItemCost("");
+    setNewItemBottleSize("");
+    setDetectedBottleSize(null);
     setShowAddItem(false);
     fetchItems();
     toast({ title: "Inventory item created" });
@@ -2547,6 +2548,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
         sku: editingItem.sku?.trim() || null,
         base_unit: editingItem.base_unit,
         par_level: parseFloat(editingItem.par_level) || 0,
+        bottle_size_ml: editingItem.bottle_size_ml || null,
       })
       .eq("id", editingItem.id);
 
@@ -2629,9 +2631,9 @@ function InventoryModule({ outletId }: { outletId: string }) {
       for (const line of dataLines) {
         if (!line.trim()) continue;
         
-        // Parse CSV: Name,SKU,Unit,ParLevel,Cost
+        // Parse CSV: Name,SKU,Unit,ParLevel,Cost,BottleSize(optional)
         const parts = line.split(",").map(p => p.trim().replace(/^"|"$/g, ''));
-        const [name, sku, unit, parLevel, cost] = parts;
+        const [name, sku, unit, parLevel, cost, bottleSize] = parts;
         
         if (!name) {
           skipped++;
@@ -2644,12 +2646,16 @@ function InventoryModule({ outletId }: { outletId: string }) {
           .select("id")
           .eq("outlet_id", outletId)
           .eq("name", name)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           skipped++;
           continue;
         }
+
+        // Auto-detect bottle size from name if not provided
+        const detectedSize = detectBottleSizeFromName(name);
+        const finalBottleSize = bottleSize ? parseFloat(bottleSize) : detectedSize;
 
         // Create item
         const { data: newItem, error } = await supabase
@@ -2660,6 +2666,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
             sku: sku || null,
             base_unit: unit || "piece",
             par_level: parseFloat(parLevel) || 0,
+            bottle_size_ml: finalBottleSize || null,
           })
           .select()
           .single();
@@ -2864,7 +2871,22 @@ function InventoryModule({ outletId }: { outletId: string }) {
                     <div className="space-y-4 py-4">
                       <div>
                         <Label>Name</Label>
-                        <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                        <Input 
+                          value={newItemName} 
+                          onChange={(e) => {
+                            setNewItemName(e.target.value);
+                            // Auto-detect bottle size from name
+                            const detected = detectBottleSizeFromName(e.target.value);
+                            setDetectedBottleSize(detected);
+                          }} 
+                          placeholder="e.g., Absolut Vodka 700ml"
+                        />
+                        {detectedBottleSize && !newItemBottleSize && (
+                          <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                            <Check className="h-3 w-3" />
+                            Detected: {formatBottleSize(detectedBottleSize)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label>SKU (Optional)</Label>
@@ -2895,6 +2917,28 @@ function InventoryModule({ outletId }: { outletId: string }) {
                           <Input type="number" step="0.01" value={newItemCost} onChange={(e) => setNewItemCost(e.target.value)} />
                         </div>
                       </div>
+                      
+                      {/* Bottle Size Section - for spirits */}
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Bottle Size (ml)</Label>
+                          {detectedBottleSize && (
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500">
+                              Auto: {detectedBottleSize}ml
+                            </Badge>
+                          )}
+                        </div>
+                        <Input 
+                          type="number" 
+                          value={newItemBottleSize} 
+                          onChange={(e) => setNewItemBottleSize(e.target.value)}
+                          placeholder={detectedBottleSize ? `Auto-detected: ${detectedBottleSize}` : "e.g., 700, 750, 1000"}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          For spirits: 1 serving = {STANDARD_POUR_ML}ml pour
+                        </p>
+                      </div>
+                      
                       <Button onClick={createItem} className="w-full">Create Item</Button>
                     </div>
                   </DialogContent>
@@ -2928,18 +2972,33 @@ function InventoryModule({ outletId }: { outletId: string }) {
                     {filteredItems.map((item) => {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
+                      const servings = item.bottle_size_ml 
+                        ? calculateServings(stock, item.bottle_size_ml)
+                        : null;
                       return (
                         <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <p className="font-medium">{item.name}</p>
                               {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                              {item.bottle_size_ml && (
+                                <Badge variant="outline" className="text-xs">
+                                  {formatBottleSize(item.bottle_size_ml)}
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-xs text-muted-foreground">{item.sku || "No SKU"} • {item.base_unit}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-right mr-2">
-                              <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
+                              <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>
+                                {stock} {item.base_unit}
+                                {servings !== null && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({servings} srv)
+                                  </span>
+                                )}
+                              </p>
                               <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                             </div>
                             <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
@@ -3179,7 +3238,16 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 <Label>Name</Label>
                 <Input 
                   value={editingItem.name} 
-                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} 
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    const detected = detectBottleSizeFromName(newName);
+                    setEditingItem({ 
+                      ...editingItem, 
+                      name: newName,
+                      // Only auto-update if no bottle size was previously set
+                      ...(detected && !editingItem.bottle_size_ml ? { bottle_size_ml: detected } : {})
+                    });
+                  }} 
                 />
               </div>
               <div>
@@ -3207,14 +3275,32 @@ function InventoryModule({ outletId }: { outletId: string }) {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Par Level</Label>
-                <Input 
-                  type="number" 
-                  value={editingItem.par_level || ""} 
-                  onChange={(e) => setEditingItem({ ...editingItem, par_level: e.target.value })} 
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Par Level</Label>
+                  <Input 
+                    type="number" 
+                    value={editingItem.par_level || ""} 
+                    onChange={(e) => setEditingItem({ ...editingItem, par_level: e.target.value })} 
+                  />
+                </div>
+                <div>
+                  <Label>Bottle Size (ml)</Label>
+                  <Input 
+                    type="number" 
+                    value={editingItem.bottle_size_ml || ""} 
+                    onChange={(e) => setEditingItem({ ...editingItem, bottle_size_ml: parseFloat(e.target.value) || null })} 
+                    placeholder="e.g., 700, 750, 1000"
+                  />
+                </div>
               </div>
+              {editingItem.bottle_size_ml && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">Spirit Servings:</span> 1 bottle = {calculateServings(1, editingItem.bottle_size_ml)} servings @ {STANDARD_POUR_ML}ml pour
+                  </p>
+                </div>
+              )}
               <Button onClick={updateInventoryItem} className="w-full">Save Changes</Button>
             </div>
           )}
