@@ -83,11 +83,12 @@ interface MenuItem {
   category_id: string;
   remaining_serves: number | null;
   recipe_id?: string | null;
-  // For inventory-linked items (like bottled water)
+  // For inventory-linked items (like bottled water or spirit shots)
   inventory_item_id?: string | null;
-  inventory_stock?: number | null;
+  inventory_stock?: number | null; // UI stock (units or servings)
   stock_level_id?: string | null;
-  // Calculated servings from recipe ingredients (bottle stock × servings per bottle)
+  inventory_deduct_qty?: number | null; // DB qty to deduct per 1 UI unit
+  // Calculated servings from recipe ingredients
   calculated_servings?: number | null;
 }
 
@@ -601,6 +602,7 @@ export default function StaffPOS() {
       .select(`
         id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
         lab_ops_categories(name, type),
+        lab_ops_inventory_items(name, base_unit),
         lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(
           id,
           lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id, lab_ops_inventory_items(name, base_unit))
@@ -673,61 +675,77 @@ export default function StaffPOS() {
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
       
-      // Check if this menu item is in the Spirits category
+      // Category name is useful for display rules (e.g. spirit shots)
       const categoryName = String(item.lab_ops_categories?.name || '').toLowerCase();
-      const isSpirits = isSpiritCategory(categoryName);
-      
-      // NEW SIMPLIFIED LOGIC:
-      // For Spirits: bottles × bottle_ml ÷ 30 = servings
-      // For others: stock directly = servings
+      const isSpiritsMenuItem = isSpiritCategory(categoryName);
+
+      // Inventory-linked items: if the linked inventory is ml-based and this is a spirit menu item,
+      // show stock as servings (ml/30) and deduct 30ml per sale.
+      const invBaseUnit = String(item.lab_ops_inventory_items?.base_unit || '').toLowerCase();
+      const invStockQtyRaw = invStock ? Number(invStock.quantity || 0) : null;
+      const inventoryDeductQty = invBaseUnit === 'ml' && isSpiritsMenuItem ? POUR_SIZE_ML : 1;
+      const inventoryStockDisplay =
+        invStockQtyRaw == null
+          ? null
+          : invBaseUnit === 'ml' && isSpiritsMenuItem
+            ? Math.floor(invStockQtyRaw / POUR_SIZE_ML)
+            : Math.floor(invStockQtyRaw);
+
+      // Recipe-based items: Find minimum servings across all ingredients (limiting ingredient)
+      // Assumption: stock_levels store ml for spirits (bottles are converted to ml when received).
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
-      
+
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
-        // Find minimum servings across all ingredients (limiting ingredient)
         let minServings = Infinity;
-        
+
         for (const ing of recipe.lab_ops_recipe_ingredients) {
           if (!ing.inventory_item_id) continue;
-          
-          const stockQty = recipeStockMap[ing.inventory_item_id] || 0;
+
+          const stockQty = Number(recipeStockMap[ing.inventory_item_id] || 0);
           const ingInfo = ingredientInfoMap[ing.inventory_item_id];
           const ingName = ingInfo?.name || '';
-          const baseUnit = String(ingInfo?.baseUnit || '').toUpperCase();
-          
-          let servingsInStock: number;
-          
-          // If base_unit is 'serving', stock is already in servings (from PO receiving conversion)
-          if (baseUnit === 'SERVING' || baseUnit === 'SERVINGS' || baseUnit === 'SRV') {
+          const baseUnitLower = String(ingInfo?.baseUnit || '').toLowerCase();
+          const unitLower = String(ing.unit || 'ml').toLowerCase();
+          const recipeQty = Number(ing.qty || 0);
+
+          let servingsInStock = 0;
+
+          // Backward compat: previously-stored servings
+          if (baseUnitLower === 'serving' || baseUnitLower === 'servings' || baseUnitLower === 'srv') {
             servingsInStock = Math.floor(stockQty);
-          } else if (isSpirits && (baseUnit === 'BOT' || baseUnit === 'BOTTLE')) {
-            // Legacy: bottles stored → convert to servings
-            const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
-            servingsInStock = bottlesToServings(stockQty, bottleSizeMl, POUR_SIZE_ML);
-          } else if (baseUnit === 'BOT' || baseUnit === 'BOTTLE') {
-            // Non-spirit bottle items: show as units directly
-            servingsInStock = Math.floor(stockQty);
-          } else {
-            // Non-bottle items: use qty-based calculation
-            const pourAmount = Number(ing.qty) || 1;
-            servingsInStock = pourAmount > 0 ? Math.floor(stockQty / pourAmount) : Math.floor(stockQty);
           }
-          
+          // Legacy: bottles stored as bottles
+          else if (baseUnitLower === 'bot' || baseUnitLower === 'bottle' || baseUnitLower === 'bottles') {
+            const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
+            if (unitLower === 'bot' || unitLower === 'bottle' || unitLower === 'bottles') {
+              servingsInStock = recipeQty > 0 ? Math.floor(stockQty / recipeQty) : Math.floor(stockQty);
+            } else {
+              const totalMl = stockQty * bottleSizeMl;
+              servingsInStock = recipeQty > 0 ? Math.floor(totalMl / recipeQty) : 0;
+            }
+          }
+          // New: ml-based stock
+          else {
+            servingsInStock = recipeQty > 0 ? Math.floor(stockQty / recipeQty) : Math.floor(stockQty);
+          }
+
           minServings = Math.min(minServings, servingsInStock);
         }
-        
+
         if (minServings !== Infinity) {
           calculatedServings = minServings;
         }
       }
-      
+
       return {
         ...item,
         remaining_serves: item.remaining_serves ?? null,
         recipe_id: item.recipe_id || recipe?.id || null,
         inventory_item_id: item.inventory_item_id || null,
-        inventory_stock: invStock ? invStock.quantity : null,
+        inventory_stock: inventoryStockDisplay,
         stock_level_id: invStock ? invStock.stock_level_id : null,
+        inventory_deduct_qty: inventoryDeductQty,
         calculated_servings: calculatedServings,
       };
     }));
@@ -1148,17 +1166,17 @@ export default function StaffPOS() {
       }]);
     }
     
-    // Handle inventory-linked items (like bottled water) - deduct from lab_ops_stock_levels
+    // Handle inventory-linked items (like bottled water or spirit shots) - deduct from lab_ops_stock_levels
     if (item.inventory_item_id && item.inventory_stock !== null && item.inventory_stock > 0) {
       const newStock = Math.max(0, item.inventory_stock - 1);
-      setMenuItems(prev => prev.map(m => 
+      setMenuItems(prev => prev.map(m =>
         m.id === item.id && m.inventory_stock !== null
           ? { ...m, inventory_stock: newStock }
           : m
       ));
-      
-      // Deduct from stock levels in database
-      deductInventoryStock(item.inventory_item_id, 1, item.stock_level_id);
+
+      const deductQty = Number(item.inventory_deduct_qty || 1);
+      deductInventoryStock(item.inventory_item_id, deductQty, item.stock_level_id);
     }
     // Handle batch-recipe based items (remaining_serves) 
     else if (item.remaining_serves !== null && item.remaining_serves > 0) {
@@ -1255,7 +1273,7 @@ export default function StaffPOS() {
         let qtyToDeduct: number;
         let deductUnit: string;
         
-        // If base_unit is 'serving', stock is in servings - deduct directly
+        // Backward compat: previously-stored servings
         if (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv') {
           qtyToDeduct = servingsToDeduct;
           deductUnit = 'srv';
@@ -1264,10 +1282,8 @@ export default function StaffPOS() {
           const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
           qtyToDeduct = (recipeQtyMl * servingsToDeduct) / bottleSizeMl;
           deductUnit = 'BOT';
-        } else if (baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') {
-          qtyToDeduct = recipeQtyMl * servingsToDeduct;
-          deductUnit = 'BOT';
         } else {
+          // New default: ml/qty-based deduction
           qtyToDeduct = recipeQtyMl * servingsToDeduct;
           deductUnit = unit;
         }
@@ -1330,16 +1346,13 @@ export default function StaffPOS() {
         let qtyToRestore: number;
         let restoreUnit: string;
         
-        // If base_unit is 'serving', restore servings directly
+        // Backward compat: previously-stored servings
         if (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv') {
           qtyToRestore = servingsToRestore;
           restoreUnit = 'srv';
         } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
           const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
           qtyToRestore = (recipeQtyMl * servingsToRestore) / bottleSizeMl;
-          restoreUnit = 'BOT';
-        } else if (baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') {
-          qtyToRestore = recipeQtyMl * servingsToRestore;
           restoreUnit = 'BOT';
         } else {
           qtyToRestore = recipeQtyMl * servingsToRestore;
@@ -1432,10 +1445,11 @@ export default function StaffPOS() {
     
     // Database operations using menuItemRef values
     if (menuItem?.inventory_item_id && menuItem?.inventory_stock !== null) {
+      const invScale = Number(menuItem.inventory_deduct_qty || 1);
       if (delta > 0) {
-        deductInventoryStock(menuItem.inventory_item_id, absDelta, menuItem.stock_level_id);
+        deductInventoryStock(menuItem.inventory_item_id, absDelta * invScale, menuItem.stock_level_id);
       } else {
-        restoreInventoryStock(menuItem.inventory_item_id, absDelta);
+        restoreInventoryStock(menuItem.inventory_item_id, absDelta * invScale);
       }
     }
     
@@ -1498,7 +1512,8 @@ export default function StaffPOS() {
     
     // Database operations
     if (menuItem?.inventory_item_id && menuItem?.inventory_stock !== null) {
-      restoreInventoryStock(menuItem.inventory_item_id, restoredAmount);
+      const invScale = Number(menuItem.inventory_deduct_qty || 1);
+      restoreInventoryStock(menuItem.inventory_item_id, restoredAmount * invScale);
     } else if (menuItem?.remaining_serves !== null) {
       const newRemaining = (menuItem.remaining_serves ?? 0) + restoredAmount;
       supabase

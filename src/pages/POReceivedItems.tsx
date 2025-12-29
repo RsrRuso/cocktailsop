@@ -1321,19 +1321,25 @@ const POReceivedItems = () => {
         const location = locations?.find((loc) => loc.outlet_id === matchedItem.outlet_id);
         const locationId = location?.id;
 
-        // Check if spirit item with base_unit='serving' - convert bottles to servings
+        // Convert bottle units into the inventory item's base unit (keeps data consistent)
         const baseUnit = String(matchedItem.base_unit || '').toLowerCase();
         const itemUnit = String(item.unit || '').toUpperCase();
         const isBottleUnit = ['BOT', 'BOTTLE', 'BTL', 'BOTTLES'].includes(itemUnit);
         const isSpirit = isSpiritItem(item.item_name);
-        
-        let stockQuantity = item.quantity;
-        
+
+        let stockQuantity = Number(item.quantity || 0);
+
+        // Backward compat: if the inventory item was previously created as 'serving', keep storing servings
         if (isSpirit && isBottleUnit && (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv')) {
           const bottleSizeMl = detectBottleSizeMl(item.item_name);
-          stockQuantity = Math.floor((item.quantity * bottleSizeMl) / POUR_SIZE_ML);
+          stockQuantity = Math.floor((stockQuantity * bottleSizeMl) / POUR_SIZE_ML);
         }
 
+        // New logic: if inventory item is ml-based, store received bottles as ml
+        if (isSpirit && isBottleUnit && (baseUnit === 'ml' || baseUnit === 'milliliter' || baseUnit === 'millilitre')) {
+          const bottleSizeMl = detectBottleSizeMl(item.item_name);
+          stockQuantity = stockQuantity * bottleSizeMl;
+        }
         await supabase.from('lab_ops_stock_movements').insert({
           inventory_item_id: matchedItem.id,
           to_location_id: locationId || null,
