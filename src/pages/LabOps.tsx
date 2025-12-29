@@ -22,6 +22,7 @@ import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
 import { RecipeCostPreview } from "@/components/lab-ops/RecipeCostPreview";
 import { IngredientSummaryDashboard } from "@/components/lab-ops/IngredientSummaryDashboard";
 import { RecipeCostCard } from "@/components/lab-ops/RecipeCostCard";
+import { RecipeIngredientEditorRow } from "@/components/lab-ops/RecipeIngredientEditorRow";
 import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -3835,6 +3836,30 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setInventoryItems(itemsWithStock);
   };
 
+  const [savingUnitCostFor, setSavingUnitCostFor] = useState<string | null>(null);
+
+  const saveUnitCostPerMl = async (inventoryItemId: string, unitCostPerMl: number) => {
+    if (!inventoryItemId || !(unitCostPerMl > 0)) return;
+
+    try {
+      setSavingUnitCostFor(inventoryItemId);
+      const { error } = await supabase.from("lab_ops_inventory_item_costs").insert({
+        inventory_item_id: inventoryItemId,
+        unit_cost: unitCostPerMl,
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Unit price saved", description: "Saved as cost per ml" });
+      await fetchInventoryItems();
+    } catch (e: any) {
+      console.error("[RECIPES] Failed saving unit cost", e);
+      toast({ title: "Failed to save unit price", variant: "destructive" });
+    } finally {
+      setSavingUnitCostFor(null);
+    }
+  };
+
   const createRecipe = async () => {
     if (!selectedMenuItem || ingredients.length === 0) return;
 
@@ -3857,6 +3882,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
           inventory_item_id: ing.itemId,
           qty: ing.qty,
           unit: ing.unit,
+          bottle_size: ing.bottle_size ?? null,
         });
       }
 
@@ -3888,6 +3914,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
         itemId: ing.inventory_item_id,
         qty: ing.qty || 0,
         unit: ing.unit || "ml",
+        bottle_size: ing.bottle_size ? Number(ing.bottle_size) : 750,
       }))
     );
     setShowAddRecipe(true);
@@ -3912,6 +3939,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
           inventory_item_id: ing.itemId,
           qty: ing.qty,
           unit: ing.unit,
+          bottle_size: ing.bottle_size ?? null,
         });
       }
     }
@@ -4035,47 +4063,18 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {ingredients.map((ing, idx) => (
-                      <div key={idx} className="flex gap-2 items-center">
-                        <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
-                          <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
-                          <SelectContent>
-                            {inventoryItems.map((inv) => (
-                              <SelectItem key={inv.id} value={inv.id}>
-                                <div className="flex items-center justify-between w-full gap-2">
-                                  <span>{inv.name}</span>
-                                  <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
-                                    ({inv.totalStock || 0} {inv.base_unit})
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Qty"
-                          className="w-20"
-                          value={ing.qty}
-                          onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
-                        />
-                        <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
-                          <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="g">g</SelectItem>
-                            <SelectItem value="kg">kg</SelectItem>
-                            <SelectItem value="ml">ml</SelectItem>
-                            <SelectItem value="L">L</SelectItem>
-                            <SelectItem value="piece">pc</SelectItem>
-                            <SelectItem value="dash">dash</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <RecipeIngredientEditorRow
+                        key={idx}
+                        ing={ing}
+                        idx={idx}
+                        inventoryItems={inventoryItems}
+                        onChange={updateIngredient as any}
+                        onRemove={removeIngredient as any}
+                        onSaveUnitCostPerMl={saveUnitCostPerMl}
+                        savingCostItemId={savingUnitCostFor}
+                      />
                     ))}
                   </div>
                 </div>
