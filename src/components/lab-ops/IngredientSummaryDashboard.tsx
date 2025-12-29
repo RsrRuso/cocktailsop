@@ -17,6 +17,7 @@ import {
   ChefHat
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { detectBottleSizeMl } from "@/lib/bottleSize";
 
 interface IngredientUsage {
   itemId: string;
@@ -55,11 +56,35 @@ export function IngredientSummaryDashboard({ recipes, inventoryItems }: Ingredie
         if (!invItem) continue;
 
         const existing = usageMap.get(ing.inventory_item_id);
-        const unitCost = invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
-        const bottleSize = ing.bottle_size || invItem.bottle_size_ml || 750;
-        const costPerMl = unitCost;
-        const ingredientCost = ing.qty * costPerMl;
 
+        const unitCostPerBottleOrPiece = Number(invItem.unit_cost || 0);
+        const bottleSize = Number(
+          ing.bottle_size ||
+            invItem.bottle_size_ml ||
+            detectBottleSizeMl(invItem.name) ||
+            750
+        );
+
+        const UNIT_TO_ML: Record<string, number> = {
+          ml: 1,
+          L: 1000,
+          cl: 10,
+          oz: 29.5735,
+          dash: 0.9,
+          drop: 0.05,
+          tsp: 4.929,
+          tbsp: 14.787,
+          g: 1,
+          kg: 1000,
+          piece: 0,
+        };
+
+        const unitMult = UNIT_TO_ML[String(ing.unit || 'ml')] ?? 1;
+        const qtyMl = String(ing.unit) === 'piece' ? 0 : Number(ing.qty || 0) * unitMult;
+        const costPerMl = bottleSize > 0 ? unitCostPerBottleOrPiece / bottleSize : 0;
+        const ingredientCost = String(ing.unit) === 'piece'
+          ? unitCostPerBottleOrPiece * Number(ing.qty || 0)
+          : qtyMl * costPerMl;
 
         if (existing) {
           existing.totalQtyUsed += ing.qty || 0;

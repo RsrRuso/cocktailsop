@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { detectBottleSizeMl } from "@/lib/bottleSize";
 
 type InventoryItem = {
   id: string;
@@ -94,13 +95,17 @@ export function RecipeCostDashboard({
       const unit = ing.unit || "ml";
       const unitMult = UNIT_TO_ML[unit] || 1;
       const qtyMl = unit === "piece" ? 0 : qty * unitMult;
-
-      // Bottle size: prefer recipe-level override, then inventory, then default 750
-      const bottleSize = Number(ing.bottle_size || invItem.bottle_size_ml || 750);
+      // Bottle size: prefer recipe override, then inventory, then infer from name, then default 750
+      const bottleSize = Number(
+        ing.bottle_size ||
+          invItem.bottle_size_ml ||
+          detectBottleSizeMl(invItem.name) ||
+          750
+      );
 
       // Unit cost is per bottle from receiving PO / inventory
       const unitCostPerBottle = Number(invItem.unit_cost || 0);
-      
+
       // Calculate cost per ml
       const costPerMl = bottleSize > 0 ? unitCostPerBottle / bottleSize : 0;
 

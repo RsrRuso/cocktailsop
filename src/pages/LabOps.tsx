@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getLabOpsFromCache, labOpsCache } from "@/lib/routePrefetch";
+import { detectBottleSizeMl } from "@/lib/bottleSize";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
@@ -3951,10 +3952,44 @@ function RecipesModule({ outletId }: { outletId: string }) {
     const recipeIngredients = recipe.lab_ops_recipe_ingredients || [];
     let totalCost = 0;
 
+    const UNIT_TO_ML: Record<string, number> = {
+      ml: 1,
+      L: 1000,
+      cl: 10,
+      oz: 29.5735,
+      dash: 0.9,
+      drop: 0.05,
+      tsp: 4.929,
+      tbsp: 14.787,
+      g: 1,
+      kg: 1000,
+      piece: 0,
+    };
+
     for (const ing of recipeIngredients) {
-      const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-      const cost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
-      totalCost += cost * (ing.qty || 0);
+      const invItem = inventoryItems.find((i) => i.id === ing.inventory_item_id);
+      if (!invItem) continue;
+
+      const qty = Number(ing.qty || 0);
+      const unit = String(ing.unit || 'ml');
+
+      const unitCostPerBottleOrPiece = Number(invItem.unit_cost || 0);
+      if (unit === 'piece') {
+        totalCost += unitCostPerBottleOrPiece * qty;
+        continue;
+      }
+
+      const bottleSize = Number(
+        ing.bottle_size ||
+          invItem.bottle_size_ml ||
+          detectBottleSizeMl(invItem.name) ||
+          750
+      );
+
+      const unitMult = UNIT_TO_ML[unit] ?? 1;
+      const qtyMl = qty * unitMult;
+      const costPerMl = bottleSize > 0 ? unitCostPerBottleOrPiece / bottleSize : 0;
+      totalCost += qtyMl * costPerMl;
     }
 
     return totalCost;
@@ -3962,9 +3997,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
   const calculateFoodCostPercent = (recipe: any) => {
     const cost = calculateRecipeCost(recipe);
-    const price = recipe.menu_item?.base_price || 0;
+    const price = Number(recipe.menu_item?.base_price || 0);
     return price > 0 ? ((cost / price) * 100).toFixed(1) : "0.0";
   };
+
 
   return (
     <div className="space-y-6">
