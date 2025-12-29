@@ -1372,7 +1372,6 @@ export default function StaffPOS() {
   };
 
   const updateQuantity = async (itemId: string, delta: number) => {
-    const menuItem = menuItemsRef.current.find(m => m.id === itemId);
     const absDelta = Math.abs(delta);
     
     // Update order items
@@ -1384,40 +1383,54 @@ export default function StaffPOS() {
       return o;
     }).filter(o => o.qty > 0));
     
-    // Handle inventory-linked items - use functional update from prev state
-    if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
-      setMenuItems(prev => prev.map(m => {
-        if (m.id === itemId && m.inventory_stock !== null) {
-          const currentStock = m.inventory_stock;
-          const newStock = delta > 0 
-            ? Math.max(0, currentStock - absDelta)
-            : currentStock + absDelta;
-          return { ...m, inventory_stock: newStock };
-        }
-        return m;
-      }));
+    // Get menu item info from ref for database operations
+    const menuItem = menuItemsRef.current.find(m => m.id === itemId);
+    
+    // Update UI state using functional setter to get latest values
+    setMenuItems(prev => prev.map(m => {
+      if (m.id !== itemId) return m;
       
-      // Update database
+      // Handle inventory-linked items
+      if (m.inventory_item_id && m.inventory_stock !== null) {
+        const currentStock = m.inventory_stock;
+        const newStock = delta > 0 
+          ? Math.max(0, currentStock - absDelta)
+          : currentStock + absDelta;
+        return { ...m, inventory_stock: newStock };
+      }
+      
+      // Handle batch-recipe based items (remaining_serves)
+      if (m.remaining_serves !== null) {
+        const currentServes = m.remaining_serves;
+        const newRemaining = delta > 0 
+          ? Math.max(0, currentServes - absDelta)
+          : currentServes + absDelta;
+        return { ...m, remaining_serves: newRemaining };
+      }
+      
+      // Handle recipe-based items with calculated_servings (Spirits: bottles × bottle_ml ÷ 30)
+      if (m.calculated_servings !== null) {
+        const currentServings = m.calculated_servings;
+        const newServings = delta > 0 
+          ? Math.max(0, currentServings - absDelta)
+          : currentServings + absDelta;
+        return { ...m, calculated_servings: newServings };
+      }
+      
+      return m;
+    }));
+    
+    // Database operations using menuItemRef values
+    if (menuItem?.inventory_item_id && menuItem?.inventory_stock !== null) {
       if (delta > 0) {
         deductInventoryStock(menuItem.inventory_item_id, absDelta, menuItem.stock_level_id);
       } else {
         restoreInventoryStock(menuItem.inventory_item_id, absDelta);
       }
     }
-    // Handle batch-recipe based items (remaining_serves)
-    else if (menuItem && menuItem.remaining_serves !== null) {
-      setMenuItems(prev => prev.map(m => {
-        if (m.id === itemId && m.remaining_serves !== null) {
-          const currentServes = m.remaining_serves;
-          const newRemaining = delta > 0 
-            ? Math.max(0, currentServes - absDelta)
-            : currentServes + absDelta;
-          return { ...m, remaining_serves: newRemaining };
-        }
-        return m;
-      }));
-      
-      // Get fresh value for database update
+    
+    // Update remaining_serves in database
+    if (menuItem?.remaining_serves !== null && !menuItem?.inventory_item_id) {
       const freshItem = menuItemsRef.current.find(m => m.id === itemId);
       const dbRemaining = freshItem?.remaining_serves ?? 0;
       const dbNewRemaining = delta > 0 
@@ -1429,19 +1442,6 @@ export default function StaffPOS() {
         .update({ remaining_serves: dbNewRemaining })
         .eq("id", itemId)
         .then(() => {});
-    }
-    // Handle recipe-based items with calculated_servings
-    else if (menuItem && menuItem.calculated_servings !== null) {
-      setMenuItems(prev => prev.map(m => {
-        if (m.id === itemId && m.calculated_servings !== null) {
-          const currentServings = m.calculated_servings;
-          const newServings = delta > 0 
-            ? Math.max(0, currentServings - absDelta)
-            : currentServings + absDelta;
-          return { ...m, calculated_servings: newServings };
-        }
-        return m;
-      }));
     }
     
     // Handle recipe ingredient deduction/restore
@@ -1456,57 +1456,48 @@ export default function StaffPOS() {
 
   const removeItem = async (itemId: string) => {
     const removedItem = orderItems.find(o => o.menu_item_id === itemId);
-    const menuItem = menuItems.find(m => m.id === itemId);
+    const menuItem = menuItemsRef.current.find(m => m.id === itemId);
     
-    setOrderItems(orderItems.filter(o => o.menu_item_id !== itemId));
+    if (!removedItem) return;
     
-    // Restore inventory stock when item is removed
-    if (removedItem && menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
-      const restoredAmount = removedItem.qty;
-      const newStock = menuItem.inventory_stock + restoredAmount;
+    const restoredAmount = removedItem.qty;
+    
+    setOrderItems(prev => prev.filter(o => o.menu_item_id !== itemId));
+    
+    // Restore stock using functional update from prev state
+    setMenuItems(prev => prev.map(m => {
+      if (m.id !== itemId) return m;
       
-      setMenuItems(prev => prev.map(m => 
-        m.id === itemId && m.inventory_stock !== null
-          ? { ...m, inventory_stock: newStock }
-          : m
-      ));
+      // Handle inventory-linked items
+      if (m.inventory_item_id && m.inventory_stock !== null) {
+        return { ...m, inventory_stock: m.inventory_stock + restoredAmount };
+      }
       
-      // Restore in database
+      // Handle remaining_serves
+      if (m.remaining_serves !== null) {
+        return { ...m, remaining_serves: m.remaining_serves + restoredAmount };
+      }
+      
+      // Handle calculated_servings
+      if (m.calculated_servings !== null) {
+        return { ...m, calculated_servings: m.calculated_servings + restoredAmount };
+      }
+      
+      return m;
+    }));
+    
+    // Database operations
+    if (menuItem?.inventory_item_id && menuItem?.inventory_stock !== null) {
       restoreInventoryStock(menuItem.inventory_item_id, restoredAmount);
-    }
-    // Restore remaining_serves when item is removed
-    else if (removedItem && menuItem && menuItem.remaining_serves !== null) {
-      const restoredAmount = removedItem.qty;
-      const newRemaining = menuItem.remaining_serves + restoredAmount;
-      
-      setMenuItems(prev => prev.map(m => 
-        m.id === itemId && m.remaining_serves !== null
-          ? { ...m, remaining_serves: newRemaining }
-          : m
-      ));
-      
-      // Update database
+    } else if (menuItem?.remaining_serves !== null) {
+      const newRemaining = (menuItem.remaining_serves ?? 0) + restoredAmount;
       supabase
         .from("lab_ops_menu_items")
         .update({ remaining_serves: newRemaining })
         .eq("id", itemId)
         .then(() => {});
-    }
-    // Restore calculated_servings when item is removed
-    else if (removedItem && menuItem && menuItem.calculated_servings !== null) {
-      const restoredAmount = removedItem.qty;
-      const newServings = menuItem.calculated_servings + restoredAmount;
-      
-      setMenuItems(prev => prev.map(m => 
-        m.id === itemId && m.calculated_servings !== null
-          ? { ...m, calculated_servings: newServings }
-          : m
-      ));
-      
-      // Restore recipe ingredients in database
-      if (menuItem.recipe_id) {
-        restoreRecipeIngredients(menuItem.recipe_id, restoredAmount);
-      }
+    } else if (menuItem?.calculated_servings !== null && menuItem?.recipe_id) {
+      restoreRecipeIngredients(menuItem.recipe_id, restoredAmount);
     }
   };
 
