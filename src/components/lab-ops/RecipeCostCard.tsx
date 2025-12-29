@@ -47,10 +47,14 @@ const UNIT_TO_ML: Record<string, number> = {
 
 function getTotalServesFromStock(
   ing: { qty: number; unit: string },
-  invItem: InventoryItem | undefined
+  invItem: InventoryItem | undefined,
+  bottleSize: number
 ) {
-  const stock = invItem?.totalStock || 0;
+  const stock = Number(invItem?.totalStock || 0);
   if (!stock) return 0;
+
+  const baseUnit = (invItem?.base_unit || "").toLowerCase();
+  const stockIsBottles = baseUnit.includes("bottle") || baseUnit === "bot" || baseUnit === "btl" || baseUnit === "btls";
 
   if (ing.unit === "piece") {
     const perServe = ing.qty > 0 ? ing.qty : 1;
@@ -61,7 +65,12 @@ function getTotalServesFromStock(
   const qtyMl = ing.qty * unitMultiplier;
   if (qtyMl <= 0) return 0;
 
-  // totalStock is stored as ML for spirits in LAB Ops; for non-ML categories this may be counts
+  // If stock is recorded as bottles, convert to ml using bottle size.
+  if (stockIsBottles) {
+    return Math.floor((stock * bottleSize) / qtyMl);
+  }
+
+  // Otherwise assume stock is stored in ml.
   return Math.floor(stock / qtyMl);
 }
 
@@ -158,7 +167,11 @@ export function RecipeCostCard({
                   const invItem = inventoryItems.find((i) => i.name === b.ingredientName);
 
                   // total servings uses current stock divided by recipe usage
-                  const totalServes = getTotalServesFromStock({ qty: b.qty, unit: b.unit }, invItem);
+                  const totalServes = getTotalServesFromStock(
+                    { qty: b.qty, unit: b.unit },
+                    invItem,
+                    b.bottleSize
+                  );
 
                   const unitBottleCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
 
@@ -178,7 +191,7 @@ export function RecipeCostCard({
                       </div>
 
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                        <span>Unit cost: {formatPrice(Number(unitBottleCost) || 0)}</span>
+                        <span>Unit price: {formatPrice(Number(unitBottleCost) || 0)}/ml</span>
                         {b.servesPerBottle > 0 && <span>{b.servesPerBottle} servings/bottle</span>}
                         {totalServes > 0 && <span>{totalServes} total servings</span>}
                       </div>
