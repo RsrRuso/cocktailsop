@@ -24,6 +24,8 @@ import autoTable from "jspdf-autotable";
 import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
+import { isSpiritItem } from "@/lib/servings";
+import { detectBottleSizeMl, POUR_SIZE_ML } from "@/lib/spiritServings";
 import { 
   EnhancedReceivingDialog, 
   EnhancedReceivingData, 
@@ -1319,9 +1321,18 @@ const POReceivedItems = () => {
         const location = locations?.find((loc) => loc.outlet_id === matchedItem.outlet_id);
         const locationId = location?.id;
 
-        // Store raw bottle quantity - do NOT convert to servings.
-        // Serving calculation is done at display time using bottle_ratio_ml / serving_ratio_ml.
-        const stockQuantity = item.quantity;
+        // Check if spirit item with base_unit='serving' - convert bottles to servings
+        const baseUnit = String(matchedItem.base_unit || '').toLowerCase();
+        const itemUnit = String(item.unit || '').toUpperCase();
+        const isBottleUnit = ['BOT', 'BOTTLE', 'BTL', 'BOTTLES'].includes(itemUnit);
+        const isSpirit = isSpiritItem(item.item_name);
+        
+        let stockQuantity = item.quantity;
+        
+        if (isSpirit && isBottleUnit && (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv')) {
+          const bottleSizeMl = detectBottleSizeMl(item.item_name);
+          stockQuantity = Math.floor((item.quantity * bottleSizeMl) / POUR_SIZE_ML);
+        }
 
         await supabase.from('lab_ops_stock_movements').insert({
           inventory_item_id: matchedItem.id,
@@ -1334,7 +1345,6 @@ const POReceivedItems = () => {
           created_by: user?.id
         });
 
-        // Update stock levels (only when we have a valid location)
         if (!locationId) continue;
 
         const { data: existingLevel } = await supabase

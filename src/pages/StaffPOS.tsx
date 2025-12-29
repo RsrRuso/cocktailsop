@@ -695,16 +695,16 @@ export default function StaffPOS() {
           const ingName = ingInfo?.name || '';
           const baseUnit = String(ingInfo?.baseUnit || '').toUpperCase();
           
-          // Check if ingredient is a bottle (BOT, bottle, etc.)
-          const isBottleUnit = baseUnit === 'BOT' || baseUnit === 'BOTTLE';
-          
           let servingsInStock: number;
           
-          if (isSpirits && isBottleUnit) {
-            // SPIRIT LOGIC: bottles × bottle_ml ÷ 30 = servings
+          // If base_unit is 'serving', stock is already in servings (from PO receiving conversion)
+          if (baseUnit === 'SERVING' || baseUnit === 'SERVINGS' || baseUnit === 'SRV') {
+            servingsInStock = Math.floor(stockQty);
+          } else if (isSpirits && (baseUnit === 'BOT' || baseUnit === 'BOTTLE')) {
+            // Legacy: bottles stored → convert to servings
             const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
             servingsInStock = bottlesToServings(stockQty, bottleSizeMl, POUR_SIZE_ML);
-          } else if (isBottleUnit) {
+          } else if (baseUnit === 'BOT' || baseUnit === 'BOTTLE') {
             // Non-spirit bottle items: show as units directly
             servingsInStock = Math.floor(stockQty);
           } else {
@@ -1232,8 +1232,8 @@ export default function StaffPOS() {
   };
 
   // Deduct recipe ingredients from inventory in real-time
-  // SPIRIT LOGIC: recipe qty is in ml (e.g., 30ml pour), bottle_size is bottle capacity
-  // Deduct = (recipe_qty_ml × servings) / bottle_size_ml = fractional bottles
+  // For items with base_unit='serving': stock is already in servings, deduct directly
+  // For bottles: deduct fractional bottles based on pour size
   const deductRecipeIngredients = async (recipeId: string, servingsToDeduct: number) => {
     try {
       const { data: ingredients } = await supabase
@@ -1248,30 +1248,33 @@ export default function StaffPOS() {
         if (!inventoryItemId) continue;
 
         const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toLowerCase();
-        const isBottleUnit = baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles';
         const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
-        const recipeQtyMl = Number(ingredient.qty || 0); // This is ml per serving (e.g., 30)
+        const recipeQtyMl = Number(ingredient.qty || 0);
         const unit = String(ingredient.unit || 'ml').toLowerCase();
         
         let qtyToDeduct: number;
+        let deductUnit: string;
         
-        // For bottle-based items with ml recipe qty: deduct fractional bottles
-        // Formula: (pour_ml × servings) / bottle_size = bottles to deduct
-        if (isBottleUnit && (unit === 'ml' || unit === 'g')) {
+        // If base_unit is 'serving', stock is in servings - deduct directly
+        if (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv') {
+          qtyToDeduct = servingsToDeduct;
+          deductUnit = 'srv';
+        } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
+          // Legacy bottle storage: deduct fractional bottles
           const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
-          // recipeQtyMl is the pour size (e.g., 30ml), deduct that per serving
           qtyToDeduct = (recipeQtyMl * servingsToDeduct) / bottleSizeMl;
-        } else if (isBottleUnit) {
-          // If unit is "bottle" or similar, deduct recipe qty as whole bottles
+          deductUnit = 'BOT';
+        } else if (baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') {
           qtyToDeduct = recipeQtyMl * servingsToDeduct;
+          deductUnit = 'BOT';
         } else {
-          // Non-bottle items: deduct recipe qty × servings
           qtyToDeduct = recipeQtyMl * servingsToDeduct;
+          deductUnit = unit;
         }
 
         if (qtyToDeduct <= 0) continue;
 
-        // Get stock level (allow fetching even if quantity is 0 to still record movement)
+        // Get stock level
         const { data: stockLevels } = await supabase
           .from("lab_ops_stock_levels")
           .select("id, quantity, location_id")
@@ -1297,7 +1300,7 @@ export default function StaffPOS() {
           movement_type: "sale",
           reference_type: "recipe_consumption",
           reference_id: recipeId,
-          notes: `Sold ${servingsToDeduct} srv → -${qtyToDeduct.toFixed(4)} ${isBottleUnit ? 'BOT' : unit}`,
+          notes: `Sold ${servingsToDeduct} srv → -${qtyToDeduct.toFixed(2)} ${deductUnit}`,
         });
       }
     } catch (error) {
@@ -1320,20 +1323,27 @@ export default function StaffPOS() {
         if (!inventoryItemId) continue;
 
         const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toLowerCase();
-        const isBottleUnit = baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles';
         const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
         const recipeQtyMl = Number(ingredient.qty || 0);
         const unit = String(ingredient.unit || 'ml').toLowerCase();
         
         let qtyToRestore: number;
+        let restoreUnit: string;
         
-        if (isBottleUnit && (unit === 'ml' || unit === 'g')) {
+        // If base_unit is 'serving', restore servings directly
+        if (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv') {
+          qtyToRestore = servingsToRestore;
+          restoreUnit = 'srv';
+        } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
           const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
           qtyToRestore = (recipeQtyMl * servingsToRestore) / bottleSizeMl;
-        } else if (isBottleUnit) {
+          restoreUnit = 'BOT';
+        } else if (baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') {
           qtyToRestore = recipeQtyMl * servingsToRestore;
+          restoreUnit = 'BOT';
         } else {
           qtyToRestore = recipeQtyMl * servingsToRestore;
+          restoreUnit = unit;
         }
 
         if (qtyToRestore <= 0) continue;
@@ -1363,7 +1373,7 @@ export default function StaffPOS() {
           movement_type: "adjustment",
           reference_type: "recipe_return",
           reference_id: recipeId,
-          notes: `Returned ${servingsToRestore} srv → +${qtyToRestore.toFixed(4)} ${isBottleUnit ? 'BOT' : unit}`,
+          notes: `Returned ${servingsToRestore} srv → +${qtyToRestore.toFixed(2)} ${restoreUnit}`,
         });
       }
     } catch (error) {
