@@ -49,9 +49,9 @@ Deno.serve(async (req) => {
         .upsert({
           track_id: track.id,
           usage_count: usageCount || 0,
-          likes_count: 0,
+          like_count: 0,
           usage_score: calculatedScore,
-          last_updated: new Date().toISOString()
+          last_updated: new Date().toISOString(),
         }, { onConflict: 'track_id' })
 
       if (upsertError) {
