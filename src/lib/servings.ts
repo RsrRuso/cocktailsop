@@ -38,6 +38,29 @@ function inferBottleMlFromLabel(label?: string | null): number | null {
   return null;
 }
 
+// Helper to detect if an item name suggests it's a spirit
+export function isSpiritItem(label?: string | null): boolean {
+  const s = String(label || "").toLowerCase();
+  
+  // Common spirit keywords
+  const spiritKeywords = [
+    'whisky', 'whiskey', 'vodka', 'gin', 'rum', 'tequila', 'brandy', 
+    'cognac', 'bourbon', 'scotch', 'mezcal', 'liqueur', 'liquor',
+    'vermouth', 'aperol', 'campari', 'amaretto', 'kahlua', 'baileys',
+    'jagermeister', 'absinthe', 'sambuca', 'grappa', 'pisco',
+    'chivas', 'johnnie walker', 'jw ', 'grey goose', 'absolut',
+    'smirnoff', 'bacardi', 'captain morgan', 'havana club',
+    'hendrick', 'tanqueray', 'bombay', 'beefeater', 'gordon',
+    'patron', 'don julio', 'jose cuervo', 'hennessy', 'remy martin',
+    'courvoisier', 'martell', 'jack daniel', 'jim beam', 'maker\'s mark',
+    'wild turkey', 'woodford', 'bulleit', 'jameson', 'bushmills',
+    'glenfiddich', 'glenlivet', 'macallan', 'laphroaig', 'ardbeg',
+    'highland park', 'dalmore', 'oban', 'talisker', 'lagavulin'
+  ];
+  
+  return spiritKeywords.some(keyword => s.includes(keyword));
+}
+
 export function getServingsDisplay(opts: {
   quantity: number;
   unit?: string | null;
@@ -45,6 +68,7 @@ export function getServingsDisplay(opts: {
   ratio?: ServingRatioInput | null;
   defaultServingMl?: number;
   defaultBottleMl?: number;
+  isSpirit?: boolean; // Explicit override - if provided, uses this; otherwise auto-detects
 }): {
   displayQty: number;
   displayUnit: string;
@@ -55,6 +79,17 @@ export function getServingsDisplay(opts: {
   const unit = String(opts.unit || "");
 
   if (!isBottleUnit(unit)) {
+    return { displayQty: quantity, displayUnit: unit || "unit", converted: false };
+  }
+
+  // Determine if this is a spirit item
+  // If isSpirit is explicitly set, use that; otherwise auto-detect from label
+  const treatAsSpirit = opts.isSpirit !== undefined 
+    ? opts.isSpirit 
+    : isSpiritItem(opts.label);
+
+  // Only convert bottle to servings for spirit items
+  if (!treatAsSpirit) {
     return { displayQty: quantity, displayUnit: unit || "unit", converted: false };
   }
 
