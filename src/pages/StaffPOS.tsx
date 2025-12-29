@@ -696,6 +696,15 @@ export default function StaffPOS() {
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
 
+      // Helper to normalize qty (0.03 → 30ml)
+      const normalizeQty = (qty: number, unit: string, bottleSize: number): number => {
+        const u = unit.toLowerCase();
+        if (qty < 1 && bottleSize >= 100 && (u === 'ml' || u === 'g')) {
+          return qty * 1000;
+        }
+        return qty;
+      };
+
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
         let minServings = Infinity;
 
@@ -707,7 +716,11 @@ export default function StaffPOS() {
           const ingName = ingInfo?.name || '';
           const baseUnitLower = String(ingInfo?.baseUnit || '').toLowerCase();
           const unitLower = String(ing.unit || 'ml').toLowerCase();
-          const recipeQty = Number(ing.qty || 0);
+          const rawQty = Number(ing.qty || 0);
+          const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
+          
+          // Normalize qty (0.03 → 30ml)
+          const recipeQty = normalizeQty(rawQty, unitLower, bottleSizeMl);
 
           let servingsInStock = 0;
 
@@ -717,15 +730,15 @@ export default function StaffPOS() {
           }
           // Legacy: bottles stored as bottles
           else if (baseUnitLower === 'bot' || baseUnitLower === 'bottle' || baseUnitLower === 'bottles') {
-            const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
             if (unitLower === 'bot' || unitLower === 'bottle' || unitLower === 'bottles') {
               servingsInStock = recipeQty > 0 ? Math.floor(stockQty / recipeQty) : Math.floor(stockQty);
             } else {
+              // Stock is in bottles, recipe is in ml
               const totalMl = stockQty * bottleSizeMl;
               servingsInStock = recipeQty > 0 ? Math.floor(totalMl / recipeQty) : 0;
             }
           }
-          // New: ml-based stock
+          // New: ml-based stock (stock is in ml, recipe qty is in ml)
           else {
             servingsInStock = recipeQty > 0 ? Math.floor(stockQty / recipeQty) : Math.floor(stockQty);
           }
@@ -1152,34 +1165,41 @@ export default function StaffPOS() {
   };
 
   const addToOrder = async (item: MenuItem) => {
-    const existing = orderItems.find(o => o.menu_item_id === item.id);
-    if (existing) {
-      setOrderItems(orderItems.map(o => 
-        o.menu_item_id === item.id ? { ...o, qty: o.qty + 1 } : o
-      ));
-    } else {
-      setOrderItems([...orderItems, {
-        menu_item_id: item.id,
-        name: item.name,
-        qty: 1,
-        price: item.base_price
-      }]);
-    }
+    // Use functional setter for order items to ensure latest state
+    setOrderItems(prev => {
+      const existing = prev.find(o => o.menu_item_id === item.id);
+      if (existing) {
+        return prev.map(o => 
+          o.menu_item_id === item.id ? { ...o, qty: o.qty + 1 } : o
+        );
+      } else {
+        return [...prev, {
+          menu_item_id: item.id,
+          name: item.name,
+          qty: 1,
+          price: item.base_price
+        }];
+      }
+    });
+    
+    // Get fresh item data from ref for accurate stock values
+    const freshItem = menuItemsRef.current.find(m => m.id === item.id) || item;
     
     // Handle inventory-linked items (like bottled water or spirit shots) - deduct from lab_ops_stock_levels
-    if (item.inventory_item_id && item.inventory_stock !== null && item.inventory_stock > 0) {
-      const newStock = Math.max(0, item.inventory_stock - 1);
+    if (freshItem.inventory_item_id && freshItem.inventory_stock !== null && freshItem.inventory_stock > 0) {
+      // Immediate UI update using functional setter
       setMenuItems(prev => prev.map(m =>
         m.id === item.id && m.inventory_stock !== null
-          ? { ...m, inventory_stock: newStock }
+          ? { ...m, inventory_stock: Math.max(0, m.inventory_stock - 1) }
           : m
       ));
 
-      const deductQty = Number(item.inventory_deduct_qty || 1);
-      deductInventoryStock(item.inventory_item_id, deductQty, item.stock_level_id);
+      const deductQty = Number(freshItem.inventory_deduct_qty || 1);
+      deductInventoryStock(freshItem.inventory_item_id, deductQty, freshItem.stock_level_id);
     }
     // Handle batch-recipe based items (remaining_serves) 
-    else if (item.remaining_serves !== null && item.remaining_serves > 0) {
+    else if (freshItem.remaining_serves !== null && freshItem.remaining_serves > 0) {
+      // Immediate UI update using functional setter
       setMenuItems(prev => prev.map(m => 
         m.id === item.id && m.remaining_serves !== null
           ? { ...m, remaining_serves: Math.max(0, m.remaining_serves - 1) }
@@ -1187,15 +1207,16 @@ export default function StaffPOS() {
       ));
       
       // Update database in background (fire and forget)
+      const currentServes = menuItemsRef.current.find(m => m.id === item.id)?.remaining_serves ?? 0;
       supabase
         .from("lab_ops_menu_items")
-        .update({ remaining_serves: Math.max(0, item.remaining_serves - 1) })
+        .update({ remaining_serves: Math.max(0, currentServes - 1) })
         .eq("id", item.id)
         .then(() => {});
     }
-    // Handle recipe-based items with calculated_servings (like cocktails with ingredients)
-    else if (item.calculated_servings !== null && item.calculated_servings > 0) {
-      // Update UI immediately
+    // Handle recipe-based items with calculated_servings (like cocktails/spirits with ingredients)
+    else if (freshItem.calculated_servings !== null && freshItem.calculated_servings > 0) {
+      // Immediate UI update using functional setter
       setMenuItems(prev => prev.map(m => 
         m.id === item.id && m.calculated_servings !== null
           ? { ...m, calculated_servings: Math.max(0, m.calculated_servings - 1) }
@@ -1205,8 +1226,8 @@ export default function StaffPOS() {
     
     // Real-time ingredient deduction based on recipe
     // IMPORTANT: Skip recipe deduction for inventory-linked items (they use direct stock deduction above)
-    if (item.recipe_id && !item.inventory_item_id) {
-      deductRecipeIngredients(item.recipe_id, 1);
+    if (freshItem.recipe_id && !freshItem.inventory_item_id) {
+      deductRecipeIngredients(freshItem.recipe_id, 1);
     }
     
     // Auto-navigate to bill on mobile
@@ -1250,6 +1271,16 @@ export default function StaffPOS() {
     }
   };
 
+  // Normalize recipe qty: convert 0.03 → 30ml if stored as fraction
+  const normalizeRecipeQty = (qty: number, unit: string, bottleSize: number): number => {
+    const u = unit.toLowerCase();
+    // If qty < 1 and bottle size is >= 100ml, assume fractional notation (0.03 = 30ml)
+    if (qty < 1 && bottleSize >= 100 && (u === 'ml' || u === 'g')) {
+      return qty * 1000;
+    }
+    return qty;
+  };
+
   // Deduct recipe ingredients from inventory in real-time
   // For items with base_unit='serving': stock is already in servings, deduct directly
   // For bottles: deduct fractional bottles based on pour size
@@ -1268,8 +1299,12 @@ export default function StaffPOS() {
 
         const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toLowerCase();
         const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
-        const recipeQtyMl = Number(ingredient.qty || 0);
+        const rawQty = Number(ingredient.qty || 0);
         const unit = String(ingredient.unit || 'ml').toLowerCase();
+        const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
+        
+        // Normalize qty (0.03 → 30ml)
+        const recipeQtyMl = normalizeRecipeQty(rawQty, unit, bottleSizeMl);
         
         let qtyToDeduct: number;
         let deductUnit: string;
@@ -1280,13 +1315,12 @@ export default function StaffPOS() {
           deductUnit = 'srv';
         } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
           // Legacy bottle storage: deduct fractional bottles
-          const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
           qtyToDeduct = (recipeQtyMl * servingsToDeduct) / bottleSizeMl;
           deductUnit = 'BOT';
         } else {
-          // New default: ml/qty-based deduction
+          // New default: ml/qty-based deduction (stock is in ml)
           qtyToDeduct = recipeQtyMl * servingsToDeduct;
-          deductUnit = unit;
+          deductUnit = 'ml';
         }
 
         if (qtyToDeduct <= 0) continue;
@@ -1341,8 +1375,12 @@ export default function StaffPOS() {
 
         const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toLowerCase();
         const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
-        const recipeQtyMl = Number(ingredient.qty || 0);
+        const rawQty = Number(ingredient.qty || 0);
         const unit = String(ingredient.unit || 'ml').toLowerCase();
+        const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
+        
+        // Normalize qty (0.03 → 30ml)
+        const recipeQtyMl = normalizeRecipeQty(rawQty, unit, bottleSizeMl);
         
         let qtyToRestore: number;
         let restoreUnit: string;
@@ -1352,12 +1390,12 @@ export default function StaffPOS() {
           qtyToRestore = servingsToRestore;
           restoreUnit = 'srv';
         } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
-          const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
           qtyToRestore = (recipeQtyMl * servingsToRestore) / bottleSizeMl;
           restoreUnit = 'BOT';
         } else {
+          // ml-based deduction
           qtyToRestore = recipeQtyMl * servingsToRestore;
-          restoreUnit = unit;
+          restoreUnit = 'ml';
         }
 
         if (qtyToRestore <= 0) continue;
