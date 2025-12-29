@@ -1380,9 +1380,10 @@ export default function StaffPOS() {
     
     // Handle inventory-linked items
     if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+      const absDelta = Math.abs(delta);
       const newStock = delta > 0 
-        ? Math.max(0, menuItem.inventory_stock - 1)
-        : menuItem.inventory_stock + 1;
+        ? Math.max(0, menuItem.inventory_stock - absDelta)
+        : menuItem.inventory_stock + absDelta;
       
       setMenuItems(prev => prev.map(m => 
         m.id === itemId && m.inventory_stock !== null
@@ -1392,16 +1393,17 @@ export default function StaffPOS() {
       
       // Update database
       if (delta > 0) {
-        deductInventoryStock(menuItem.inventory_item_id, 1, menuItem.stock_level_id);
+        deductInventoryStock(menuItem.inventory_item_id, absDelta, menuItem.stock_level_id);
       } else {
-        restoreInventoryStock(menuItem.inventory_item_id, 1);
+        restoreInventoryStock(menuItem.inventory_item_id, absDelta);
       }
     }
     // Handle batch-recipe based items (remaining_serves)
     else if (menuItem && menuItem.remaining_serves !== null) {
+      const absDelta = Math.abs(delta);
       const newRemaining = delta > 0 
-        ? Math.max(0, menuItem.remaining_serves - 1)
-        : menuItem.remaining_serves + 1;
+        ? Math.max(0, menuItem.remaining_serves - absDelta)
+        : menuItem.remaining_serves + absDelta;
       
       setMenuItems(prev => prev.map(m => 
         m.id === itemId && m.remaining_serves !== null
@@ -1418,9 +1420,10 @@ export default function StaffPOS() {
     }
     // Handle recipe-based items with calculated_servings
     else if (menuItem && menuItem.calculated_servings !== null) {
+      const absDelta = Math.abs(delta);
       const newServings = delta > 0 
-        ? Math.max(0, menuItem.calculated_servings - 1)
-        : menuItem.calculated_servings + 1;
+        ? Math.max(0, menuItem.calculated_servings - absDelta)
+        : menuItem.calculated_servings + absDelta;
       
       setMenuItems(prev => prev.map(m => 
         m.id === itemId && m.calculated_servings !== null
@@ -1431,10 +1434,11 @@ export default function StaffPOS() {
     
     // Handle recipe ingredient deduction/restore
     if (menuItem?.recipe_id && delta !== 0) {
+      const absDelta = Math.abs(delta);
       if (delta > 0) {
-        deductRecipeIngredients(menuItem.recipe_id, 1);
+        deductRecipeIngredients(menuItem.recipe_id, absDelta);
       } else {
-        restoreRecipeIngredients(menuItem.recipe_id, 1);
+        restoreRecipeIngredients(menuItem.recipe_id, absDelta);
       }
     }
   };
