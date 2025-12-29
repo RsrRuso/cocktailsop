@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   detectBottleSizeMl, 
   bottlesToServings, 
-  servingsToBottles, 
   isSpiritCategory,
   POUR_SIZE_ML 
 } from "@/lib/spiritServings";
