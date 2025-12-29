@@ -1224,20 +1224,19 @@ export default function StaffPOS() {
       ));
     }
     
-    // Real-time ingredient deduction based on recipe
+    // Real-time ingredient deduction based on recipe (batched)
     // IMPORTANT: Skip recipe deduction for inventory-linked items (they use direct stock deduction above)
     if (freshItem.recipe_id && !freshItem.inventory_item_id) {
-      deductRecipeIngredients(freshItem.recipe_id, 1);
+      queueRecipeUsage(freshItem.recipe_id, 1);
     }
     
     // Auto-navigate to bill on mobile
     setMobileView("bill");
   };
 
-  // Deduct inventory stock for inventory-linked items (like bottled water)
+  // Deduct inventory stock for inventory-linked items (like bottled water or spirit shots)
   const deductInventoryStock = async (inventoryItemId: string, qty: number, stockLevelId?: string | null) => {
     try {
-      // Get current stock level
       const { data: stockLevels } = await supabase
         .from("lab_ops_stock_levels")
         .select("id, quantity, location_id")
@@ -1249,26 +1248,52 @@ export default function StaffPOS() {
       if (stockLevels?.length) {
         const stockLevel = stockLevels[0];
         const newQuantity = Math.max(0, Number(stockLevel.quantity) - qty);
-        
-        // Update stock level
+
         await supabase
           .from("lab_ops_stock_levels")
           .update({ quantity: newQuantity })
           .eq("id", stockLevel.id);
 
-        // Record movement
         await supabase.from("lab_ops_stock_movements").insert({
           inventory_item_id: inventoryItemId,
           from_location_id: stockLevel.location_id,
-          qty: qty,
+          qty,
           movement_type: "sale",
           reference_type: "pos_sale",
-          notes: `POS sale deduction`
+          notes: "POS sale deduction",
         });
       }
     } catch (error) {
       console.error("Inventory stock deduction error:", error);
     }
+  };
+
+  // Queue & batch recipe writes to avoid partial updates on rapid taps
+  const pendingRecipeDeltaRef = useRef<Record<string, number>>({});
+  const recipeFlushTimersRef = useRef<Record<string, number>>({});
+
+  const queueRecipeUsage = (recipeId: string, deltaServings: number) => {
+    if (!recipeId || !deltaServings) return;
+
+    pendingRecipeDeltaRef.current[recipeId] = (pendingRecipeDeltaRef.current[recipeId] || 0) + deltaServings;
+
+    // Debounce flush so rapid taps become one backend write
+    const existing = recipeFlushTimersRef.current[recipeId];
+    if (existing) window.clearTimeout(existing);
+
+    recipeFlushTimersRef.current[recipeId] = window.setTimeout(async () => {
+      const delta = pendingRecipeDeltaRef.current[recipeId] || 0;
+      if (!delta) return;
+
+      // Clear before executing to avoid double-send if user taps while awaiting
+      pendingRecipeDeltaRef.current[recipeId] = 0;
+
+      if (delta > 0) {
+        await deductRecipeIngredients(recipeId, delta);
+      } else {
+        await restoreRecipeIngredients(recipeId, Math.abs(delta));
+      }
+    }, 250);
   };
 
   // Normalize recipe qty: convert 0.03 → 30ml if stored as fraction
@@ -1507,14 +1532,10 @@ export default function StaffPOS() {
         .then(() => {});
     }
     
-    // Handle recipe ingredient deduction/restore
+    // Handle recipe ingredient deduction/restore (batched)
     // IMPORTANT: Skip for inventory-linked items (they use direct stock deduction)
     if (menuItem?.recipe_id && !menuItem?.inventory_item_id && delta !== 0) {
-      if (delta > 0) {
-        deductRecipeIngredients(menuItem.recipe_id, absDelta);
-      } else {
-        restoreRecipeIngredients(menuItem.recipe_id, absDelta);
-      }
+      queueRecipeUsage(menuItem.recipe_id, delta > 0 ? absDelta : -absDelta);
     }
   };
 
@@ -1562,8 +1583,8 @@ export default function StaffPOS() {
         .eq("id", itemId)
         .then(() => {});
     } else if (menuItem?.calculated_servings !== null && menuItem?.recipe_id && !menuItem?.inventory_item_id) {
-      // Only restore recipe ingredients for non-inventory-linked items
-      restoreRecipeIngredients(menuItem.recipe_id, restoredAmount);
+      // Only restore recipe ingredients for non-inventory-linked items (batched)
+      queueRecipeUsage(menuItem.recipe_id, -restoredAmount);
     }
   };
 
@@ -1669,46 +1690,8 @@ export default function StaffPOS() {
 
       if (itemsError) throw itemsError;
 
-      // Deduct stock for recipe-based items (bottle_size / pour_qty logic)
-      for (const orderItem of orderItems) {
-        const menuItem = menuItems.find(m => m.id === orderItem.menu_item_id);
-        if (!menuItem) continue;
-        
-        // Handle direct inventory items (like bottled water)
-        if (menuItem.inventory_item_id && menuItem.stock_level_id) {
-          await supabase
-            .from("lab_ops_stock_levels")
-            .update({ quantity: Math.max(0, (menuItem.inventory_stock || 0) - orderItem.qty) })
-            .eq("id", menuItem.stock_level_id);
-        }
-        
-        // Handle recipe-based items - deduct fractional bottle amounts
-        const recipe = (menuItem as any).lab_ops_recipes?.[0];
-        if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
-          for (const ing of recipe.lab_ops_recipe_ingredients) {
-            if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
-              // Each serving uses (pourQty / bottleSize) bottles
-              const bottleFraction = ing.qty / ing.bottle_size;
-              const bottlesToDeduct = bottleFraction * orderItem.qty;
-              
-              // Deduct from stock level
-              const { data: stockLevel } = await supabase
-                .from("lab_ops_stock_levels")
-                .select("id, quantity")
-                .eq("inventory_item_id", ing.inventory_item_id)
-                .limit(1)
-                .single();
-              
-              if (stockLevel) {
-                await supabase
-                  .from("lab_ops_stock_levels")
-                  .update({ quantity: Math.max(0, stockLevel.quantity - bottlesToDeduct) })
-                  .eq("id", stockLevel.id);
-              }
-            }
-          }
-        }
-      }
+      // Stock is deducted in real-time while building the order (instant UI + backend batch writes).
+      // Do NOT deduct again here (prevents double-deduction and unit mismatches).
 
       // Update order subtotal if adding to existing order
       if (isExistingOrder) {
