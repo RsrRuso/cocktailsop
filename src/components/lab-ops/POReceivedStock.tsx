@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { detectBottleSizeMl } from "@/lib/bottleSize";
 
 interface POReceivedStockProps {
   outletId: string;

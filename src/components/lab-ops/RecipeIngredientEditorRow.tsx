@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { detectBottleSizeMl } from "@/lib/bottleSize";
 
 export type RecipeIngredientDraft = {
   itemId: string;
@@ -54,8 +55,13 @@ export function RecipeIngredientEditorRow({
 
   // Unit cost per bottle from receiving PO / inventory
   const unitCostPerBottle = Number(invItem?.unit_cost || 0);
-  const bottleSize = Number(ing.bottle_size || invItem?.bottle_size_ml || 750);
-  
+  const bottleSize = Number(
+    ing.bottle_size ||
+      invItem?.bottle_size_ml ||
+      (invItem ? detectBottleSizeMl(invItem.name) : null) ||
+      750
+  );
+
   // Cost per ml = bottle price / bottle size
   const costPerMl = bottleSize > 0 ? unitCostPerBottle / bottleSize : 0;
 
@@ -76,10 +82,10 @@ export function RecipeIngredientEditorRow({
           </SelectTrigger>
           <SelectContent>
             {inventoryItems.map((inv) => {
-              const invBottleSize = Number(inv.bottle_size_ml || 750);
+              const invBottleSize = Number(inv.bottle_size_ml || detectBottleSizeMl(inv.name) || 750);
               const invUnitCost = Number(inv.unit_cost || 0);
               const perMl = invBottleSize > 0 ? invUnitCost / invBottleSize : 0;
-              
+
               return (
                 <SelectItem key={inv.id} value={inv.id}>
                   <div className="flex items-center justify-between w-full gap-2">
