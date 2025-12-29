@@ -177,10 +177,10 @@ const SpecVersePromoVideo = () => {
 
       // Main title
       ctx.fillStyle = WHITE;
-      ctx.font = "900 140px system-ui, -apple-system, sans-serif";
+      ctx.font = "bold 120px system-ui, -apple-system, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("SPECVERSE", 0, -50);
+      ctx.fillText("SpecVerse", 0, -50);
 
       ctx.shadowBlur = 0;
 
@@ -269,9 +269,9 @@ const SpecVersePromoVideo = () => {
       ctx.shadowBlur = 50;
 
       ctx.fillStyle = WHITE;
-      ctx.font = "900 90px system-ui, -apple-system, sans-serif";
+      ctx.font = "bold 80px system-ui, -apple-system, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("JOIN SPECVERSE", 0, -60);
+      ctx.fillText("Join SpecVerse", 0, -60);
 
       ctx.shadowBlur = 0;
 
@@ -301,11 +301,11 @@ const SpecVersePromoVideo = () => {
 
     // SpecVerse watermark (always visible after intro)
     if (currentSection > 0) {
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 0.6;
       ctx.fillStyle = PRIMARY_GREEN;
-      ctx.font = "900 26px system-ui, -apple-system, sans-serif";
+      ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("SPECVERSE", 40, height - 40);
+      ctx.fillText("SpecVerse", 40, height - 40);
     }
   }, []);
 

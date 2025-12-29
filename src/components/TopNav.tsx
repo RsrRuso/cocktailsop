@@ -2,7 +2,7 @@ import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOp
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfessionalBadge } from "@/lib/profileUtils";
@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
+import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicSelectionDialog from "@/components/MusicSelectionDialog";
 import SpotifyConnect from "@/components/SpotifyConnect";
 import { CreateEventDialog } from "@/components/CreateEventDialog";
@@ -37,8 +38,6 @@ import { MatrixBrainLogo } from "@/components/MatrixBrainLogo";
 import { MatrixAIButton } from "@/components/MatrixAIButton";
 import ShareSpecVerseDialog from "@/components/ShareSpecVerseDialog";
 import SVLogo from "@/components/SVLogo";
-
-const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 interface TopNavProps {
   isVisible?: boolean;
@@ -285,7 +284,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
                 <SVLogo size="sm" clickable={false} />
-                <span className="text-3xl sm:text-4xl font-instagram font-black text-foreground tracking-tight">
+                <span className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight">
                   SpecVerse
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -487,13 +486,11 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
       </div>
 
       {user && (
-        <Suspense fallback={null}>
-          <CreateStatusDialog
-            open={showStatusDialog}
-            onOpenChange={setShowStatusDialog}
-            userId={user.id}
-          />
-        </Suspense>
+        <CreateStatusDialog
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          userId={user.id}
+        />
       )}
 
       <MusicSelectionDialog

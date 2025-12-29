@@ -176,7 +176,7 @@ export const initFastLoad = () => {
     { rel: 'dns-prefetch', href: 'https://fonts.googleapis.com' },
     { rel: 'dns-prefetch', href: 'https://fonts.gstatic.com' },
   ];
-
+  
   hints.forEach(({ rel, href }) => {
     if (!document.querySelector(`link[rel="${rel}"][href="${href}"]`)) {
       const link = document.createElement('link');
@@ -186,53 +186,29 @@ export const initFastLoad = () => {
       document.head.appendChild(link);
     }
   });
-
-  // Avoid aggressive prefetching on iOS / low-memory / slow connections (prevents Safari tab crashes)
-  const ua = navigator.userAgent || '';
-  const isIOS =
-    /iPad|iPhone|iPod/i.test(ua) ||
-    // iPadOS reports as Mac but has touch points
-    ((navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
-
-  const deviceMemory = Number((navigator as any).deviceMemory || 4);
-  const quality = getConnectionQuality();
-  const allowAggressive = quality === 'fast' && deviceMemory >= 4 && !isIOS;
-
-  if (allowAggressive) {
-    // IMMEDIATE prefetch - don't wait for idle
-    import('@/lib/routePrefetch').then(({ prefetchImmediate }) => {
-      prefetchImmediate();
-    });
-
-    // Full prefetch after page loads
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => {
-        import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
-          prefetchAllCritical();
-        });
+  
+  // IMMEDIATE prefetch - don't wait for idle
+  import('@/lib/routePrefetch').then(({ prefetchImmediate }) => {
+    prefetchImmediate();
+  });
+  
+  // Full prefetch after page loads
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
+        prefetchAllCritical();
       });
-    } else {
-      setTimeout(() => {
-        import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
-          prefetchAllCritical();
-        });
-      }, 500);
-    }
-
-    // Preload critical routes
-    preloadCriticalRoutes();
-
-    console.log('⚡ Fast load optimizations initialized');
+    });
   } else {
-    // Lite mode: only minimal prefetch on idle
-    if (quality !== 'offline') {
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => preloadCriticalRoutes());
-      } else {
-        setTimeout(() => preloadCriticalRoutes(), 2000);
-      }
-    }
-
-    console.log('⚡ Fast load initialized (lite mode)');
+    setTimeout(() => {
+      import('@/lib/routePrefetch').then(({ prefetchAllCritical }) => {
+        prefetchAllCritical();
+      });
+    }, 500); // Reduced from 1000ms
   }
+  
+  // Preload critical routes
+  preloadCriticalRoutes();
+  
+  console.log('⚡ Fast load optimizations initialized');
 };

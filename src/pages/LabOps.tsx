@@ -18,7 +18,6 @@ import { ReportExportEngine } from "@/components/lab-ops/ReportExportEngine";
 import { SmartPourerModule } from "@/components/smart-pourer/SmartPourerModule";
 import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
 import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,12 +39,11 @@ import {
   Download, Video, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin, ArrowRightLeft
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin
 } from "lucide-react";
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 import { CurrencySelector } from "@/components/lab-ops/CurrencySelector";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { formatQty, getServingsDisplay } from "@/lib/servings";
 
 interface Outlet {
   id: string;
@@ -867,134 +865,12 @@ function POSModule({ outletId }: { outletId: string }) {
   };
 
   const fetchMenuItems = async () => {
-    // Fetch menu items with recipes and their ingredients
     const { data } = await supabase
       .from("lab_ops_menu_items")
-      .select(
-        `
-          *,
-          lab_ops_categories(name),
-          lab_ops_recipes(
-            id,
-            lab_ops_recipe_ingredients(
-              inventory_item_id,
-              qty,
-              unit,
-              bottle_size
-            )
-          )
-        `
-      )
+      .select("*, lab_ops_categories(name)")
       .eq("outlet_id", outletId)
       .eq("is_active", true);
-
-    // Get all inventory item IDs from recipes AND direct inventory links
-    const allInventoryIds = new Set<string>();
-    for (const item of data || []) {
-      // Direct inventory link (for items like water bottles sold as whole unit)
-      if (item.inventory_item_id) {
-        allInventoryIds.add(item.inventory_item_id);
-      }
-      // Recipe ingredients
-      const recipe = item.lab_ops_recipes?.[0];
-      if (recipe?.lab_ops_recipe_ingredients) {
-        for (const ing of recipe.lab_ops_recipe_ingredients) {
-          if (ing.inventory_item_id) {
-            allInventoryIds.add(ing.inventory_item_id);
-          }
-        }
-      }
-    }
-
-    // Fetch stock levels for all inventory items
-    let stockMap: Record<string, number> = {};
-    if (allInventoryIds.size > 0) {
-      const { data: stockLevels } = await supabase
-        .from("lab_ops_stock_levels")
-        .select("inventory_item_id, quantity")
-        .in("inventory_item_id", Array.from(allInventoryIds));
-
-      if (stockLevels) {
-        for (const sl of stockLevels) {
-          stockMap[sl.inventory_item_id] = (stockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
-        }
-      }
-    }
-
-    const isBottleUnit = (unit: string) => {
-      const u = unit.toLowerCase();
-      return u === "bottle" || u === "bottles" || u === "bot" || u === "unit" || u === "units" || u === "piece" || u === "pieces" || u === "pc" || u === "pcs";
-    };
-
-    const normalizeToMl = (qty: number, unit: string, bottleSize: number) => {
-      const u = unit.toLowerCase();
-      if (u === "oz") return qty * 29.5735;
-      if (u === "l" || u === "ltr" || u === "liter" || u === "litre") return qty * 1000;
-      // Inline normalization: convert 0.03 to 30 if qty < 1 and bottleSize >= 100
-      if (qty < 1 && bottleSize >= 100 && (u === 'ml' || u === 'g')) {
-        return qty * 1000;
-      }
-      return qty;
-    };
-
-    // Calculate available servings for each menu item
-    const itemsWithServings = (data || []).map((item: any) => {
-      let calculatedServings: number | null = null;
-      const recipe = item.lab_ops_recipes?.[0];
-
-      // CASE 1: Direct inventory link (items sold as whole unit, like water bottles)
-      if (item.inventory_item_id && (!recipe || !recipe.lab_ops_recipe_ingredients?.length)) {
-        calculatedServings = Math.floor(stockMap[item.inventory_item_id] || 0);
-        return { ...item, calculated_servings: calculatedServings };
-      }
-
-      // CASE 2: Recipe-based items
-      if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
-        let minServings = Infinity;
-
-        for (const ing of recipe.lab_ops_recipe_ingredients) {
-          const inventoryItemId = ing.inventory_item_id as string | null;
-          if (!inventoryItemId) continue;
-
-          const bottleStock = stockMap[inventoryItemId] || 0;
-          const qty = Number(ing.qty || 0);
-          const unit = String(ing.unit || "ml");
-          const bottleSize = Number(ing.bottle_size || 0);
-
-          if (qty <= 0) continue;
-
-          // Heuristic: if unit is bottle or "1 ml" for 750ml item, treat as 1 bottle per sale
-          const treatAsBottle = isBottleUnit(unit) || (unit.toLowerCase() === "ml" && qty === 1 && bottleSize >= 500);
-
-          if (treatAsBottle) {
-            const servingsFromThisIngredient = bottleStock > 0 ? Math.floor(bottleStock / qty) : 0;
-            minServings = Math.min(minServings, servingsFromThisIngredient);
-            continue;
-          }
-
-          if (bottleSize <= 0) continue;
-
-          const pourMl = normalizeToMl(qty, unit, bottleSize);
-          if (pourMl <= 0) continue;
-
-          // servings = (bottles in stock × bottle size) / pour amount
-          const totalMl = bottleStock * bottleSize;
-          const totalServings = Math.floor(totalMl / pourMl);
-          minServings = Math.min(minServings, totalServings);
-        }
-
-        if (minServings !== Infinity) {
-          calculatedServings = Math.max(0, minServings);
-        }
-      }
-
-      return {
-        ...item,
-        calculated_servings: calculatedServings,
-      };
-    });
-
-    setMenuItems(itemsWithServings);
+    setMenuItems(data || []);
   };
 
   const fetchCategories = async () => {
@@ -1435,49 +1311,25 @@ function POSModule({ outletId }: { outletId: string }) {
           ) : (
             <ScrollArea className="h-96">
               <div className="grid grid-cols-2 gap-2">
-                {filteredMenuItems.map((item) => {
-                  const hasServings = item.calculated_servings !== null && item.calculated_servings !== undefined;
-                  const isLowStock = hasServings && item.calculated_servings <= 5;
-                  const isOutOfStock = hasServings && item.calculated_servings === 0;
-                  
-                  return (
-                    <Button
-                      key={item.id}
-                      variant="outline"
-                      className={`h-auto py-3 flex-col items-start text-left relative ${
-                        isOutOfStock 
-                          ? 'bg-muted/50 border-muted text-muted-foreground opacity-60 cursor-not-allowed' 
-                          : ''
-                      }`}
-                      onClick={() => {
-                        if (isOutOfStock) return;
-                        if (modifiers.length > 0) {
-                          setSelectedMenuItem(item);
-                          setShowModifiers(true);
-                        } else {
-                          addItemToOrder(item);
-                        }
-                      }}
-                      disabled={!selectedTable || isOutOfStock}
-                    >
-                      <span className="font-medium text-sm truncate w-full">{item.name}</span>
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs text-primary">{formatPrice(Number(item.base_price))}</span>
-                        {hasServings && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                            isOutOfStock 
-                              ? 'bg-red-500/20 text-red-400' 
-                              : isLowStock 
-                                ? 'bg-amber-500/20 text-amber-400'
-                                : 'bg-green-500/20 text-green-400'
-                          }`}>
-                            {isOutOfStock ? 'OUT' : item.calculated_servings}
-                          </span>
-                        )}
-                      </div>
-                    </Button>
-                  );
-                })}
+                {filteredMenuItems.map((item) => (
+                  <Button
+                    key={item.id}
+                    variant="outline"
+                    className="h-auto py-3 flex-col items-start text-left"
+                    onClick={() => {
+                      if (modifiers.length > 0) {
+                        setSelectedMenuItem(item);
+                        setShowModifiers(true);
+                      } else {
+                        addItemToOrder(item);
+                      }
+                    }}
+                    disabled={!selectedTable}
+                  >
+                    <span className="font-medium text-sm truncate w-full">{item.name}</span>
+                    <span className="text-xs text-primary">{formatPrice(Number(item.base_price))}</span>
+                  </Button>
+                ))}
               </div>
             </ScrollArea>
           )}
@@ -2042,13 +1894,13 @@ function MenuModule({ outletId }: { outletId: string }) {
   };
 
   const createMenuItem = async () => {
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim() || !newItemPrice) return;
 
     await supabase.from("lab_ops_menu_items").insert({
       outlet_id: outletId,
       name: newItemName.trim(),
       description: newItemDescription.trim() || null,
-      base_price: 0, // Price will be set from Recipe costing
+      base_price: parseFloat(newItemPrice),
       category_id: newItemCategory || null,
     });
 
@@ -2071,8 +1923,6 @@ function MenuModule({ outletId }: { outletId: string }) {
         base_price: editingItem.base_price,
         category_id: editingItem.category_id,
         is_active: editingItem.is_active,
-        serving_ratio_ml: editingItem.serving_ratio_ml || null,
-        bottle_ratio_ml: editingItem.bottle_ratio_ml || null,
       })
       .eq("id", editingItem.id);
 
@@ -2279,6 +2129,10 @@ function MenuModule({ outletId }: { outletId: string }) {
                           <Textarea value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} />
                         </div>
                         <div>
+                          <Label>Price</Label>
+                          <Input type="number" step="0.01" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} />
+                        </div>
+                        <div>
                           <Label>Category</Label>
                           <Select value={newItemCategory} onValueChange={setNewItemCategory}>
                             <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
@@ -2289,7 +2143,6 @@ function MenuModule({ outletId }: { outletId: string }) {
                             </SelectContent>
                           </Select>
                         </div>
-                        <p className="text-xs text-muted-foreground">Price will be set from Recipe costing</p>
                         <Button onClick={createMenuItem} className="w-full">Create Item</Button>
                       </div>
                     </DialogContent>
@@ -2486,7 +2339,7 @@ function MenuModule({ outletId }: { outletId: string }) {
 
       {/* Edit Item Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Menu Item</DialogTitle>
           </DialogHeader>
@@ -2515,48 +2368,6 @@ function MenuModule({ outletId }: { outletId: string }) {
                   </SelectContent>
                 </Select>
               </div>
-              
-              {/* Serving Ratio Section - For spirits/bottles */}
-              <div className="border-t pt-4 mt-4">
-                <p className="font-medium text-sm mb-3 flex items-center gap-2">
-                  <Wine className="h-4 w-4" /> Serving Ratio (for spirits/bottles)
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Serving Size (ml)</Label>
-                    <Input 
-                      type="number" 
-                      step="1"
-                      placeholder="30"
-                      value={editingItem.serving_ratio_ml || ""} 
-                      onChange={(e) => setEditingItem({ ...editingItem, serving_ratio_ml: parseFloat(e.target.value) || null })} 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">ml per serving</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Bottle Size (ml)</Label>
-                    <Input 
-                      type="number" 
-                      step="1"
-                      placeholder="750"
-                      value={editingItem.bottle_ratio_ml || ""} 
-                      onChange={(e) => setEditingItem({ ...editingItem, bottle_ratio_ml: parseFloat(e.target.value) || null })} 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">ml per bottle</p>
-                  </div>
-                </div>
-                {editingItem.serving_ratio_ml && editingItem.bottle_ratio_ml && editingItem.serving_ratio_ml > 0 && (
-                  <div className="mt-3 p-2 bg-primary/10 rounded-lg">
-                    <p className="text-sm text-center">
-                      <span className="font-semibold text-primary">
-                        {Math.floor(editingItem.bottle_ratio_ml / editingItem.serving_ratio_ml)} servings
-                      </span>
-                      <span className="text-muted-foreground"> per bottle</span>
-                    </p>
-                  </div>
-                )}
-              </div>
-              
               <Button onClick={updateMenuItem} className="w-full">Save Changes</Button>
             </div>
           )}
@@ -2570,17 +2381,13 @@ function MenuModule({ outletId }: { outletId: string }) {
 function InventoryModule({ outletId }: { outletId: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { formatPrice } = useCurrency();
   const [items, setItems] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [stockTakes, setStockTakes] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
-  const [poLatestUnitPrice, setPoLatestUnitPrice] = useState<Record<string, number>>({});
-  const [menuItemServingRatios, setMenuItemServingRatios] = useState<Record<string, { serving_ratio_ml: number; bottle_ratio_ml: number }>>({});
   const [showAddItem, setShowAddItem] = useState(false);
   const [showStockTake, setShowStockTake] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
-  const [showDeployStock, setShowDeployStock] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -2601,9 +2408,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [stockQty, setStockQty] = useState("");
   const [stockLocation, setStockLocation] = useState("");
   const [stockNotes, setStockNotes] = useState("");
-  const [deployFromLocation, setDeployFromLocation] = useState("");
-  const [deployToLocation, setDeployToLocation] = useState("");
-  const [deployQty, setDeployQty] = useState("");
 
   useEffect(() => {
     fetchItems();
@@ -2619,39 +2423,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
       .eq("outlet_id", outletId)
       .order("name");
     setItems(data || []);
-
-    // Latest PO received unit price per item (fallback display when unit_cost is 0)
-    const { data: poPrices } = await supabase
-      .from("purchase_order_received_items")
-      .select("item_name, unit_price, created_at")
-      .order("created_at", { ascending: false })
-      .limit(1000);
-
-    const latestMap: Record<string, number> = {};
-    (poPrices || []).forEach((r: any) => {
-      const name = String(r.item_name || "").trim();
-      if (!name) return;
-      if (latestMap[name] == null) latestMap[name] = Number(r.unit_price || 0);
-    });
-    setPoLatestUnitPrice(latestMap);
-
-    // Fetch menu items with serving ratios to map inventory items to servings
-    const { data: menuItems } = await supabase
-      .from("lab_ops_menu_items")
-      .select("name, serving_ratio_ml, bottle_ratio_ml")
-      .eq("outlet_id", outletId);
-    
-    const ratioMap: Record<string, { serving_ratio_ml: number; bottle_ratio_ml: number }> = {};
-    (menuItems || []).forEach((m: any) => {
-      const name = String(m.name || "").trim().toLowerCase();
-      if (name && m.serving_ratio_ml && m.bottle_ratio_ml) {
-        ratioMap[name] = {
-          serving_ratio_ml: Number(m.serving_ratio_ml),
-          bottle_ratio_ml: Number(m.bottle_ratio_ml)
-        };
-      }
-    });
-    setMenuItemServingRatios(ratioMap);
   };
 
   const fetchLocations = async () => {
@@ -2762,10 +2533,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
         sku: editingItem.sku?.trim() || null,
         base_unit: editingItem.base_unit,
         par_level: parseFloat(editingItem.par_level) || 0,
-        unit_cost: parseFloat(editingItem.unit_cost) || 0,
-        sale_price: parseFloat(editingItem.sale_price) || 0,
-        tax_rate: parseFloat(editingItem.tax_rate) || 0,
-        vat_rate: parseFloat(editingItem.vat_rate) || 0,
       })
       .eq("id", editingItem.id);
 
@@ -2949,84 +2716,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
     toast({ title: "Stock added" });
   };
 
-  const deployStock = async () => {
-    if (!selectedItem || !deployQty || !deployFromLocation || !deployToLocation) {
-      toast({ title: "Please fill all fields", variant: "destructive" });
-      return;
-    }
-    
-    if (deployFromLocation === deployToLocation) {
-      toast({ title: "From and To locations must be different", variant: "destructive" });
-      return;
-    }
-
-    const qty = parseFloat(deployQty);
-    if (qty <= 0) {
-      toast({ title: "Quantity must be greater than 0", variant: "destructive" });
-      return;
-    }
-
-    // Check available stock at source location
-    const sourceStock = selectedItem.lab_ops_stock_levels?.find((sl: any) => sl.location_id === deployFromLocation);
-    const availableQty = sourceStock?.quantity || 0;
-    
-    if (qty > availableQty) {
-      toast({ title: `Not enough stock. Available: ${availableQty} ${selectedItem.base_unit}`, variant: "destructive" });
-      return;
-    }
-
-    try {
-      // Reduce stock from source location
-      await supabase
-        .from("lab_ops_stock_levels")
-        .update({ quantity: availableQty - qty })
-        .eq("inventory_item_id", selectedItem.id)
-        .eq("location_id", deployFromLocation);
-
-      // Add stock to destination location
-      const { data: destStock } = await supabase
-        .from("lab_ops_stock_levels")
-        .select("*")
-        .eq("inventory_item_id", selectedItem.id)
-        .eq("location_id", deployToLocation)
-        .single();
-
-      if (destStock) {
-        await supabase
-          .from("lab_ops_stock_levels")
-          .update({ quantity: (destStock.quantity || 0) + qty })
-          .eq("id", destStock.id);
-      } else {
-        await supabase.from("lab_ops_stock_levels").insert({
-          inventory_item_id: selectedItem.id,
-          location_id: deployToLocation,
-          quantity: qty,
-        });
-      }
-
-      // Record movement as transfer
-      await supabase.from("lab_ops_stock_movements").insert({
-        inventory_item_id: selectedItem.id,
-        from_location_id: deployFromLocation,
-        to_location_id: deployToLocation,
-        qty: qty,
-        movement_type: "transfer",
-        notes: `Deployed from ${locations.find(l => l.id === deployFromLocation)?.name || 'Unknown'} to ${locations.find(l => l.id === deployToLocation)?.name || 'Unknown'}`,
-      });
-
-      setDeployQty("");
-      setDeployFromLocation("");
-      setDeployToLocation("");
-      setShowDeployStock(false);
-      setSelectedItem(null);
-      fetchItems();
-      fetchMovements();
-      toast({ title: "Stock deployed successfully" });
-    } catch (error: any) {
-      toast({ title: "Error deploying stock", description: error.message, variant: "destructive" });
-    }
-  };
-
   const startStockTake = async () => {
     if (!outletId) {
       toast({ title: "Please select an outlet first", variant: "destructive" });
@@ -3075,17 +2764,11 @@ function InventoryModule({ outletId }: { outletId: string }) {
           <CardContent className="p-3">
             <ScrollArea className="h-24">
               <div className="flex gap-2 flex-wrap pr-3">
-                {lowStockItems.map((item) => {
-                  const stock = getTotalStock(item);
-                  const baseUnit = String(item.base_unit || '').toLowerCase();
-                  const isServingUnit = baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv';
-                  const unitLabel = isServingUnit ? 'srv' : '';
-                  return (
-                    <Badge key={item.id} variant="destructive" className="text-xs">
-                      {item.name}: {formatQty(stock)}{unitLabel && ` ${unitLabel}`} / {item.par_level}
-                    </Badge>
-                  );
-                })}
+                {lowStockItems.map((item) => (
+                  <Badge key={item.id} variant="destructive" className="text-xs">
+                    {item.name}: {getTotalStock(item)} / {item.par_level}
+                  </Badge>
+                ))}
               </div>
             </ScrollArea>
           </CardContent>
@@ -3093,17 +2776,13 @@ function InventoryModule({ outletId }: { outletId: string }) {
       )}
 
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
-        {/* Mobile-friendly scrollable tabs */}
-        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <TabsList className="inline-flex h-auto p-1 gap-1 min-w-max w-auto">
-            <TabsTrigger value="items" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Items</TabsTrigger>
-            <TabsTrigger value="inventory" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Inventory</TabsTrigger>
-            <TabsTrigger value="po-received" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">PO Received</TabsTrigger>
-            <TabsTrigger value="spillage" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Spillage</TabsTrigger>
-            <TabsTrigger value="movements" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Movements</TabsTrigger>
-            <TabsTrigger value="stocktakes" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Stock Takes</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="w-full grid grid-cols-5">
+          <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="po-received">PO Received</TabsTrigger>
+          <TabsTrigger value="spillage">Spillage</TabsTrigger>
+          <TabsTrigger value="movements">Movements</TabsTrigger>
+          <TabsTrigger value="stocktakes">Stock Takes</TabsTrigger>
+        </TabsList>
 
         {/* Items Tab */}
         <TabsContent value="items" className="mt-4">
@@ -3235,92 +2914,29 @@ function InventoryModule({ outletId }: { outletId: string }) {
                     {filteredItems.map((item) => {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
-                      
-                      // Check if stock is stored as servings directly (from PO receiving conversion)
-                      const baseUnit = String(item.base_unit || '').toLowerCase();
-                      const isServingUnit = baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv';
-                      
-                      // For non-serving items: Calculate servings display from bottle conversion
-                      const itemNameLower = String(item.name || "").trim().toLowerCase();
-                      const ratio = menuItemServingRatios[itemNameLower];
-                      const servings = isServingUnit ? null : getServingsDisplay({
-                        quantity: stock,
-                        unit: item.base_unit,
-                        label: item.name,
-                        ratio,
-                        defaultServingMl: 30,
-                        defaultBottleMl: 750,
-                      });
-                      
                       return (
-                        <div
-                          key={item.id}
-                          className={`p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium truncate">{item.name}</p>
-                                {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                              </div>
-                              <p className="text-xs text-muted-foreground break-all">
-                                {item.sku || "No SKU"} • {isServingUnit ? 'servings' : item.base_unit}
-                              </p>
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                                <Badge variant="secondary" className="gap-1">
-                                  Cost: {formatPrice(Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0))}
-                                </Badge>
-                                <Badge variant="outline" className="gap-1">
-                                  Sell: {formatPrice(Number(item.sale_price || 0))}
-                                </Badge>
-                                {isServingUnit && (
-                                  <Badge variant="default" className="gap-1 bg-green-500/20 text-green-500">
-                                    Spirit (30ml pour)
-                                  </Badge>
-                                )}
-                                {!isServingUnit && servings?.converted && servings.servingsPerBottle != null && (
-                                  <Badge variant="default" className="gap-1 bg-primary/20 text-primary">
-                                    {servings.servingsPerBottle} srv/bottle
-                                  </Badge>
-                                )}
-                              </div>
+                        <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{item.name}</p>
+                              {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
                             </div>
-
-                            <div className="flex items-center justify-between sm:justify-end gap-2">
-                              <div className="text-right mr-1 sm:mr-2">
-                                {/* For serving units: show servings as primary */}
-                                {isServingUnit ? (
-                                  <>
-                                    <p className={`font-semibold text-lg ${isLow ? "text-red-500" : "text-green-500"}`}>
-                                      {formatQty(stock)} servings
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
-                                  </>
-                                ) : (
-                                  <>
-                                    {/* Primary: bottles/units */}
-                                    <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{formatQty(stock)} {item.base_unit}</p>
-                                    {/* Secondary: servings if applicable */}
-                                    {servings?.converted && (
-                                      <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
-                                  </>
-                                )}
-                              </div>
-                              <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowDeployStock(true); }} title="Deploy Stock">
-                                <ArrowRightLeft className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                            <p className="text-xs text-muted-foreground">{item.sku || "No SKU"} • {item.base_unit}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right mr-2">
+                              <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
+                              <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                             </div>
+                            <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
                         </div>
                       );
@@ -3332,101 +2948,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
           </Card>
         </TabsContent>
 
-        {/* Inventory Tab - Simple Stock View */}
-        <TabsContent value="inventory" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Current Stock Levels
-              </CardTitle>
-              <CardDescription>
-                View and manage stock quantities for all items
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {items.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No inventory items found. Add items in the Items tab.</p>
-                ) : (
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                    {items.map((item) => {
-                      const itemStockLevels = item.lab_ops_stock_levels || [];
-                      const totalStock = itemStockLevels.reduce((sum: number, sl: any) => sum + (sl.quantity || 0), 0);
-                      const unitCost = Number(item.unit_cost || 0) > 0 ? Number(item.unit_cost) : Number(poLatestUnitPrice[item.name] || 0);
-                      const totalValue = totalStock * unitCost;
-                      
-                      // Check if stock is stored as servings directly (from PO receiving conversion)
-                      const baseUnit = String(item.base_unit || '').toLowerCase();
-                      const isServingUnit = baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv';
-                      
-                      // For non-serving items: Calculate servings display from bottle conversion
-                      const itemNameLower = String(item.name || "").trim().toLowerCase();
-                      const ratio = menuItemServingRatios[itemNameLower];
-                      const servings = isServingUnit ? null : getServingsDisplay({
-                        quantity: totalStock,
-                        unit: item.base_unit,
-                        label: item.name,
-                        ratio,
-                        defaultServingMl: 30,
-                        defaultBottleMl: 750,
-                      });
-                      
-                      return (
-                        <div key={item.id} className="p-3 rounded-lg bg-muted/50 border">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'} • {isServingUnit ? 'servings' : item.base_unit}</p>
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                <Badge variant="secondary" className="text-xs">
-                                  Unit Cost: {formatPrice(unitCost)}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  Total Value: {formatPrice(totalValue)}
-                                </Badge>
-                                {isServingUnit && (
-                                  <Badge variant="default" className="text-xs bg-green-500/20 text-green-500">
-                                    Spirit (30ml pour)
-                                  </Badge>
-                                )}
-                                {!isServingUnit && servings?.converted && servings.servingsPerBottle != null && (
-                                  <Badge variant="default" className="text-xs bg-primary/20 text-primary">
-                                    {servings.servingsPerBottle} srv/bottle
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-right ml-3">
-                              {/* For serving units: show servings as primary */}
-                              {isServingUnit ? (
-                                <>
-                                  <p className="font-semibold text-lg text-green-500">{formatQty(totalStock)} servings</p>
-                                  <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
-                                </>
-                              ) : (
-                                <>
-                                  {/* Primary: bottles/units */}
-                                  <p className="font-semibold text-lg">{formatQty(totalStock)} {item.base_unit}</p>
-                                  {/* Secondary: servings if applicable */}
-                                  {servings?.converted && (
-                                    <p className="text-xs text-muted-foreground">({formatQty(servings.displayQty)} servings)</p>
-                                  )}
-                                  <p className="text-xs text-muted-foreground">Par: {item.par_level}</p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
+        {/* PO Received Tab */}
         <TabsContent value="po-received" className="mt-4">
           <Card>
             <CardHeader>
@@ -3631,79 +3153,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* Deploy Stock Dialog */}
-      <Dialog open={showDeployStock} onOpenChange={setShowDeployStock}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5" />
-              Deploy Stock: {selectedItem?.name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Current stock by location */}
-            {selectedItem?.lab_ops_stock_levels?.length > 0 && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-xs text-muted-foreground mb-2">Current Stock by Location:</p>
-                <div className="space-y-1">
-                  {selectedItem.lab_ops_stock_levels.map((sl: any) => {
-                    const loc = locations.find(l => l.id === sl.location_id);
-                    return (
-                      <div key={sl.id} className="flex justify-between text-sm">
-                        <span>{loc?.name || 'Unknown'}</span>
-                        <span className="font-semibold">{sl.quantity} {selectedItem.base_unit}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <div>
-              <Label>From Location</Label>
-              <Select value={deployFromLocation} onValueChange={setDeployFromLocation}>
-                <SelectTrigger><SelectValue placeholder="Select source location" /></SelectTrigger>
-                <SelectContent>
-                  {locations.filter(loc => 
-                    selectedItem?.lab_ops_stock_levels?.some((sl: any) => sl.location_id === loc.id && sl.quantity > 0)
-                  ).map((loc) => {
-                    const stock = selectedItem?.lab_ops_stock_levels?.find((sl: any) => sl.location_id === loc.id);
-                    return (
-                      <SelectItem key={loc.id} value={loc.id}>
-                        {loc.name} ({stock?.quantity || 0} available)
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>To Location</Label>
-              <Select value={deployToLocation} onValueChange={setDeployToLocation}>
-                <SelectTrigger><SelectValue placeholder="Select destination location" /></SelectTrigger>
-                <SelectContent>
-                  {locations.filter(loc => loc.id !== deployFromLocation).map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Quantity to Deploy</Label>
-              <Input 
-                type="number" 
-                value={deployQty} 
-                onChange={(e) => setDeployQty(e.target.value)} 
-                placeholder={`Max: ${selectedItem?.lab_ops_stock_levels?.find((sl: any) => sl.location_id === deployFromLocation)?.quantity || 0}`}
-              />
-            </div>
-            <Button onClick={deployStock} className="w-full" disabled={!deployFromLocation || !deployToLocation || !deployQty}>
-              <ArrowRightLeft className="h-4 w-4 mr-2" />
-              Deploy Stock
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Inventory Item Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -3752,56 +3201,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
                   onChange={(e) => setEditingItem({ ...editingItem, par_level: e.target.value })} 
                 />
               </div>
-              
-              {/* Cost & Pricing Section */}
-              <div className="border-t pt-4 mt-4">
-                <p className="font-medium text-sm mb-3 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" /> Cost & Pricing
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Cost Price</Label>
-                    <Input 
-                      type="number" 
-                      step="0.01"
-                      placeholder="0.00"
-                      value={editingItem.unit_cost || ""} 
-                      onChange={(e) => setEditingItem({ ...editingItem, unit_cost: e.target.value })} 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Sale Price</Label>
-                    <Input 
-                      type="number" 
-                      step="0.01"
-                      placeholder="0.00"
-                      value={editingItem.sale_price || ""} 
-                      onChange={(e) => setEditingItem({ ...editingItem, sale_price: e.target.value })} 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Tax Rate (%)</Label>
-                    <Input 
-                      type="number" 
-                      step="0.1"
-                      placeholder="0"
-                      value={editingItem.tax_rate || ""} 
-                      onChange={(e) => setEditingItem({ ...editingItem, tax_rate: e.target.value })} 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">VAT Rate (%)</Label>
-                    <Input 
-                      type="number" 
-                      step="0.1"
-                      placeholder="0"
-                      value={editingItem.vat_rate || ""} 
-                      onChange={(e) => setEditingItem({ ...editingItem, vat_rate: e.target.value })} 
-                    />
-                  </div>
-                </div>
-              </div>
-              
               <Button onClick={updateInventoryItem} className="w-full">Save Changes</Button>
             </div>
           )}
@@ -4339,7 +3738,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
-  const [poLatestUnitPrice, setPoLatestUnitPrice] = useState<Record<string, number>>({});
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   
@@ -4347,12 +3745,8 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
   const [recipeYield, setRecipeYield] = useState("1");
   const [recipeInstructions, setRecipeInstructions] = useState("");
-  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string; costPrice: number; bottleSize: number }[]>([]);
+  const [ingredients, setIngredients] = useState<{ itemId: string; qty: number; unit: string }[]>([]);
   const [editingMenuItemInRecipe, setEditingMenuItemInRecipe] = useState<any>(null);
-  const [vatPercent, setVatPercent] = useState("0");
-  const [serviceChargePercent, setServiceChargePercent] = useState("0");
-  const [markupPercent, setMarkupPercent] = useState("30");
-  const [manualSellingPrice, setManualSellingPrice] = useState("");
 
   useEffect(() => {
     fetchRecipes();
@@ -4361,28 +3755,13 @@ function RecipesModule({ outletId }: { outletId: string }) {
   }, [outletId]);
 
   const fetchRecipes = async () => {
-    if (!outletId) return;
-    
-    // First get all menu item IDs for this outlet
-    const { data: menuItemsData } = await supabase
-      .from("lab_ops_menu_items")
-      .select("id")
-      .eq("outlet_id", outletId);
-    
-    const menuItemIds = menuItemsData?.map(m => m.id) || [];
-    
-    if (menuItemIds.length === 0) {
-      setRecipes([]);
-      return;
-    }
-    
     const { data } = await supabase
       .from("lab_ops_recipes")
-      .select("*, lab_ops_menu_items!lab_ops_recipes_menu_item_id_fkey(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
-      .in("menu_item_id", menuItemIds)
+      .select("*, lab_ops_menu_items(name, base_price, outlet_id), lab_ops_recipe_ingredients(*)")
       .order("created_at", { ascending: false });
     
-    setRecipes(data || []);
+    const filtered = data?.filter(r => r.lab_ops_menu_items?.outlet_id === outletId) || [];
+    setRecipes(filtered);
   };
 
   const fetchMenuItems = async () => {
@@ -4420,21 +3799,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
       totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0)
     }));
     setInventoryItems(itemsWithStock);
-
-    // Latest PO received unit price per item (fallback when unit_cost is 0)
-    const { data: poPrices } = await supabase
-      .from("purchase_order_received_items")
-      .select("item_name, unit_price, created_at")
-      .order("created_at", { ascending: false })
-      .limit(1000);
-
-    const latestMap: Record<string, number> = {};
-    (poPrices || []).forEach((r: any) => {
-      const name = String(r.item_name || "").trim();
-      if (!name) return;
-      if (latestMap[name] == null) latestMap[name] = Number(r.unit_price || 0);
-    });
-    setPoLatestUnitPrice(latestMap);
   };
 
   const createRecipe = async () => {
@@ -4447,47 +3811,28 @@ function RecipesModule({ outletId }: { outletId: string }) {
         version_number: 1,
         yield_qty: parseFloat(recipeYield) || 1,
         instructions: recipeInstructions || null,
-        markup_percent: parseFloat(markupPercent) || 30,
-        vat_percent: parseFloat(vatPercent) || 5,
-        service_charge_percent: parseFloat(serviceChargePercent) || 0,
       })
       .select()
       .single();
 
     if (!error && recipe) {
-      // Use manual price if set, otherwise calculated price
-      const sellingPrice = manualSellingPrice && parseFloat(manualSellingPrice) > 0 
-        ? parseFloat(manualSellingPrice) 
-        : calculateSellingPrice();
-      await supabase.from("lab_ops_menu_items").update({
-        base_price: sellingPrice,
-      }).eq("id", selectedMenuItem);
-
-      // Add ingredients (deduplicated)
-      const insertedItemIds = new Set<string>();
+      // Add ingredients
       for (const ing of ingredients) {
-        if (ing.itemId && !insertedItemIds.has(ing.itemId)) {
-          insertedItemIds.add(ing.itemId);
-          // Normalize qty before saving (convert 0.03 to 30 if needed)
-          const normalizedQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize || 750);
-          await supabase.from("lab_ops_recipe_ingredients").insert({
-            recipe_id: recipe.id,
-            inventory_item_id: ing.itemId,
-            qty: normalizedQty,
-            unit: ing.unit,
-            bottle_size: ing.bottleSize || 750,
-          });
-        }
+        await supabase.from("lab_ops_recipe_ingredients").insert({
+          recipe_id: recipe.id,
+          inventory_item_id: ing.itemId,
+          qty: ing.qty,
+          unit: ing.unit,
+        });
       }
 
-      toast({ title: "Recipe created & price synced to menu" });
+      toast({ title: "Recipe created" });
       setShowAddRecipe(false);
       setSelectedMenuItem("");
       setRecipeYield("1");
       setRecipeInstructions("");
       setIngredients([]);
       fetchRecipes();
-      fetchMenuItems();
     }
   };
 
@@ -4504,84 +3849,42 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setSelectedMenuItem(recipe.menu_item_id);
     setRecipeYield(String(recipe.yield_qty || 1));
     setRecipeInstructions(recipe.instructions || "");
-    setMarkupPercent(String(recipe.markup_percent ?? 30));
-    setVatPercent(String(recipe.vat_percent ?? 5));
-    setServiceChargePercent(String(recipe.service_charge_percent ?? 0));
-    // Deduplicate ingredients by inventory_item_id (keep first occurrence with summed qty)
-    const rawIngredients = recipe.lab_ops_recipe_ingredients || [];
-    const deduplicatedIngredients: { itemId: string; qty: number; unit: string; costPrice: number; bottleSize: number }[] = [];
-    const seenItemIds = new Set<string>();
-    
-    for (const ing of rawIngredients) {
-      if (seenItemIds.has(ing.inventory_item_id)) continue;
-      seenItemIds.add(ing.inventory_item_id);
-      
-      const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-      const direct = Number(invItem?.unit_cost || 0);
-      const fromCostsTable = Number(invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
-      const fromPo = Number(invItem?.name ? poLatestUnitPrice?.[String(invItem.name)] : 0);
-      const unitCost = direct > 0 ? direct : (fromCostsTable > 0 ? fromCostsTable : fromPo);
-      const bottleSize = ing.bottle_size || 750;
-      const qty = ing.qty || 0;
-      // Cost per serving = (pour amount / bottle size) × bottle cost
-      const costPrice = bottleSize > 0 && qty > 0 ? (qty / bottleSize) * unitCost : 0;
-      deduplicatedIngredients.push({
+    setIngredients(
+      (recipe.lab_ops_recipe_ingredients || []).map((ing: any) => ({
         itemId: ing.inventory_item_id,
-        qty: qty,
+        qty: ing.qty || 0,
         unit: ing.unit || "ml",
-        costPrice: costPrice,
-        bottleSize: bottleSize,
-      });
-    }
-    setIngredients(deduplicatedIngredients);
+      }))
+    );
     setShowAddRecipe(true);
   };
 
   const updateRecipe = async () => {
     if (!selectedRecipe || !selectedMenuItem || ingredients.length === 0) return;
 
-    // Use manual price if set, otherwise calculated price
-    const sellingPrice = manualSellingPrice && parseFloat(manualSellingPrice) > 0 
-      ? parseFloat(manualSellingPrice) 
-      : calculateSellingPrice();
-
-    // Update recipe with markup, VAT, and service charge
+    // Update recipe
     await supabase.from("lab_ops_recipes").update({
       menu_item_id: selectedMenuItem,
       yield_qty: parseFloat(recipeYield) || 1,
       instructions: recipeInstructions || null,
-      markup_percent: parseFloat(markupPercent) || 0,
-      vat_percent: parseFloat(vatPercent) || 0,
-      service_charge_percent: parseFloat(serviceChargePercent) || 0,
     }).eq("id", selectedRecipe.id);
 
-    // Sync selling price to the menu item
-    await supabase.from("lab_ops_menu_items").update({
-      base_price: sellingPrice,
-    }).eq("id", selectedMenuItem);
-
-    // Delete existing ingredients and insert new ones (deduplicated)
+    // Delete existing ingredients and insert new ones
     await supabase.from("lab_ops_recipe_ingredients").delete().eq("recipe_id", selectedRecipe.id);
-    const insertedItemIds = new Set<string>();
     for (const ing of ingredients) {
-      if (ing.itemId && !insertedItemIds.has(ing.itemId)) {
-        insertedItemIds.add(ing.itemId);
-        // Normalize qty before saving (convert 0.03 to 30 if needed)
-        const normalizedQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize || 750);
+      if (ing.itemId) {
         await supabase.from("lab_ops_recipe_ingredients").insert({
           recipe_id: selectedRecipe.id,
           inventory_item_id: ing.itemId,
-          qty: normalizedQty,
+          qty: ing.qty,
           unit: ing.unit,
-          bottle_size: ing.bottleSize || 750,
         });
       }
     }
 
-    toast({ title: "Recipe updated & price synced to menu" });
+    toast({ title: "Recipe updated" });
     closeDialog();
     fetchRecipes();
-    fetchMenuItems();
   };
 
   const closeDialog = () => {
@@ -4591,103 +3894,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
     setRecipeYield("1");
     setRecipeInstructions("");
     setIngredients([]);
-    setVatPercent("0");
-    setServiceChargePercent("0");
-    setMarkupPercent("30");
-    setManualSellingPrice("");
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { itemId: "", qty: 0, unit: "ml", costPrice: 0, bottleSize: 750 }]);
-  };
-
-  // Calculate servings from bottle size / qty
-  // Auto-normalize: if qty is very small (< 1) and bottle is large, user likely meant ml not L
-  const calculateServings = (bottleSize: number, qty: number, unit: string = 'ml'): number => {
-    if (!qty || qty <= 0) return 0;
-    
-    // Normalize qty: if user entered L-sized value (< 1) for ml unit with large bottle, convert
-    let normalizedQty = qty;
-    if (qty < 1 && bottleSize >= 100 && (unit === 'ml' || unit === 'g')) {
-      // User likely entered 0.03 meaning 30ml, or 0.05 meaning 50ml
-      normalizedQty = qty * 1000;
-    }
-    
-    return Math.floor(bottleSize / normalizedQty);
-  };
-  
-  // Get normalized qty for display (converts 0.03 to 30 if needed)
-  const getNormalizedQty = (qty: number, unit: string, bottleSize: number): number => {
-    if (qty < 1 && bottleSize >= 100 && (unit === 'ml' || unit === 'g')) {
-      return qty * 1000;
-    }
-    return qty;
-  };
-
-  // Helper to get unit cost from inventory item (match the cost shown in the Items/Inventory tabs)
-  const getItemUnitCost = (invItem: any) => {
-    if (!invItem) return 0;
-
-    // 1) Direct unit_cost on item
-    const direct = Number(invItem.unit_cost || 0);
-    if (direct > 0) return direct;
-
-    // 2) Costs table (if present)
-    const fromCostsTable = Number(invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0);
-    if (fromCostsTable > 0) return fromCostsTable;
-
-    // 3) Fallback: latest PO unit price map keyed by item name
-    const nameKey = String(invItem.name || "");
-    const fromPo = Number(poLatestUnitPrice?.[nameKey] || 0);
-    if (fromPo > 0) return fromPo;
-
-    return 0;
+    setIngredients([...ingredients, { itemId: "", qty: 1, unit: "ml" }]);
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
-    
-    // Auto-calculate cost price when item, qty, unit, or bottleSize changes
-    if (field === "itemId" || field === "qty" || field === "unit" || field === "bottleSize") {
-      const itemId = field === "itemId" ? value : updated[index].itemId;
-      const qty = field === "qty" ? value : updated[index].qty;
-      const unit = field === "unit" ? value : updated[index].unit;
-      const bottleSize = field === "bottleSize" ? value : (updated[index].bottleSize || 750);
-      const invItem = inventoryItems.find(i => i.id === itemId);
-      const bottleCost = getItemUnitCost(invItem);
-
-      // Cost per serve = (pour amount / bottle size) × bottle cost
-      // Use normalized pour amount (e.g., 0.03 -> 30 for 750ml bottles when unit is ml/g)
-      const normalizedQty = getNormalizedQty(Number(qty || 0), unit, bottleSize);
-      if (bottleSize > 0 && normalizedQty > 0) {
-        updated[index].costPrice = (normalizedQty / bottleSize) * bottleCost;
-      } else {
-        updated[index].costPrice = 0;
-      }
-    }
-    
-    
     setIngredients(updated);
   };
 
   const removeIngredient = (index: number) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
-  };
-
-  // Calculate total self cost from ingredients
-  const calculateTotalSelfCost = () => {
-    return ingredients.reduce((sum, ing) => sum + (ing.costPrice || 0), 0);
-  };
-
-  // Calculate selling price with markup, VAT and service charge
-  const calculateSellingPrice = () => {
-    const selfCost = calculateTotalSelfCost();
-    const markup = (selfCost * parseFloat(markupPercent || "0")) / 100;
-    const subtotal = selfCost + markup;
-    const vat = (subtotal * parseFloat(vatPercent || "0")) / 100;
-    const serviceCharge = (subtotal * parseFloat(serviceChargePercent || "0")) / 100;
-    return subtotal + vat + serviceCharge;
   };
 
   const calculateRecipeCost = (recipe: any) => {
@@ -4696,14 +3916,8 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
     for (const ing of recipeIngredients) {
       const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-      const bottleCost = getItemUnitCost(invItem);
-      const bottleSize = ing.bottle_size || 750;
-      const qty = ing.qty || 0;
-      
-      // Cost per serve = (pour amount / bottle size) × bottle cost
-      if (bottleSize > 0 && qty > 0) {
-        totalCost += (qty / bottleSize) * bottleCost;
-      }
+      const cost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
+      totalCost += cost * (ing.qty || 0);
     }
 
     return totalCost;
@@ -4788,188 +4002,49 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    {ingredients.map((ing, idx) => {
-                      const invItem = inventoryItems.find(i => i.id === ing.itemId);
-                      const unitCost = getItemUnitCost(invItem);
-                      const servingsPerBottle = calculateServings(ing.bottleSize, ing.qty, ing.unit);
-                      const displayQty = getNormalizedQty(ing.qty, ing.unit, ing.bottleSize);
-                      const wasNormalized = displayQty !== ing.qty && ing.qty > 0;
-                      
-                      // Calculate total servings from stock: (totalStock bottles × bottleSize) / pourAmount
-                      // Use normalized pour amount so 0.03 (L) is treated as 30 (ml) when bottle is 750ml.
-                      const totalStock = invItem?.totalStock || 0;
-                      const pourAmount = displayQty; // already normalized via getNormalizedQty()
-                      const totalServingsFromStock = pourAmount > 0 ? Math.floor((totalStock * ing.bottleSize) / pourAmount) : 0;
-                      
-                      return (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex gap-2 items-center flex-wrap">
-                            <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
-                              <SelectTrigger className="flex-1 min-w-[120px]"><SelectValue placeholder="Select from stock" /></SelectTrigger>
-                              <SelectContent>
-                                {inventoryItems.map((inv) => (
-                                  <SelectItem key={inv.id} value={inv.id}>
-                                    <div className="flex items-center justify-between w-full gap-2">
-                                      <span>{inv.name}</span>
-                                      <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
-                                        ({inv.totalStock || 0} BOT)
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="Qty"
-                              className="w-16"
-                              value={ing.qty}
-                              onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
-                            />
-                            <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
-                              <SelectTrigger className="w-16"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="g">g</SelectItem>
-                                <SelectItem value="kg">kg</SelectItem>
-                                <SelectItem value="ml">ml</SelectItem>
-                                <SelectItem value="L">L</SelectItem>
-                                <SelectItem value="piece">pc</SelectItem>
-                                <SelectItem value="dash">dash</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                step="1"
-                                placeholder="Bottle"
-                                className="w-16"
-                                value={ing.bottleSize}
-                                onChange={(e) => updateIngredient(idx, "bottleSize", parseFloat(e.target.value) || 750)}
-                              />
-                              <span className="text-xs text-muted-foreground">{ing.unit}</span>
-                            </div>
-                            <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          {ing.itemId && (
-                            <div className="flex items-center justify-between text-xs text-muted-foreground pl-2 flex-wrap gap-2">
-                              <span>Unit cost: {formatPrice(unitCost)}</span>
-                              {wasNormalized && (
-                                <span className="text-blue-500 font-medium">
-                                  = {displayQty} {ing.unit}/serve
-                                </span>
-                              )}
-                              <span className="text-yellow-500 font-medium">
-                                {servingsPerBottle > 0 ? `${servingsPerBottle} servings/bottle` : '-'}
-                              </span>
-                              <span className="text-green-500 font-medium">
-                                {totalServingsFromStock > 0 ? `${totalServingsFromStock} total servings` : '-'}
-                              </span>
-                              <span className="text-primary font-medium">Cost: {formatPrice(ing.costPrice)}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {ingredients.map((ing, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <Select value={ing.itemId} onValueChange={(v) => updateIngredient(idx, "itemId", v)}>
+                          <SelectTrigger className="flex-1"><SelectValue placeholder="Select from stock" /></SelectTrigger>
+                          <SelectContent>
+                            {inventoryItems.map((inv) => (
+                              <SelectItem key={inv.id} value={inv.id}>
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span>{inv.name}</span>
+                                  <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
+                                    ({inv.totalStock || 0} {inv.base_unit})
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Qty"
+                          className="w-20"
+                          value={ing.qty}
+                          onChange={(e) => updateIngredient(idx, "qty", parseFloat(e.target.value) || 0)}
+                        />
+                        <Select value={ing.unit} onValueChange={(v) => updateIngredient(idx, "unit", v)}>
+                          <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="g">g</SelectItem>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="ml">ml</SelectItem>
+                            <SelectItem value="L">L</SelectItem>
+                            <SelectItem value="piece">pc</SelectItem>
+                            <SelectItem value="dash">dash</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button size="icon" variant="ghost" onClick={() => removeIngredient(idx)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Cost Summary Section */}
-                {ingredients.length > 0 && (
-                  <Card className="bg-muted/30 border-dashed">
-                    <CardContent className="pt-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Total Self Cost</span>
-                        <span className="text-lg font-bold text-primary">{formatPrice(calculateTotalSelfCost())}</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label className="text-xs">Markup %</Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              step="1"
-                              value={markupPercent}
-                              onChange={(e) => setMarkupPercent(e.target.value)}
-                              className="h-8"
-                            />
-                            <Percent className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs">VAT %</Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              step="0.1"
-                              value={vatPercent}
-                              onChange={(e) => setVatPercent(e.target.value)}
-                              className="h-8"
-                            />
-                            <Percent className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Service %</Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              step="0.1"
-                              value={serviceChargePercent}
-                              onChange={(e) => setServiceChargePercent(e.target.value)}
-                              className="h-8"
-                            />
-                            <Percent className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-3 space-y-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Markup ({markupPercent}%)</span>
-                          <span>{formatPrice((calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Subtotal</span>
-                          <span>{formatPrice(calculateTotalSelfCost() + (calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>VAT ({vatPercent}%)</span>
-                          <span>{formatPrice(((calculateTotalSelfCost() + (calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100) * parseFloat(vatPercent || "0")) / 100)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Service ({serviceChargePercent}%)</span>
-                          <span>{formatPrice(((calculateTotalSelfCost() + (calculateTotalSelfCost() * parseFloat(markupPercent || "0")) / 100) * parseFloat(serviceChargePercent || "0")) / 100)}</span>
-                        </div>
-                        <div className="flex items-center justify-between pt-2 border-t">
-                          <span className="font-semibold">Suggested Selling Price</span>
-                          <span className="text-xl font-bold text-green-500">{formatPrice(calculateSellingPrice())}</span>
-                        </div>
-                        
-                        <div className="pt-3 border-t mt-3">
-                          <Label className="text-sm font-medium">Manual Selling Price (Optional)</Label>
-                          <p className="text-xs text-muted-foreground mb-2">Override the suggested price with your own</p>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={manualSellingPrice}
-                            onChange={(e) => setManualSellingPrice(e.target.value)}
-                            placeholder={calculateSellingPrice().toFixed(2)}
-                            className="h-10"
-                          />
-                          {manualSellingPrice && parseFloat(manualSellingPrice) > 0 && (
-                            <p className="text-xs text-primary mt-1">
-                              Menu item will use: {formatPrice(parseFloat(manualSellingPrice))}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
 
                 <div>
                   <Label>Instructions</Label>
@@ -5004,26 +4079,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
                 const foodCostPct = calculateFoodCostPercent(recipe);
                 const price = recipe.lab_ops_menu_items?.base_price || 0;
                 const profit = price - cost;
-                
-                // Calculate total servings from recipe ingredients (bottle_size / pour_qty × stock)
-                let totalServings: number | null = null;
-                if (recipe.lab_ops_recipe_ingredients?.length > 0) {
-                  let minServings = Infinity;
-                  for (const ing of recipe.lab_ops_recipe_ingredients) {
-                    const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-                    const bottleStock = invItem?.totalStock || 0;
-                    const bottleSize = ing.bottle_size || 750;
-                    const pourQty = getNormalizedQty(ing.qty || 0, ing.unit || 'ml', bottleSize);
-                    if (pourQty > 0 && bottleSize > 0) {
-                      const servingsPerBottle = Math.floor(bottleSize / pourQty);
-                      const servingsFromIngredient = bottleStock * servingsPerBottle;
-                      minServings = Math.min(minServings, servingsFromIngredient);
-                    }
-                  }
-                  if (minServings !== Infinity) {
-                    totalServings = minServings;
-                  }
-                }
 
                 return (
                   <Card key={recipe.id}>
@@ -5031,14 +4086,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold">{recipe.lab_ops_menu_items?.name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>Version {recipe.version_number} • Yield: {recipe.yield_qty}</span>
-                            {totalServings !== null && (
-                              <Badge variant="secondary" className="text-xs">
-                                {totalServings} servings
-                              </Badge>
-                            )}
-                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Version {recipe.version_number} • Yield: {recipe.yield_qty}
+                          </p>
                         </div>
                         <div className="flex items-center gap-1">
                           <Badge variant={parseFloat(foodCostPct) > 35 ? "destructive" : "default"} className="shrink-0">
@@ -5067,52 +4117,17 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           <p className="font-semibold text-green-600">{formatPrice(profit)}</p>
                         </div>
                       </div>
-                      
-                      {/* Markup, VAT, Service Charge */}
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        <div className="text-center p-1.5 bg-amber-500/10 rounded border border-amber-500/20">
-                          <p className="text-[10px] text-muted-foreground">Markup</p>
-                          <p className="text-sm font-medium text-amber-500">{recipe.markup_percent ?? 0}%</p>
-                        </div>
-                        <div className="text-center p-1.5 bg-blue-500/10 rounded border border-blue-500/20">
-                          <p className="text-[10px] text-muted-foreground">VAT</p>
-                          <p className="text-sm font-medium text-blue-500">{recipe.vat_percent ?? 5}%</p>
-                        </div>
-                        <div className="text-center p-1.5 bg-purple-500/10 rounded border border-purple-500/20">
-                          <p className="text-[10px] text-muted-foreground">Service</p>
-                          <p className="text-sm font-medium text-purple-500">{recipe.service_charge_percent ?? 0}%</p>
-                        </div>
-                      </div>
 
                       {recipe.lab_ops_recipe_ingredients?.length > 0 && (
                         <div className="mt-4 pt-4 border-t">
                           <p className="text-sm font-medium mb-2">Ingredients:</p>
-                          <div className="space-y-1">
+                          <div className="flex flex-wrap gap-2">
                             {recipe.lab_ops_recipe_ingredients.map((ing: any) => {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-                              const unitCost = getItemUnitCost(invItem);
-                              const bottleSize = ing.bottle_size || 750;
-                              const pourQty = getNormalizedQty(ing.qty || 0, ing.unit || 'ml', bottleSize);
-                              // Servings per bottle = bottle size / pour amount
-                              const servingsPerBottle = pourQty > 0 ? Math.floor(bottleSize / pourQty) : 0;
-                              // Total servings from stock = stock × servings per bottle
-                              const bottleStock = invItem?.totalStock || 0;
-                              const totalFromStock = servingsPerBottle * bottleStock;
-                              // Cost per serving = (pour amount / bottle size) × bottle cost
-                              const ingredientCost = bottleSize > 0 ? (pourQty / bottleSize) * unitCost : 0;
                               return (
-                                <div key={ing.id} className="flex flex-col gap-1 text-sm bg-muted/30 rounded px-2 py-1.5">
-                                  <div className="flex items-center justify-between">
-                                    <span className="flex-1 font-medium">{invItem?.name || 'Unknown'}</span>
-                                    <span className="font-medium text-primary">{formatPrice(ingredientCost)}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>{pourQty} {ing.unit} @ {formatPrice(unitCost)}/bottle</span>
-                                    <span className="text-amber-500 font-medium">
-                                      {servingsPerBottle} srv/bottle • {totalFromStock} total
-                                    </span>
-                                  </div>
-                                </div>
+                                <Badge key={ing.id} variant="outline">
+                                  {invItem?.name}: {ing.qty} {ing.unit}
+                                </Badge>
                               );
                             })}
                           </div>
@@ -5129,7 +4144,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
       {/* Edit Menu Item Dialog */}
       <Dialog open={!!editingMenuItemInRecipe} onOpenChange={(open) => !open && setEditingMenuItemInRecipe(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Menu Item</DialogTitle>
           </DialogHeader>
@@ -5149,51 +4164,15 @@ function RecipesModule({ outletId }: { outletId: string }) {
                   onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, description: e.target.value })} 
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Price is synced from recipe costing
-              </p>
-              
-              {/* Serving Ratio Section - For spirits/bottles */}
-              <div className="border-t pt-4 mt-4">
-                <p className="font-medium text-sm mb-3 flex items-center gap-2">
-                  <Wine className="h-4 w-4" /> Serving Ratio (for spirits/bottles)
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Serving Size (ml)</Label>
-                    <Input 
-                      type="number" 
-                      step="1"
-                      placeholder="30"
-                      value={editingMenuItemInRecipe.serving_ratio_ml || ""} 
-                      onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, serving_ratio_ml: parseFloat(e.target.value) || null })} 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">ml per serving</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Bottle Size (ml)</Label>
-                    <Input 
-                      type="number" 
-                      step="1"
-                      placeholder="750"
-                      value={editingMenuItemInRecipe.bottle_ratio_ml || ""} 
-                      onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, bottle_ratio_ml: parseFloat(e.target.value) || null })} 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">ml per bottle</p>
-                  </div>
-                </div>
-                {editingMenuItemInRecipe.serving_ratio_ml && editingMenuItemInRecipe.bottle_ratio_ml && editingMenuItemInRecipe.serving_ratio_ml > 0 && (
-                  <div className="mt-3 p-2 bg-primary/10 rounded-lg">
-                    <p className="text-sm text-center">
-                      <span className="font-semibold text-primary">
-                        {Math.floor(editingMenuItemInRecipe.bottle_ratio_ml / editingMenuItemInRecipe.serving_ratio_ml)} servings
-                      </span>
-                      <span className="text-muted-foreground"> per bottle</span>
-                    </p>
-                  </div>
-                )}
+              <div>
+                <Label>Price</Label>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  value={editingMenuItemInRecipe.base_price} 
+                  onChange={(e) => setEditingMenuItemInRecipe({ ...editingMenuItemInRecipe, base_price: parseFloat(e.target.value) })} 
+                />
               </div>
-              
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={editingMenuItemInRecipe.is_active} 
@@ -5207,9 +4186,8 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     .update({
                       name: editingMenuItemInRecipe.name,
                       description: editingMenuItemInRecipe.description,
+                      base_price: editingMenuItemInRecipe.base_price,
                       is_active: editingMenuItemInRecipe.is_active,
-                      serving_ratio_ml: editingMenuItemInRecipe.serving_ratio_ml || null,
-                      bottle_ratio_ml: editingMenuItemInRecipe.bottle_ratio_ml || null,
                     })
                     .eq("id", editingMenuItemInRecipe.id);
                   setEditingMenuItemInRecipe(null);

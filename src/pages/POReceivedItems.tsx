@@ -8,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw, Camera, Edit2 } from "lucide-react";
-import { EditReceivingDialog } from "@/components/procurement/EditReceivingDialog";
+import { ArrowLeft, Package, Coins, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, HelpCircle, Smartphone, Users, RefreshCw, Camera } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { ReceivingAnalytics } from "@/components/receiving/ReceivingAnalytics";
@@ -24,8 +23,6 @@ import autoTable from "jspdf-autotable";
 import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
-import { isSpiritItem } from "@/lib/servings";
-import { detectBottleSizeMl, POUR_SIZE_ML } from "@/lib/spiritServings";
 import { 
   EnhancedReceivingDialog, 
   EnhancedReceivingData, 
@@ -160,8 +157,8 @@ const POReceivedItems = () => {
   const [selectedPOContent, setSelectedPOContent] = useState<any>(null);
   const [showManualUpload, setShowManualUpload] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<any>(null);
-  const [showEditReceiving, setShowEditReceiving] = useState(false);
+
+  // Workspace state - use staff workspace if in staffMode, otherwise from localStorage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
     if (staffWorkspaceId) return staffWorkspaceId;
     return localStorage.getItem('po-workspace-id') || null;
@@ -1266,10 +1263,10 @@ const POReceivedItems = () => {
   
   // Sync received items to LAB Ops stock movements
   const syncToLabOpsMovements = async (items: any[], recordId: string, receivedBy: string | null) => {
-    // Get LAB Ops inventory items to match (include base_unit for spirit detection)
+    // Get LAB Ops inventory items to match
     const { data: inventoryItems } = await supabase
       .from('lab_ops_inventory_items')
-      .select('id, name, outlet_id, base_unit');
+      .select('id, name, outlet_id');
     
     if (!inventoryItems?.length) {
       // No inventory items - add all to pending queue
@@ -1318,58 +1315,37 @@ const POReceivedItems = () => {
       
       if (matchedItem) {
         // Found match - create stock movement
-        const location = locations?.find((loc) => loc.outlet_id === matchedItem.outlet_id);
-        const locationId = location?.id;
-
-        // Convert bottle units into the inventory item's base unit (keeps data consistent)
-        const baseUnit = String(matchedItem.base_unit || '').toLowerCase();
-        const itemUnit = String(item.unit || '').toUpperCase();
-        const isBottleUnit = ['BOT', 'BOTTLE', 'BTL', 'BOTTLES'].includes(itemUnit);
-        const isSpirit = isSpiritItem(item.item_name);
-
-        let stockQuantity = Number(item.quantity || 0);
-
-        // Backward compat: if the inventory item was previously created as 'serving', keep storing servings
-        if (isSpirit && isBottleUnit && (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv')) {
-          const bottleSizeMl = detectBottleSizeMl(item.item_name);
-          stockQuantity = Math.floor((stockQuantity * bottleSizeMl) / POUR_SIZE_ML);
-        }
-
-        // New logic: if inventory item is ml-based, store received bottles as ml
-        if (isSpirit && isBottleUnit && (baseUnit === 'ml' || baseUnit === 'milliliter' || baseUnit === 'millilitre')) {
-          const bottleSizeMl = detectBottleSizeMl(item.item_name);
-          stockQuantity = stockQuantity * bottleSizeMl;
-        }
+        const location = locations?.find(loc => loc.outlet_id === matchedItem.outlet_id);
+        
         await supabase.from('lab_ops_stock_movements').insert({
           inventory_item_id: matchedItem.id,
-          to_location_id: locationId || null,
-          qty: stockQuantity,
+          to_location_id: location?.id || null,
+          qty: item.quantity,
           movement_type: 'purchase',
           reference_type: 'po_receiving',
           reference_id: recordId,
           notes: `PO Receiving: ${item.item_name}`,
           created_by: user?.id
         });
-
-        if (!locationId) continue;
-
+        
+        // Update stock levels
         const { data: existingLevel } = await supabase
           .from('lab_ops_stock_levels')
           .select('id, quantity')
           .eq('inventory_item_id', matchedItem.id)
-          .eq('location_id', locationId)
-          .maybeSingle();
-
+          .eq('location_id', location?.id)
+          .single();
+        
         if (existingLevel) {
           await supabase
             .from('lab_ops_stock_levels')
-            .update({ quantity: (existingLevel.quantity || 0) + stockQuantity })
+            .update({ quantity: (existingLevel.quantity || 0) + item.quantity })
             .eq('id', existingLevel.id);
-        } else {
+        } else if (location) {
           await supabase.from('lab_ops_stock_levels').insert({
             inventory_item_id: matchedItem.id,
-            location_id: locationId,
-            quantity: stockQuantity
+            location_id: location.id,
+            quantity: item.quantity
           });
         }
       } else {
@@ -2214,17 +2190,6 @@ const POReceivedItems = () => {
                           </div>
                         </div>
                         <div className="flex gap-0.5 shrink-0">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7" 
-                            onClick={() => {
-                              setEditingRecord(record);
-                              setShowEditReceiving(true);
-                            }}
-                          >
-                            <Edit2 className="w-3.5 h-3.5 text-blue-500" />
-                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRecordContent(record)}>
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
@@ -3076,16 +3041,6 @@ const POReceivedItems = () => {
             }
           }, 100);
         }}
-      />
-
-      {/* Edit Receiving Dialog */}
-      <EditReceivingDialog
-        open={showEditReceiving}
-        onOpenChange={setShowEditReceiving}
-        record={editingRecord}
-        userId={user?.id || ''}
-        workspaceId={effectiveWorkspaceId}
-        currencySymbol={currencySymbols[currency]}
       />
 
     </div>

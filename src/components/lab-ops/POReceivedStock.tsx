@@ -12,8 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { getServingsDisplay, formatQty, isSpiritItem } from "@/lib/servings";
-import { detectBottleSizeMl, POUR_SIZE_ML } from "@/lib/spiritServings";
 
 interface POReceivedStockProps {
   outletId: string;
@@ -191,36 +189,15 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
     }
 
     try {
-      // Detect if this is a spirit item and unit is bottles
-      const isSpirit = isSpiritItem(newItemName);
-      const unitUpper = String(baseUnit || approvalItem.unit || '').toUpperCase().trim();
-      const isBottleUnit = ['BOT', 'BOTTLE', 'BOTTLES', 'BTL'].includes(unitUpper);
-
-      // Calculate quantity to store:
-      // For spirits received in bottles: convert bottles -> ml (bottles × bottle_ml)
-      // For others: store as-is
-      let quantityToStore = Number(approvalItem.quantity || 0);
-      let bottleSizeMl = 750; // Default
-
-      if (isSpirit && isBottleUnit) {
-        bottleSizeMl = detectBottleSizeMl(newItemName);
-        quantityToStore = quantityToStore * bottleSizeMl;
-        console.log(
-          `Spirit conversion: ${approvalItem.quantity} bottles × ${bottleSizeMl}ml = ${quantityToStore}ml (servings: ${Math.floor(quantityToStore / POUR_SIZE_ML)})`
-        );
-      }
-
-      // Create new inventory item - store base_unit as 'ml' for spirits
+      // Create new inventory item
       const { data: newItem, error: itemError } = await supabase
         .from('lab_ops_inventory_items')
         .insert({
           outlet_id: outletId,
           name: newItemName,
           sku: newItemSku || null,
-          base_unit: isSpirit && isBottleUnit ? 'ml' : (baseUnit || approvalItem.unit || 'unit'),
-          par_level: parseInt(parLevel) || 0,
-          // Pick cost directly from PO received item price
-          unit_cost: Number(approvalItem.unit_price || 0),
+          base_unit: baseUnit || approvalItem.unit || 'unit',
+          par_level: parseInt(parLevel) || 0
         })
         .select('id')
         .single();
@@ -231,14 +208,11 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
       await supabase.from('lab_ops_stock_movements').insert({
         inventory_item_id: newItem.id,
         to_location_id: selectedLocation,
-        qty: quantityToStore,
+        qty: approvalItem.quantity,
         movement_type: 'purchase',
-        unit_cost: Number(approvalItem.unit_price || 0),
         reference_type: 'po_receiving_approved',
         reference_id: approvalItem.po_record_id,
-        notes: isSpirit && isBottleUnit
-          ? `Approved from PO: ${approvalItem.document_number} (${approvalItem.quantity} bottles → ${quantityToStore} ml)`
-          : `Approved from PO: ${approvalItem.document_number}`,
+        notes: `Approved from PO: ${approvalItem.document_number}`,
         created_by: user?.id
       });
 
@@ -253,30 +227,27 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
       if (existingLevel) {
         await supabase
           .from('lab_ops_stock_levels')
-          .update({ quantity: Number(existingLevel.quantity || 0) + quantityToStore })
+          .update({ quantity: existingLevel.quantity + approvalItem.quantity })
           .eq('id', existingLevel.id);
       } else {
         await supabase.from('lab_ops_stock_levels').insert({
           inventory_item_id: newItem.id,
           location_id: selectedLocation,
-          quantity: quantityToStore
+          quantity: approvalItem.quantity
         });
       }
 
       // Update pending item status
       await supabase
         .from('lab_ops_pending_received_items')
-        .update({
-          status: 'approved',
-          approved_by: user?.id,
-          approved_at: new Date().toISOString()
+        .update({ 
+          status: 'approved', 
+          approved_by: user?.id, 
+          approved_at: new Date().toISOString() 
         })
         .eq('id', approvalItem.id);
 
-      const successMsg = isSpirit && isBottleUnit
-        ? `"${newItemName}" added: ${approvalItem.quantity} bottles → ${quantityToStore} ml (${Math.floor(quantityToStore / POUR_SIZE_ML)} servings)`
-        : `Item "${newItemName}" added to inventory`;
-      toast.success(successMsg);
+      toast.success(`Item "${newItemName}" added to inventory`);
       setApprovalItem(null);
       resetApprovalForm();
       fetchData();
@@ -414,35 +385,21 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                             Items ({record.total_items}):
                           </p>
                           <div className="space-y-1">
-                            {record.items.slice(0, 3).map((item, idx) => {
-                              const servings = getServingsDisplay({
-                                quantity: item.quantity,
-                                unit: item.unit,
-                                label: item.name,
-                                defaultServingMl: 30,
-                                defaultBottleMl: 750,
-                              });
-                              return (
-                                <div key={idx} className="flex items-center justify-between text-sm">
-                                  <span className="truncate">{item.name}</span>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="secondary" className="text-xs">
-                                      +{formatQty(item.quantity)} {item.unit || "unit"}
-                                    </Badge>
-                                    {servings.converted && (
-                                      <span className="text-xs text-muted-foreground">
-                                        ({formatQty(servings.displayQty)} srv)
-                                      </span>
-                                    )}
-                                    {item.location && (
-                                      <span className="text-xs text-muted-foreground">
-                                        → {item.location}
-                                      </span>
-                                    )}
-                                  </div>
+                            {record.items.slice(0, 3).map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-sm">
+                                <span className="truncate">{item.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{item.quantity}
+                                  </Badge>
+                                  {item.location && (
+                                    <span className="text-xs text-muted-foreground">
+                                      → {item.location}
+                                    </span>
+                                  )}
                                 </div>
-                              );
-                            })}
+                              </div>
+                            ))}
                             {record.items.length > 3 && (
                               <p className="text-xs text-muted-foreground">
                                 +{record.items.length - 3} more items
@@ -491,15 +448,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                 </div>
               </Card>
 
-              {filteredPending.map((item) => {
-                const servings = getServingsDisplay({
-                  quantity: item.quantity,
-                  unit: item.unit,
-                  label: item.item_name,
-                  defaultServingMl: 30,
-                  defaultBottleMl: 750,
-                });
-                return (
+              {filteredPending.map((item) => (
                 <Card key={item.id} className="p-3 sm:p-4 border-l-4 border-l-amber-500">
                   {/* Header with name and quantity badge */}
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -510,16 +459,9 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                         Pending
                       </Badge>
                     </div>
-                    <div className="text-right shrink-0">
-                      <Badge variant="secondary" className="text-sm sm:text-base font-bold px-2 sm:px-3 py-1">
-                        {formatQty(item.quantity)} {item.unit || 'BOT'}
-                      </Badge>
-                      {servings.converted && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          ({formatQty(servings.displayQty)} servings)
-                        </p>
-                      )}
-                    </div>
+                    <Badge variant="secondary" className="text-sm sm:text-base font-bold px-2 sm:px-3 py-1 shrink-0">
+                      {item.quantity} {item.unit || 'BOT'}
+                    </Badge>
                   </div>
                   
                   {/* Details */}
@@ -574,8 +516,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
                     </div>
                   </div>
                 </Card>
-                );
-              })}
+              ))}
             </div>
           )}
         </TabsContent>

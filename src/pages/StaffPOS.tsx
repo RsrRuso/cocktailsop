@@ -2,12 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  detectBottleSizeMl, 
-  bottlesToServings, 
-  isSpiritCategory,
-  POUR_SIZE_ML 
-} from "@/lib/spiritServings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
@@ -83,13 +77,10 @@ interface MenuItem {
   category_id: string;
   remaining_serves: number | null;
   recipe_id?: string | null;
-  // For inventory-linked items (like bottled water or spirit shots)
+  // For inventory-linked items (like bottled water)
   inventory_item_id?: string | null;
-  inventory_stock?: number | null; // UI stock (units or servings)
+  inventory_stock?: number | null;
   stock_level_id?: string | null;
-  inventory_deduct_qty?: number | null; // DB qty to deduct per 1 UI unit
-  // Calculated servings from recipe ingredients
-  calculated_servings?: number | null;
 }
 
 export default function StaffPOS() {
@@ -106,7 +97,6 @@ export default function StaffPOS() {
   const [tables, setTables] = useState<Table[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const menuItemsRef = useRef<MenuItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -274,10 +264,6 @@ export default function StaffPOS() {
     initSession();
   }, [location.state]);
 
-  // Keep menuItemsRef in sync with menuItems state for use in async callbacks
-  useEffect(() => {
-    menuItemsRef.current = menuItems;
-  }, [menuItems]);
 
   const fetchOutlets = async () => {
     try {
@@ -601,12 +587,7 @@ export default function StaffPOS() {
       .from("lab_ops_menu_items")
       .select(`
         id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
-        lab_ops_categories(name, type),
-        lab_ops_inventory_items(name, base_unit),
-        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(
-          id,
-          lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id, lab_ops_inventory_items(name, base_unit))
-        )
+        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(id)
       `)
       .eq("outlet_id", outletId)
       .eq("is_active", true);
@@ -637,116 +618,15 @@ export default function StaffPOS() {
       }
     }
     
-    // Collect all inventory_item_ids from recipe ingredients for stock calculation
-    const recipeInventoryIds = new Set<string>();
-    const ingredientInfoMap: Record<string, { name: string; baseUnit: string }> = {};
-    (data || []).forEach((item: any) => {
-      const recipe = item.lab_ops_recipes?.[0];
-      if (recipe?.lab_ops_recipe_ingredients) {
-        recipe.lab_ops_recipe_ingredients.forEach((ing: any) => {
-          if (ing.inventory_item_id) {
-            recipeInventoryIds.add(ing.inventory_item_id);
-            if (ing.lab_ops_inventory_items) {
-              ingredientInfoMap[ing.inventory_item_id] = {
-                name: ing.lab_ops_inventory_items.name || '',
-                baseUnit: ing.lab_ops_inventory_items.base_unit || ''
-              };
-            }
-          }
-        });
-      }
-    });
-    
-    // Fetch stock levels for recipe ingredients
-    let recipeStockMap: Record<string, number> = {};
-    if (recipeInventoryIds.size > 0) {
-      const { data: recipeStockLevels } = await supabase
-        .from("lab_ops_stock_levels")
-        .select("inventory_item_id, quantity")
-        .in("inventory_item_id", Array.from(recipeInventoryIds));
-      
-      if (recipeStockLevels) {
-        for (const sl of recipeStockLevels) {
-          recipeStockMap[sl.inventory_item_id] = (recipeStockMap[sl.inventory_item_id] || 0) + Number(sl.quantity || 0);
-        }
-      }
-    }
-    
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
-      
-      // Category name is useful for display rules (e.g. spirit shots)
-      const categoryName = String(item.lab_ops_categories?.name || '').toLowerCase();
-      const isSpiritsMenuItem = isSpiritCategory(categoryName);
-
-      // Inventory-linked items: if the linked inventory is ml-based and this is a spirit menu item,
-      // show stock as servings (ml/30) and deduct 30ml per sale.
-      const invBaseUnit = String(item.lab_ops_inventory_items?.base_unit || '').toLowerCase();
-      const invStockQtyRaw = invStock ? Number(invStock.quantity || 0) : null;
-      const inventoryDeductQty = invBaseUnit === 'ml' && isSpiritsMenuItem ? POUR_SIZE_ML : 1;
-      const inventoryStockDisplay =
-        invStockQtyRaw == null
-          ? null
-          : invBaseUnit === 'ml' && isSpiritsMenuItem
-            ? Math.floor(invStockQtyRaw / POUR_SIZE_ML)
-            : Math.floor(invStockQtyRaw);
-
-      // Recipe-based items: Find minimum servings across all ingredients (limiting ingredient)
-      // Assumption: stock_levels store ml for spirits (bottles are converted to ml when received).
-      let calculatedServings: number | null = null;
-      const recipe = item.lab_ops_recipes?.[0];
-
-      if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
-        let minServings = Infinity;
-
-        for (const ing of recipe.lab_ops_recipe_ingredients) {
-          if (!ing.inventory_item_id) continue;
-
-          const stockQty = Number(recipeStockMap[ing.inventory_item_id] || 0);
-          const ingInfo = ingredientInfoMap[ing.inventory_item_id];
-          const ingName = ingInfo?.name || '';
-          const baseUnitLower = String(ingInfo?.baseUnit || '').toLowerCase();
-          const unitLower = String(ing.unit || 'ml').toLowerCase();
-          const recipeQty = Number(ing.qty || 0);
-
-          let servingsInStock = 0;
-
-          // Backward compat: previously-stored servings
-          if (baseUnitLower === 'serving' || baseUnitLower === 'servings' || baseUnitLower === 'srv') {
-            servingsInStock = Math.floor(stockQty);
-          }
-          // Legacy: bottles stored as bottles
-          else if (baseUnitLower === 'bot' || baseUnitLower === 'bottle' || baseUnitLower === 'bottles') {
-            const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
-            if (unitLower === 'bot' || unitLower === 'bottle' || unitLower === 'bottles') {
-              servingsInStock = recipeQty > 0 ? Math.floor(stockQty / recipeQty) : Math.floor(stockQty);
-            } else {
-              const totalMl = stockQty * bottleSizeMl;
-              servingsInStock = recipeQty > 0 ? Math.floor(totalMl / recipeQty) : 0;
-            }
-          }
-          // New: ml-based stock
-          else {
-            servingsInStock = recipeQty > 0 ? Math.floor(stockQty / recipeQty) : Math.floor(stockQty);
-          }
-
-          minServings = Math.min(minServings, servingsInStock);
-        }
-
-        if (minServings !== Infinity) {
-          calculatedServings = minServings;
-        }
-      }
-
       return {
         ...item,
         remaining_serves: item.remaining_serves ?? null,
-        recipe_id: item.recipe_id || recipe?.id || null,
+        recipe_id: item.recipe_id || item.lab_ops_recipes?.[0]?.id || null,
         inventory_item_id: item.inventory_item_id || null,
-        inventory_stock: inventoryStockDisplay,
+        inventory_stock: invStock ? invStock.quantity : null,
         stock_level_id: invStock ? invStock.stock_level_id : null,
-        inventory_deduct_qty: inventoryDeductQty,
-        calculated_servings: calculatedServings,
       };
     }));
   };
@@ -1166,17 +1046,17 @@ export default function StaffPOS() {
       }]);
     }
     
-    // Handle inventory-linked items (like bottled water or spirit shots) - deduct from lab_ops_stock_levels
+    // Handle inventory-linked items (like bottled water) - deduct from lab_ops_stock_levels
     if (item.inventory_item_id && item.inventory_stock !== null && item.inventory_stock > 0) {
       const newStock = Math.max(0, item.inventory_stock - 1);
-      setMenuItems(prev => prev.map(m =>
+      setMenuItems(prev => prev.map(m => 
         m.id === item.id && m.inventory_stock !== null
           ? { ...m, inventory_stock: newStock }
           : m
       ));
-
-      const deductQty = Number(item.inventory_deduct_qty || 1);
-      deductInventoryStock(item.inventory_item_id, deductQty, item.stock_level_id);
+      
+      // Deduct from stock levels in database
+      deductInventoryStock(item.inventory_item_id, 1, item.stock_level_id);
     }
     // Handle batch-recipe based items (remaining_serves) 
     else if (item.remaining_serves !== null && item.remaining_serves > 0) {
@@ -1193,19 +1073,9 @@ export default function StaffPOS() {
         .eq("id", item.id)
         .then(() => {});
     }
-    // Handle recipe-based items with calculated_servings (like cocktails with ingredients)
-    else if (item.calculated_servings !== null && item.calculated_servings > 0) {
-      // Update UI immediately
-      setMenuItems(prev => prev.map(m => 
-        m.id === item.id && m.calculated_servings !== null
-          ? { ...m, calculated_servings: Math.max(0, m.calculated_servings - 1) }
-          : m
-      ));
-    }
     
     // Real-time ingredient deduction based on recipe
-    // IMPORTANT: Skip recipe deduction for inventory-linked items (they use direct stock deduction above)
-    if (item.recipe_id && !item.inventory_item_id) {
+    if (item.recipe_id) {
       deductRecipeIngredients(item.recipe_id, 1);
     }
     
@@ -1251,155 +1121,61 @@ export default function StaffPOS() {
   };
 
   // Deduct recipe ingredients from inventory in real-time
-  // For items with base_unit='serving': stock is already in servings, deduct directly
-  // For bottles: deduct fractional bottles based on pour size
-  const deductRecipeIngredients = async (recipeId: string, servingsToDeduct: number) => {
+  const deductRecipeIngredients = async (recipeId: string, servings: number) => {
     try {
+      // Fetch recipe ingredients
       const { data: ingredients } = await supabase
         .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit, bottle_size, lab_ops_inventory_items(name, base_unit)")
+        .select("inventory_item_id, qty, unit")
         .eq("recipe_id", recipeId);
 
       if (!ingredients?.length) return;
 
-      for (const ingredient of ingredients as any[]) {
-        const inventoryItemId = ingredient.inventory_item_id as string | null;
-        if (!inventoryItemId) continue;
-
-        const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toLowerCase();
-        const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
-        const recipeQtyMl = Number(ingredient.qty || 0);
-        const unit = String(ingredient.unit || 'ml').toLowerCase();
+      // Deduct each ingredient from stock
+      for (const ingredient of ingredients) {
+        const deductAmount = (ingredient.qty || 0) * servings;
         
-        let qtyToDeduct: number;
-        let deductUnit: string;
-        
-        // Backward compat: previously-stored servings
-        if (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv') {
-          qtyToDeduct = servingsToDeduct;
-          deductUnit = 'srv';
-        } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
-          // Legacy bottle storage: deduct fractional bottles
-          const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
-          qtyToDeduct = (recipeQtyMl * servingsToDeduct) / bottleSizeMl;
-          deductUnit = 'BOT';
-        } else {
-          // New default: ml/qty-based deduction
-          qtyToDeduct = recipeQtyMl * servingsToDeduct;
-          deductUnit = unit;
-        }
-
-        if (qtyToDeduct <= 0) continue;
-
-        // Get stock level
+        // Get current stock level
         const { data: stockLevels } = await supabase
           .from("lab_ops_stock_levels")
           .select("id, quantity, location_id")
-          .eq("inventory_item_id", inventoryItemId)
+          .eq("inventory_item_id", ingredient.inventory_item_id)
+          .gt("quantity", 0)
           .order("quantity", { ascending: false })
           .limit(1);
 
-        if (!stockLevels?.length) continue;
+        if (stockLevels?.length) {
+          const stockLevel = stockLevels[0];
+          const newQuantity = Math.max(0, stockLevel.quantity - deductAmount);
+          
+          // Update stock level
+          await supabase
+            .from("lab_ops_stock_levels")
+            .update({ quantity: newQuantity })
+            .eq("id", stockLevel.id);
 
-        const stockLevel = stockLevels[0];
-        const currentQty = Number(stockLevel.quantity || 0);
-        const newQuantity = Math.max(0, currentQty - qtyToDeduct);
-
-        await supabase
-          .from("lab_ops_stock_levels")
-          .update({ quantity: newQuantity })
-          .eq("id", stockLevel.id);
-
-        await supabase.from("lab_ops_stock_movements").insert({
-          inventory_item_id: inventoryItemId,
-          from_location_id: stockLevel.location_id,
-          qty: qtyToDeduct,
-          movement_type: "sale",
-          reference_type: "recipe_consumption",
-          reference_id: recipeId,
-          notes: `Sold ${servingsToDeduct} srv → -${qtyToDeduct.toFixed(2)} ${deductUnit}`,
-        });
+          // Record movement
+          await supabase.from("lab_ops_stock_movements").insert({
+            inventory_item_id: ingredient.inventory_item_id,
+            from_location_id: stockLevel.location_id,
+            qty: deductAmount,
+            movement_type: "sale",
+            reference_type: "recipe_consumption",
+            reference_id: recipeId,
+            notes: `Recipe consumption for order`
+          });
+        }
       }
     } catch (error) {
       console.error("Recipe ingredient deduction error:", error);
     }
   };
 
-  // Restore recipe ingredients to inventory (for item removal/quantity decrease)
-  const restoreRecipeIngredients = async (recipeId: string, servingsToRestore: number) => {
-    try {
-      const { data: ingredients } = await supabase
-        .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit, bottle_size, lab_ops_inventory_items(name, base_unit)")
-        .eq("recipe_id", recipeId);
-
-      if (!ingredients?.length) return;
-
-      for (const ingredient of ingredients as any[]) {
-        const inventoryItemId = ingredient.inventory_item_id as string | null;
-        if (!inventoryItemId) continue;
-
-        const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toLowerCase();
-        const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
-        const recipeQtyMl = Number(ingredient.qty || 0);
-        const unit = String(ingredient.unit || 'ml').toLowerCase();
-        
-        let qtyToRestore: number;
-        let restoreUnit: string;
-        
-        // Backward compat: previously-stored servings
-        if (baseUnit === 'serving' || baseUnit === 'servings' || baseUnit === 'srv') {
-          qtyToRestore = servingsToRestore;
-          restoreUnit = 'srv';
-        } else if ((baseUnit === 'bot' || baseUnit === 'bottle' || baseUnit === 'bottles') && (unit === 'ml' || unit === 'g')) {
-          const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
-          qtyToRestore = (recipeQtyMl * servingsToRestore) / bottleSizeMl;
-          restoreUnit = 'BOT';
-        } else {
-          qtyToRestore = recipeQtyMl * servingsToRestore;
-          restoreUnit = unit;
-        }
-
-        if (qtyToRestore <= 0) continue;
-
-        const { data: stockLevels } = await supabase
-          .from("lab_ops_stock_levels")
-          .select("id, quantity, location_id")
-          .eq("inventory_item_id", inventoryItemId)
-          .order("quantity", { ascending: false })
-          .limit(1);
-
-        if (!stockLevels?.length) continue;
-
-        const stockLevel = stockLevels[0];
-        const currentQty = Number(stockLevel.quantity || 0);
-        const newQuantity = currentQty + qtyToRestore;
-
-        await supabase
-          .from("lab_ops_stock_levels")
-          .update({ quantity: newQuantity })
-          .eq("id", stockLevel.id);
-
-        await supabase.from("lab_ops_stock_movements").insert({
-          inventory_item_id: inventoryItemId,
-          to_location_id: stockLevel.location_id,
-          qty: qtyToRestore,
-          movement_type: "adjustment",
-          reference_type: "recipe_return",
-          reference_id: recipeId,
-          notes: `Returned ${servingsToRestore} srv → +${qtyToRestore.toFixed(2)} ${restoreUnit}`,
-        });
-      }
-    } catch (error) {
-      console.error("Recipe ingredient restore error:", error);
-    }
-  };
-
   const updateQuantity = async (itemId: string, delta: number) => {
-    const absDelta = Math.abs(delta);
+    const currentItem = orderItems.find(o => o.menu_item_id === itemId);
+    const menuItem = menuItems.find(m => m.id === itemId);
     
-    // Update order items
-    setOrderItems(prev => prev.map(o => {
+    setOrderItems(orderItems.map(o => {
       if (o.menu_item_id === itemId) {
         const newQty = o.qty + delta;
         return newQty > 0 ? { ...o, qty: newQty } : o;
@@ -1407,125 +1183,83 @@ export default function StaffPOS() {
       return o;
     }).filter(o => o.qty > 0));
     
-    // Get menu item info from ref for database operations
-    const menuItem = menuItemsRef.current.find(m => m.id === itemId);
-    
-    // Update UI state using functional setter to get latest values
-    setMenuItems(prev => prev.map(m => {
-      if (m.id !== itemId) return m;
+    // Handle inventory-linked items
+    if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+      const newStock = delta > 0 
+        ? Math.max(0, menuItem.inventory_stock - 1)
+        : menuItem.inventory_stock + 1;
       
-      // Handle inventory-linked items
-      if (m.inventory_item_id && m.inventory_stock !== null) {
-        const currentStock = m.inventory_stock;
-        const newStock = delta > 0 
-          ? Math.max(0, currentStock - absDelta)
-          : currentStock + absDelta;
-        return { ...m, inventory_stock: newStock };
-      }
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.inventory_stock !== null
+          ? { ...m, inventory_stock: newStock }
+          : m
+      ));
       
-      // Handle batch-recipe based items (remaining_serves)
-      if (m.remaining_serves !== null) {
-        const currentServes = m.remaining_serves;
-        const newRemaining = delta > 0 
-          ? Math.max(0, currentServes - absDelta)
-          : currentServes + absDelta;
-        return { ...m, remaining_serves: newRemaining };
-      }
-      
-      // Handle recipe-based items with calculated_servings (Spirits: bottles × bottle_ml ÷ 30)
-      if (m.calculated_servings !== null) {
-        const currentServings = m.calculated_servings;
-        const newServings = delta > 0 
-          ? Math.max(0, currentServings - absDelta)
-          : currentServings + absDelta;
-        return { ...m, calculated_servings: newServings };
-      }
-      
-      return m;
-    }));
-    
-    // Database operations using menuItemRef values
-    if (menuItem?.inventory_item_id && menuItem?.inventory_stock !== null) {
-      const invScale = Number(menuItem.inventory_deduct_qty || 1);
+      // Update database
       if (delta > 0) {
-        deductInventoryStock(menuItem.inventory_item_id, absDelta * invScale, menuItem.stock_level_id);
+        deductInventoryStock(menuItem.inventory_item_id, 1, menuItem.stock_level_id);
       } else {
-        restoreInventoryStock(menuItem.inventory_item_id, absDelta * invScale);
+        restoreInventoryStock(menuItem.inventory_item_id, 1);
       }
     }
-    
-    // Update remaining_serves in database
-    if (menuItem?.remaining_serves !== null && !menuItem?.inventory_item_id) {
-      const freshItem = menuItemsRef.current.find(m => m.id === itemId);
-      const dbRemaining = freshItem?.remaining_serves ?? 0;
-      const dbNewRemaining = delta > 0 
-        ? Math.max(0, dbRemaining - absDelta)
-        : dbRemaining + absDelta;
+    // Handle batch-recipe based items (remaining_serves)
+    else if (menuItem && menuItem.remaining_serves !== null) {
+      const newRemaining = delta > 0 
+        ? Math.max(0, menuItem.remaining_serves - 1)
+        : menuItem.remaining_serves + 1;
       
-      supabase
-        .from("lab_ops_menu_items")
-        .update({ remaining_serves: dbNewRemaining })
-        .eq("id", itemId)
-        .then(() => {});
-    }
-    
-    // Handle recipe ingredient deduction/restore
-    // IMPORTANT: Skip for inventory-linked items (they use direct stock deduction)
-    if (menuItem?.recipe_id && !menuItem?.inventory_item_id && delta !== 0) {
-      if (delta > 0) {
-        deductRecipeIngredients(menuItem.recipe_id, absDelta);
-      } else {
-        restoreRecipeIngredients(menuItem.recipe_id, absDelta);
-      }
-    }
-  };
-
-  const removeItem = async (itemId: string) => {
-    const removedItem = orderItems.find(o => o.menu_item_id === itemId);
-    const menuItem = menuItemsRef.current.find(m => m.id === itemId);
-    
-    if (!removedItem) return;
-    
-    const restoredAmount = removedItem.qty;
-    
-    setOrderItems(prev => prev.filter(o => o.menu_item_id !== itemId));
-    
-    // Restore stock using functional update from prev state
-    setMenuItems(prev => prev.map(m => {
-      if (m.id !== itemId) return m;
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.remaining_serves !== null
+          ? { ...m, remaining_serves: newRemaining }
+          : m
+      ));
       
-      // Handle inventory-linked items
-      if (m.inventory_item_id && m.inventory_stock !== null) {
-        return { ...m, inventory_stock: m.inventory_stock + restoredAmount };
-      }
-      
-      // Handle remaining_serves
-      if (m.remaining_serves !== null) {
-        return { ...m, remaining_serves: m.remaining_serves + restoredAmount };
-      }
-      
-      // Handle calculated_servings
-      if (m.calculated_servings !== null) {
-        return { ...m, calculated_servings: m.calculated_servings + restoredAmount };
-      }
-      
-      return m;
-    }));
-    
-    // Database operations
-    if (menuItem?.inventory_item_id && menuItem?.inventory_stock !== null) {
-      const invScale = Number(menuItem.inventory_deduct_qty || 1);
-      restoreInventoryStock(menuItem.inventory_item_id, restoredAmount * invScale);
-    } else if (menuItem?.remaining_serves !== null) {
-      const newRemaining = (menuItem.remaining_serves ?? 0) + restoredAmount;
+      // Update database
       supabase
         .from("lab_ops_menu_items")
         .update({ remaining_serves: newRemaining })
         .eq("id", itemId)
         .then(() => {});
-    } else if (menuItem?.calculated_servings !== null && menuItem?.recipe_id && !menuItem?.inventory_item_id) {
-      // Only restore recipe ingredients for non-inventory-linked items
-      restoreRecipeIngredients(menuItem.recipe_id, restoredAmount);
+    }
+  };
+
+  const removeItem = async (itemId: string) => {
+    const removedItem = orderItems.find(o => o.menu_item_id === itemId);
+    const menuItem = menuItems.find(m => m.id === itemId);
+    
+    setOrderItems(orderItems.filter(o => o.menu_item_id !== itemId));
+    
+    // Restore inventory stock when item is removed
+    if (removedItem && menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+      const restoredAmount = removedItem.qty;
+      const newStock = menuItem.inventory_stock + restoredAmount;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.inventory_stock !== null
+          ? { ...m, inventory_stock: newStock }
+          : m
+      ));
+      
+      // Restore in database
+      restoreInventoryStock(menuItem.inventory_item_id, restoredAmount);
+    }
+    // Restore remaining_serves when item is removed
+    else if (removedItem && menuItem && menuItem.remaining_serves !== null) {
+      const restoredAmount = removedItem.qty;
+      const newRemaining = menuItem.remaining_serves + restoredAmount;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.remaining_serves !== null
+          ? { ...m, remaining_serves: newRemaining }
+          : m
+      ));
+      
+      // Update database
+      supabase
+        .from("lab_ops_menu_items")
+        .update({ remaining_serves: newRemaining })
+        .eq("id", itemId)
+        .then(() => {});
     }
   };
 
@@ -1630,47 +1364,6 @@ export default function StaffPOS() {
         .insert(items);
 
       if (itemsError) throw itemsError;
-
-      // Deduct stock for recipe-based items (bottle_size / pour_qty logic)
-      for (const orderItem of orderItems) {
-        const menuItem = menuItems.find(m => m.id === orderItem.menu_item_id);
-        if (!menuItem) continue;
-        
-        // Handle direct inventory items (like bottled water)
-        if (menuItem.inventory_item_id && menuItem.stock_level_id) {
-          await supabase
-            .from("lab_ops_stock_levels")
-            .update({ quantity: Math.max(0, (menuItem.inventory_stock || 0) - orderItem.qty) })
-            .eq("id", menuItem.stock_level_id);
-        }
-        
-        // Handle recipe-based items - deduct fractional bottle amounts
-        const recipe = (menuItem as any).lab_ops_recipes?.[0];
-        if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
-          for (const ing of recipe.lab_ops_recipe_ingredients) {
-            if (ing.inventory_item_id && ing.qty > 0 && ing.bottle_size > 0) {
-              // Each serving uses (pourQty / bottleSize) bottles
-              const bottleFraction = ing.qty / ing.bottle_size;
-              const bottlesToDeduct = bottleFraction * orderItem.qty;
-              
-              // Deduct from stock level
-              const { data: stockLevel } = await supabase
-                .from("lab_ops_stock_levels")
-                .select("id, quantity")
-                .eq("inventory_item_id", ing.inventory_item_id)
-                .limit(1)
-                .single();
-              
-              if (stockLevel) {
-                await supabase
-                  .from("lab_ops_stock_levels")
-                  .update({ quantity: Math.max(0, stockLevel.quantity - bottlesToDeduct) })
-                  .eq("id", stockLevel.id);
-              }
-            }
-          }
-        }
-      }
 
       // Update order subtotal if adding to existing order
       if (isExistingOrder) {
@@ -2661,12 +2354,8 @@ export default function StaffPOS() {
                 <div className="grid grid-cols-2 gap-1 p-1">
                   {filteredItems.map(item => {
                     const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
-                    // Priority: calculated_servings (recipe-based) > inventory_stock > remaining_serves
-                    const displayStock = item.calculated_servings !== null && item.calculated_servings !== undefined
-                      ? item.calculated_servings
-                      : item.inventory_stock !== null 
-                        ? item.inventory_stock 
-                        : item.remaining_serves;
+                    // Use inventory_stock for inventory-linked items, otherwise remaining_serves
+                    const displayStock = item.inventory_stock !== null ? item.inventory_stock : item.remaining_serves;
                     const hasStock = displayStock !== null;
                     const isLowStock = hasStock && displayStock !== null && displayStock <= 5;
                     const isOutOfStock = hasStock && displayStock === 0;
