@@ -105,6 +105,7 @@ export default function StaffPOS() {
   const [tables, setTables] = useState<Table[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const menuItemsRef = useRef<MenuItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -272,6 +273,10 @@ export default function StaffPOS() {
     initSession();
   }, [location.state]);
 
+  // Keep menuItemsRef in sync with menuItems state for use in async callbacks
+  useEffect(() => {
+    menuItemsRef.current = menuItems;
+  }, [menuItems]);
 
   const fetchOutlets = async () => {
     try {
@@ -1367,10 +1372,11 @@ export default function StaffPOS() {
   };
 
   const updateQuantity = async (itemId: string, delta: number) => {
-    const currentItem = orderItems.find(o => o.menu_item_id === itemId);
-    const menuItem = menuItems.find(m => m.id === itemId);
+    const menuItem = menuItemsRef.current.find(m => m.id === itemId);
+    const absDelta = Math.abs(delta);
     
-    setOrderItems(orderItems.map(o => {
+    // Update order items
+    setOrderItems(prev => prev.map(o => {
       if (o.menu_item_id === itemId) {
         const newQty = o.qty + delta;
         return newQty > 0 ? { ...o, qty: newQty } : o;
@@ -1378,18 +1384,18 @@ export default function StaffPOS() {
       return o;
     }).filter(o => o.qty > 0));
     
-    // Handle inventory-linked items
+    // Handle inventory-linked items - use functional update from prev state
     if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
-      const absDelta = Math.abs(delta);
-      const newStock = delta > 0 
-        ? Math.max(0, menuItem.inventory_stock - absDelta)
-        : menuItem.inventory_stock + absDelta;
-      
-      setMenuItems(prev => prev.map(m => 
-        m.id === itemId && m.inventory_stock !== null
-          ? { ...m, inventory_stock: newStock }
-          : m
-      ));
+      setMenuItems(prev => prev.map(m => {
+        if (m.id === itemId && m.inventory_stock !== null) {
+          const currentStock = m.inventory_stock;
+          const newStock = delta > 0 
+            ? Math.max(0, currentStock - absDelta)
+            : currentStock + absDelta;
+          return { ...m, inventory_stock: newStock };
+        }
+        return m;
+      }));
       
       // Update database
       if (delta > 0) {
@@ -1400,41 +1406,46 @@ export default function StaffPOS() {
     }
     // Handle batch-recipe based items (remaining_serves)
     else if (menuItem && menuItem.remaining_serves !== null) {
-      const absDelta = Math.abs(delta);
-      const newRemaining = delta > 0 
-        ? Math.max(0, menuItem.remaining_serves - absDelta)
-        : menuItem.remaining_serves + absDelta;
+      setMenuItems(prev => prev.map(m => {
+        if (m.id === itemId && m.remaining_serves !== null) {
+          const currentServes = m.remaining_serves;
+          const newRemaining = delta > 0 
+            ? Math.max(0, currentServes - absDelta)
+            : currentServes + absDelta;
+          return { ...m, remaining_serves: newRemaining };
+        }
+        return m;
+      }));
       
-      setMenuItems(prev => prev.map(m => 
-        m.id === itemId && m.remaining_serves !== null
-          ? { ...m, remaining_serves: newRemaining }
-          : m
-      ));
+      // Get fresh value for database update
+      const freshItem = menuItemsRef.current.find(m => m.id === itemId);
+      const dbRemaining = freshItem?.remaining_serves ?? 0;
+      const dbNewRemaining = delta > 0 
+        ? Math.max(0, dbRemaining - absDelta)
+        : dbRemaining + absDelta;
       
-      // Update database
       supabase
         .from("lab_ops_menu_items")
-        .update({ remaining_serves: newRemaining })
+        .update({ remaining_serves: dbNewRemaining })
         .eq("id", itemId)
         .then(() => {});
     }
     // Handle recipe-based items with calculated_servings
     else if (menuItem && menuItem.calculated_servings !== null) {
-      const absDelta = Math.abs(delta);
-      const newServings = delta > 0 
-        ? Math.max(0, menuItem.calculated_servings - absDelta)
-        : menuItem.calculated_servings + absDelta;
-      
-      setMenuItems(prev => prev.map(m => 
-        m.id === itemId && m.calculated_servings !== null
-          ? { ...m, calculated_servings: newServings }
-          : m
-      ));
+      setMenuItems(prev => prev.map(m => {
+        if (m.id === itemId && m.calculated_servings !== null) {
+          const currentServings = m.calculated_servings;
+          const newServings = delta > 0 
+            ? Math.max(0, currentServings - absDelta)
+            : currentServings + absDelta;
+          return { ...m, calculated_servings: newServings };
+        }
+        return m;
+      }));
     }
     
     // Handle recipe ingredient deduction/restore
     if (menuItem?.recipe_id && delta !== 0) {
-      const absDelta = Math.abs(delta);
       if (delta > 0) {
         deductRecipeIngredients(menuItem.recipe_id, absDelta);
       } else {
