@@ -28,10 +28,8 @@ import {
 const ShareDialog = lazy(() => import("@/components/ShareDialog"));
 const LikesDialog = lazy(() => import("@/components/LikesDialog"));
 const EventsTicker = lazy(() => import("@/components/EventsTicker").then(m => ({ default: m.EventsTicker })));
+const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 const MusicStatusDialog = lazy(() => import("@/components/MusicStatusDialog"));
-
-// Static import for CreateStatusDialog - used in TopNav, StoryOptions, etc
-import CreateStatusDialog from "@/components/CreateStatusDialog";
 
 // Removed inline skeletons - using shimmer components now
 

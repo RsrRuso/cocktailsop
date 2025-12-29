@@ -5765,7 +5765,6 @@ export type Database = {
       lab_ops_inventory_items: {
         Row: {
           base_unit: string | null
-          bottle_size_ml: number | null
           category: string | null
           created_at: string | null
           id: string
@@ -5782,7 +5781,6 @@ export type Database = {
         }
         Insert: {
           base_unit?: string | null
-          bottle_size_ml?: number | null
           category?: string | null
           created_at?: string | null
           id?: string
@@ -5799,7 +5797,6 @@ export type Database = {
         }
         Update: {
           base_unit?: string | null
-          bottle_size_ml?: number | null
           category?: string | null
           created_at?: string | null
           id?: string

@@ -20,13 +20,11 @@ import { clearMembershipCache } from "@/hooks/useUserMemberships";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 
-// Lazy load tabs only
+// Lazy load tabs and dialogs
 const ProfileFeedTab = lazy(() => import("@/components/profile/ProfileFeedTab"));
 const ProfileSavedTab = lazy(() => import("@/components/profile/ProfileSavedTab"));
 const ProfessionalDashboard = lazy(() => import("@/components/profile/ProfessionalDashboard"));
-
-// Static import for CreateStatusDialog - used in TopNav, StoryOptions, etc
-import CreateStatusDialog from "@/components/CreateStatusDialog";
+const CreateStatusDialog = lazy(() => import("@/components/CreateStatusDialog"));
 
 const Profile = () => {
   const navigate = useNavigate();
