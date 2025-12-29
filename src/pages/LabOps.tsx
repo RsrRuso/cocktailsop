@@ -4042,21 +4042,11 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           <SelectContent>
                             {inventoryItems.map((inv) => (
                               <SelectItem key={inv.id} value={inv.id}>
-                                <div className="w-full">
-                                  <div className="flex items-center justify-between w-full gap-2">
-                                    <span className="truncate">{inv.name}</span>
-                                    <span
-                                      className={`text-xs ${inv.totalStock > 0 ? "text-green-500" : "text-destructive"}`}
-                                    >
-                                      ({inv.totalStock || 0} {inv.base_unit})
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                    <span>
-                                      Unit: {formatPrice(inv.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0)}
-                                    </span>
-                                    {inv.bottle_size_ml ? <span>{inv.bottle_size_ml}ml</span> : <span />}
-                                  </div>
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span>{inv.name}</span>
+                                  <span className={`text-xs ${inv.totalStock > 0 ? 'text-green-500' : 'text-destructive'}`}>
+                                    ({inv.totalStock || 0} {inv.base_unit})
+                                  </span>
                                 </div>
                               </SelectItem>
                             ))}
@@ -4167,20 +4157,9 @@ function RecipesModule({ outletId }: { outletId: string }) {
                           <div className="flex flex-wrap gap-2">
                             {recipe.lab_ops_recipe_ingredients.map((ing: any) => {
                               const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
-                              const unitCost = invItem?.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
-                              const bottleSize = invItem?.bottle_size_ml;
-
                               return (
-                                <Badge key={ing.id} variant="outline" className="gap-1 max-w-full">
-                                  <span className="truncate max-w-[160px]">{invItem?.name || "Unknown"}</span>
-                                  <span className="text-muted-foreground">•</span>
-                                  <span>
-                                    {ing.qty} {ing.unit}
-                                  </span>
-                                  <span className="text-muted-foreground">•</span>
-                                  <span className="text-muted-foreground">
-                                    Unit {formatPrice(unitCost)}{bottleSize ? `/${bottleSize}ml` : ""}
-                                  </span>
+                                <Badge key={ing.id} variant="outline">
+                                  {invItem?.name}: {ing.qty} {ing.unit}
                                 </Badge>
                               );
                             })}
