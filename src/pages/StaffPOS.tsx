@@ -587,6 +587,42 @@ export default function StaffPOS() {
     };
   }, [outlet]);
 
+  // Real-time subscription for stock level updates across devices
+  useEffect(() => {
+    if (!outlet) return;
+    
+    // Debounce to avoid rapid refetches when multiple stock changes happen quickly
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchMenuItems(outlet.id);
+      }, 1000); // 1 second debounce
+    };
+    
+    const channel = supabase
+      .channel('lab-ops-stock-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lab_ops_stock_levels',
+          filter: `outlet_id=eq.${outlet.id}`
+        },
+        () => {
+          // Refetch menu items to recalculate servings from updated stock
+          debouncedRefetch();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [outlet]);
+
   const fetchCategories = async (outletId: string) => {
     const { data } = await supabase
       .from("lab_ops_categories")
