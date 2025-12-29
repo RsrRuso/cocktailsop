@@ -4,6 +4,12 @@
 const RECOVERY_FLAG = "sv__chunk_recovery_attempted";
 const DEV_CLEANUP_FLAG = "sv__dev_sw_cleanup_done";
 
+function isLovablePreviewHost() {
+  // Lovable preview URLs commonly look like: id-preview--<id>.lovable.app
+  const host = window.location.hostname;
+  return host.endsWith(".lovable.app") || host.endsWith(".lovable.dev");
+}
+
 function isChunkLoadError(message: string) {
   return /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk \d+ failed|ChunkLoadError/i.test(
     message
@@ -41,9 +47,11 @@ async function recoverFromStaleCache() {
 }
 
 export function initChunkLoadRecovery() {
-  // In dev/preview, make sure any previously-registered SW is removed
-  // (it can cache Vite chunks and cause blank screens).
-  if (!import.meta.env.PROD && !sessionStorage.getItem(DEV_CLEANUP_FLAG)) {
+  // In dev OR Lovable preview, remove any previously-registered SW.
+  // SW can cache Vite chunks and prevent seeing the latest updates.
+  const shouldCleanupForPreview = !import.meta.env.PROD || isLovablePreviewHost();
+
+  if (shouldCleanupForPreview && !sessionStorage.getItem(DEV_CLEANUP_FLAG)) {
     sessionStorage.setItem(DEV_CLEANUP_FLAG, "1");
     void (async () => {
       try {

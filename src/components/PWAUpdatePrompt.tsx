@@ -51,8 +51,12 @@ function PWAUpdatePromptInner() {
 }
 
 export function PWAUpdatePrompt() {
-  // Avoid SW registration in dev/preview to prevent cached Vite chunks breaking module imports.
-  if (!import.meta.env.PROD) return null;
+  // Avoid SW registration in dev/preview AND Lovable preview domains to prevent cached chunks
+  // from hiding the latest updates during development.
+  const host = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLovablePreview = host.endsWith(".lovable.app") || host.endsWith(".lovable.dev");
+
+  if (!import.meta.env.PROD || isLovablePreview) return null;
   return <PWAUpdatePromptInner />;
 }
 
