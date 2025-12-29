@@ -2,6 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  detectBottleSizeMl, 
+  bottlesToServings, 
+  servingsToBottles, 
+  isSpiritCategory,
+  POUR_SIZE_ML 
+} from "@/lib/spiritServings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
@@ -589,10 +596,10 @@ export default function StaffPOS() {
       .from("lab_ops_menu_items")
       .select(`
         id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
-        lab_ops_categories(name),
+        lab_ops_categories(name, type),
         lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(
           id,
-          lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id)
+          lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id, lab_ops_inventory_items(name, base_unit))
         )
       `)
       .eq("outlet_id", outletId)
@@ -626,12 +633,19 @@ export default function StaffPOS() {
     
     // Collect all inventory_item_ids from recipe ingredients for stock calculation
     const recipeInventoryIds = new Set<string>();
+    const ingredientInfoMap: Record<string, { name: string; baseUnit: string }> = {};
     (data || []).forEach((item: any) => {
       const recipe = item.lab_ops_recipes?.[0];
       if (recipe?.lab_ops_recipe_ingredients) {
         recipe.lab_ops_recipe_ingredients.forEach((ing: any) => {
           if (ing.inventory_item_id) {
             recipeInventoryIds.add(ing.inventory_item_id);
+            if (ing.lab_ops_inventory_items) {
+              ingredientInfoMap[ing.inventory_item_id] = {
+                name: ing.lab_ops_inventory_items.name || '',
+                baseUnit: ing.lab_ops_inventory_items.base_unit || ''
+              };
+            }
           }
         });
       }
@@ -657,31 +671,47 @@ export default function StaffPOS() {
       
       // Check if this menu item is in the Spirits category
       const categoryName = String(item.lab_ops_categories?.name || '').toLowerCase();
-      const isSpiritsCategory = categoryName === 'spirits';
+      const isSpirits = isSpiritCategory(categoryName);
       
-      // Stock is stored as BOTTLES for spirits, convert to servings
+      // NEW SIMPLIFIED LOGIC:
+      // For Spirits: bottles × bottle_ml ÷ 30 = servings
+      // For others: stock directly = servings
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
+      
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
         // Find minimum servings across all ingredients (limiting ingredient)
         let minServings = Infinity;
+        
         for (const ing of recipe.lab_ops_recipe_ingredients) {
-          if (ing.inventory_item_id) {
-            const stockQty = recipeStockMap[ing.inventory_item_id] || 0;
-            
-            let servingsInStock: number;
-            if (isSpiritsCategory) {
-              // Spirits category: convert bottles to servings
-              const bottleSize = Number(ing.bottle_size) || 750; // Default 750ml
-              const pourAmount = Number(ing.qty) || 30; // Default 30ml pour
-              servingsInStock = Math.floor((stockQty * bottleSize) / pourAmount);
-            } else {
-              // Non-spirits: use stock directly as servings (1 stock = 1 serving)
-              servingsInStock = Math.floor(stockQty);
-            }
-            minServings = Math.min(minServings, servingsInStock);
+          if (!ing.inventory_item_id) continue;
+          
+          const stockQty = recipeStockMap[ing.inventory_item_id] || 0;
+          const ingInfo = ingredientInfoMap[ing.inventory_item_id];
+          const ingName = ingInfo?.name || '';
+          const baseUnit = String(ingInfo?.baseUnit || '').toUpperCase();
+          
+          // Check if ingredient is a bottle (BOT, bottle, etc.)
+          const isBottleUnit = baseUnit === 'BOT' || baseUnit === 'BOTTLE';
+          
+          let servingsInStock: number;
+          
+          if (isSpirits && isBottleUnit) {
+            // SPIRIT LOGIC: bottles × bottle_ml ÷ 30 = servings
+            const bottleSizeMl = Number(ing.bottle_size) || detectBottleSizeMl(ingName);
+            servingsInStock = bottlesToServings(stockQty, bottleSizeMl, POUR_SIZE_ML);
+          } else if (isBottleUnit) {
+            // Non-spirit bottle items: show as units directly
+            servingsInStock = Math.floor(stockQty);
+          } else {
+            // Non-bottle items: use qty-based calculation
+            const pourAmount = Number(ing.qty) || 1;
+            servingsInStock = pourAmount > 0 ? Math.floor(stockQty / pourAmount) : Math.floor(stockQty);
           }
+          
+          minServings = Math.min(minServings, servingsInStock);
         }
+        
         if (minServings !== Infinity) {
           calculatedServings = minServings;
         }
@@ -1198,14 +1228,15 @@ export default function StaffPOS() {
   };
 
   // Deduct recipe ingredients from inventory in real-time
-  // For spirits (base_unit = BOT): stock is stored as bottles, deduct fractional bottles
-  // For other ingredients: deduct directly based on qty
+  // NEW SIMPLIFIED LOGIC:
+  // For spirits (BOT): 1 serving = 30ml, so deduct 30ml / bottle_size bottles
+  // For other ingredients: deduct based on recipe qty
   const deductRecipeIngredients = async (recipeId: string, servingsToDeduct: number) => {
     try {
       // Fetch recipe ingredients with their inventory item details
       const { data: ingredients } = await supabase
         .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit, bottle_size, lab_ops_inventory_items(base_unit)")
+        .select("inventory_item_id, qty, unit, bottle_size, lab_ops_inventory_items(name, base_unit)")
         .eq("recipe_id", recipeId);
 
       if (!ingredients?.length) return;
@@ -1214,20 +1245,25 @@ export default function StaffPOS() {
         const inventoryItemId = ingredient.inventory_item_id as string | null;
         if (!inventoryItemId) continue;
 
-        const isBottleUnit = ingredient.lab_ops_inventory_items?.base_unit === "BOT";
-        const recipeQty = Number(ingredient.qty || 0);
-        if (recipeQty <= 0) continue;
-
+        const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toUpperCase();
+        const isBottleUnit = baseUnit === 'BOT' || baseUnit === 'BOTTLE';
+        const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
+        
         let qtyToDeduct: number;
         
         if (isBottleUnit) {
-          // For bottles: deduct as fraction of bottle (e.g., 30ml from 750ml = 0.04 bottles)
-          const bottleSize = Number(ingredient.bottle_size) || 750;
-          qtyToDeduct = (recipeQty / bottleSize) * servingsToDeduct;
+          // SPIRIT LOGIC: deduct 30ml worth of bottles per serving
+          // bottle_size from ingredient OR detect from name OR default 750
+          const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
+          // Each serving = 30ml, so deduct (30 × servings) / bottle_size bottles
+          qtyToDeduct = servingsToBottles(servingsToDeduct, bottleSizeMl, POUR_SIZE_ML);
         } else {
-          // For non-bottle items: deduct recipe qty directly
+          // For non-bottle items: deduct recipe qty × servings
+          const recipeQty = Number(ingredient.qty || 0);
           qtyToDeduct = recipeQty * servingsToDeduct;
         }
+
+        if (qtyToDeduct <= 0) continue;
 
         const { data: stockLevels } = await supabase
           .from("lab_ops_stock_levels")
@@ -1255,7 +1291,7 @@ export default function StaffPOS() {
           movement_type: "sale",
           reference_type: "recipe_consumption",
           reference_id: recipeId,
-          notes: `Sold ${servingsToDeduct} item(s) → -${qtyToDeduct.toFixed(4)} ${isBottleUnit ? 'bottles' : 'units'}`,
+          notes: `Sold ${servingsToDeduct} serving(s) → -${qtyToDeduct.toFixed(4)} ${isBottleUnit ? 'bottles' : 'units'}`,
         });
       }
     } catch (error) {
@@ -1268,7 +1304,7 @@ export default function StaffPOS() {
     try {
       const { data: ingredients } = await supabase
         .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit, bottle_size, lab_ops_inventory_items(base_unit)")
+        .select("inventory_item_id, qty, unit, bottle_size, lab_ops_inventory_items(name, base_unit)")
         .eq("recipe_id", recipeId);
 
       if (!ingredients?.length) return;
@@ -1277,18 +1313,22 @@ export default function StaffPOS() {
         const inventoryItemId = ingredient.inventory_item_id as string | null;
         if (!inventoryItemId) continue;
 
-        const isBottleUnit = ingredient.lab_ops_inventory_items?.base_unit === "BOT";
-        const recipeQty = Number(ingredient.qty || 0);
-        if (recipeQty <= 0) continue;
-
+        const baseUnit = String(ingredient.lab_ops_inventory_items?.base_unit || '').toUpperCase();
+        const isBottleUnit = baseUnit === 'BOT' || baseUnit === 'BOTTLE';
+        const ingName = String(ingredient.lab_ops_inventory_items?.name || '');
+        
         let qtyToRestore: number;
         
         if (isBottleUnit) {
-          const bottleSize = Number(ingredient.bottle_size) || 750;
-          qtyToRestore = (recipeQty / bottleSize) * servingsToRestore;
+          // SPIRIT LOGIC: restore 30ml worth of bottles per serving
+          const bottleSizeMl = Number(ingredient.bottle_size) || detectBottleSizeMl(ingName);
+          qtyToRestore = servingsToBottles(servingsToRestore, bottleSizeMl, POUR_SIZE_ML);
         } else {
+          const recipeQty = Number(ingredient.qty || 0);
           qtyToRestore = recipeQty * servingsToRestore;
         }
+
+        if (qtyToRestore <= 0) continue;
 
         const { data: stockLevels } = await supabase
           .from("lab_ops_stock_levels")
@@ -1315,7 +1355,7 @@ export default function StaffPOS() {
           movement_type: "adjustment",
           reference_type: "recipe_return",
           reference_id: recipeId,
-          notes: `Returned ${servingsToRestore} item(s) → +${qtyToRestore.toFixed(4)} ${isBottleUnit ? 'bottles' : 'units'}`,
+          notes: `Returned ${servingsToRestore} serving(s) → +${qtyToRestore.toFixed(4)} ${isBottleUnit ? 'bottles' : 'units'}`,
         });
       }
     } catch (error) {
