@@ -21,7 +21,7 @@ import { POReceivedStock } from "@/components/lab-ops/POReceivedStock";
 import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
 import { RecipeCostPreview } from "@/components/lab-ops/RecipeCostPreview";
 import { IngredientSummaryDashboard } from "@/components/lab-ops/IngredientSummaryDashboard";
-import { RecipeCostCard } from "@/components/lab-ops/RecipeCostCard";
+import { RecipeCostDashboard } from "@/components/lab-ops/RecipeCostDashboard";
 import { RecipeIngredientEditorRow } from "@/components/lab-ops/RecipeIngredientEditorRow";
 import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
@@ -3824,42 +3824,17 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const fetchInventoryItems = async () => {
     const { data } = await supabase
       .from("lab_ops_inventory_items")
-      .select("*, lab_ops_inventory_item_costs(*), lab_ops_stock_levels(quantity)")
+      .select("*, lab_ops_stock_levels(quantity)")
       .eq("outlet_id", outletId)
       .order("name");
     
-    // Calculate total stock for each item
+    // Calculate total stock for each item - unit_cost is per-bottle from receiving PO
     const itemsWithStock = (data || []).map(item => ({
       ...item,
       totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0)
     }));
     setInventoryItems(itemsWithStock);
   };
-
-  const [savingUnitCostFor, setSavingUnitCostFor] = useState<string | null>(null);
-
-  const saveUnitCostPerMl = async (inventoryItemId: string, unitCostPerMl: number) => {
-    if (!inventoryItemId || !(unitCostPerMl > 0)) return;
-
-    try {
-      setSavingUnitCostFor(inventoryItemId);
-      const { error } = await supabase.from("lab_ops_inventory_item_costs").insert({
-        inventory_item_id: inventoryItemId,
-        unit_cost: unitCostPerMl,
-      });
-
-      if (error) throw error;
-
-      toast({ title: "Unit price saved", description: "Saved as cost per ml" });
-      await fetchInventoryItems();
-    } catch (e: any) {
-      console.error("[RECIPES] Failed saving unit cost", e);
-      toast({ title: "Failed to save unit price", variant: "destructive" });
-    } finally {
-      setSavingUnitCostFor(null);
-    }
-  };
-
   const createRecipe = async () => {
     if (!selectedMenuItem || ingredients.length === 0) return;
 
@@ -4072,8 +4047,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
                         inventoryItems={inventoryItems}
                         onChange={updateIngredient as any}
                         onRemove={removeIngredient as any}
-                        onSaveUnitCostPerMl={saveUnitCostPerMl}
-                        savingCostItemId={savingUnitCostFor}
                       />
                     ))}
                   </div>
@@ -4108,7 +4081,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
           ) : (
             <div className="space-y-4">
               {recipes.map((recipe) => (
-                <RecipeCostCard
+                <RecipeCostDashboard
                   key={recipe.id}
                   recipe={recipe}
                   inventoryItems={inventoryItems}
