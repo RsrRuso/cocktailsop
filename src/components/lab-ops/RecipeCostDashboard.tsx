@@ -95,13 +95,9 @@ export function RecipeCostDashboard({
       const unit = ing.unit || "ml";
       const unitMult = UNIT_TO_ML[unit] || 1;
       const qtyMl = unit === "piece" ? 0 : qty * unitMult;
-      // Bottle size: prefer recipe override, then inventory, then infer from name, then default 750
-      const bottleSize = Number(
-        ing.bottle_size ||
-          invItem.bottle_size_ml ||
-          detectBottleSizeMl(invItem.name) ||
-          750
-      );
+      // Bottle size: auto-detect from item name or inventory value (not editable)
+      const detected = detectBottleSizeMl(invItem.name);
+      const bottleSize = Number(invItem.bottle_size_ml || detected || 750);
 
       // Unit cost is per bottle from receiving PO / inventory
       const unitCostPerBottle = Number(invItem.unit_cost || 0);

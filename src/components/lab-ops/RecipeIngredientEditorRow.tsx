@@ -53,14 +53,16 @@ export function RecipeIngredientEditorRow({
   const { formatPrice } = useCurrency();
   const invItem = useMemo(() => inventoryItems.find((i) => i.id === ing.itemId), [inventoryItems, ing.itemId]);
 
+  // Bottle size: auto-detect from item name or use inventory value, NO manual override
+  const bottleSize = useMemo(() => {
+    if (!invItem) return 750;
+    // Priority: inventory bottle_size_ml > detected from name > default 750
+    const detected = detectBottleSizeMl(invItem.name);
+    return Number(invItem.bottle_size_ml || detected || 750);
+  }, [invItem]);
+
   // Unit cost per bottle from receiving PO / inventory
   const unitCostPerBottle = Number(invItem?.unit_cost || 0);
-  const bottleSize = Number(
-    ing.bottle_size ||
-      invItem?.bottle_size_ml ||
-      (invItem ? detectBottleSizeMl(invItem.name) : null) ||
-      750
-  );
 
   // Cost per ml = bottle price / bottle size
   const costPerMl = bottleSize > 0 ? unitCostPerBottle / bottleSize : 0;
@@ -75,42 +77,41 @@ export function RecipeIngredientEditorRow({
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center flex-wrap">
+        {/* Item selector */}
         <Select value={ing.itemId} onValueChange={(v) => onChange(idx, "itemId", v)}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Select from stock" />
+          <SelectTrigger className="flex-1 min-w-[120px]">
+            <SelectValue placeholder="Select item" />
           </SelectTrigger>
           <SelectContent>
-            {inventoryItems.map((inv) => {
-              const invBottleSize = Number(inv.bottle_size_ml || detectBottleSizeMl(inv.name) || 750);
-              const invUnitCost = Number(inv.unit_cost || 0);
-              const perMl = invBottleSize > 0 ? invUnitCost / invBottleSize : 0;
-
-              return (
-                <SelectItem key={inv.id} value={inv.id}>
-                  <div className="flex items-center justify-between w-full gap-2">
-                    <span>{inv.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {invUnitCost > 0 ? `${formatPrice(invUnitCost)}/bottle` : "No price"}
-                    </span>
-                  </div>
-                </SelectItem>
-              );
-            })}
+            {inventoryItems.map((inv) => (
+              <SelectItem key={inv.id} value={inv.id}>
+                {inv.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
+        {/* Stock badge */}
+        {ing.itemId && (
+          <Badge variant={stock > 0 ? "secondary" : "destructive"} className="text-xs shrink-0">
+            ({stock} {invItem?.base_unit || "BOT"})
+          </Badge>
+        )}
+
+        {/* Quantity input */}
         <Input
           type="number"
           step="0.01"
           placeholder="Qty"
-          className="w-20"
+          className="w-16"
           value={ing.qty}
           onChange={(e) => onChange(idx, "qty", parseFloat(e.target.value) || 0)}
         />
 
+        {/* Unit selector */}
         <Select value={ing.unit} onValueChange={(v) => onChange(idx, "unit", v)}>
-          <SelectTrigger className="w-20">
+          <SelectTrigger className="w-16">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -123,18 +124,9 @@ export function RecipeIngredientEditorRow({
           </SelectContent>
         </Select>
 
-        {ing.unit !== "piece" && (
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              step="1"
-              placeholder="750"
-              className="w-20"
-              value={bottleSize}
-              onChange={(e) => onChange(idx, "bottle_size", parseFloat(e.target.value) || 750)}
-            />
-            <span className="text-xs text-muted-foreground">ml</span>
-          </div>
+        {/* Auto-detected bottle size (read-only display) */}
+        {ing.unit !== "piece" && ing.itemId && (
+          <span className="text-xs text-muted-foreground shrink-0">{bottleSize}ml</span>
         )}
 
         <Button size="icon" variant="ghost" onClick={() => onRemove(idx)} aria-label="Remove ingredient">
@@ -144,23 +136,16 @@ export function RecipeIngredientEditorRow({
 
       {/* Unit price + costing summary */}
       {ing.itemId && ing.unit !== "piece" && (
-        <div className="rounded-lg border bg-muted/20 p-2">
-          <div className="flex flex-wrap items-center gap-2 justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={unitCostPerBottle > 0 ? "secondary" : "destructive"}>
-                Unit cost: {unitCostPerBottle > 0 ? formatPrice(unitCostPerBottle) : "missing"}
-              </Badge>
-              <span className="text-amber-500 text-xs font-medium">{servesPerBottle} servings/bottle</span>
-            </div>
-            <div className="text-sm font-semibold">
-              Cost: <span className="text-primary">{formatPrice(ingredientCost)}</span>
-            </div>
+        <div className="flex flex-wrap items-center gap-2 justify-between text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">
+              Unit cost: {unitCostPerBottle > 0 ? formatPrice(unitCostPerBottle) : <span className="text-destructive">missing</span>}
+            </span>
+            <span className="text-amber-500 font-medium">{servesPerBottle} servings/bottle</span>
           </div>
-          {stock > 0 && (
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Stock: {stock} {invItem?.base_unit || "units"}
-            </p>
-          )}
+          <span className="font-semibold">
+            Cost: <span className="text-primary">{formatPrice(ingredientCost)}</span>
+          </span>
         </div>
       )}
 
