@@ -589,9 +589,10 @@ export default function StaffPOS() {
       .from("lab_ops_menu_items")
       .select(`
         id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
+        lab_ops_categories(name),
         lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(
           id,
-          lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id, lab_ops_inventory_items(base_unit))
+          lab_ops_recipe_ingredients(qty, unit, bottle_size, inventory_item_id)
         )
       `)
       .eq("outlet_id", outletId)
@@ -654,7 +655,11 @@ export default function StaffPOS() {
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
       
-      // Stock is stored as BOTTLES, convert to servings using recipe ingredient data
+      // Check if this menu item is in the Spirits category
+      const categoryName = String(item.lab_ops_categories?.name || '').toLowerCase();
+      const isSpiritsCategory = categoryName === 'spirits';
+      
+      // Stock is stored as BOTTLES for spirits, convert to servings
       let calculatedServings: number | null = null;
       const recipe = item.lab_ops_recipes?.[0];
       if (recipe?.lab_ops_recipe_ingredients?.length > 0) {
@@ -663,17 +668,15 @@ export default function StaffPOS() {
         for (const ing of recipe.lab_ops_recipe_ingredients) {
           if (ing.inventory_item_id) {
             const stockQty = recipeStockMap[ing.inventory_item_id] || 0;
-            const baseUnit = String(ing.lab_ops_inventory_items?.base_unit || '').toLowerCase();
-            const isBottleUnit = ['bot', 'bottle', 'bottles', 'btl'].includes(baseUnit);
             
             let servingsInStock: number;
-            if (isBottleUnit) {
-              // Spirit/bottle items: convert bottles to servings
+            if (isSpiritsCategory) {
+              // Spirits category: convert bottles to servings
               const bottleSize = Number(ing.bottle_size) || 750; // Default 750ml
               const pourAmount = Number(ing.qty) || 30; // Default 30ml pour
               servingsInStock = Math.floor((stockQty * bottleSize) / pourAmount);
             } else {
-              // Non-spirit items: use stock directly as servings
+              // Non-spirits: use stock directly as servings (1 stock = 1 serving)
               servingsInStock = Math.floor(stockQty);
             }
             minServings = Math.min(minServings, servingsInStock);
