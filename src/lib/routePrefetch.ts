@@ -269,13 +269,153 @@ export const prefetchNotifications = async (userId: string) => {
   }
 };
 
+// Lab Ops data cache for instant loading
+export const labOpsCache = {
+  outlets: null as any[] | null,
+  selectedOutletId: null as string | null,
+  loaded: false,
+  timestamp: 0,
+};
+
+// Prefetch Lab Ops outlets and core data for instant loading
+export const prefetchLabOps = async (userId: string) => {
+  // Skip if already loaded recently (within 2 minutes)
+  if (labOpsCache.loaded && Date.now() - labOpsCache.timestamp < 2 * 60 * 1000) {
+    return labOpsCache.outlets;
+  }
+  
+  try {
+    // Fetch outlets owned by user
+    const { data: outlets } = await supabase
+      .from('lab_ops_outlets')
+      .select('id, name, address, type, is_active, created_at')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (outlets?.length) {
+      // Cache outlets for instant display
+      labOpsCache.outlets = outlets;
+      labOpsCache.loaded = true;
+      labOpsCache.timestamp = Date.now();
+      
+      // Store in sessionStorage for persistence
+      try {
+        sessionStorage.setItem('labops_outlets', JSON.stringify({
+          data: outlets,
+          userId,
+          timestamp: Date.now()
+        }));
+      } catch {}
+      
+      // Prefetch first outlet's critical data
+      const firstOutlet = outlets[0];
+      if (firstOutlet) {
+        labOpsCache.selectedOutletId = firstOutlet.id;
+        
+        // Prefetch categories, menu items, and tables in parallel
+        await Promise.all([
+          supabase
+            .from('lab_ops_categories')
+            .select('id, name, sort_order')
+            .eq('outlet_id', firstOutlet.id)
+            .order('sort_order'),
+          supabase
+            .from('lab_ops_menu_items')
+            .select('id, name, base_price, category_id')
+            .eq('outlet_id', firstOutlet.id)
+            .eq('is_active', true)
+            .limit(50),
+          supabase
+            .from('lab_ops_tables')
+            .select('id, name, capacity, status')
+            .eq('outlet_id', firstOutlet.id)
+            .limit(30),
+        ]).then(([categories, menuItems, tables]) => {
+          // Cache in sessionStorage
+          try {
+            sessionStorage.setItem(`labops_data_${firstOutlet.id}`, JSON.stringify({
+              categories: categories.data,
+              menuItems: menuItems.data,
+              tables: tables.data,
+              timestamp: Date.now()
+            }));
+          } catch {}
+        });
+      }
+      
+      return outlets;
+    }
+    
+    // Check if user is staff at any outlet
+    const { data: staffAccess } = await supabase
+      .from('lab_ops_staff')
+      .select('outlet_id, role')
+      .eq('user_id', userId)
+      .eq('is_active', true);
+    
+    if (staffAccess?.length) {
+      const outletIds = staffAccess.map(s => s.outlet_id);
+      const { data: staffOutlets } = await supabase
+        .from('lab_ops_outlets')
+        .select('id, name, address, type, is_active, created_at')
+        .in('id', outletIds)
+        .eq('is_active', true);
+      
+      if (staffOutlets?.length) {
+        labOpsCache.outlets = staffOutlets;
+        labOpsCache.loaded = true;
+        labOpsCache.timestamp = Date.now();
+        
+        try {
+          sessionStorage.setItem('labops_outlets', JSON.stringify({
+            data: staffOutlets,
+            userId,
+            timestamp: Date.now()
+          }));
+        } catch {}
+        
+        return staffOutlets;
+      }
+    }
+    
+    return null;
+  } catch (e) {
+    console.error('Lab Ops prefetch failed');
+    return null;
+  }
+};
+
+// Load Lab Ops from cache (instant)
+export const getLabOpsFromCache = (): any[] | null => {
+  if (labOpsCache.loaded && labOpsCache.outlets) {
+    return labOpsCache.outlets;
+  }
+  
+  try {
+    const cached = sessionStorage.getItem('labops_outlets');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // Valid for 5 minutes
+      if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+        labOpsCache.outlets = parsed.data;
+        labOpsCache.loaded = true;
+        labOpsCache.timestamp = parsed.timestamp;
+        return parsed.data;
+      }
+    }
+  } catch {}
+  
+  return null;
+};
+
 // Prefetch all critical routes for instant navigation
 export const prefetchAllCritical = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Prefetch ALL critical data in parallel
+      // Prefetch ALL critical data in parallel including Lab Ops
       await Promise.all([
         prefetchEmails(user.id),
         prefetchMessages(user.id),
@@ -284,6 +424,7 @@ export const prefetchAllCritical = async () => {
         prefetchStories(user.id),
         prefetchEngagement(user.id),
         prefetchNotifications(user.id),
+        prefetchLabOps(user.id),
       ]);
     } else {
       await prefetchHomeFeed(null);

@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { prefetchProfile, prefetchHomeFeed } from '@/lib/routePrefetch';
+import { prefetchProfile, prefetchHomeFeed, prefetchLabOps } from '@/lib/routePrefetch';
 import { prefetchStoriesData } from '@/hooks/useStoriesData';
 import { prefetchMessagesData } from '@/hooks/useMessagesData';
 import { prefetchNotificationsData } from '@/hooks/useNotificationsData';
@@ -59,6 +59,8 @@ export const RoutePreloader = () => {
       await prefetchMessagesData();
     } else if (path === '/notifications') {
       await prefetchNotificationsData();
+    } else if (path.startsWith('/lab-ops') && user?.id) {
+      await prefetchLabOps(user.id);
     }
   }, [user?.id]);
 
