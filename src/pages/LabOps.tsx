@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import { SpillageTracking } from "@/components/lab-ops/SpillageTracking";
 import { RecipeCostPreview } from "@/components/lab-ops/RecipeCostPreview";
 import { IngredientSummaryDashboard } from "@/components/lab-ops/IngredientSummaryDashboard";
 import { RecipeCostDashboard } from "@/components/lab-ops/RecipeCostDashboard";
+import { RecipeCostingLivePanel } from "@/components/lab-ops/RecipeCostingLivePanel";
 import { RecipeIngredientEditorRow } from "@/components/lab-ops/RecipeIngredientEditorRow";
 import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
@@ -4084,6 +4085,53 @@ function RecipesModule({ outletId }: { outletId: string }) {
                     ))}
                   </div>
                 </div>
+
+                <RecipeCostingLivePanel
+                  costPerServe={useMemo(() => {
+                    const UNIT_TO_ML: Record<string, number> = {
+                      ml: 1,
+                      L: 1000,
+                      cl: 10,
+                      oz: 29.5735,
+                      dash: 0.9,
+                      drop: 0.05,
+                      tsp: 4.929,
+                      tbsp: 14.787,
+                      g: 1,
+                      kg: 1000,
+                      piece: 0,
+                    };
+
+                    const yieldQty = Number(recipeYield || 1) || 1;
+                    let total = 0;
+
+                    for (const ing of ingredients) {
+                      if (!ing.itemId) continue;
+                      const invItem = inventoryItems.find((i) => i.id === ing.itemId);
+                      if (!invItem) continue;
+
+                      const qty = Number(ing.qty || 0);
+                      const unit = String(ing.unit || "ml");
+                      const unitCostPerBottleOrPiece = Number(invItem.unit_cost || 0);
+
+                      if (unit === "piece") {
+                        total += unitCostPerBottleOrPiece * qty;
+                        continue;
+                      }
+
+                      const bottleSize = Number(
+                        invItem.bottle_size_ml || detectBottleSizeMl(invItem.name) || 750
+                      );
+                      const unitMult = UNIT_TO_ML[unit] ?? 1;
+                      const qtyMl = qty * unitMult;
+                      const costPerMl = bottleSize > 0 ? unitCostPerBottleOrPiece / bottleSize : 0;
+                      total += qtyMl * costPerMl;
+                    }
+
+                    return yieldQty > 0 ? total / yieldQty : total;
+                  }, [ingredients, recipeYield, inventoryItems])}
+                  menuBasePrice={Number(menuItems.find((m) => m.id === selectedMenuItem)?.base_price || 0)}
+                />
 
                 <div>
                   <Label>Instructions</Label>
