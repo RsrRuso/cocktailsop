@@ -204,8 +204,8 @@ const Auth = () => {
           <div 
             className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl flex items-center justify-center transition-all duration-700 ease-out"
             style={{
-              background: 'linear-gradient(180deg, hsl(0, 0%, 6%) 0%, hsl(0, 0%, 5%) 100%)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 hsl(0, 0%, 10%, 0.1)'
+              background: 'transparent',
+              boxShadow: 'none'
             }}
           >
             <img 
