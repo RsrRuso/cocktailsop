@@ -23,6 +23,7 @@ import { toast } from "@/hooks/use-toast";
 
 interface ReportBuilderProps {
   outletId: string;
+  outletName?: string;
 }
 
 // Available report fields organized by category

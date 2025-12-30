@@ -747,6 +747,14 @@ export default function LabOps() {
                     <Wine className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Pourers</span>
                   </TabsTrigger>
+                  <TabsTrigger value="depletion" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Database className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Track</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="builder" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Builder</span>
+                  </TabsTrigger>
                   <TabsTrigger value="export" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
                     <Download className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Export</span>
@@ -817,6 +825,14 @@ export default function LabOps() {
 
             <TabsContent value="pourers">
               <SmartPourerModule outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="depletion">
+              <InventoryDepletionTracker outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="builder">
+              <ReportBuilder outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
             </TabsContent>
 
             <TabsContent value="export">
