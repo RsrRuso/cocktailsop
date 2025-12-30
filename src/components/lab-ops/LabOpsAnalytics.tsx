@@ -19,6 +19,7 @@ import {
   Presentation, Filter, RefreshCw, Plus, Trash2, Edit, Eye
 } from "lucide-react";
 import MemberTransactionsReport from "./MemberTransactionsReport";
+import AIAnalyticsInquiry from "./AIAnalyticsInquiry";
 
 interface LabOpsAnalyticsProps {
   outletId: string;
@@ -674,6 +675,9 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* AI Analytics Inquiry */}
+          <AIAnalyticsInquiry outletId={outletId} />
         </div>
       )}
 

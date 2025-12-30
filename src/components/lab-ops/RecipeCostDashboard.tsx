@@ -168,30 +168,37 @@ export function RecipeCostDashboard({
         {breakdown.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Ingredients:</p>
-            {breakdown.map((b, idx) => (
-              <div key={idx} className="rounded-lg border bg-card/50 p-2.5 space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm truncate">{b.name}</span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">
-                        {b.totalStock} {b.stockUnit}
-                      </Badge>
+            {breakdown.map((b, idx) => {
+              const totalServings = Math.floor(b.totalStock * b.servingsPerBottle);
+              return (
+                <div key={idx} className="rounded-lg border bg-card/50 p-2.5 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{b.name}</span>
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          {b.totalStock.toFixed(2)} {b.stockUnit}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {b.qty} {b.unit} @ {b.bottleSize}ml bottle
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {b.qty} {b.unit} @ {b.bottleSize}ml bottle
-                    </p>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-primary">{formatPrice(b.ingredientCost)}</p>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold text-primary">{formatPrice(b.ingredientCost)}</p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                    <span>Unit cost: {formatPrice(b.unitCostPerBottle)}</span>
+                    <span className="text-amber-500 font-medium">{b.servingsPerBottle} servings/bottle</span>
+                  </div>
+                  {/* Total servings = bottles × servings/bottle */}
+                  <div className="text-xs font-semibold text-emerald-500">
+                    Total: {totalServings} servings ({b.totalStock.toFixed(2)} btl × {b.servingsPerBottle})
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                  <span>Unit cost: {formatPrice(b.unitCostPerBottle)}</span>
-                  <span className="text-amber-500">{b.servingsPerBottle} servings/bottle</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
