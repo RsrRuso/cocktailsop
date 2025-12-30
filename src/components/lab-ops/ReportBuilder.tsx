@@ -160,18 +160,25 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
 
     setIsGenerating(true);
     try {
-      // Fetch all necessary data
-      const [inventoryRes, movementsRes, menuItemsRes, ordersRes, salesRes, pourerRes] = await Promise.all([
-        supabase
-          .from("lab_ops_inventory_items")
-          .select(`
-            id, name, sku, base_unit, par_level,
-            lab_ops_stock_levels (quantity)
-          `)
-          .eq("outlet_id", outletId),
-        supabase
-          .from("lab_ops_stock_movements")
-          .select("inventory_item_id, qty, movement_type"),
+      // Fetch inventory items first to get IDs for filtering
+      const inventoryRes = await supabase
+        .from("lab_ops_inventory_items")
+        .select(`
+          id, name, sku, base_unit, par_level,
+          lab_ops_stock_levels (quantity)
+        `)
+        .eq("outlet_id", outletId);
+
+      const inventoryItemIds = (inventoryRes.data || []).map(i => i.id);
+
+      // Fetch remaining data in parallel
+      const [movementsRes, menuItemsRes, ordersRes, salesRes, pourerRes] = await Promise.all([
+        inventoryItemIds.length > 0 
+          ? supabase
+              .from("lab_ops_stock_movements")
+              .select("inventory_item_id, qty, movement_type")
+              .in("inventory_item_id", inventoryItemIds)
+          : Promise.resolve({ data: [] }),
         supabase
           .from("lab_ops_menu_items")
           .select("id, name, base_price, category_id, inventory_item_id")
@@ -186,7 +193,7 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .select("menu_item_id, qty, unit_price"),
         supabase
           .from("lab_ops_pourer_readings")
-          .select("bottle_id, pour_amount_ml")
+          .select("bottle_id, ml_dispensed")
           .eq("outlet_id", outletId),
       ]);
 
