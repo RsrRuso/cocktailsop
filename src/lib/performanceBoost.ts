@@ -1,11 +1,15 @@
 /**
  * Performance boost initialization
  * This file contains critical performance optimizations that run on app startup
+ * v5 - Aggressive cache invalidation
  */
 
 // Preload critical resources on idle
 export const initPerformanceBoost = () => {
   try {
+    // CRITICAL: Clear stale caches immediately for dev/preview
+    clearStaleCachesImmediately();
+    
     // Prefetch DNS for external services
     prefetchDNS();
 
@@ -22,6 +26,37 @@ export const initPerformanceBoost = () => {
     }
   } catch (error) {
     console.error('Performance boost initialization failed:', error);
+  }
+};
+
+// CRITICAL: Clear all stale caches immediately on load
+const clearStaleCachesImmediately = async () => {
+  const isDevOrPreview = import.meta.env.DEV || 
+    window.location.hostname.includes('lovable') ||
+    window.location.hostname.includes('localhost');
+    
+  if (!isDevOrPreview) return;
+  
+  try {
+    // Unregister all service workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(reg => reg.unregister()));
+      if (registrations.length > 0) {
+        console.log('[Cache] Unregistered', registrations.length, 'service workers');
+      }
+    }
+
+    // Clear all caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      if (cacheNames.length > 0) {
+        console.log('[Cache] Cleared', cacheNames.length, 'caches');
+      }
+    }
+  } catch (e) {
+    // Silent fail - non-critical
   }
 };
 

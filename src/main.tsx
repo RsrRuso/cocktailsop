@@ -1,13 +1,24 @@
-// App entry point - v4 force cache clear
+// App entry point - v5 force cache clear
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initPerformanceBoost } from "./lib/performanceBoost";
-import { initChunkLoadRecovery } from "./lib/chunkLoadRecovery";
+import "./lib/cacheManager"; // Auto-runs cache check on import
 
-// Recover from stale cached Vite chunks / Service Workers (prevents blank screen)
-initChunkLoadRecovery();
+// Clear any stale service workers immediately
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => registration.unregister());
+  });
+}
+
+// Clear all caches on load for dev/preview
+if ('caches' in window) {
+  caches.keys().then(names => {
+    names.forEach(name => caches.delete(name));
+  });
+}
 
 // Initialize performance optimizations
 initPerformanceBoost();
