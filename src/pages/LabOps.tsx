@@ -2584,11 +2584,21 @@ function InventoryModule({ outletId }: { outletId: string }) {
   }, [outletId]);
 
   const fetchItems = async () => {
-    const { data } = await supabase
+    if (!outletId) {
+      console.warn("fetchItems: No outletId provided");
+      setItems([]);
+      return;
+    }
+    const { data, error } = await supabase
       .from("lab_ops_inventory_items")
       .select("*, lab_ops_stock_levels(*)")
       .eq("outlet_id", outletId)
       .order("name");
+    
+    if (error) {
+      console.error("fetchItems error:", error);
+    }
+    console.log("fetchItems for outlet", outletId, "returned", data?.length || 0, "items");
     setItems(data || []);
   };
 

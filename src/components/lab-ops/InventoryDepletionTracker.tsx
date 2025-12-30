@@ -64,6 +64,13 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
   };
 
   const fetchDepletionData = async () => {
+    if (!outletId) {
+      console.warn("fetchDepletionData: No outletId provided");
+      setItems([]);
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const dateFilter = getDateFilter();
@@ -80,6 +87,8 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       if (invError) {
         console.error("Error fetching inventory items:", invError);
       }
+      
+      console.log("InventoryDepletionTracker: fetched", inventoryItems?.length || 0, "items for outlet", outletId);
 
       // Get inventory item IDs for this outlet to filter movements
       const inventoryItemIds = inventoryItems?.map(i => i.id) || [];

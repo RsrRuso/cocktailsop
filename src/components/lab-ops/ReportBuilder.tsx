@@ -160,6 +160,13 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
 
     setIsGenerating(true);
     try {
+      if (!outletId) {
+        console.warn("generateReport: No outletId provided");
+        toast({ title: "No outlet selected", variant: "destructive" });
+        setIsGenerating(false);
+        return;
+      }
+      
       // Fetch inventory items first to get IDs for filtering
       const inventoryRes = await supabase
         .from("lab_ops_inventory_items")
@@ -168,6 +175,11 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           lab_ops_stock_levels (quantity)
         `)
         .eq("outlet_id", outletId);
+      
+      console.log("ReportBuilder: fetched", inventoryRes.data?.length || 0, "items for outlet", outletId);
+      if (inventoryRes.error) {
+        console.error("ReportBuilder inventory error:", inventoryRes.error);
+      }
       
       const inventoryItemIds = (inventoryRes.data || []).map(i => i.id);
 
