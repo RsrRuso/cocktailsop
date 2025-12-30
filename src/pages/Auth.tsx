@@ -187,12 +187,13 @@ const Auth = () => {
   }, [isForgotPassword, isSignUp, email, password, confirmPassword, username, fullName, dateOfBirth, redirectTo, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
-      {/* Ambient light effects */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(200,80%,50%)]/8 rounded-full blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />
-      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[hsl(43,80%,50%)]/10 rounded-full blur-[130px] pointer-events-none animate-pulse" style={{ animationDuration: '5s' }} />
-      <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-[hsl(280,70%,50%)]/6 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
-      <div className="absolute top-1/3 right-0 w-[350px] h-[350px] bg-[hsl(160,70%,40%)]/6 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '7s' }} />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
+      {/* Animated background gradient - matching landing page */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-blue-950/20 to-background pointer-events-none" />
+      
+      {/* Glow effects - matching landing page */}
+      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
       
       {/* Main card with subtle glow */}
       <div 
