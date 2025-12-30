@@ -195,13 +195,11 @@ const Auth = () => {
       <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
       
-      {/* Main card with subtle glow */}
+      {/* Main card with matching glow effects */}
       <div 
-        className="w-full max-w-md rounded-2xl p-8 space-y-6 relative z-10"
+        className="w-full max-w-md rounded-2xl p-8 space-y-6 relative z-10 bg-card/80 backdrop-blur-xl border border-border/30"
         style={{
-          background: 'linear-gradient(145deg, hsl(0, 0%, 5%) 0%, hsl(0, 0%, 2%) 100%)',
-          boxShadow: '0 0 80px hsl(200, 70%, 50%, 0.08), 0 0 40px hsl(43, 70%, 50%, 0.06), 0 0 2px hsl(0, 0%, 20%, 0.5)',
-          border: '1px solid hsl(0, 0%, 15%, 0.3)'
+          boxShadow: '0 0 60px hsl(var(--primary) / 0.1), 0 0 30px hsl(var(--accent) / 0.05)'
         }}
       >
         <div className="text-center space-y-3">
