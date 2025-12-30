@@ -635,11 +635,11 @@ export default function StaffPOS() {
       
       // For spirits: calculate servings as (bottles × bottle_ml) / 30
       let spiritServings: number | null = null;
-      if (isSpirit && invStock && invStock.quantity > 0) {
+      if (isSpirit && invStock) {
         // Detect bottle size from inventory item name (e.g., "JW Black Label 70CL")
         const bottleSizeMl = detectBottleSizeMl(invStock.inv_name) || 700; // Default 700ml
-        const totalMl = invStock.quantity * bottleSizeMl;
-        spiritServings = Math.floor(totalMl / 30);
+        const totalMl = Math.max(0, invStock.quantity) * bottleSizeMl;
+        spiritServings = Math.floor(totalMl / 30); // Will be 0 if stock is depleted
       }
       
       return {
