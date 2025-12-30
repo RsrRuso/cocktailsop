@@ -25,6 +25,8 @@ import { IngredientSummaryDashboard } from "@/components/lab-ops/IngredientSumma
 import { RecipeCostDashboard } from "@/components/lab-ops/RecipeCostDashboard";
 import { RecipeCostingLivePanel } from "@/components/lab-ops/RecipeCostingLivePanel";
 import { RecipeIngredientEditorRow } from "@/components/lab-ops/RecipeIngredientEditorRow";
+import InventoryDepletionTracker from "@/components/lab-ops/InventoryDepletionTracker";
+import ReportBuilder from "@/components/lab-ops/ReportBuilder";
 import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -2817,12 +2819,14 @@ function InventoryModule({ outletId }: { outletId: string }) {
       )}
 
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
-        <TabsList className="w-full grid grid-cols-5">
+        <TabsList className="w-full grid grid-cols-4 md:grid-cols-7">
           <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="po-received">PO Received</TabsTrigger>
           <TabsTrigger value="spillage">Spillage</TabsTrigger>
           <TabsTrigger value="movements">Movements</TabsTrigger>
           <TabsTrigger value="stocktakes">Stock Takes</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
         {/* Items Tab */}
