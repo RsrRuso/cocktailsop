@@ -202,16 +202,17 @@ const Auth = () => {
       >
         <div className="text-center space-y-3">
           <div 
-            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl flex items-center justify-center"
+            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl flex items-center justify-center transition-all duration-500 ease-out"
             style={{
-              background: 'linear-gradient(145deg, hsl(220, 20%, 12%) 0%, hsl(220, 25%, 8%) 100%)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7), 0 0 20px hsl(43, 60%, 45%, 0.15), inset 0 1px 0 hsl(0, 0%, 20%, 0.1)'
+              background: 'linear-gradient(145deg, hsl(0, 0%, 8%) 0%, hsl(0, 0%, 5%) 100%)',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5), 0 0 30px hsl(43, 60%, 40%, 0.08), inset 0 1px 0 hsl(0, 0%, 15%, 0.15)',
+              border: '1px solid hsl(0, 0%, 12%)'
             }}
           >
             <img 
               src={svLogo} 
               alt="SV" 
-              className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain transition-transform duration-300 ease-out"
             />
           </div>
           <p className="text-[hsl(43,40%,65%)] text-base">
