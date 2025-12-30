@@ -492,16 +492,39 @@ export default function LabOps() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from("lab_ops_outlets")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Fetch outlets user owns OR is staff member of
+      const [ownedRes, staffRes] = await Promise.all([
+        supabase
+          .from("lab_ops_outlets")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("lab_ops_staff")
+          .select("outlet_id, lab_ops_outlets(*)")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+      ]);
 
-      if (error) throw error;
-      setOutlets(data || []);
+      // Combine owned outlets and staff outlets (deduplicated)
+      const ownedOutlets = ownedRes.data || [];
+      const staffOutlets = (staffRes.data || [])
+        .map((s: any) => s.lab_ops_outlets)
+        .filter(Boolean);
       
-      if (data && data.length > 0 && !selectedOutlet) {
-        setSelectedOutlet(data[0]);
+      const outletMap = new Map<string, Outlet>();
+      ownedOutlets.forEach(o => outletMap.set(o.id, o));
+      staffOutlets.forEach((o: Outlet) => {
+        if (!outletMap.has(o.id)) outletMap.set(o.id, o);
+      });
+      
+      const combinedOutlets = Array.from(outletMap.values())
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setOutlets(combinedOutlets);
+      
+      if (combinedOutlets.length > 0 && !selectedOutlet) {
+        setSelectedOutlet(combinedOutlets[0]);
       }
     } catch (error) {
       console.error("Error fetching outlets:", error);
@@ -2589,9 +2612,23 @@ function InventoryModule({ outletId }: { outletId: string }) {
   };
 
   const fetchMovements = async () => {
+    // First get inventory item IDs for this outlet to filter movements properly
+    const { data: outletItems } = await supabase
+      .from("lab_ops_inventory_items")
+      .select("id")
+      .eq("outlet_id", outletId);
+    
+    const itemIds = outletItems?.map(i => i.id) || [];
+    
+    if (itemIds.length === 0) {
+      setMovements([]);
+      return;
+    }
+    
     const { data: movementsData } = await supabase
       .from("lab_ops_stock_movements")
       .select(`*, lab_ops_inventory_items(name)`)
+      .in("inventory_item_id", itemIds)
       .order("created_at", { ascending: false })
       .limit(50);
     
@@ -3265,6 +3302,35 @@ function InventoryModule({ outletId }: { outletId: string }) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="mt-4">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Inventory Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <InventoryDepletionTracker outletId={outletId} />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Report Builder
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ReportBuilder outletId={outletId} />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
