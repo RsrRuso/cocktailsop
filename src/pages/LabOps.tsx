@@ -2966,7 +2966,10 @@ function InventoryModule({ outletId }: { outletId: string }) {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'items') fetchItems(); }}>
+      <Tabs value={activeTab} onValueChange={(tab) => { 
+        setActiveTab(tab);
+        if (tab === 'items' || tab === 'inventory') fetchItems();
+      }}>
         <TabsList className="w-full grid grid-cols-4 md:grid-cols-7">
           <TabsTrigger value="items">Items</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
@@ -3130,6 +3133,88 @@ function InventoryModule({ outletId }: { outletId: string }) {
                             <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Inventory Tab */}
+        <TabsContent value="inventory" className="mt-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Inventory Overview</CardTitle>
+              <CardDescription>
+                Stock by item and location for this outlet
+              </CardDescription>
+            </CardHeader>
+
+            <div className="px-6 pb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search inventory..."
+                  value={inventorySearch}
+                  onChange={(e) => setInventorySearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            <CardContent>
+              {(() => {
+                const locationsMap = new Map((locations || []).map((l: any) => [l.id, l.name]));
+                const filteredItems = items.filter((item) =>
+                  !inventorySearch || (item.name || "").toLowerCase().includes(inventorySearch.toLowerCase())
+                );
+
+                if (filteredItems.length === 0) {
+                  return (
+                    <p className="text-muted-foreground text-center py-8">
+                      {inventorySearch ? "No matching inventory items" : "No inventory items yet"}
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {filteredItems.map((item) => {
+                      const levels = (item.lab_ops_stock_levels as any[] | undefined) || [];
+                      const totalStock = getTotalStock(item);
+
+                      return (
+                        <div key={item.id} className="p-4 rounded-lg bg-muted/40 border border-border/50">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold truncate">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.sku || "No SKU"} • {item.base_unit}
+                              </p>
+                            </div>
+                            <Badge variant="secondary" className="text-base font-bold px-3 py-1 shrink-0">
+                              {totalStock} {item.base_unit}
+                            </Badge>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {levels.length === 0 ? (
+                              <Badge variant="outline" className="text-xs">
+                                No stock recorded
+                              </Badge>
+                            ) : (
+                              levels
+                                .filter((sl) => (Number(sl.quantity) || 0) !== 0)
+                                .map((sl) => (
+                                  <Badge key={sl.id} variant="outline" className="text-xs">
+                                    {(locationsMap.get(sl.location_id) as string) || "Unknown location"}: {Number(sl.quantity) || 0}
+                                  </Badge>
+                                ))
+                            )}
                           </div>
                         </div>
                       );
