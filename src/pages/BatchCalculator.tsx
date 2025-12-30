@@ -38,6 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { GroupCombobox } from "@/components/batch-calculator/GroupCombobox";
+import { RecipeCombobox } from "@/components/batch-calculator/RecipeCombobox";
 import {
   Dialog,
   DialogContent,
@@ -3797,10 +3799,11 @@ const BatchCalculator = () => {
                 <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Select Group *</Label>
-                  <Select 
-                    value={selectedGroupId || "personal"} 
+                  <GroupCombobox
+                    groups={groups}
+                    value={selectedGroupId}
                     onValueChange={(value) => {
-                      setSelectedGroupId(value === "personal" ? null : value);
+                      setSelectedGroupId(value);
                       setSelectedRecipeId(null);
                       setRecipeName("");
                       setBatchDescription("");
@@ -3811,27 +3814,7 @@ const BatchCalculator = () => {
                       activityTracker.resetBatchTiming();
                       batchInputStartedRef.current = false;
                     }}
-                  >
-                    <SelectTrigger className="glass bg-background/80 backdrop-blur-sm h-12">
-                      <SelectValue placeholder="Choose a group" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
-                      <SelectItem value="personal">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          Personal Recipes
-                        </div>
-                      </SelectItem>
-                      {groups && groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            {group.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                   <p className="text-xs text-muted-foreground">
                     {selectedGroupId ? "Showing group recipes" : "Showing your personal recipes"}
                   </p>
@@ -3839,8 +3822,9 @@ const BatchCalculator = () => {
 
                 <div className="space-y-2">
                   <Label>Select Saved Recipe *</Label>
-                  <Select 
-                    value={selectedRecipeId || ""} 
+                  <RecipeCombobox
+                    recipes={recipes}
+                    value={selectedRecipeId}
                     onValueChange={(value) => {
                       setSelectedRecipeId(value);
                       if (value === "all") {
@@ -3892,25 +3876,7 @@ const BatchCalculator = () => {
                         }
                       }
                     }}
-                  >
-                    <SelectTrigger className="glass bg-background/80 backdrop-blur-sm h-12">
-                      <SelectValue placeholder="Choose a saved recipe" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
-                      <SelectItem value="all">All Batches</SelectItem>
-                      {recipes && recipes.length > 0 ? (
-                        recipes.map((recipe) => (
-                          <SelectItem key={recipe.id} value={recipe.id}>
-                            {recipe.recipe_name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="p-3 text-center text-sm text-muted-foreground">
-                          No recipes yet. Create one first!
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
 
                 <div className="space-y-2">
