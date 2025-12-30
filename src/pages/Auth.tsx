@@ -187,7 +187,7 @@ const Auth = () => {
   }, [isForgotPassword, isSignUp, email, password, confirmPassword, username, fullName, dateOfBirth, redirectTo, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[hsl(220,20%,8%)]">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
       {/* Subtle background glow - pale golden amber */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[hsl(43,70%,45%)]/10 rounded-full blur-[120px] pointer-events-none" />
       
