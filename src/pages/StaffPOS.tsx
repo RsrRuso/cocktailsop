@@ -1113,7 +1113,9 @@ export default function StaffPOS() {
     
     // Real-time ingredient deduction based on recipe
     // SKIP if item already deducted via inventory (spirit or regular) to prevent double deduction
+    console.log('[DEBUG] Recipe check:', { recipe_id: item.recipe_id, inventory_item_id: item.inventory_item_id, willDeduct: item.recipe_id && !item.inventory_item_id });
     if (item.recipe_id && !item.inventory_item_id) {
+      console.log('[DEBUG] Calling deductRecipeIngredients for recipe:', item.recipe_id);
       deductRecipeIngredients(item.recipe_id, 1);
     }
     
