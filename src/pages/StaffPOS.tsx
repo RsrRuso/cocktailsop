@@ -1175,12 +1175,18 @@ export default function StaffPOS() {
       if (stockLevels?.length) {
         const stockLevel = stockLevels[0] as any;
         const invName = stockLevel.lab_ops_inventory_items?.name || itemName || '';
-        const bottleSizeMl = stockLevel.lab_ops_inventory_items?.bottle_size_ml || detectBottleSizeMl(invName) || 700;
+        const rawBottleSizeMl =
+          stockLevel.lab_ops_inventory_items?.bottle_size_ml ??
+          detectBottleSizeMl(invName) ??
+          700;
+        const bottleSizeMl =
+          Number(rawBottleSizeMl) >= 50 && Number(rawBottleSizeMl) <= 5000
+            ? Number(rawBottleSizeMl)
+            : 700;
         
         // Convert ml to bottle fraction (e.g., 30ml from 700ml bottle = 0.0428 bottles)
         const bottleFraction = mlAmount / bottleSizeMl;
         const newQuantity = Math.max(0, Number(stockLevel.quantity) - bottleFraction);
-        
         // Update stock level
         await supabase
           .from("lab_ops_stock_levels")
@@ -1221,7 +1227,11 @@ export default function StaffPOS() {
         // Convert ml to fractional bottles if unit is ml
         let deductAmount: number;
         if (ingredient.unit === 'ml') {
-          const bottleSize = ingredient.bottle_size || 700; // Default 700ml
+          const rawBottleSize = ingredient.bottle_size ?? 700;
+          const bottleSize =
+            Number(rawBottleSize) >= 50 && Number(rawBottleSize) <= 5000
+              ? Number(rawBottleSize)
+              : 700;
           deductAmount = totalMl / bottleSize; // Convert ml to fractional bottles
         } else {
           deductAmount = ingredientQty * servings; // Non-ml units deduct directly
@@ -1438,12 +1448,18 @@ export default function StaffPOS() {
       if (stockLevels?.length) {
         const stockLevel = stockLevels[0] as any;
         const invName = stockLevel.lab_ops_inventory_items?.name || itemName || '';
-        const bottleSizeMl = stockLevel.lab_ops_inventory_items?.bottle_size_ml || detectBottleSizeMl(invName) || 700;
+        const rawBottleSizeMl =
+          stockLevel.lab_ops_inventory_items?.bottle_size_ml ??
+          detectBottleSizeMl(invName) ??
+          700;
+        const bottleSizeMl =
+          Number(rawBottleSizeMl) >= 50 && Number(rawBottleSizeMl) <= 5000
+            ? Number(rawBottleSizeMl)
+            : 700;
         
         // Convert ml to bottle fraction
         const bottleFraction = mlAmount / bottleSizeMl;
         const newQuantity = Number(stockLevel.quantity) + bottleFraction;
-        
         // Update stock level
         await supabase
           .from("lab_ops_stock_levels")
