@@ -195,9 +195,9 @@ const Auth = () => {
       <div 
         className="w-full max-w-md rounded-2xl p-8 space-y-6 relative z-10"
         style={{
-          background: 'linear-gradient(145deg, hsl(220, 15%, 12%) 0%, hsl(220, 18%, 10%) 100%)',
-          boxShadow: '0 0 60px hsl(43, 70%, 40%, 0.15), 0 0 2px hsl(43, 60%, 50%, 0.4), inset 0 1px 0 hsl(43, 50%, 40%, 0.1)',
-          border: '1px solid hsl(43, 50%, 35%, 0.3)'
+          background: 'linear-gradient(145deg, hsl(0, 0%, 6%) 0%, hsl(0, 0%, 4%) 100%)',
+          boxShadow: '0 0 60px hsl(43, 70%, 40%, 0.12), 0 0 2px hsl(43, 60%, 50%, 0.3), inset 0 1px 0 hsl(43, 50%, 40%, 0.08)',
+          border: '1px solid hsl(43, 50%, 30%, 0.25)'
         }}
       >
         <div className="text-center space-y-3">
