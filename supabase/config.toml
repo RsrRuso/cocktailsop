@@ -138,3 +138,7 @@ verify_jwt = false
 # Lab Ops Dedicated API - Scales independently
 [functions.lab-ops-api]
 verify_jwt = true
+
+# AI Analytics Chat
+[functions.ai-analytics-chat]
+verify_jwt = false
