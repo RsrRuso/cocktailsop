@@ -1,30 +1,19 @@
-// App entry point - v5 force cache clear
+// App entry point - v5 (safe cache recovery)
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initPerformanceBoost } from "./lib/performanceBoost";
-import "./lib/cacheManager"; // Auto-runs cache check on import
+import { initChunkLoadRecovery } from "./lib/chunkLoadRecovery";
 
-// Clear any stale service workers immediately
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(registration => registration.unregister());
-  });
-}
-
-// Clear all caches on load for dev/preview
-if ('caches' in window) {
-  caches.keys().then(names => {
-    names.forEach(name => caches.delete(name));
-  });
-}
+// Recover from stale cached Vite chunks / Service Workers (prevents blank screen)
+initChunkLoadRecovery();
 
 // Initialize performance optimizations
 initPerformanceBoost();
 
 // Set initial theme from localStorage or default to black
-const savedTheme = localStorage.getItem('theme') || 'black';
+const savedTheme = localStorage.getItem("theme") || "black";
 document.documentElement.classList.add(savedTheme);
 
 // Mount the app
@@ -36,3 +25,4 @@ if (container) {
     </React.StrictMode>
   );
 }
+
