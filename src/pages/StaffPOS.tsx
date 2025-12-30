@@ -2562,8 +2562,8 @@ export default function StaffPOS() {
                         ? item.inventory_stock 
                         : item.remaining_serves;
                     const hasStock = displayStock !== null;
-                    const isLowStock = hasStock && displayStock !== null && displayStock <= 5;
-                    const isOutOfStock = hasStock && displayStock === 0;
+                    const isLowStock = hasStock && displayStock !== null && displayStock > 0 && displayStock <= 5;
+                    const isOutOfStock = hasStock && displayStock !== null && displayStock <= 0;
                     return (
                       <Button
                         key={item.id}
