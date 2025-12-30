@@ -1202,17 +1202,27 @@ export default function StaffPOS() {
   // Deduct recipe ingredients from inventory in real-time
   const deductRecipeIngredients = async (recipeId: string, servings: number) => {
     try {
-      // Fetch recipe ingredients
+      // Fetch recipe ingredients with bottle_size for proper ml->bottle conversion
       const { data: ingredients } = await supabase
         .from("lab_ops_recipe_ingredients")
-        .select("inventory_item_id, qty, unit")
+        .select("inventory_item_id, qty, unit, bottle_size")
         .eq("recipe_id", recipeId);
 
       if (!ingredients?.length) return;
 
       // Deduct each ingredient from stock
       for (const ingredient of ingredients) {
-        const deductAmount = (ingredient.qty || 0) * servings;
+        const ingredientQty = ingredient.qty || 0;
+        const totalMl = ingredientQty * servings;
+        
+        // Convert ml to fractional bottles if unit is ml
+        let deductAmount: number;
+        if (ingredient.unit === 'ml') {
+          const bottleSize = ingredient.bottle_size || 700; // Default 700ml
+          deductAmount = totalMl / bottleSize; // Convert ml to fractional bottles
+        } else {
+          deductAmount = ingredientQty * servings; // Non-ml units deduct directly
+        }
         
         // Get current stock level
         const { data: stockLevels } = await supabase
@@ -1233,7 +1243,7 @@ export default function StaffPOS() {
             .update({ quantity: newQuantity })
             .eq("id", stockLevel.id);
 
-          // Record movement
+          // Record movement with ml amount for clarity
           await supabase.from("lab_ops_stock_movements").insert({
             inventory_item_id: ingredient.inventory_item_id,
             from_location_id: stockLevel.location_id,
@@ -1241,7 +1251,7 @@ export default function StaffPOS() {
             movement_type: "sale",
             reference_type: "recipe_consumption",
             reference_id: recipeId,
-            notes: `Recipe consumption for order`
+            notes: `Recipe: ${totalMl}ml deducted (${deductAmount.toFixed(4)} bottles)`
           });
         }
       }
