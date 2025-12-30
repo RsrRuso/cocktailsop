@@ -201,14 +201,19 @@ const Auth = () => {
         }}
       >
         <div className="text-center space-y-3">
-          <img 
-            src={svLogo} 
-            alt="SV" 
-            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl"
+          <div 
+            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl flex items-center justify-center"
             style={{
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px hsl(43, 60%, 45%, 0.2)'
+              background: 'linear-gradient(145deg, hsl(220, 20%, 12%) 0%, hsl(220, 25%, 8%) 100%)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7), 0 0 20px hsl(43, 60%, 45%, 0.15), inset 0 1px 0 hsl(0, 0%, 20%, 0.1)'
             }}
-          />
+          >
+            <img 
+              src={svLogo} 
+              alt="SV" 
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+            />
+          </div>
           <p className="text-[hsl(43,40%,65%)] text-base">
             {isSignUp ? "Join the Professional Network for Beverage Industry" : "Sign in to your account"}
           </p>
