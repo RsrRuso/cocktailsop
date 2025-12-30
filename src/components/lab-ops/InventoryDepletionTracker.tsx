@@ -67,7 +67,6 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
     setIsLoading(true);
     try {
       const dateFilter = getDateFilter();
-      console.log("[DepletionTracker] Fetching data for outlet:", outletId, "dateFilter:", dateFilter);
 
       // Fetch inventory items with stock levels
       const { data: inventoryItems, error: invError } = await supabase
@@ -77,8 +76,6 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           lab_ops_stock_levels (quantity)
         `)
         .eq("outlet_id", outletId);
-      
-      console.log("[DepletionTracker] Inventory items:", inventoryItems?.length || 0, invError);
       
       if (invError) {
         console.error("Error fetching inventory items:", invError);
@@ -193,7 +190,6 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       });
 
       const finalItems = Array.from(depletionMap.values());
-      console.log("[DepletionTracker] Final items:", finalItems.length, finalItems);
       setItems(finalItems);
     } catch (error) {
       console.error("Error fetching depletion data:", error);
@@ -235,6 +231,24 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       <div className="flex items-center justify-center py-8">
         <RefreshCw className="h-6 w-6 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  // Show helpful empty state when no items at all
+  if (items.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+        <h3 className="text-lg font-semibold mb-2">No Inventory Items Found</h3>
+        <p className="text-muted-foreground text-sm mb-4 max-w-md mx-auto">
+          Add inventory items to start tracking depletion. Go to the Inventory tab to add items, 
+          or use "Load Demo Data" from the menu to populate sample data.
+        </p>
+        <Button variant="outline" onClick={fetchDepletionData}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </Card>
     );
   }
 
