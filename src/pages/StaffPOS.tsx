@@ -1070,8 +1070,21 @@ export default function StaffPOS() {
       }]);
     }
     
-    // Handle inventory-linked items (like bottled water) - deduct from lab_ops_stock_levels
-    if (item.inventory_item_id && item.inventory_stock !== null && item.inventory_stock > 0) {
+    // Handle SPIRIT items - deduct 30ml per serving
+    if (item.is_spirit && item.inventory_item_id && item.spirit_servings !== null && item.spirit_servings > 0) {
+      const newSpiritServings = Math.max(0, item.spirit_servings - 1);
+      setMenuItems(prev => prev.map(m => 
+        m.id === item.id && m.spirit_servings !== null
+          ? { ...m, spirit_servings: newSpiritServings }
+          : m
+      ));
+      
+      // Deduct 30ml (0.03 liters) from stock levels - convert serving to bottle fraction
+      // Stock is stored as bottle count, so we need to deduct 30ml worth of bottles
+      deductSpiritStock(item.inventory_item_id, 30, item.stock_level_id, item.name);
+    }
+    // Handle non-spirit inventory-linked items (like bottled water) - deduct 1 unit
+    else if (item.inventory_item_id && item.inventory_stock !== null && item.inventory_stock > 0) {
       const newStock = Math.max(0, item.inventory_stock - 1);
       setMenuItems(prev => prev.map(m => 
         m.id === item.id && m.inventory_stock !== null
@@ -1144,6 +1157,48 @@ export default function StaffPOS() {
     }
   };
 
+  // Deduct spirit stock by ml (for spirit serving sales)
+  const deductSpiritStock = async (inventoryItemId: string, mlAmount: number, stockLevelId?: string | null, itemName?: string) => {
+    try {
+      // Get current stock level and inventory item details
+      const { data: stockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("id, quantity, location_id, lab_ops_inventory_items(name, bottle_size_ml)")
+        .eq("inventory_item_id", inventoryItemId)
+        .gt("quantity", 0)
+        .order("quantity", { ascending: false })
+        .limit(1);
+
+      if (stockLevels?.length) {
+        const stockLevel = stockLevels[0] as any;
+        const invName = stockLevel.lab_ops_inventory_items?.name || itemName || '';
+        const bottleSizeMl = stockLevel.lab_ops_inventory_items?.bottle_size_ml || detectBottleSizeMl(invName) || 700;
+        
+        // Convert ml to bottle fraction (e.g., 30ml from 700ml bottle = 0.0428 bottles)
+        const bottleFraction = mlAmount / bottleSizeMl;
+        const newQuantity = Math.max(0, Number(stockLevel.quantity) - bottleFraction);
+        
+        // Update stock level
+        await supabase
+          .from("lab_ops_stock_levels")
+          .update({ quantity: newQuantity })
+          .eq("id", stockLevel.id);
+
+        // Record movement
+        await supabase.from("lab_ops_stock_movements").insert({
+          inventory_item_id: inventoryItemId,
+          from_location_id: stockLevel.location_id,
+          qty: bottleFraction,
+          movement_type: "sale",
+          reference_type: "spirit_serving",
+          notes: `Spirit serving: ${mlAmount}ml`
+        });
+      }
+    } catch (error) {
+      console.error("Spirit stock deduction error:", error);
+    }
+  };
+
   // Deduct recipe ingredients from inventory in real-time
   const deductRecipeIngredients = async (recipeId: string, servings: number) => {
     try {
@@ -1207,8 +1262,27 @@ export default function StaffPOS() {
       return o;
     }).filter(o => o.qty > 0));
     
-    // Handle inventory-linked items
-    if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+    // Handle SPIRIT items - deduct/restore 30ml per serving
+    if (menuItem && menuItem.is_spirit && menuItem.inventory_item_id && menuItem.spirit_servings !== null) {
+      const newServings = delta > 0 
+        ? Math.max(0, menuItem.spirit_servings - 1)
+        : menuItem.spirit_servings + 1;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.spirit_servings !== null
+          ? { ...m, spirit_servings: newServings }
+          : m
+      ));
+      
+      // Update database
+      if (delta > 0) {
+        deductSpiritStock(menuItem.inventory_item_id, 30, menuItem.stock_level_id, menuItem.name);
+      } else {
+        restoreSpiritStock(menuItem.inventory_item_id, 30, menuItem.name);
+      }
+    }
+    // Handle non-spirit inventory-linked items
+    else if (menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
       const newStock = delta > 0 
         ? Math.max(0, menuItem.inventory_stock - 1)
         : menuItem.inventory_stock + 1;
@@ -1253,8 +1327,22 @@ export default function StaffPOS() {
     
     setOrderItems(orderItems.filter(o => o.menu_item_id !== itemId));
     
-    // Restore inventory stock when item is removed
-    if (removedItem && menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
+    // Restore SPIRIT stock when item is removed
+    if (removedItem && menuItem && menuItem.is_spirit && menuItem.inventory_item_id && menuItem.spirit_servings !== null) {
+      const restoredServings = removedItem.qty;
+      const newServings = menuItem.spirit_servings + restoredServings;
+      
+      setMenuItems(prev => prev.map(m => 
+        m.id === itemId && m.spirit_servings !== null
+          ? { ...m, spirit_servings: newServings }
+          : m
+      ));
+      
+      // Restore in database (30ml per serving)
+      restoreSpiritStock(menuItem.inventory_item_id, restoredServings * 30, menuItem.name);
+    }
+    // Restore non-spirit inventory stock when item is removed
+    else if (removedItem && menuItem && menuItem.inventory_item_id && menuItem.inventory_stock !== null) {
       const restoredAmount = removedItem.qty;
       const newStock = menuItem.inventory_stock + restoredAmount;
       
@@ -1320,6 +1408,47 @@ export default function StaffPOS() {
       }
     } catch (error) {
       console.error("Inventory stock restore error:", error);
+    }
+  };
+
+  // Restore spirit stock by ml (for item removal/quantity decrease)
+  const restoreSpiritStock = async (inventoryItemId: string, mlAmount: number, itemName?: string) => {
+    try {
+      // Get current stock level and inventory item details
+      const { data: stockLevels } = await supabase
+        .from("lab_ops_stock_levels")
+        .select("id, quantity, location_id, lab_ops_inventory_items(name, bottle_size_ml)")
+        .eq("inventory_item_id", inventoryItemId)
+        .order("quantity", { ascending: false })
+        .limit(1);
+
+      if (stockLevels?.length) {
+        const stockLevel = stockLevels[0] as any;
+        const invName = stockLevel.lab_ops_inventory_items?.name || itemName || '';
+        const bottleSizeMl = stockLevel.lab_ops_inventory_items?.bottle_size_ml || detectBottleSizeMl(invName) || 700;
+        
+        // Convert ml to bottle fraction
+        const bottleFraction = mlAmount / bottleSizeMl;
+        const newQuantity = Number(stockLevel.quantity) + bottleFraction;
+        
+        // Update stock level
+        await supabase
+          .from("lab_ops_stock_levels")
+          .update({ quantity: newQuantity })
+          .eq("id", stockLevel.id);
+
+        // Record movement
+        await supabase.from("lab_ops_stock_movements").insert({
+          inventory_item_id: inventoryItemId,
+          to_location_id: stockLevel.location_id,
+          qty: bottleFraction,
+          movement_type: "adjustment",
+          reference_type: "spirit_return",
+          notes: `Spirit serving return: ${mlAmount}ml`
+        });
+      }
+    } catch (error) {
+      console.error("Spirit stock restore error:", error);
     }
   };
 
