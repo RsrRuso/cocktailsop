@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { detectBottleSizeMl } from "@/lib/bottleSize";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
@@ -81,6 +82,9 @@ interface MenuItem {
   inventory_item_id?: string | null;
   inventory_stock?: number | null;
   stock_level_id?: string | null;
+  // For spirit serving calculation
+  is_spirit?: boolean;
+  spirit_servings?: number | null;
 }
 
 export default function StaffPOS() {
@@ -587,31 +591,37 @@ export default function StaffPOS() {
       .from("lab_ops_menu_items")
       .select(`
         id, name, base_price, category_id, remaining_serves, recipe_id, inventory_item_id,
-        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(id)
+        lab_ops_recipes!lab_ops_recipes_menu_item_id_fkey(id),
+        lab_ops_categories(name)
       `)
       .eq("outlet_id", outletId)
       .eq("is_active", true);
     
     // For items with inventory_item_id, fetch current stock from lab_ops_stock_levels
+    // Also fetch inventory item details for bottle size detection
     const itemsWithInventory = (data || []).filter((item: any) => item.inventory_item_id);
-    let stockMap: Record<string, { quantity: number; stock_level_id: string }> = {};
+    let stockMap: Record<string, { quantity: number; stock_level_id: string; inv_name: string }> = {};
     
     if (itemsWithInventory.length > 0) {
       const inventoryItemIds = itemsWithInventory.map((item: any) => item.inventory_item_id);
+      
+      // Fetch stock levels with inventory item names for bottle size detection
       const { data: stockLevels } = await supabase
         .from("lab_ops_stock_levels")
-        .select("id, inventory_item_id, quantity")
+        .select("id, inventory_item_id, quantity, lab_ops_inventory_items(name, bottle_size_ml)")
         .in("inventory_item_id", inventoryItemIds);
       
       if (stockLevels) {
         // Group by inventory_item_id and sum quantities
-        for (const sl of stockLevels) {
+        for (const sl of stockLevels as any[]) {
+          const invName = sl.lab_ops_inventory_items?.name || '';
           if (stockMap[sl.inventory_item_id]) {
             stockMap[sl.inventory_item_id].quantity += Number(sl.quantity || 0);
           } else {
             stockMap[sl.inventory_item_id] = { 
               quantity: Number(sl.quantity || 0), 
-              stock_level_id: sl.id 
+              stock_level_id: sl.id,
+              inv_name: invName,
             };
           }
         }
@@ -620,6 +630,18 @@ export default function StaffPOS() {
     
     setMenuItems((data || []).map((item: any) => {
       const invStock = item.inventory_item_id ? stockMap[item.inventory_item_id] : null;
+      const categoryName = (item.lab_ops_categories?.name || '').toLowerCase();
+      const isSpirit = categoryName === 'spirits' || categoryName === 'spirit';
+      
+      // For spirits: calculate servings as (bottles × bottle_ml) / 30
+      let spiritServings: number | null = null;
+      if (isSpirit && invStock && invStock.quantity > 0) {
+        // Detect bottle size from inventory item name (e.g., "JW Black Label 70CL")
+        const bottleSizeMl = detectBottleSizeMl(invStock.inv_name) || 700; // Default 700ml
+        const totalMl = invStock.quantity * bottleSizeMl;
+        spiritServings = Math.floor(totalMl / 30);
+      }
+      
       return {
         ...item,
         remaining_serves: item.remaining_serves ?? null,
@@ -627,6 +649,8 @@ export default function StaffPOS() {
         inventory_item_id: item.inventory_item_id || null,
         inventory_stock: invStock ? invStock.quantity : null,
         stock_level_id: invStock ? invStock.stock_level_id : null,
+        is_spirit: isSpirit,
+        spirit_servings: spiritServings,
       };
     }));
   };
@@ -2354,8 +2378,12 @@ export default function StaffPOS() {
                 <div className="grid grid-cols-2 gap-1 p-1">
                   {filteredItems.map(item => {
                     const isInOrder = orderItems.some(o => o.menu_item_id === item.id);
-                    // Use inventory_stock for inventory-linked items, otherwise remaining_serves
-                    const displayStock = item.inventory_stock !== null ? item.inventory_stock : item.remaining_serves;
+                    // For spirits: use calculated servings, otherwise use inventory_stock or remaining_serves
+                    const displayStock = item.is_spirit && item.spirit_servings !== null
+                      ? item.spirit_servings
+                      : item.inventory_stock !== null 
+                        ? item.inventory_stock 
+                        : item.remaining_serves;
                     const hasStock = displayStock !== null;
                     const isLowStock = hasStock && displayStock !== null && displayStock <= 5;
                     const isOutOfStock = hasStock && displayStock === 0;
