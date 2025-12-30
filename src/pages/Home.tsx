@@ -334,7 +334,7 @@ const Home = () => {
   // REMOVED: Skeleton loading state - render immediately, never wait
 
   return (
-    <div className="min-h-screen pb-20 pt-16">
+    <div className="min-h-screen pb-20 pt-16 bg-gradient-to-b from-black via-zinc-950/80 to-black">
       <TopNav isVisible={showTopNav} />
 
       {/* Stories */}
