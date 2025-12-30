@@ -27,6 +27,8 @@ import { RecipeCostingLivePanel } from "@/components/lab-ops/RecipeCostingLivePa
 import { RecipeIngredientEditorRow } from "@/components/lab-ops/RecipeIngredientEditorRow";
 import InventoryDepletionTracker from "@/components/lab-ops/InventoryDepletionTracker";
 import ReportBuilder from "@/components/lab-ops/ReportBuilder";
+import { InventoryAnalyticsDashboard } from "@/components/lab-ops/InventoryAnalyticsDashboard";
+import { SalesAnalyticsDashboard } from "@/components/lab-ops/SalesAnalyticsDashboard";
 import { useRecipeCostCalculator, calculateDepletion } from "@/hooks/useRecipeCostCalculator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -3144,84 +3146,20 @@ function InventoryModule({ outletId }: { outletId: string }) {
           </Card>
         </TabsContent>
 
-        {/* Inventory Tab */}
+        {/* Inventory Tab - Now shows full analytics dashboard */}
         <TabsContent value="inventory" className="mt-4">
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Inventory Overview</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Inventory Analytics
+              </CardTitle>
               <CardDescription>
-                Stock by item and location for this outlet
+                Live stock tracking: received, sold, current levels, and movement history
               </CardDescription>
             </CardHeader>
-
-            <div className="px-6 pb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search inventory..."
-                  value={inventorySearch}
-                  onChange={(e) => setInventorySearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
             <CardContent>
-              {(() => {
-                const locationsMap = new Map((locations || []).map((l: any) => [l.id, l.name]));
-                const filteredItems = items.filter((item) =>
-                  !inventorySearch || (item.name || "").toLowerCase().includes(inventorySearch.toLowerCase())
-                );
-
-                if (filteredItems.length === 0) {
-                  return (
-                    <p className="text-muted-foreground text-center py-8">
-                      {inventorySearch ? "No matching inventory items" : "No inventory items yet"}
-                    </p>
-                  );
-                }
-
-                return (
-                  <div className="space-y-3">
-                    {filteredItems.map((item) => {
-                      const levels = (item.lab_ops_stock_levels as any[] | undefined) || [];
-                      const totalStock = getTotalStock(item);
-
-                      return (
-                        <div key={item.id} className="p-4 rounded-lg bg-muted/40 border border-border/50">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-semibold truncate">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {item.sku || "No SKU"} • {item.base_unit}
-                              </p>
-                            </div>
-                            <Badge variant="secondary" className="text-base font-bold px-3 py-1 shrink-0">
-                              {totalStock} {item.base_unit}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {levels.length === 0 ? (
-                              <Badge variant="outline" className="text-xs">
-                                No stock recorded
-                              </Badge>
-                            ) : (
-                              levels
-                                .filter((sl) => (Number(sl.quantity) || 0) !== 0)
-                                .map((sl) => (
-                                  <Badge key={sl.id} variant="outline" className="text-xs">
-                                    {(locationsMap.get(sl.location_id) as string) || "Unknown location"}: {Number(sl.quantity) || 0}
-                                  </Badge>
-                                ))
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
+              <InventoryAnalyticsDashboard outletId={outletId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -3399,27 +3337,51 @@ function InventoryModule({ outletId }: { outletId: string }) {
           </Card>
         </TabsContent>
 
-        {/* Reports Tab */}
+        {/* Reports Tab - Comprehensive analytics */}
         <TabsContent value="reports" className="mt-4">
           <div className="space-y-6">
+            {/* Sales Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Sales Analytics
+                </CardTitle>
+                <CardDescription>
+                  Revenue, average check per cover/table, staff performance, top sellers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SalesAnalyticsDashboard outletId={outletId} />
+              </CardContent>
+            </Card>
+
+            {/* Inventory Depletion */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Inventory Reports
+                  Inventory Depletion Report
                 </CardTitle>
+                <CardDescription>
+                  Track physical vs. virtual consumption variance
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <InventoryDepletionTracker outletId={outletId} />
               </CardContent>
             </Card>
             
+            {/* Report Builder */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Report Builder
+                  AI Report Builder
                 </CardTitle>
+                <CardDescription>
+                  Generate custom operational reports
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ReportBuilder outletId={outletId} />
