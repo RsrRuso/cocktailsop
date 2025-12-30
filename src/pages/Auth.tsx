@@ -188,16 +188,19 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
-      {/* Subtle background glow - pale golden amber */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[hsl(43,70%,45%)]/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Ambient light effects */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(200,80%,50%)]/8 rounded-full blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[hsl(43,80%,50%)]/10 rounded-full blur-[130px] pointer-events-none animate-pulse" style={{ animationDuration: '5s' }} />
+      <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-[hsl(280,70%,50%)]/6 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
+      <div className="absolute top-1/3 right-0 w-[350px] h-[350px] bg-[hsl(160,70%,40%)]/6 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '7s' }} />
       
-      {/* Main card with golden border glow */}
+      {/* Main card with subtle glow */}
       <div 
         className="w-full max-w-md rounded-2xl p-8 space-y-6 relative z-10"
         style={{
-          background: 'linear-gradient(145deg, hsl(0, 0%, 6%) 0%, hsl(0, 0%, 4%) 100%)',
-          boxShadow: '0 0 60px hsl(43, 70%, 40%, 0.12), 0 0 2px hsl(43, 60%, 50%, 0.3), inset 0 1px 0 hsl(43, 50%, 40%, 0.08)',
-          border: '1px solid hsl(43, 50%, 30%, 0.25)'
+          background: 'linear-gradient(145deg, hsl(0, 0%, 5%) 0%, hsl(0, 0%, 2%) 100%)',
+          boxShadow: '0 0 80px hsl(200, 70%, 50%, 0.08), 0 0 40px hsl(43, 70%, 50%, 0.06), 0 0 2px hsl(0, 0%, 20%, 0.5)',
+          border: '1px solid hsl(0, 0%, 15%, 0.3)'
         }}
       >
         <div className="text-center space-y-3">
