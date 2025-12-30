@@ -264,6 +264,91 @@ export default function LabOps() {
           };
         });
         await supabase.from("lab_ops_inventory_item_costs").insert(invCosts);
+        
+        // 4c. Get or create a storage location for stock levels
+        let storageLocationId: string | null = null;
+        const { data: existingLocations } = await supabase
+          .from("lab_ops_locations")
+          .select("id")
+          .eq("outlet_id", outletId)
+          .eq("type", "storage")
+          .limit(1);
+        
+        if (existingLocations && existingLocations.length > 0) {
+          storageLocationId = existingLocations[0].id;
+        } else {
+          const { data: newLocation } = await supabase
+            .from("lab_ops_locations")
+            .insert({ outlet_id: outletId, name: "Main Storage", type: "storage" })
+            .select("id")
+            .single();
+          storageLocationId = newLocation?.id || null;
+        }
+        
+        // 4d. Create Demo Stock Levels (current stock for each item)
+        if (storageLocationId) {
+          const stockLevels = invData.map((inv) => {
+            const stockMap: Record<string, number> = {
+              "Bourbon Whiskey": 2500,
+              "Vodka Premium": 4200,
+              "Tequila Blanco": 1800,
+              "Gin London Dry": 2700,
+              "Rum White": 1600,
+              "Campari": 1200,
+              "Sweet Vermouth": 800,
+              "Triple Sec": 1300,
+              "Coffee Liqueur": 1100,
+              "Fresh Lime Juice": 1500,
+              "Simple Syrup": 2800,
+              "Fresh Mint": 8,
+              "Angostura Bitters": 400,
+              "Salmon Fillet": 4,
+              "Ribeye Steak": 6,
+              "Pasta Spaghetti": 8,
+              "Parmesan Cheese": 2,
+              "Heavy Cream": 4,
+              "Espresso Coffee": 1.5,
+            };
+            return {
+              inventory_item_id: inv.id,
+              location_id: storageLocationId!,
+              quantity: stockMap[inv.name] || 10,
+            };
+          });
+          await supabase.from("lab_ops_stock_levels").insert(stockLevels);
+        }
+        
+        // 4d. Create Demo Stock Movements (purchases, sales, pours)
+        const now = new Date();
+        const stockMovements: any[] = [];
+        invData.forEach((inv) => {
+          // Add some purchase movements (received stock)
+          stockMovements.push({
+            inventory_item_id: inv.id,
+            movement_type: "purchase",
+            qty: Math.floor(Math.random() * 500) + 500,
+            notes: "Initial stock delivery",
+            created_at: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+          stockMovements.push({
+            inventory_item_id: inv.id,
+            movement_type: "purchase",
+            qty: Math.floor(Math.random() * 300) + 200,
+            notes: "Weekly restock",
+            created_at: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+          // Add some sales movements
+          for (let i = 0; i < 5; i++) {
+            stockMovements.push({
+              inventory_item_id: inv.id,
+              movement_type: "sale",
+              qty: Math.floor(Math.random() * 50) + 10,
+              notes: `Daily sales ${i + 1}`,
+              created_at: new Date(now.getTime() - i * 24 * 60 * 60 * 1000).toISOString(),
+            });
+          }
+        });
+        await supabase.from("lab_ops_stock_movements").insert(stockMovements);
       }
       
       // 5. Create Demo Suppliers
