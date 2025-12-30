@@ -202,11 +202,10 @@ const Auth = () => {
       >
         <div className="text-center space-y-3">
           <div 
-            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl flex items-center justify-center transition-all duration-500 ease-out"
+            className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl flex items-center justify-center transition-all duration-700 ease-out"
             style={{
-              background: 'linear-gradient(145deg, hsl(0, 0%, 8%) 0%, hsl(0, 0%, 5%) 100%)',
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5), 0 0 30px hsl(43, 60%, 40%, 0.08), inset 0 1px 0 hsl(0, 0%, 15%, 0.15)',
-              border: '1px solid hsl(0, 0%, 12%)'
+              background: 'linear-gradient(180deg, hsl(0, 0%, 6%) 0%, hsl(0, 0%, 5%) 100%)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 hsl(0, 0%, 10%, 0.1)'
             }}
           >
             <img 
