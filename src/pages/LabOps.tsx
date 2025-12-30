@@ -1038,31 +1038,51 @@ function POSModule({ outletId }: { outletId: string }) {
       return sum + (mod?.price || 0);
     }, 0);
 
-    const { data, error } = await supabase
-      .from("lab_ops_order_items")
-      .insert({
-        order_id: orderId,
-        menu_item_id: menuItem.id,
-        unit_price: menuItem.base_price + modifierPrice,
-        qty: 1,
-        status: "pending",
-        note: note || null,
-        modifiers: modifierIds.length > 0 ? modifierIds : null,
-      })
-      .select("*, lab_ops_menu_items(name)")
-      .single();
+    // Check if item already exists in order (same menu_item_id, no modifiers, no note)
+    const existingItem = orderItems.find(
+      item => item.menu_item_id === menuItem.id && 
+              !item.modifiers?.length && 
+              !item.note &&
+              modifierIds.length === 0 &&
+              !note
+    );
 
-    if (error) {
-      console.error("Error adding item:", error);
-      toast({ title: "Failed to add item", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    if (data) {
-      const newItems = [...orderItems, data];
+    if (existingItem) {
+      // Increment quantity of existing item
+      const newQty = existingItem.qty + 1;
+      await supabase.from("lab_ops_order_items").update({ qty: newQty }).eq("id", existingItem.id);
+      const newItems = orderItems.map(i => i.id === existingItem.id ? { ...i, qty: newQty } : i);
       setOrderItems(newItems);
       updateOrderTotals(newItems);
-      toast({ title: `Added ${menuItem.name}` });
+      toast({ title: `Added ${menuItem.name} (${newQty})` });
+    } else {
+      // Insert new item
+      const { data, error } = await supabase
+        .from("lab_ops_order_items")
+        .insert({
+          order_id: orderId,
+          menu_item_id: menuItem.id,
+          unit_price: menuItem.base_price + modifierPrice,
+          qty: 1,
+          status: "pending",
+          note: note || null,
+          modifiers: modifierIds.length > 0 ? modifierIds : null,
+        })
+        .select("*, lab_ops_menu_items(name)")
+        .single();
+
+      if (error) {
+        console.error("Error adding item:", error);
+        toast({ title: "Failed to add item", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      if (data) {
+        const newItems = [...orderItems, data];
+        setOrderItems(newItems);
+        updateOrderTotals(newItems);
+        toast({ title: `Added ${menuItem.name}` });
+      }
     }
   };
 

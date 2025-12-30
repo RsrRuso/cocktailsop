@@ -1501,25 +1501,56 @@ export default function StaffPOS() {
         orderId = order.id;
       }
 
-      // Create order items
-      const items = orderItems.map(item => ({
-        order_id: orderId,
-        menu_item_id: item.menu_item_id,
-        qty: item.qty,
-        unit_price: item.price,
-        status: "sent" as const,
-        sent_at: new Date().toISOString(),
-        note: item.note || null,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("lab_ops_order_items")
-        .insert(items);
-
-      if (itemsError) throw itemsError;
-
-      // Update order subtotal if adding to existing order
+      // Handle order items - merge with existing items if adding to existing order
       if (isExistingOrder) {
+        // Get existing items in the order
+        const { data: existingItems } = await supabase
+          .from("lab_ops_order_items")
+          .select("id, menu_item_id, qty")
+          .eq("order_id", orderId);
+        
+        const existingMap = new Map((existingItems || []).map(i => [i.menu_item_id, i]));
+        
+        // Separate items to update vs insert
+        const toUpdate: { id: string; qty: number }[] = [];
+        const toInsert: any[] = [];
+        
+        for (const item of orderItems) {
+          const existing = existingMap.get(item.menu_item_id);
+          if (existing) {
+            // Increment existing item quantity
+            toUpdate.push({ id: existing.id, qty: existing.qty + item.qty });
+          } else {
+            // New item
+            toInsert.push({
+              order_id: orderId,
+              menu_item_id: item.menu_item_id,
+              qty: item.qty,
+              unit_price: item.price,
+              status: "sent" as const,
+              sent_at: new Date().toISOString(),
+              note: item.note || null,
+            });
+          }
+        }
+        
+        // Update existing items
+        for (const upd of toUpdate) {
+          await supabase
+            .from("lab_ops_order_items")
+            .update({ qty: upd.qty })
+            .eq("id", upd.id);
+        }
+        
+        // Insert new items
+        if (toInsert.length > 0) {
+          const { error: insertError } = await supabase
+            .from("lab_ops_order_items")
+            .insert(toInsert);
+          if (insertError) throw insertError;
+        }
+        
+        // Recalculate subtotal
         const { data: allItems } = await supabase
           .from("lab_ops_order_items")
           .select("qty, unit_price")
@@ -1531,6 +1562,23 @@ export default function StaffPOS() {
           .from("lab_ops_orders")
           .update({ subtotal: newSubtotal, total_amount: newSubtotal })
           .eq("id", orderId);
+      } else {
+        // New order - insert all items
+        const items = orderItems.map(item => ({
+          order_id: orderId,
+          menu_item_id: item.menu_item_id,
+          qty: item.qty,
+          unit_price: item.price,
+          status: "sent" as const,
+          sent_at: new Date().toISOString(),
+          note: item.note || null,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("lab_ops_order_items")
+          .insert(items);
+
+        if (itemsError) throw itemsError;
       }
 
       // Update table status
