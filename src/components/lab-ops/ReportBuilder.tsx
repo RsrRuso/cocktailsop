@@ -160,6 +160,8 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
 
     setIsGenerating(true);
     try {
+      console.log("[ReportBuilder] Generating report for outlet:", outletId);
+      
       // Fetch inventory items first to get IDs for filtering
       const inventoryRes = await supabase
         .from("lab_ops_inventory_items")
@@ -169,6 +171,8 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
         `)
         .eq("outlet_id", outletId);
 
+      console.log("[ReportBuilder] Inventory items:", inventoryRes.data?.length || 0, inventoryRes.error);
+      
       const inventoryItemIds = (inventoryRes.data || []).map(i => i.id);
 
       // Fetch remaining data in parallel

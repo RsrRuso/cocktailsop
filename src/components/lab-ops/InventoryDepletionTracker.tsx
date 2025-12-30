@@ -41,7 +41,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "variance" | "low">("all");
-  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
+  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("all"); // Default to all time
 
   useEffect(() => {
     if (outletId) {
@@ -67,6 +67,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
     setIsLoading(true);
     try {
       const dateFilter = getDateFilter();
+      console.log("[DepletionTracker] Fetching data for outlet:", outletId, "dateFilter:", dateFilter);
 
       // Fetch inventory items with stock levels
       const { data: inventoryItems, error: invError } = await supabase
@@ -76,6 +77,8 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           lab_ops_stock_levels (quantity)
         `)
         .eq("outlet_id", outletId);
+      
+      console.log("[DepletionTracker] Inventory items:", inventoryItems?.length || 0, invError);
       
       if (invError) {
         console.error("Error fetching inventory items:", invError);
@@ -189,7 +192,9 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           : 0;
       });
 
-      setItems(Array.from(depletionMap.values()));
+      const finalItems = Array.from(depletionMap.values());
+      console.log("[DepletionTracker] Final items:", finalItems.length, finalItems);
+      setItems(finalItems);
     } catch (error) {
       console.error("Error fetching depletion data:", error);
     } finally {
