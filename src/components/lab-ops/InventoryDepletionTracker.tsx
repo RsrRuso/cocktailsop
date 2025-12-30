@@ -69,25 +69,40 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       const dateFilter = getDateFilter();
 
       // Fetch inventory items with stock levels
-      const { data: inventoryItems } = await supabase
+      const { data: inventoryItems, error: invError } = await supabase
         .from("lab_ops_inventory_items")
         .select(`
           id, name, sku, base_unit, par_level,
           lab_ops_stock_levels (quantity)
         `)
         .eq("outlet_id", outletId);
-
-      // Fetch stock movements for received and sales
-      let movementsQuery = supabase
-        .from("lab_ops_stock_movements")
-        .select("inventory_item_id, qty, movement_type, created_at")
-        .in("movement_type", ["purchase", "sale", "adjustment"]);
       
-      if (dateFilter) {
-        movementsQuery = movementsQuery.gte("created_at", dateFilter);
+      if (invError) {
+        console.error("Error fetching inventory items:", invError);
       }
 
-      const { data: movements } = await movementsQuery;
+      // Get inventory item IDs for this outlet to filter movements
+      const inventoryItemIds = inventoryItems?.map(i => i.id) || [];
+
+      // Fetch stock movements for received and sales - filter by inventory items in this outlet
+      let movements: any[] = [];
+      if (inventoryItemIds.length > 0) {
+        let movementsQuery = supabase
+          .from("lab_ops_stock_movements")
+          .select("inventory_item_id, qty, movement_type, created_at")
+          .in("inventory_item_id", inventoryItemIds)
+          .in("movement_type", ["purchase", "sale", "adjustment"]);
+        
+        if (dateFilter) {
+          movementsQuery = movementsQuery.gte("created_at", dateFilter);
+        }
+
+        const { data, error: movError } = await movementsQuery;
+        if (movError) {
+          console.error("Error fetching movements:", movError);
+        }
+        movements = data || [];
+      }
 
       // Fetch pourer readings (ml_dispensed is the column name)
       let pourerQuery = supabase
