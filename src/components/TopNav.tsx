@@ -368,7 +368,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                   <ChevronDown className="w-3 h-3 opacity-50" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <DropdownMenuItem onClick={() => { lightTap(); navigate("/story-options"); }} className="cursor-pointer pl-7 py-1.5 text-sm hover:bg-white/10">
+                  <DropdownMenuItem onClick={() => { lightTap(); navigate("/ai-credits"); }} className="cursor-pointer pl-7 py-1.5 text-sm hover:bg-white/10">
                     <Sparkles className="w-3.5 h-3.5 mr-2 text-purple-400" />AI Usage & Upgrade
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { lightTap(); navigate("/automations"); }} className="cursor-pointer pl-7 py-1.5 text-sm hover:bg-white/10">
