@@ -271,11 +271,48 @@ export default function StaffPOS() {
 
   const fetchOutlets = async () => {
     try {
-      const { data } = await supabase
+      // Only fetch outlets where the user is an owner OR an active staff member
+      // This prevents random users from seeing outlet lists
+      const currentUserId = user?.id;
+      
+      if (!currentUserId) {
+        // No authenticated user - show no outlets
+        setOutlets([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch outlets owned by this user
+      const { data: ownedOutlets } = await supabase
         .from("lab_ops_outlets")
         .select("id, name")
+        .eq("is_active", true)
+        .eq("user_id", currentUserId);
+
+      // Fetch outlets where user is an active staff member
+      const { data: staffMemberships } = await supabase
+        .from("lab_ops_staff")
+        .select("outlet_id, lab_ops_outlets!inner(id, name, is_active)")
+        .eq("user_id", currentUserId)
         .eq("is_active", true);
-      setOutlets(data || []);
+
+      // Combine and deduplicate outlets
+      const outletMap = new Map<string, Outlet>();
+      
+      ownedOutlets?.forEach((o: any) => {
+        outletMap.set(o.id, { id: o.id, name: o.name });
+      });
+      
+      staffMemberships?.forEach((s: any) => {
+        if (s.lab_ops_outlets?.is_active) {
+          outletMap.set(s.lab_ops_outlets.id, { 
+            id: s.lab_ops_outlets.id, 
+            name: s.lab_ops_outlets.name 
+          });
+        }
+      });
+
+      setOutlets(Array.from(outletMap.values()));
     } catch (error) {
       console.error("Error fetching outlets:", error);
     } finally {

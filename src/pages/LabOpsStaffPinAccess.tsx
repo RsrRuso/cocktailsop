@@ -42,26 +42,62 @@ export default function LabOpsStaffPinAccess() {
 
   const fetchOutlet = async () => {
     try {
-      const { data, error } = await supabase
-        .from("lab_ops_outlets")
-        .select("id, name")
-        .eq("id", outletId)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (error || !data) {
+      // Verify user has access to this outlet (owner or active staff member)
+      const currentUserId = user?.id;
+      
+      if (!currentUserId || !outletId) {
         toast({
-          title: "Outlet not found",
-          description: "This outlet may no longer be active",
+          title: "Access denied",
+          description: "You must be logged in to access this outlet",
           variant: "destructive",
         });
         navigate("/profile");
         return;
       }
 
-      setOutlet(data);
+      // Check if user owns the outlet
+      const { data: ownedOutlet } = await supabase
+        .from("lab_ops_outlets")
+        .select("id, name")
+        .eq("id", outletId)
+        .eq("is_active", true)
+        .eq("user_id", currentUserId)
+        .maybeSingle();
+
+      if (ownedOutlet) {
+        setOutlet(ownedOutlet);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user is active staff at this outlet
+      const { data: staffMembership } = await supabase
+        .from("lab_ops_staff")
+        .select("id, lab_ops_outlets!inner(id, name, is_active)")
+        .eq("outlet_id", outletId)
+        .eq("user_id", currentUserId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (staffMembership?.lab_ops_outlets?.is_active) {
+        setOutlet({
+          id: staffMembership.lab_ops_outlets.id,
+          name: staffMembership.lab_ops_outlets.name,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // User has no access to this outlet
+      toast({
+        title: "Access denied",
+        description: "You are not authorized to access this outlet",
+        variant: "destructive",
+      });
+      navigate("/profile");
     } catch (error) {
       console.error("Error fetching outlet:", error);
+      navigate("/profile");
     } finally {
       setIsLoading(false);
     }

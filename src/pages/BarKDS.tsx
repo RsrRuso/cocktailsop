@@ -172,11 +172,47 @@ export default function BarKDS() {
       }
 
       // No session found, fetch outlets for login
-      const { data } = await supabase
+      // Only show outlets where user is owner or active staff member
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      
+      if (!currentUserId) {
+        setOutlets([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch outlets owned by this user
+      const { data: ownedOutlets } = await supabase
         .from("lab_ops_outlets")
         .select("id, name")
+        .eq("is_active", true)
+        .eq("user_id", currentUserId);
+
+      // Fetch outlets where user is an active staff member
+      const { data: staffMemberships } = await supabase
+        .from("lab_ops_staff")
+        .select("outlet_id, lab_ops_outlets!inner(id, name, is_active)")
+        .eq("user_id", currentUserId)
         .eq("is_active", true);
-      setOutlets(data || []);
+
+      // Combine and deduplicate outlets
+      const outletMap = new Map<string, Outlet>();
+      
+      ownedOutlets?.forEach((o: any) => {
+        outletMap.set(o.id, { id: o.id, name: o.name });
+      });
+      
+      staffMemberships?.forEach((s: any) => {
+        if (s.lab_ops_outlets?.is_active) {
+          outletMap.set(s.lab_ops_outlets.id, { 
+            id: s.lab_ops_outlets.id, 
+            name: s.lab_ops_outlets.name 
+          });
+        }
+      });
+
+      setOutlets(Array.from(outletMap.values()));
       setIsLoading(false);
     };
     
