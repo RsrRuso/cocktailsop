@@ -1353,61 +1353,69 @@ const PurchaseOrders = () => {
           </Button>
         </div>
 
-        {/* Upload/Paste Actions - Compact horizontal row */}
-        <div className="grid grid-cols-3 gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="h-10"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">AI</span> Upload
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowPasteDialog(true)}
-            disabled={isUploading}
-            className="h-10"
-          >
-            <ClipboardPaste className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">AI</span> Paste
-          </Button>
+        {/* Upload/Paste Actions - Scrollable horizontal row on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
           <Button 
             variant="outline" 
             onClick={() => setShowManualPOUpload(true)}
             disabled={isUploading}
-            className="h-10 border-primary/50"
+            className="h-10 shrink-0 border-primary/50 bg-primary/5"
           >
-            <ClipboardPaste className="w-4 h-4 mr-2 text-primary" />
+            <FileText className="w-4 h-4 mr-1.5 text-primary" />
             Manual
           </Button>
           <Button 
             variant="outline" 
             onClick={() => setShowExcelUpload(true)}
             disabled={isUploading}
-            className="h-10 border-green-500/50"
+            className="h-10 shrink-0 border-green-500/50 bg-green-500/5"
           >
-            <FileSpreadsheet className="w-4 h-4 mr-2 text-green-500" />
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-green-500" />
             Excel
           </Button>
           <Button 
             variant="outline" 
             onClick={() => setShowScanner(true)}
             disabled={isUploading}
-            className="h-10 border-primary/50"
+            className="h-10 shrink-0 border-amber-500/50 bg-amber-500/5"
           >
-            <Camera className="w-4 h-4 mr-2 text-primary" />
+            <Camera className="w-4 h-4 mr-1.5 text-amber-500" />
             Scan
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
+          <Button 
+            variant="outline" 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="h-10 shrink-0"
+          >
+            <Upload className="w-4 h-4 mr-1.5" />
+            AI Upload
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPasteDialog(true)}
+            disabled={isUploading}
+            className="h-10 shrink-0"
+          >
+            <ClipboardPaste className="w-4 h-4 mr-1.5" />
+            AI Paste
+          </Button>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        {/* Helper tip for document entry */}
+        <Card className="p-2 bg-primary/5 border-primary/20 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">To enter a PO/Document number:</span> Tap <span className="font-semibold text-primary">Manual</span> or <span className="font-semibold text-green-500">Excel</span> above
+          </p>
+        </Card>
 
         {/* Overview/Orders/Issues/Archive Tabs */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'overview' | 'orders' | 'archive' | 'discrepancies')} className="w-full">

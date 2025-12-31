@@ -1987,7 +1987,7 @@ const POReceivedItems = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header - Clean & Mobile Friendly */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center justify-between px-3 py-3 sm:px-4">
+        <div className="flex items-center justify-between px-3 py-2 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => staffMode ? navigate('/procurement-pin-access') : navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
@@ -2019,51 +2019,55 @@ const POReceivedItems = () => {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowGuide(true)}>
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.csv,.txt,.xlsx,.xls,.png,.jpg,.jpeg"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 px-3 text-xs"
-              onClick={() => setShowManualUpload(true)}
-            >
-              <FileText className="h-3.5 w-3.5 mr-1.5" />
-              Manual
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 px-3 text-xs border-green-500/50"
-              onClick={() => setShowExcelUpload(true)}
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5 text-green-500" />
-              Excel
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 px-3 text-xs"
-              onClick={() => setShowScanner(true)}
-            >
-              <Camera className="h-3.5 w-3.5 mr-1.5" />
-              Scan
-            </Button>
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="h-8 px-3 text-xs"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Upload className={`h-3.5 w-3.5 mr-1.5 ${isUploading ? 'animate-pulse' : ''}`} />
-              {isUploading ? 'Parsing...' : 'Receive'}
-            </Button>
           </div>
+        </div>
+        
+        {/* Action buttons - Scrollable row */}
+        <div className="flex gap-2 overflow-x-auto px-3 pb-2 scrollbar-hide">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.csv,.txt,.xlsx,.xls,.png,.jpg,.jpeg"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="h-9 px-3 text-xs shrink-0 bg-primary"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            <Upload className={`h-3.5 w-3.5 mr-1.5 ${isUploading ? 'animate-pulse' : ''}`} />
+            {isUploading ? 'Parsing...' : 'Receive'}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 px-3 text-xs shrink-0 border-primary/50 bg-primary/5"
+            onClick={() => setShowManualUpload(true)}
+          >
+            <FileText className="h-3.5 w-3.5 mr-1.5 text-primary" />
+            Manual
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 px-3 text-xs shrink-0 border-green-500/50 bg-green-500/5"
+            onClick={() => setShowExcelUpload(true)}
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5 text-green-500" />
+            Excel
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 px-3 text-xs shrink-0 border-amber-500/50 bg-amber-500/5"
+            onClick={() => setShowScanner(true)}
+          >
+            <Camera className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+            Scan
+          </Button>
         </div>
       </div>
 
@@ -2128,6 +2132,14 @@ const POReceivedItems = () => {
             <span className="text-xs sm:text-sm text-muted-foreground">Total Value</span>
           </div>
           <span className="text-lg sm:text-xl font-bold text-green-500">{formatCurrency(calculatedTotalValue)}</span>
+        </Card>
+
+        {/* Helper tip for document entry */}
+        <Card className="p-2 bg-primary/5 border-primary/20 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">To enter a Document number:</span> Tap <span className="font-semibold text-primary">Manual</span> or <span className="font-semibold text-green-500">Excel</span> above
+          </p>
         </Card>
 
         {/* Tabs - Clean 4-column layout */}
