@@ -123,103 +123,79 @@ export const useFeedData = (selectedRegion: string | null) => {
   // INSTANT: Never show loading if we have ANY cached data
   const [isLoading, setIsLoading] = useState(initialPosts.length === 0 && initialReels.length === 0);
 
-  const fetchPosts = useCallback(async () => {
-    // Skip network request if offline - use cached data
+  // Fetch posts and reels together for speed
+  const fetchFeed = useCallback(async () => {
     if (!navigator.onLine) {
-      return posts.length > 0 ? posts : [];
+      return { posts: posts.length > 0 ? posts : [], reels: reels.length > 0 ? reels : [] };
     }
     
     try {
-      // Fetch posts WITHOUT expensive profile joins, but include music fields
-      const { data: postsData, error } = await supabase
-        .from("posts")
-        .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id")
-        .order("created_at", { ascending: false })
-        .limit(INITIAL_LIMIT);
+      // Fetch posts and reels in parallel
+      const [postsResult, reelsResult] = await Promise.all([
+        supabase
+          .from("posts")
+          .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id")
+          .order("created_at", { ascending: false })
+          .limit(INITIAL_LIMIT),
+        supabase
+          .from("reels")
+          .select(`id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id, mute_original_audio, is_image_reel, music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username))`)
+          .order("created_at", { ascending: false })
+          .limit(INITIAL_LIMIT)
+      ]);
 
-      if (error) throw error;
-      if (!postsData) return posts; // Return existing data on empty response
+      const postsData = postsResult.data || [];
+      const reelsData = reelsResult.data || [];
 
-      // Fetch profiles separately in ONE query
-      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      // Collect all unique user IDs from both posts and reels
+      const allUserIds = [...new Set([
+        ...postsData.map(p => p.user_id),
+        ...reelsData.map(r => r.user_id)
+      ])];
+
+      // Single profiles fetch for all users
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, professional_title, badge_level, region')
-        .in('id', userIds);
+        .in('id', allUserIds);
+
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       // Map profiles to posts
       const postsWithProfiles = postsData.map(post => ({
         ...post,
-        profiles: profiles?.find(p => p.id === post.user_id) || null
+        profiles: profilesMap.get(post.user_id) || null
       }));
-
-      // Preload avatars in background for instant display
-      preloadFeedAvatars(postsWithProfiles);
-
-      // Filter by region if needed
-      const filteredPosts = selectedRegion && selectedRegion !== "All"
-        ? postsWithProfiles.filter(p => p.profiles?.region === selectedRegion || p.profiles?.region === "All")
-        : postsWithProfiles;
-
-      setPosts(filteredPosts);
-      return filteredPosts;
-    } catch (error) {
-      // Silently fail and return cached data
-      return posts.length > 0 ? posts : [];
-    }
-  }, [selectedRegion, posts]);
-
-  const fetchReels = useCallback(async () => {
-    // Skip network request if offline - use cached data
-    if (!navigator.onLine) {
-      return reels.length > 0 ? reels : [];
-    }
-    
-    try {
-      // Fetch reels WITH music track info
-      const { data: reelsData, error } = await supabase
-        .from("reels")
-        .select(`
-          id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at,
-          music_url, music_track_id, mute_original_audio, is_image_reel,
-          music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username))
-        `)
-        .order("created_at", { ascending: false })
-        .limit(INITIAL_LIMIT);
-
-      if (error) throw error;
-      if (!reelsData) return reels; // Return existing data on empty response
-
-      // Fetch profiles separately in ONE query
-      const userIds = [...new Set(reelsData.map(r => r.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url, professional_title, badge_level, region')
-        .in('id', userIds);
 
       // Map profiles to reels
       const reelsWithProfiles: Reel[] = (reelsData as any[]).map(reel => ({
         ...reel,
-        profiles: profiles?.find(p => p.id === reel.user_id) || null
+        profiles: profilesMap.get(reel.user_id) || null
       }));
 
-      // Preload avatars in background for instant display
-      preloadFeedAvatars(reelsWithProfiles);
+      // Preload avatars
+      preloadFeedAvatars([...postsWithProfiles, ...reelsWithProfiles]);
 
-      const hydrated = await hydrateReelsMusicTracks(reelsWithProfiles);
+      // Hydrate music tracks (non-blocking)
+      const hydratedReels = await hydrateReelsMusicTracks(reelsWithProfiles);
 
-      // Filter by region if needed
+      // Filter by region
+      const filteredPosts = selectedRegion && selectedRegion !== "All"
+        ? postsWithProfiles.filter(p => p.profiles?.region === selectedRegion || p.profiles?.region === "All")
+        : postsWithProfiles;
+
       const filteredReels = selectedRegion && selectedRegion !== "All"
-        ? hydrated.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
-        : hydrated;
+        ? hydratedReels.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
+        : hydratedReels;
 
+      setPosts(filteredPosts);
       setReels(filteredReels);
-      return filteredReels;
+      
+      return { posts: filteredPosts, reels: filteredReels };
     } catch (error) {
-      // Silently fail and return cached data
-      return reels.length > 0 ? reels : [];
+      return { posts: posts.length > 0 ? posts : [], reels: reels.length > 0 ? reels : [] };
     }
-  }, [selectedRegion, reels]);
+  }, [selectedRegion, posts, reels]);
 
   const refreshFeed = useCallback(async (forceRefresh: boolean = false) => {
     // Instant display from cache - skip network completely if valid
@@ -228,7 +204,7 @@ export const useFeedData = (selectedRegion: string | null) => {
       if (reels.length === 0) setReels(feedCache!.reels);
       setIsLoading(false);
 
-      // Hydrate cached reels music labels in background (so "Added Music" becomes the real track title)
+      // Hydrate cached reels music labels in background
       void (async () => {
         try {
           const updated = await hydrateReelsMusicTracks(feedCache!.reels);
@@ -244,12 +220,13 @@ export const useFeedData = (selectedRegion: string | null) => {
 
     // Only show loading if no cached data to display
     if (!feedCache) setIsLoading(true);
-    const [fetchedPosts, fetchedReels] = await Promise.all([fetchPosts(), fetchReels()]);
+    
+    const result = await fetchFeed();
     
     // Update cache
     feedCache = {
-      posts: fetchedPosts || [],
-      reels: fetchedReels || [],
+      posts: result.posts || [],
+      reels: result.reels || [],
       timestamp: Date.now(),
       region: selectedRegion
     };
@@ -258,7 +235,7 @@ export const useFeedData = (selectedRegion: string | null) => {
     saveToStorage(feedCache);
     
     setIsLoading(false);
-  }, [fetchPosts, fetchReels, selectedRegion]);
+  }, [fetchFeed, selectedRegion]);
 
   useEffect(() => {
     // Only fetch once on mount, not when refreshFeed changes

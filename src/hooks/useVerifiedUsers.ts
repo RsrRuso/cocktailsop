@@ -62,7 +62,9 @@ export const useVerifiedUsers = (userIds: string[]) => {
   useEffect(() => {
     const validIds = userIds.filter(Boolean);
     if (validIds.length > 0) {
-      fetchVerifiedStatus(validIds);
+      // Debounce to avoid multiple rapid calls
+      const timer = setTimeout(() => fetchVerifiedStatus(validIds), 50);
+      return () => clearTimeout(timer);
     }
   }, [userIds.join(','), fetchVerifiedStatus]);
   
