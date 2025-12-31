@@ -14727,6 +14727,48 @@ export type Database = {
           },
         ]
       }
+      supplier_document_templates: {
+        Row: {
+          column_mapping: Json
+          created_at: string
+          delimiter: string | null
+          document_type: string | null
+          id: string
+          is_default: boolean | null
+          supplier_name: string
+          template_name: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          column_mapping?: Json
+          created_at?: string
+          delimiter?: string | null
+          document_type?: string | null
+          id?: string
+          is_default?: boolean | null
+          supplier_name: string
+          template_name: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          column_mapping?: Json
+          created_at?: string
+          delimiter?: string | null
+          document_type?: string | null
+          id?: string
+          is_default?: boolean | null
+          supplier_name?: string
+          template_name?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       task_activity: {
         Row: {
           action: string

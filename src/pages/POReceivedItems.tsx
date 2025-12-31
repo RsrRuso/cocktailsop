@@ -3271,6 +3271,7 @@ const POReceivedItems = () => {
         }}
         currencySymbol={currencySymbols[currency]}
         type="receiving"
+        workspaceId={selectedWorkspaceId}
       />
 
     </div>

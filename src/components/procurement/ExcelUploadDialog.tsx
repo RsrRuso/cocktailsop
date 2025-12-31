@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileSpreadsheet, Upload, ArrowRight, Save, X, ShoppingCart, Wrench, Wine, AlertTriangle } from "lucide-react";
+import { FileSpreadsheet, Upload, ArrowRight, Save, X, ShoppingCart, Wrench, Wine, AlertTriangle, BookTemplate, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useDropzone } from "react-dropzone";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ParsedItem {
   item_code: string;
@@ -20,6 +23,20 @@ interface ParsedItem {
   price: number;
   total: number;
   selected: boolean;
+}
+
+interface SupplierTemplate {
+  id: string;
+  supplier_name: string;
+  template_name: string;
+  column_mapping: {
+    code: number;
+    name: number;
+    qty: number;
+    unit: number;
+    price: number;
+  };
+  is_default: boolean;
 }
 
 interface ExcelUploadDialogProps {
@@ -33,6 +50,7 @@ interface ExcelUploadDialogProps {
   }) => Promise<void>;
   currencySymbol: string;
   type: 'po' | 'receiving';
+  workspaceId?: string | null;
 }
 
 export const ExcelUploadDialog = ({
@@ -40,8 +58,12 @@ export const ExcelUploadDialog = ({
   onOpenChange,
   onConfirmSave,
   currencySymbol,
-  type
+  type,
+  workspaceId
 }: ExcelUploadDialogProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
   const [step, setStep] = useState<'upload' | 'map' | 'review'>('upload');
   const [docNumber, setDocNumber] = useState("");
   const [supplier, setSupplier] = useState("");
@@ -61,6 +83,36 @@ export const ExcelUploadDialog = ({
   const [isSaving, setIsSaving] = useState(false);
   const [workbookData, setWorkbookData] = useState<any>(null);
   const [fileName, setFileName] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [templateName, setTemplateName] = useState("");
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+  // Fetch saved templates
+  const { data: templates } = useQuery({
+    queryKey: ['supplier-templates', user?.id, workspaceId, type],
+    queryFn: async () => {
+      if (!user) return [];
+      let query = supabase
+        .from('supplier_document_templates')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('document_type', type);
+      
+      if (workspaceId) {
+        query = query.eq('workspace_id', workspaceId);
+      } else {
+        query = query.is('workspace_id', null);
+      }
+      
+      const { data, error } = await query.order('supplier_name');
+      if (error) throw error;
+      return (data || []).map(t => ({
+        ...t,
+        column_mapping: t.column_mapping as unknown as SupplierTemplate['column_mapping']
+      })) as SupplierTemplate[];
+    },
+    enabled: !!user && open
+  });
 
   // Detect document type from code
   const docType = useMemo(() => {
@@ -276,6 +328,79 @@ export const ExcelUploadDialog = ({
     setItems([]);
     setWorkbookData(null);
     setFileName("");
+    setSelectedTemplateId("");
+    setTemplateName("");
+    setShowSaveTemplate(false);
+  };
+
+  // Load a saved template
+  const handleLoadTemplate = (templateId: string) => {
+    const template = templates?.find(t => t.id === templateId);
+    if (!template) return;
+    
+    setSelectedTemplateId(templateId);
+    setSupplier(template.supplier_name);
+    setColumnMap(template.column_mapping);
+    toast.success(`Loaded template: ${template.template_name}`);
+  };
+
+  // Save current mapping as template
+  const handleSaveTemplate = async () => {
+    if (!user) {
+      toast.error("Please sign in to save templates");
+      return;
+    }
+    if (!templateName.trim()) {
+      toast.error("Enter a template name");
+      return;
+    }
+    if (!supplier.trim()) {
+      toast.error("Enter a supplier name");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('supplier_document_templates')
+        .insert({
+          user_id: user.id,
+          workspace_id: workspaceId || null,
+          supplier_name: supplier.trim(),
+          template_name: templateName.trim(),
+          column_mapping: columnMap,
+          document_type: type,
+          is_default: false
+        });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['supplier-templates'] });
+      setShowSaveTemplate(false);
+      setTemplateName("");
+      toast.success(`Template "${templateName}" saved for ${supplier}`);
+    } catch (err: any) {
+      toast.error("Failed to save template: " + err.message);
+    }
+  };
+
+  // Delete a template
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('supplier_document_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['supplier-templates'] });
+      if (selectedTemplateId === templateId) {
+        setSelectedTemplateId("");
+      }
+      toast.success("Template deleted");
+    } catch (err: any) {
+      toast.error("Failed to delete: " + err.message);
+    }
   };
 
   const stats = useMemo(() => {
@@ -392,9 +517,79 @@ export const ExcelUploadDialog = ({
 
         {step === 'map' && (
           <div className="space-y-4">
+            {/* Template selector */}
+            {templates && templates.length > 0 && (
+              <Card className="p-3 bg-primary/5 border-primary/20">
+                <div className="flex items-center gap-3">
+                  <BookTemplate className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <Label className="text-xs">Load Saved Template</Label>
+                    <Select value={selectedTemplateId} onValueChange={handleLoadTemplate}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Select a supplier template..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map(t => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.supplier_name} - {t.template_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedTemplateId && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => handleDeleteTemplate(selectedTemplateId)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            )}
+
             <Card className="p-4">
-              <h4 className="font-medium mb-3">Column Mapping</h4>
-              <p className="text-sm text-muted-foreground mb-3">Map your Excel columns to the required fields</p>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-medium">Column Mapping</h4>
+                  <p className="text-sm text-muted-foreground">Map your Excel columns to the required fields</p>
+                </div>
+                {user && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowSaveTemplate(!showSaveTemplate)}
+                  >
+                    <BookTemplate className="w-4 h-4 mr-1" />
+                    {showSaveTemplate ? 'Cancel' : 'Save Template'}
+                  </Button>
+                )}
+              </div>
+
+              {showSaveTemplate && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg border">
+                  <Label className="text-xs">Template Name</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      placeholder="e.g. Fresh Produce Format"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      className="h-8"
+                    />
+                    <Button size="sm" onClick={handleSaveTemplate}>
+                      <Save className="w-4 h-4 mr-1" />
+                      Save
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Saves current mapping for supplier: {supplier || '(enter supplier above)'}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-5 gap-3">
                 {['Item Code', 'Item Name *', 'Quantity *', 'Unit', 'Price'].map((label, idx) => {
                   const field = ['code', 'name', 'qty', 'unit', 'price'][idx] as keyof typeof columnMap;

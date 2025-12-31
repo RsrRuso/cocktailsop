@@ -2092,6 +2092,7 @@ Example format:
         }}
         currencySymbol={currencySymbols[currency]}
         type="po"
+        workspaceId={selectedWorkspaceId}
       />
 
     </div>
