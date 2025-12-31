@@ -1,4 +1,4 @@
-import { Sparkles, Zap, TrendingUp } from 'lucide-react';
+import { Sparkles, Zap, TrendingUp, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAICredits } from './AICreditsProvider';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +16,11 @@ export function AICreditsDisplay({
   showBuyButton = true,
   onBuyClick 
 }: AICreditsDisplayProps) {
-  const { credits, isLoading, isPremium, setShowUpgradePrompt } = useAICredits();
+  const { requestsUsed, requestsLimit, isLoading, isPremium, usagePercentage, setShowUpgradePrompt } = useAICredits();
   
-  const maxCredits = 100;
-  const percentage = Math.min((credits / maxCredits) * 100, 100);
-  const isLow = credits <= 3;
-  const isCritical = credits <= 1;
+  const remaining = Math.max(0, requestsLimit - requestsUsed);
+  const isLow = usagePercentage >= 70;
+  const isCritical = usagePercentage >= 90;
 
   const handleBuyClick = () => {
     if (onBuyClick) {
@@ -44,7 +43,7 @@ export function AICreditsDisplay({
         className="gap-1 font-mono"
       >
         <Sparkles className="w-3 h-3" />
-        {credits}
+        {remaining}/{requestsLimit}
       </Badge>
     );
   }
@@ -70,11 +69,11 @@ export function AICreditsDisplay({
           }`} />
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">AI Credits</span>
+          <span className="text-xs text-muted-foreground">AI Requests</span>
           <span className={`font-bold text-sm ${
             isCritical ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-foreground'
           }`}>
-            {credits}
+            {remaining} left
           </span>
         </div>
         {isPremium && (
@@ -99,36 +98,50 @@ export function AICreditsDisplay({
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">AI Credits</h3>
-            <p className="text-xs text-muted-foreground">Power your creativity</p>
+            <h3 className="font-semibold text-sm">AI Usage</h3>
+            <p className="text-xs text-muted-foreground">This month</p>
           </div>
         </div>
-        {isPremium && (
+        {isPremium ? (
           <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
             <TrendingUp className="w-3 h-3 mr-1" />
             Premium
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="text-xs">
+            Free Tier
           </Badge>
         )}
       </div>
 
       <div className="space-y-2">
         <div className="flex items-end justify-between">
-          <span className={`text-3xl font-bold ${
-            isCritical ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-foreground'
-          }`}>
-            {credits}
-          </span>
-          <span className="text-xs text-muted-foreground">credits remaining</span>
+          <div>
+            <span className={`text-3xl font-bold ${
+              isCritical ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-foreground'
+            }`}>
+              {requestsUsed}
+            </span>
+            <span className="text-muted-foreground text-lg">/{requestsLimit}</span>
+          </div>
+          <span className="text-xs text-muted-foreground">requests used</span>
         </div>
         <Progress 
-          value={percentage} 
+          value={usagePercentage} 
           className={`h-2 ${
             isCritical ? '[&>div]:bg-destructive' : isLow ? '[&>div]:bg-amber-500' : ''
           }`}
         />
       </div>
 
-      {isLow && showBuyButton && (
+      {isCritical && (
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <AlertTriangle className="w-4 h-4" />
+          <span>Almost at limit! Upgrade to continue.</span>
+        </div>
+      )}
+
+      {(isLow || !isPremium) && showBuyButton && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
@@ -138,17 +151,14 @@ export function AICreditsDisplay({
             className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
           >
             <Zap className="w-4 h-4 mr-2" />
-            Get More Credits
+            {isPremium ? 'Add More Requests' : 'Upgrade to Premium'}
           </Button>
         </motion.div>
       )}
 
-      <div className="text-xs text-muted-foreground text-center">
-        {isCritical 
-          ? '⚠️ Running low! Get more credits to continue using AI features.'
-          : isLow 
-            ? '💡 Consider getting more credits soon.'
-            : '✨ Use AI to enhance your content.'}
+      <div className="text-xs text-muted-foreground text-center space-y-1">
+        <p>{isPremium ? '✨ Premium: 500 requests/month' : '🎁 Free: 50 requests/month'}</p>
+        <p className="opacity-70">Resets on the 1st of each month</p>
       </div>
     </motion.div>
   );
