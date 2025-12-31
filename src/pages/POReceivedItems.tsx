@@ -608,6 +608,24 @@ const POReceivedItems = () => {
   const handleTransferDocument = async (parsed: any, documentCode: string) => {
     if (!user) return;
     
+    // Check for duplicate document number
+    let duplicateQuery = supabase
+      .from('po_received_records')
+      .select('id')
+      .eq('document_number', documentCode);
+    
+    if (selectedWorkspaceId) {
+      duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+    } else {
+      duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+    }
+    
+    const { data: existing } = await duplicateQuery;
+    if (existing && existing.length > 0) {
+      toast.error(`Document "${documentCode}" already exists`);
+      return;
+    }
+    
     const receivedDate = new Date().toISOString().split('T')[0];
     
     // Sum quantities for repeated items (by item_code or item_name)
@@ -1186,6 +1204,24 @@ const POReceivedItems = () => {
     
     const receivedDate = new Date().toISOString().split('T')[0];
     const docNumber = enhancedReceivingData?.doc_no || `RCV-${Date.now()}`;
+    
+    // Check for duplicate document number
+    let duplicateQuery = supabase
+      .from('po_received_records')
+      .select('id')
+      .eq('document_number', docNumber);
+    
+    if (selectedWorkspaceId) {
+      duplicateQuery = duplicateQuery.eq('workspace_id', selectedWorkspaceId);
+    } else {
+      duplicateQuery = duplicateQuery.eq('user_id', user?.id).is('workspace_id', null);
+    }
+    
+    const { data: existing } = await duplicateQuery;
+    if (existing && existing.length > 0) {
+      toast.error(`Document "${docNumber}" already exists`);
+      return;
+    }
     
     // Calculate totals from confirmed items only
     const totalQty = receivedItemsList.reduce((sum, i) => sum + i.quantity, 0);
