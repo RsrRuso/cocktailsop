@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft, Brain, Target, Bug, Music } from "lucide-react";
+import { MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft, Brain, Target, Bug, Music, Sparkles } from "lucide-react";
 import { MatrixInsightsTab } from "@/components/matrix/MatrixInsightsTab";
 import { MatrixChatTab } from "@/components/matrix/MatrixChatTab";
 import { MatrixCareerTab } from "@/components/matrix/MatrixCareerTab";
@@ -13,6 +13,7 @@ import { MatrixPatternsTab } from "@/components/matrix/MatrixPatternsTab";
 import { MatrixAdminTab } from "@/components/matrix/MatrixAdminTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
+import { AICreditsDisplay } from "@/components/ai";
 
 export default function MatrixAI() {
   const { profile } = useAuth();
@@ -45,7 +46,8 @@ export default function MatrixAI() {
               <span className="text-base font-semibold">MATRIX</span>
             </div>
 
-            <div className="w-10" />
+            {/* AI Usage Display */}
+            <AICreditsDisplay variant="compact" />
           </div>
         </div>
 

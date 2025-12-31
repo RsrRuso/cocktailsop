@@ -16,6 +16,7 @@ import MusicStatusDialog from "@/components/MusicStatusDialog";
 import LivestreamStartDialog from "@/components/LivestreamStartDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AICreditsDisplay } from "@/components/ai";
 
 interface AIInsight {
   type: string;
@@ -166,11 +167,11 @@ const StoryOptions = () => {
             </h2>
             <p className="text-muted-foreground text-sm">AI-powered content creation</p>
           </div>
-          <Badge variant="secondary" className="bg-gradient-to-r from-primary/20 to-accent/20 border-primary/30">
-            <Brain className="w-3 h-3 mr-1" />
-            AI Ready
-          </Badge>
+          <AICreditsDisplay variant="compact" />
         </div>
+
+        {/* AI Usage Card */}
+        <AICreditsDisplay variant="full" />
 
         {/* AI Insights Card */}
         <motion.div
