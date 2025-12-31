@@ -198,6 +198,7 @@ const StoreManagementPinAccess = lazy(() => import("@/pages/StoreManagementPinAc
 const StoreManagementTrainingGuide = lazy(() => import("@/pages/StoreManagementTrainingGuide"));
 const CampaignPayment = lazy(() => import("@/pages/CampaignPayment"));
 const HRDashboard = lazy(() => import("@/pages/HRDashboard"));
+const AICreditsPage = lazy(() => import("@/pages/AICredits"));
 
 // Pre-Opening Package
 const PreOpeningPackage = lazy(() => import("@/pages/PreOpeningPackage"));
@@ -376,6 +377,7 @@ const AppContent = () => {
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
           <Route path="/automations" element={<Automations />} />
+          <Route path="/ai-credits" element={<AICreditsPage />} />
           <Route path="/financial-reports" element={<FinancialReportsHub />} />
           <Route path="/reports/profit-loss" element={<ProfitLossReport />} />
           <Route path="/reports/daily-sales" element={<DailySalesReport />} />

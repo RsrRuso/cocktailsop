@@ -25,11 +25,11 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { priceId, quantity = 1, order_id } = await req.json();
+    const { priceId, quantity = 1, order_id, mode = 'payment' } = await req.json();
     if (!priceId) {
       throw new Error("priceId is required");
     }
-    logStep("Received request", { priceId, quantity, order_id });
+    logStep("Received request", { priceId, quantity, order_id, mode });
 
     // Get authenticated user (optional for one-time payments)
     const authHeader = req.headers.get("Authorization");
@@ -60,6 +60,8 @@ serve(async (req) => {
 
     // Create checkout session
     const origin = req.headers.get("origin") || "http://localhost:8080";
+    const isSubscription = mode === 'subscription';
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
@@ -69,11 +71,13 @@ serve(async (req) => {
           quantity: quantity,
         },
       ],
-      mode: "payment",
-      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/cart`,
+      mode: isSubscription ? "subscription" : "payment",
+      success_url: isSubscription 
+        ? `${origin}/ai-credits?success=true`
+        : `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: isSubscription ? `${origin}/ai-credits` : `${origin}/cart`,
       allow_promotion_codes: true,
-      billing_address_collection: "required",
+      billing_address_collection: isSubscription ? undefined : "required",
       metadata: order_id ? { order_id } : {}
     });
 
