@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
-  ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
+  ArrowLeft, Upload, Camera, Plus, Trash2, FileText, FileSpreadsheet,
   DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp, Users, Coins, HelpCircle, Archive, AlertTriangle, Smartphone, RefreshCw, Film, BarChart3, Download
 } from "lucide-react";
 import jsPDF from "jspdf";
@@ -25,6 +25,7 @@ import autoTable from "jspdf-autotable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrdersGuide } from "@/components/procurement/PurchaseOrdersGuide";
 import { ManualPOUploadDialog } from "@/components/procurement/ManualPOUploadDialog";
+import { ExcelUploadDialog } from "@/components/procurement/ExcelUploadDialog";
 import { DocumentScanner } from "@/components/procurement/DocumentScanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
@@ -113,6 +114,7 @@ const PurchaseOrders = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
   const [showManualPOUpload, setShowManualPOUpload] = useState(false);
+  const [showExcelUpload, setShowExcelUpload] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
@@ -1382,6 +1384,15 @@ const PurchaseOrders = () => {
           </Button>
           <Button 
             variant="outline" 
+            onClick={() => setShowExcelUpload(true)}
+            disabled={isUploading}
+            className="h-10 border-green-500/50"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2 text-green-500" />
+            Excel
+          </Button>
+          <Button 
+            variant="outline" 
             onClick={() => setShowScanner(true)}
             disabled={isUploading}
             className="h-10 border-primary/50"
@@ -2048,6 +2059,31 @@ Example format:
             }
           }, 100);
         }}
+      />
+
+      {/* Excel Upload Dialog */}
+      <ExcelUploadDialog
+        open={showExcelUpload}
+        onOpenChange={setShowExcelUpload}
+        onConfirmSave={async (data) => {
+          // Transform Excel data to match handleManualPOSave format
+          await handleManualPOSave({
+            docNumber: data.docNumber,
+            supplier: data.supplier,
+            orderDate: data.orderDate || new Date().toISOString().split('T')[0],
+            items: data.items.map(item => ({
+              item_code: item.item_code,
+              item_name: item.item_name,
+              quantity: item.quantity,
+              unit: item.unit,
+              price_per_unit: item.price,
+              price_total: item.total,
+              selected: true
+            }))
+          });
+        }}
+        currencySymbol={currencySymbols[currency]}
+        type="po"
       />
 
     </div>
