@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import svLogo from "@/assets/sv-logo.png";
+import svLogo from "@/assets/sv-logo-optimized.webp";
 import { cn } from "@/lib/utils";
 
 interface SVLogoProps {
