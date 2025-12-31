@@ -69,16 +69,35 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   // Global mute state is controlled by the user
   const isUserMuted = mutedVideos.has(reel.id);
 
-  // Reset loading state when video URL changes
+  // Reset loading state when video URL changes - but mark as loaded if very close to current
   useEffect(() => {
-    setIsVideoLoaded(false);
-  }, [reel.video_url]);
+    // If this is the current or adjacent reel, assume video will load fast
+    const isNearCurrent = Math.abs(index - currentIndex) <= 1;
+    setIsVideoLoaded(isNearCurrent);
+  }, [reel.video_url, index, currentIndex]);
 
-  // Preload adjacent videos aggressively (skip for image reels)
+  // Aggressive video preloading - start loading immediately for nearby reels
   useEffect(() => {
     if (isImageReel) return;
-    if (videoRef.current && Math.abs(index - currentIndex) <= 2) {
-      videoRef.current.load();
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const distance = Math.abs(index - currentIndex);
+    
+    // Current reel: load immediately with high priority
+    if (distance === 0) {
+      video.preload = 'auto';
+      (video as any).fetchPriority = 'high';
+      video.load();
+    }
+    // Adjacent reels: preload in background
+    else if (distance <= 2) {
+      video.preload = 'auto';
+      video.load();
+    }
+    // Far reels: only load metadata
+    else if (distance <= 4) {
+      video.preload = 'metadata';
     }
   }, [index, currentIndex, isImageReel]);
 
@@ -191,9 +210,13 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           playsInline
           autoPlay
           muted={shouldMuteVideo || isUserMuted}
-          preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
+          preload="auto"
           onLoadedData={() => setIsVideoLoaded(true)}
           onCanPlay={() => setIsVideoLoaded(true)}
+          onLoadedMetadata={() => {
+            // Mark as ready even on metadata for faster perceived load
+            if (Math.abs(index - currentIndex) <= 1) setIsVideoLoaded(true);
+          }}
         />
       )}
 

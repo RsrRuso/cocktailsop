@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Music, ArrowLeft } from "lucide-react";
+import { Music, ArrowLeft, WifiOff } from "lucide-react";
 
 import { toast } from "sonner";
 import CommentsDialog from "@/components/CommentsDialog";
@@ -9,6 +9,8 @@ import ShareDialog from "@/components/ShareDialog";
 import LikesDialog from "@/components/LikesDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { ReelItemWrapper } from "@/components/ReelItemWrapper";
+import { preloadReelVideos, getConnectionQuality } from "@/lib/mediaPreloader";
+import { preloadFeedAvatars } from "@/lib/avatarCache";
 import { useEngagement } from "@/hooks/useEngagement";
 
 interface Reel {
@@ -40,6 +42,30 @@ interface Reel {
   } | null;
 }
 
+// LocalStorage cache for instant cold starts
+const REELS_CACHE_KEY = 'reels_cache_v1';
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+const loadCachedReels = (): Reel[] => {
+  try {
+    const cached = localStorage.getItem(REELS_CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < CACHE_TTL) return data;
+    }
+  } catch {}
+  return [];
+};
+
+const saveCachedReels = (reels: Reel[]) => {
+  try {
+    localStorage.setItem(REELS_CACHE_KEY, JSON.stringify({
+      data: reels.slice(0, 20), // Cache first 20 reels
+      timestamp: Date.now()
+    }));
+  } catch {}
+};
+
 const Reels = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,7 +77,12 @@ const Reels = () => {
   } | null;
   const hasTargetReel = !!(initialState?.scrollToReelId || initialState?.reelData);
 
-  const [reels, setReels] = useState<Reel[]>(() => (initialState?.reelData ? [initialState.reelData] : []));
+  // INSTANT: Load from cache immediately
+  const cachedReels = useMemo(() => loadCachedReels(), []);
+  const [reels, setReels] = useState<Reel[]>(() => {
+    if (initialState?.reelData) return [initialState.reelData];
+    return cachedReels;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showShare, setShowShare] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
@@ -59,11 +90,13 @@ const Reels = () => {
   const [selectedReelVideo, setSelectedReelVideo] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [selectedReelForComments, setSelectedReelForComments] = useState("");
-  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set()); // Start unmuted by default
+  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
   const [targetReelId, setTargetReelId] = useState<string | null>(() => initialState?.scrollToReelId ?? null);
-  const [isLoading, setIsLoading] = useState(() => Boolean(user) && !initialState?.reelData);
+  // INSTANT: No loading if we have cached data
+  const [isLoading, setIsLoading] = useState(() => cachedReels.length === 0 && Boolean(user) && !initialState?.reelData);
+  const [connectionQuality, setConnectionQuality] = useState<'fast' | 'slow' | 'offline'>(() => getConnectionQuality());
 
   // Optimistic like count updater
   const handleLikeCountChange = useCallback((reelId: string, type: 'like' | 'save' | 'repost', delta: number) => {
@@ -126,8 +159,39 @@ const Reels = () => {
     }
   }, [reels, targetReelId]);
 
+  // Monitor connection quality
+  useEffect(() => {
+    const updateConnection = () => setConnectionQuality(getConnectionQuality());
+    window.addEventListener('online', updateConnection);
+    window.addEventListener('offline', updateConnection);
+    const conn = (navigator as any).connection;
+    conn?.addEventListener?.('change', updateConnection);
+    return () => {
+      window.removeEventListener('online', updateConnection);
+      window.removeEventListener('offline', updateConnection);
+      conn?.removeEventListener?.('change', updateConnection);
+    };
+  }, []);
+
+  // Preload videos when reels change or index changes
+  useEffect(() => {
+    if (reels.length > 0 && connectionQuality !== 'offline') {
+      preloadReelVideos(reels, currentIndex);
+      // Also preload avatars
+      preloadFeedAvatars(reels);
+    }
+  }, [reels, currentIndex, connectionQuality]);
+
   const fetchReels = async () => {
-    setIsLoading(true);
+    // If offline, use cached data
+    if (!navigator.onLine) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Only show loading if no cached data
+    if (reels.length === 0) setIsLoading(true);
+    
     const { data, error } = await supabase
       .from("reels")
       .select(`
@@ -136,7 +200,7 @@ const Reels = () => {
         music_tracks:music_track_id(title, preview_url, original_url, profiles:uploaded_by(username))
       `)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(20);
 
     if (error || !data) {
       setIsLoading(false);
@@ -180,8 +244,12 @@ const Reels = () => {
     }
 
     setReels(finalReels as any);
+    // Cache for instant next load
+    saveCachedReels(finalReels);
+    // Preload videos immediately
+    preloadReelVideos(finalReels, 0);
+    preloadFeedAvatars(finalReels);
     setIsLoading(false);
-    // Videos start unmuted - no need to add to mutedVideos set
   };
 
   const handleLikeReel = useCallback((reelId: string) => {
@@ -263,9 +331,20 @@ const Reels = () => {
             const scrollTop = e.currentTarget.scrollTop;
             const windowHeight = window.innerHeight;
             const newIndex = Math.round(scrollTop / windowHeight);
-            if (newIndex !== currentIndex) setCurrentIndex(newIndex);
+            if (newIndex !== currentIndex) {
+              setCurrentIndex(newIndex);
+              // Preload next batch of videos on scroll
+              preloadReelVideos(reels, newIndex);
+            }
           }}
         >
+          {/* Offline indicator */}
+          {connectionQuality === 'offline' && (
+            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-40 bg-yellow-500/90 text-black text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <WifiOff className="w-3 h-3" />
+              Offline - Showing cached reels
+            </div>
+          )}
           {reels.map((reel, index) => (
             <div 
               key={reel.id}
