@@ -119,19 +119,25 @@ export const ExcelUploadDialog = ({
     const newMap = { code: -1, name: -1, qty: -1, unit: -1, price: -1 };
     
     lowerHeaders.forEach((h, i) => {
-      if (h.includes('code') || h.includes('item_code') || h.includes('sku') || h.includes('id')) {
+      // Item code - specifically match code-related headers but NOT name headers
+      if ((h.includes('code') || h.includes('sku') || h.includes('itemcode')) && !h.includes('name')) {
         if (newMap.code === -1) newMap.code = i;
       }
-      if (h.includes('name') || h.includes('description') || h.includes('item') || h.includes('product')) {
+      // Item name - match name headers but NOT code headers
+      if ((h.includes('name') || h.includes('description') || h.includes('itemname')) && !h.includes('code')) {
         if (newMap.name === -1) newMap.name = i;
       }
-      if (h.includes('qty') || h.includes('quantity') || h.includes('amount') || h.includes('count')) {
+      // Fallback for generic 'item' or 'product' headers only if we haven't found name yet
+      if (newMap.name === -1 && (h === 'item' || h === 'product' || h.includes('product'))) {
+        newMap.name = i;
+      }
+      if (h.includes('qty') || h.includes('quantity') || h.includes('count')) {
         if (newMap.qty === -1) newMap.qty = i;
       }
       if (h.includes('unit') || h.includes('uom') || h.includes('measure')) {
         if (newMap.unit === -1) newMap.unit = i;
       }
-      if (h.includes('price') || h.includes('cost') || h.includes('rate') || h.includes('value')) {
+      if (h.includes('price') || h.includes('cost') || h.includes('rate')) {
         if (newMap.price === -1) newMap.price = i;
       }
     });
