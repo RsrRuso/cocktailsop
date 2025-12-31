@@ -61,6 +61,69 @@ export type Database = {
           },
         ]
       }
+      ai_credit_packages: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      ai_credit_transactions: {
+        Row: {
+          created_at: string
+          credits_amount: number
+          description: string | null
+          feature_used: string | null
+          id: string
+          stripe_session_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_amount: number
+          description?: string | null
+          feature_used?: string | null
+          id?: string
+          stripe_session_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_amount?: number
+          description?: string | null
+          feature_used?: string | null
+          id?: string
+          stripe_session_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       approval_comments: {
         Row: {
           approval_request_id: string
@@ -15702,6 +15765,36 @@ export type Database = {
           },
         ]
       }
+      user_ai_credits: {
+        Row: {
+          created_at: string
+          credits_balance: number
+          id: string
+          total_purchased: number
+          total_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_balance?: number
+          id?: string
+          total_purchased?: number
+          total_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_balance?: number
+          id?: string
+          total_purchased?: number
+          total_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_locations: {
         Row: {
           accuracy: number | null
@@ -17169,6 +17262,15 @@ export type Database = {
         }
         Returns: Json
       }
+      add_ai_credits: {
+        Args: {
+          p_credits: number
+          p_stripe_session_id?: string
+          p_transaction_type?: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       archive_old_welcome_messages: { Args: never; Returns: undefined }
       calculate_fifo_priority: {
         Args: { p_expiration_date: string; p_received_date: string }
@@ -17210,6 +17312,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      deduct_ai_credits: {
+        Args: { p_credits: number; p_feature?: string; p_user_id: string }
+        Returns: boolean
       }
       delete_old_po_received_records: { Args: never; Returns: undefined }
       expire_team_invitations: { Args: never; Returns: undefined }
