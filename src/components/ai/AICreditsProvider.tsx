@@ -3,115 +3,158 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AICreditsContextType {
-  credits: number;
+  requestsUsed: number;
+  requestsLimit: number;
   isLoading: boolean;
   isPremium: boolean;
-  refreshCredits: () => Promise<void>;
-  useCredits: (amount: number, feature: string) => Promise<boolean>;
+  refreshUsage: () => Promise<void>;
+  trackRequest: (feature: string, model?: string) => Promise<boolean>;
   showUpgradePrompt: boolean;
   setShowUpgradePrompt: (show: boolean) => void;
+  usagePercentage: number;
 }
 
 const AICreditsContext = createContext<AICreditsContextType | undefined>(undefined);
 
-const FREE_DAILY_CREDITS = 10;
-const CREDIT_COSTS: Record<string, number> = {
-  'caption-generator': 1,
-  'hashtag-suggester': 1,
-  'story-analyzer': 2,
-  'music-matcher': 1,
-  'post-generator': 2,
-  'comment-rewrite': 1,
-  'smart-reply': 1,
-  'matrix-chat': 1,
-  'email-assistant': 2,
-  'status-suggestions': 1,
+// Lovable AI pricing model - requests per tier
+const FREE_TIER_REQUESTS = 50; // Free requests per month
+const PAID_TIER_REQUESTS = 500; // Paid tier limit before overage
+
+// Cost per request by model (in credits/tokens - for tracking)
+const MODEL_COSTS: Record<string, number> = {
+  'gemini-2.5-flash-lite': 0.5,  // Cheapest
+  'gemini-2.5-flash': 1,         // Default - balanced
+  'gemini-2.5-pro': 3,           // Premium
+  'gpt-5-nano': 0.5,
+  'gpt-5-mini': 1.5,
+  'gpt-5': 4,
+};
+
+// Feature to model mapping
+const FEATURE_MODELS: Record<string, string> = {
+  'caption-generator': 'gemini-2.5-flash',
+  'hashtag-suggester': 'gemini-2.5-flash-lite',
+  'story-analyzer': 'gemini-2.5-flash',
+  'music-matcher': 'gemini-2.5-flash-lite',
+  'post-generator': 'gemini-2.5-flash',
+  'comment-rewrite': 'gemini-2.5-flash-lite',
+  'smart-reply': 'gemini-2.5-flash-lite',
+  'matrix-chat': 'gemini-2.5-flash',
+  'email-assistant': 'gemini-2.5-flash',
+  'status-suggestions': 'gemini-2.5-flash-lite',
+  'analytics-chat': 'gemini-2.5-flash',
 };
 
 export function AICreditsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [credits, setCredits] = useState(FREE_DAILY_CREDITS);
+  const [requestsUsed, setRequestsUsed] = useState(0);
+  const [requestsLimit, setRequestsLimit] = useState(FREE_TIER_REQUESTS);
   const [isLoading, setIsLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
-  const refreshCredits = useCallback(async () => {
+  const usagePercentage = Math.min((requestsUsed / requestsLimit) * 100, 100);
+
+  const refreshUsage = useCallback(async () => {
     if (!user?.id) {
-      setCredits(FREE_DAILY_CREDITS);
+      setRequestsUsed(0);
+      setRequestsLimit(FREE_TIER_REQUESTS);
       setIsLoading(false);
       return;
     }
 
     try {
-      // Check for existing credit balance
+      // Get current month's usage
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
       const { data: transactions, error } = await supabase
         .from('ai_credit_transactions')
-        .select('credits_amount, transaction_type')
-        .eq('user_id', user.id);
+        .select('credits_amount, transaction_type, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', startOfMonth.toISOString());
 
       if (error) throw error;
 
-      // Calculate balance from transactions
-      const balance = transactions?.reduce((acc, t) => {
-        return t.transaction_type === 'purchase' || t.transaction_type === 'bonus'
-          ? acc + t.credits_amount
-          : acc - t.credits_amount;
-      }, FREE_DAILY_CREDITS) || FREE_DAILY_CREDITS;
+      // Calculate usage (requests made this month)
+      const usage = transactions?.filter(t => t.transaction_type === 'usage')
+        .reduce((acc, t) => acc + 1, 0) || 0;
 
-      setCredits(Math.max(0, balance));
-      setIsPremium(balance > FREE_DAILY_CREDITS * 5);
+      // Check for premium status (purchased credits)
+      const purchased = transactions?.filter(t => 
+        t.transaction_type === 'purchase' || t.transaction_type === 'bonus'
+      ).reduce((acc, t) => acc + t.credits_amount, 0) || 0;
+
+      const hasPremium = purchased > 0;
+      
+      setRequestsUsed(usage);
+      setIsPremium(hasPremium);
+      setRequestsLimit(hasPremium ? PAID_TIER_REQUESTS : FREE_TIER_REQUESTS);
     } catch (error) {
-      console.error('Error fetching credits:', error);
-      setCredits(FREE_DAILY_CREDITS);
+      console.error('Error fetching usage:', error);
+      setRequestsUsed(0);
     } finally {
       setIsLoading(false);
     }
   }, [user?.id]);
 
   useEffect(() => {
-    refreshCredits();
-  }, [refreshCredits]);
+    refreshUsage();
+  }, [refreshUsage]);
 
-  const useCredits = async (amount: number, feature: string): Promise<boolean> => {
+  const trackRequest = async (feature: string, model?: string): Promise<boolean> => {
     if (!user?.id) {
       setShowUpgradePrompt(true);
       return false;
     }
 
-    if (credits < amount) {
+    // Check if near limit
+    if (requestsUsed >= requestsLimit) {
       setShowUpgradePrompt(true);
       return false;
     }
 
+    const usedModel = model || FEATURE_MODELS[feature] || 'gemini-2.5-flash';
+    const cost = MODEL_COSTS[usedModel] || 1;
+
     try {
       const { error } = await supabase.from('ai_credit_transactions').insert({
         user_id: user.id,
-        credits_amount: amount,
+        credits_amount: cost,
         transaction_type: 'usage',
         feature_used: feature,
-        description: `Used ${amount} credit(s) for ${feature}`,
+        description: `AI request: ${feature} (${usedModel})`,
       });
 
       if (error) throw error;
 
-      setCredits(prev => Math.max(0, prev - amount));
+      setRequestsUsed(prev => prev + 1);
+      
+      // Warn when approaching limit
+      if (requestsUsed + 1 >= requestsLimit * 0.8) {
+        console.log('Approaching AI usage limit');
+      }
+      
       return true;
     } catch (error) {
-      console.error('Error using credits:', error);
-      return false;
+      console.error('Error tracking request:', error);
+      return true; // Allow request even if tracking fails
     }
   };
 
   return (
     <AICreditsContext.Provider
       value={{
-        credits,
+        requestsUsed,
+        requestsLimit,
         isLoading,
         isPremium,
-        refreshCredits,
-        useCredits,
+        refreshUsage,
+        trackRequest,
         showUpgradePrompt,
         setShowUpgradePrompt,
+        usagePercentage,
       }}
     >
       {children}
@@ -127,4 +170,4 @@ export function useAICredits() {
   return context;
 }
 
-export { CREDIT_COSTS };
+export { FEATURE_MODELS, MODEL_COSTS };
