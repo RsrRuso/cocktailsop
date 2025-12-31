@@ -3066,25 +3066,172 @@ const POReceivedItems = () => {
         }}
       />
 
-      {/* Excel Upload Dialog */}
+      {/* Excel Upload Dialog - With PO Comparison Logic */}
       <ExcelUploadDialog
         open={showExcelUpload}
         onOpenChange={setShowExcelUpload}
         onConfirmSave={async (data) => {
-          // Transform Excel data to match handleManualUploadSave format
-          await handleManualUploadSave({
-            docNumber: data.docNumber,
-            supplier: data.supplier,
-            items: data.items.map(item => ({
-              item_code: item.item_code,
-              item_name: item.item_name,
-              quantity: item.quantity,
-              unit: item.unit,
-              price: item.price,
-              total: item.total,
-              selected: true
-            }))
+          // Apply the same PO matching logic as AI parsing
+          const documentCode = data.docNumber;
+          const docType = detectDocumentType(documentCode);
+          
+          // Check for transfer document (TR prefix) - save directly
+          const isTransferDocument = documentCode.toUpperCase().startsWith('TR') || 
+                                     documentCode.toUpperCase().includes('-TR');
+          
+          if (isTransferDocument) {
+            // Direct save for transfer documents (same as manual)
+            await handleManualUploadSave({
+              docNumber: data.docNumber,
+              supplier: data.supplier,
+              items: data.items.map(item => ({
+                item_code: item.item_code,
+                item_name: item.item_name,
+                quantity: item.quantity,
+                unit: item.unit,
+                price: item.price,
+                total: item.total,
+                selected: true
+              }))
+            });
+            return;
+          }
+          
+          // Build matching maps from ALL summarized PO items (same logic as AI parsing)
+          const poItemsByCode = new Map<string, any>();
+          const poItemsBySuffix = new Map<string, any>();
+          const poItemsByName = new Map<string, any>();
+          const poItemsByFuzzyName = new Map<string, any>();
+          
+          const extractNumericSuffix = (code: string): string => {
+            const numericPart = String(code || '').replace(/[^0-9]/g, '');
+            return numericPart.length > 6 ? numericPart.slice(-6) : numericPart;
+          };
+          const normalizeFuzzyName = (name: string): string => {
+            return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          };
+          
+          // Index all summarized PO items for matching
+          allSummarizedItems.forEach((poi: any) => {
+            if (poi.item_code) {
+              poItemsByCode.set(normalizeItemCode(poi.item_code), poi);
+              const suffix = extractNumericSuffix(poi.item_code);
+              if (suffix && suffix.length >= 4) {
+                poItemsBySuffix.set(suffix, poi);
+              }
+            }
+            if (poi.item_name) {
+              poItemsByName.set(String(poi.item_name).trim().toLowerCase(), poi);
+              poItemsByFuzzyName.set(normalizeFuzzyName(poi.item_name), poi);
+            }
           });
+
+          let marketCount = 0;
+          let materialCount = 0;
+          let matchedCount = 0;
+
+          // Transform Excel items to enhanced format with PO matching
+          const enhancedItems: ParsedReceivingItem[] = data.items.map((item) => {
+            const itemCode = item.item_code || '';
+            const normalizedItemCodeVal = itemCode ? normalizeItemCode(itemCode) : '';
+            const itemNameRaw = item.item_name || '';
+            const normalizedItemNameVal = String(itemNameRaw).trim().toLowerCase();
+            const fuzzyItemName = normalizeFuzzyName(itemNameRaw);
+            const itemSuffix = itemCode ? extractNumericSuffix(itemCode) : '';
+
+            // Multi-strategy matching against ALL summarized PO items
+            let matchedPOItem = null;
+            
+            // 1. Try exact code match
+            if (itemCode && poItemsByCode.has(normalizedItemCodeVal)) {
+              matchedPOItem = poItemsByCode.get(normalizedItemCodeVal);
+            }
+            // 2. Try numeric suffix match
+            if (!matchedPOItem && itemSuffix && itemSuffix.length >= 4 && poItemsBySuffix.has(itemSuffix)) {
+              matchedPOItem = poItemsBySuffix.get(itemSuffix);
+            }
+            // 3. Try exact name match
+            if (!matchedPOItem && poItemsByName.has(normalizedItemNameVal)) {
+              matchedPOItem = poItemsByName.get(normalizedItemNameVal);
+            }
+            // 4. Try fuzzy name match
+            if (!matchedPOItem && poItemsByFuzzyName.has(fuzzyItemName)) {
+              matchedPOItem = poItemsByFuzzyName.get(fuzzyItemName);
+            }
+
+            const matchedInPO = !!matchedPOItem;
+            if (matchedInPO) matchedCount++;
+
+            // Determine item category
+            let itemDocType = matchedPOItem?.category || detectDocumentType(itemCode);
+            if (itemDocType === 'unknown' && (docType === 'market' || docType === 'material')) {
+              itemDocType = docType;
+            }
+
+            if (itemDocType === 'market') marketCount++;
+            if (itemDocType === 'material') materialCount++;
+
+            return {
+              item_code: itemCode,
+              item_name: itemNameRaw,
+              unit: item.unit,
+              quantity: item.quantity || 0,
+              price_per_unit: item.price || 0,
+              price_total: item.total || (item.quantity || 0) * (item.price || 0),
+              isReceived: true,
+              documentType: itemDocType as 'market' | 'material' | 'unknown',
+              matchedInPO,
+              matchedPOItem: matchedPOItem || undefined
+            };
+          });
+          
+          // Build ordered items for variance comparison
+          const orderedItemsForVariance: any[] = [];
+          enhancedItems.forEach(item => {
+            if (item.matchedPOItem) {
+              orderedItemsForVariance.push(item.matchedPOItem);
+            }
+          });
+          setPendingOrderItems(orderedItemsForVariance);
+          
+          // Determine overall document type
+          const overallDocType: 'market' | 'material' | 'mixed' = 
+            docType !== 'unknown' ? docType as 'market' | 'material' :
+            marketCount > 0 && materialCount > 0 ? 'mixed' :
+            marketCount > 0 ? 'market' :
+            materialCount > 0 ? 'material' : 'mixed';
+          
+          // Store matched order info
+          const matchedPOInfo = enhancedItems.find(i => i.matchedPOItem)?.matchedPOItem;
+          setPendingMatchedOrder({
+            order_number: documentCode,
+            supplier_name: data.supplier || matchedPOInfo?.source_docs?.[0] || 'Excel Import',
+            order_date: data.orderDate || new Date().toISOString()
+          });
+          
+          // Set enhanced receiving data and show dialog
+          setEnhancedReceivingData({
+            doc_no: documentCode,
+            doc_date: data.orderDate,
+            location: data.supplier,
+            items: enhancedItems,
+            documentType: overallDocType
+          });
+          setShowEnhancedReceiving(true);
+          
+          // Show summary toast
+          const unmatchedCount = data.items.length - matchedCount;
+          if (matchedCount > 0) {
+            toast.success(
+              `Excel parsed: ${matchedCount} matched, ${unmatchedCount} unmatched. Review items below.`,
+              { duration: 5000 }
+            );
+          } else {
+            toast.warning(
+              `No items matched PO records. Items will be added as new receiving.`,
+              { duration: 5000 }
+            );
+          }
         }}
         currencySymbol={currencySymbols[currency]}
         type="receiving"
