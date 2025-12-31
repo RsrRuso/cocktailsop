@@ -87,23 +87,18 @@ export function SalesAnalyticsDashboard({ outletId }: SalesAnalyticsDashboardPro
         .select("id, table_number")
         .eq("outlet_id", outletId);
 
-      // Collect user IDs
-      const userIds = new Set<string>();
-      ordersData?.forEach((o: any) => o.server_id && userIds.add(o.server_id));
-      salesData?.forEach((s: any) => s.sold_by && userIds.add(s.sold_by));
+      // Fetch staff from lab_ops_staff (server_id references lab_ops_staff, not profiles)
+      const { data: staffData } = await supabase
+        .from("lab_ops_staff")
+        .select("id, full_name, user_id")
+        .eq("outlet_id", outletId);
 
-      if (userIds.size > 0) {
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, full_name, username")
-          .in("id", Array.from(userIds));
-
-        const profileMap = new Map<string, string>();
-        profilesData?.forEach((p: any) => {
-          profileMap.set(p.id, p.full_name || p.username || "Unknown");
-        });
-        setProfiles(profileMap);
-      }
+      // Build staff name map from lab_ops_staff
+      const staffMap = new Map<string, string>();
+      staffData?.forEach((s: any) => {
+        staffMap.set(s.id, s.full_name || "Staff Member");
+      });
+      setProfiles(staffMap);
 
       const tableMap = new Map<string, string>();
       tablesData?.forEach((t: any) => {
@@ -111,13 +106,13 @@ export function SalesAnalyticsDashboard({ outletId }: SalesAnalyticsDashboardPro
       });
       setTables(tableMap);
 
-      // Transform orders
+      // Transform orders with staff names
       const formattedOrders: OrderData[] = (ordersData || []).map((o: any) => ({
         id: o.id,
         table_id: o.table_id,
         table_number: tableMap.get(o.table_id) || "Unknown",
         server_id: o.server_id,
-        server_name: profiles.get(o.server_id),
+        server_name: staffMap.get(o.server_id) || "Unknown",
         covers: o.covers || 1,
         total_amount: Number(o.total_amount) || 0,
         closed_at: o.closed_at
