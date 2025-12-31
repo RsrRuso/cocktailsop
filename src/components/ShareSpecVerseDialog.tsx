@@ -312,7 +312,7 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     await new Promise<void>((resolve) => {
       svLogo.onload = () => resolve();
       svLogo.onerror = () => resolve();
-      svLogo.src = '/sv-logo.webp';
+      svLogo.src = '/sv-logo.png';
     });
 
     const gradientColors = getGradientColors(tool.gradient);

@@ -3,7 +3,7 @@ import { Home, Search, MapPin, Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
-import svLogo from "@/assets/sv-logo-optimized.webp";
+import svLogo from "@/assets/sv-logo.png";
 
 const BottomNav = () => {
   const navigate = useNavigate();
