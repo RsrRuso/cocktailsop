@@ -78,47 +78,28 @@ export const useEngagement = (
     stateRef.current = state;
   }, [state]);
 
-  // Fetch all engagement states in parallel
+  // Fetch all engagement states in parallel (optimized)
   const fetchEngagement = useCallback(async () => {
-    if (!userId) {
-      console.log(`[ENGAGEMENT] Skipping fetch for ${contentType} - no userId`);
-      return;
-    }
-
-    console.log(`[ENGAGEMENT] Fetching ${contentType} engagement for user:`, userId);
+    if (!userId) return;
 
     try {
-      // Always fetch likes
-      const likesRes = await supabase
-        .from(config.likesTable as any)
-        .select(config.idColumn)
-        .eq('user_id', userId);
-      
-      console.log(`[ENGAGEMENT] ${contentType} likes response:`, likesRes.data?.length, 'items');
-      
-      // Only fetch saves/reposts if tables exist for this content type
-      let savesRes = { data: [] as any[] };
-      let repostsRes = { data: [] as any[] };
+      // Batch all queries in parallel for speed
+      const queries = [
+        supabase.from(config.likesTable as any).select(config.idColumn).eq('user_id', userId)
+      ];
       
       if (config.savesTable) {
-        savesRes = await supabase
-          .from(config.savesTable as any)
-          .select(config.idColumn)
-          .eq('user_id', userId);
+        queries.push(supabase.from(config.savesTable as any).select(config.idColumn).eq('user_id', userId));
       }
-      
       if (config.repostsTable) {
-        repostsRes = await supabase
-          .from(config.repostsTable as any)
-          .select(config.idColumn)
-          .eq('user_id', userId);
+        queries.push(supabase.from(config.repostsTable as any).select(config.idColumn).eq('user_id', userId));
       }
 
-      const likedItems = (likesRes.data as any[] || []).map(item => item[config.idColumn]);
-      const savedItems = (savesRes.data as any[] || []).map(item => item[config.idColumn]);
-      const repostedItems = (repostsRes.data as any[] || []).map(item => item[config.idColumn]);
-
-      console.log(`[ENGAGEMENT] ${contentType} - liked:`, likedItems.length, 'saved:', savedItems.length, 'reposted:', repostedItems.length);
+      const results = await Promise.all(queries);
+      
+      const likedItems = (results[0].data || []).map((item: any) => item[config.idColumn]);
+      const savedItems = config.savesTable ? (results[1]?.data || []).map((item: any) => item[config.idColumn]) : [];
+      const repostedItems = config.repostsTable ? (results[config.savesTable ? 2 : 1]?.data || []).map((item: any) => item[config.idColumn]) : [];
 
       const newState: EngagementState = {
         likedIds: new Set(likedItems),
@@ -133,11 +114,11 @@ export const useEngagement = (
     }
   }, [userId, config, contentType]);
 
-  // Fetch on mount/userId change - use separate effect with stable deps
+  // Fetch on mount/userId change with debounce
   useEffect(() => {
     if (userId) {
-      console.log(`[ENGAGEMENT] useEffect triggered for ${contentType}, userId:`, userId);
-      fetchEngagement();
+      const timer = setTimeout(() => fetchEngagement(), 50);
+      return () => clearTimeout(timer);
     }
   }, [userId, contentType]);
 
