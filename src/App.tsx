@@ -21,6 +21,7 @@ import NotificationPermissionPrompt from "@/components/NotificationPermissionPro
 import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
 import { initFastLoad } from "@/lib/fastLoad";
 import { initNetworkMonitor } from "@/hooks/useNetworkStatus";
+import { AICreditsProvider, AIUpgradeModal } from "@/components/ai";
 
 // Initialize fast loading optimizations and network monitor
 initFastLoad();
@@ -507,17 +508,20 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <InAppNotificationProvider>
-            <WorkspaceProvider>
-              <FifoWorkspaceProvider>
-                <CartProvider>
-                  <CurrencyProvider>
-                    <AppContent />
-                  </CurrencyProvider>
-                </CartProvider>
-              </FifoWorkspaceProvider>
-            </WorkspaceProvider>
-          </InAppNotificationProvider>
+          <AICreditsProvider>
+            <InAppNotificationProvider>
+              <WorkspaceProvider>
+                <FifoWorkspaceProvider>
+                  <CartProvider>
+                    <CurrencyProvider>
+                      <AppContent />
+                      <AIUpgradeModal />
+                    </CurrencyProvider>
+                  </CartProvider>
+                </FifoWorkspaceProvider>
+              </WorkspaceProvider>
+            </InAppNotificationProvider>
+          </AICreditsProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
