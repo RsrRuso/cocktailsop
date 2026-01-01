@@ -107,14 +107,14 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       // Get inventory item IDs for this outlet to filter movements
       const inventoryItemIds = inventoryItems?.map(i => i.id) || [];
 
-      // Fetch stock movements for RECEIVED only (purchases) - filter by inventory items in this outlet
+      // Fetch ALL stock movements (purchases AND sales) - filter by inventory items in this outlet
       let movements: any[] = [];
       if (inventoryItemIds.length > 0) {
         let movementsQuery = supabase
           .from("lab_ops_stock_movements")
-          .select("inventory_item_id, qty, movement_type, created_at")
+          .select("inventory_item_id, qty, movement_type, created_at, reference_type")
           .in("inventory_item_id", inventoryItemIds)
-          .eq("movement_type", "purchase"); // Only purchases for received
+          .in("movement_type", ["purchase", "sale"]); // Both purchases and sales
         
         if (dateFilter) {
           movementsQuery = movementsQuery.gte("created_at", dateFilter);
@@ -125,21 +125,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           console.error("Error fetching movements:", movError);
         }
         movements = data || [];
-      }
-
-      // Fetch ACTUAL sales from lab_ops_sales table
-      let salesQuery = supabase
-        .from("lab_ops_sales")
-        .select("item_name, quantity, total_ml_sold, sold_at")
-        .eq("outlet_id", outletId);
-
-      if (dateFilter) {
-        salesQuery = salesQuery.gte("sold_at", dateFilter);
-      }
-
-      const { data: salesData, error: salesError } = await salesQuery;
-      if (salesError) {
-        console.error("Error fetching sales:", salesError);
+        console.log("Movements fetched:", movements?.length || 0);
       }
 
       // Fetch pourer readings (ml_dispensed is the column name)
@@ -172,14 +158,6 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         const stockLevels = (item.lab_ops_stock_levels as any[]) || [];
         const currentStock = stockLevels.reduce((sum, sl) => sum + (Number(sl.quantity) || 0), 0);
 
-        // Match sales by item name (loose matching)
-        const salesQty = (salesData || []).reduce((sum: number, sale: any) => {
-          if (!sale?.item_name) return sum;
-          return namesLooselyMatch(sale.item_name, item.name)
-            ? sum + (Number(sale.quantity) || 0)
-            : sum;
-        }, 0);
-
         depletionMap.set(item.id, {
           id: item.id,
           name: item.name,
@@ -187,7 +165,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           base_unit: item.base_unit,
           par_level: item.par_level || 0,
           received_qty: 0,
-          sales_qty: salesQty, // Use actual sales quantity from lab_ops_sales
+          sales_qty: 0,
           pourer_qty: 0,
           current_stock: currentStock,
           system_depletion: 0,
@@ -197,13 +175,23 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         });
       });
 
-      // Process movements for RECEIVED only
+      // Process movements for RECEIVED and SALES from stock_movements table
       movements?.forEach(mov => {
         const item = depletionMap.get(mov.inventory_item_id);
         if (!item) return;
 
         if (mov.movement_type === "purchase") {
           item.received_qty += Math.abs(mov.qty || 0);
+        } else if (mov.movement_type === "sale") {
+          // For spirit servings, convert fractional bottles back to servings
+          // e.g., 0.04 btl = 1 serving (30ml from 700ml bottle)
+          if (mov.reference_type === "spirit_serving") {
+            // Each 0.04 is roughly 1 serving (30ml pour from 700ml bottle)
+            const servings = Math.round(Math.abs(mov.qty || 0) / 0.04);
+            item.sales_qty += servings > 0 ? servings : 1;
+          } else {
+            item.sales_qty += Math.abs(mov.qty || 0);
+          }
         }
       });
 
@@ -435,25 +423,24 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
                     </Badge>
                   </div>
 
-                  {/* Metrics Grid */}
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="bg-green-500/10 rounded-lg p-2">
-                      <p className="text-xs text-muted-foreground mb-1">Received</p>
-                      <p className="font-semibold text-green-500">+{item.received_qty.toFixed(1)}</p>
+                  {/* Metrics Grid - Mobile friendly with horizontal scroll */}
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    <div className="bg-green-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Received</p>
+                      <p className="text-sm font-semibold text-green-500">+{item.received_qty.toFixed(1)}</p>
                     </div>
-                    <div className="bg-blue-500/10 rounded-lg p-2">
-                      <p className="text-xs text-muted-foreground mb-1">Sales Qty</p>
-                      <p className="font-semibold text-blue-500">{item.sales_qty.toFixed(1)}</p>
+                    <div className="bg-blue-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Sales Qty</p>
+                      <p className="text-sm font-semibold text-blue-500">{item.sales_qty.toFixed(0)}</p>
                     </div>
-                    <div className="bg-purple-500/10 rounded-lg p-2">
-                      <p className="text-xs text-muted-foreground mb-1">Pourer</p>
-                      <p className="font-semibold text-purple-500">{item.pourer_qty.toFixed(1)}</p>
+                    <div className="bg-purple-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Pourer</p>
+                      <p className="text-sm font-semibold text-purple-500">{item.pourer_qty.toFixed(1)}</p>
                     </div>
-                    <div className={`rounded-lg p-2 ${item.variance > 0 ? 'bg-red-500/10' : item.variance < 0 ? 'bg-green-500/10' : 'bg-muted/50'}`}>
-                      <p className="text-xs text-muted-foreground mb-1">Variance</p>
-                      <p className={`font-semibold ${item.variance > 0 ? 'text-red-500' : item.variance < 0 ? 'text-green-500' : ''}`}>
+                    <div className={`rounded-lg p-2 min-w-[80px] flex-shrink-0 text-center ${item.variance > 0 ? 'bg-red-500/10' : item.variance < 0 ? 'bg-green-500/10' : 'bg-muted/50'}`}>
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Variance</p>
+                      <p className={`text-sm font-semibold ${item.variance > 0 ? 'text-red-500' : item.variance < 0 ? 'text-green-500' : ''}`}>
                         {item.variance > 0 ? '+' : ''}{item.variance.toFixed(1)}
-                        <span className="text-xs ml-1">({item.variance_pct.toFixed(0)}%)</span>
                       </p>
                     </div>
                   </div>
