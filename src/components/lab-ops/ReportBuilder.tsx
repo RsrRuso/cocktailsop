@@ -26,6 +26,20 @@ interface ReportBuilderProps {
   outletName?: string;
 }
 
+function normalizeName(input: string) {
+  return (input || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[’']/g, "'");
+}
+
+function namesLooselyMatch(a: string, b: string) {
+  const na = normalizeName(a);
+  const nb = normalizeName(b);
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
 // Available report fields organized by category
 const REPORT_FIELDS = {
   item_info: {
@@ -201,8 +215,9 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .eq("outlet_id", outletId)
           .eq("status", "closed"),
         supabase
-          .from("lab_ops_order_items")
-          .select("menu_item_id, qty, unit_price"),
+          .from("lab_ops_sales")
+          .select("item_name, quantity")
+          .eq("outlet_id", outletId),
         supabase
           .from("lab_ops_pourer_readings")
           .select("bottle_id, ml_dispensed")
@@ -221,9 +236,20 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
         const receivedQty = itemMovements
           .filter((m: any) => m.movement_type === "purchase")
           .reduce((sum: number, m: any) => sum + Math.abs(m.qty || 0), 0);
-        const salesQty = itemMovements
+
+        const salesQtyFromMovements = itemMovements
           .filter((m: any) => m.movement_type === "sale")
           .reduce((sum: number, m: any) => sum + Math.abs(m.qty || 0), 0);
+
+        const salesQtyFromSales = (salesRes.data || []).reduce((sum: number, s: any) => {
+          if (!s?.item_name) return sum;
+          return namesLooselyMatch(s.item_name, item.name)
+            ? sum + (Number(s.quantity) || 0)
+            : sum;
+        }, 0);
+
+        // Prefer sales table (servings/units), but fall back to movement sales if needed (e.g., spirits fractional)
+        const salesQty = Math.max(salesQtyFromSales, salesQtyFromMovements);
 
         // Find linked menu item for pricing
         const menuItem = (menuItemsRes.data || []).find((m: any) => m.inventory_item_id === item.id);
