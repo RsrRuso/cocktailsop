@@ -253,16 +253,9 @@ const LegacyRedirect = ({ to }: { to: string }) => {
 // Wrapper component inside Router to use routing hooks
 const AppContent = () => {
   usePageTransition(); // Now inside Router context
-  const { requestPermission } = usePushNotifications();
+  usePushNotifications();
   useAutomationProcessor(); // Process automation webhooks in background
   
-  useEffect(() => {
-    // Request notification permission on app load
-    const initNotifications = async () => {
-      await requestPermission();
-    };
-    initNotifications();
-  }, [requestPermission]);
   
   return (
     <>
