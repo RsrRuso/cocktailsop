@@ -247,21 +247,32 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
     };
   }, [outletId]);
 
-  // Calculate item summaries
+  // Calculate item summaries - use loose matching AND count from both sales table and sale movements
   const itemSummaries = useMemo<ItemSummary[]>(() => {
     return items.map((item) => {
       const itemMovements = movements.filter(
-        (m) => m.item_name === item.name
+        (m) => namesLooselyMatch(m.item_name, item.name)
       );
+
+      // Match sales using loose name matching
       const itemSales = sales.filter(
-        (s) => s.item_name.toLowerCase() === item.name.toLowerCase()
+        (s) => namesLooselyMatch(s.item_name, item.name)
       );
 
       const totalReceived = itemMovements
-        .filter((m) => m.movement_type === "purchase" || m.movement_type === "adjustment" && m.qty > 0)
+        .filter((m) => m.movement_type === "purchase" || (m.movement_type === "adjustment" && m.qty > 0))
         .reduce((sum, m) => sum + Math.abs(m.qty), 0);
 
-      const totalSold = itemSales.reduce((sum, s) => sum + s.quantity, 0);
+      // Calculate sold from sales table (primary source)
+      const soldFromSales = itemSales.reduce((sum, s) => sum + s.quantity, 0);
+      
+      // Also count sale movements (fractional spirit servings)
+      const soldFromMovements = itemMovements
+        .filter((m) => m.movement_type === "sale")
+        .reduce((sum, m) => sum + Math.abs(m.qty), 0);
+      
+      // Use the higher value to avoid missing any sales
+      const totalSold = Math.max(soldFromSales, soldFromMovements);
 
       const currentStock = (item.lab_ops_stock_levels || []).reduce(
         (sum: number, sl: any) => sum + (Number(sl.quantity) || 0),
@@ -478,18 +489,32 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                 <p className="text-center text-muted-foreground py-8">No movements recorded</p>
               ) : (
                 movements.slice(0, 50).map((m) => {
-                  // Determine if this is a spirit serving (fractional deduction)
+                  // Determine bottle size from item name for accurate ml calculation
+                  const bottleMl = inferBottleMlFromName(m.item_name) || 700;
                   const isSpiritServing = m.movement_type === 'sale' && Math.abs(m.qty) < 1;
-                  const servingMl = isSpiritServing ? Math.round(Math.abs(m.qty) * 700 * 10) / 10 : null;
+                  const servingMl = isSpiritServing ? Math.round(Math.abs(m.qty) * bottleMl) : null;
                   
                   const getMovementLabel = () => {
                     switch (m.movement_type) {
-                      case 'purchase': return 'Received';
-                      case 'sale': return isSpiritServing ? 'Spirit serving' : 'Sale';
-                      case 'adjustment': return 'Adjustment';
-                      case 'transfer': return 'Transfer';
-                      case 'spillage': return 'Spillage';
+                      case 'purchase': return 'Stock received from purchase';
+                      case 'sale': return isSpiritServing ? `Spirit serving (${servingMl}ml pour)` : 'Item sold';
+                      case 'adjustment': return m.qty > 0 ? 'Stock adjusted (added)' : 'Stock adjusted (removed)';
+                      case 'transfer': return 'Transferred between locations';
+                      case 'spillage': return 'Spillage/wastage recorded';
                       default: return m.movement_type;
+                    }
+                  };
+
+                  const getMovementDescription = () => {
+                    switch (m.movement_type) {
+                      case 'purchase': return 'Added to inventory from PO';
+                      case 'sale': return isSpiritServing 
+                        ? `${servingMl}ml poured = ${formatQtyCompact(Math.abs(m.qty))} bottle` 
+                        : `${Math.abs(m.qty)} unit(s) sold`;
+                      case 'adjustment': return 'Manual stock count correction';
+                      case 'transfer': return m.to_location_name ? `Moved to ${m.to_location_name}` : 'Location transfer';
+                      case 'spillage': return 'Loss recorded';
+                      default: return '';
                     }
                   };
 
@@ -498,32 +523,41 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                       key={m.id}
                       className="p-3 rounded-lg bg-muted/40 border border-border/50"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{m.item_name}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <Clock className="h-3 w-3" />
-                            {format(new Date(m.created_at), "MMM d, HH:mm")}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {getMovementLabel()}
-                            {servingMl && <span className="ml-1">({servingMl}ml)</span>}
-                          </p>
+                      {/* Mobile-friendly stacked layout */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium text-sm leading-tight break-words flex-1">{m.item_name}</p>
+                          <Badge
+                            variant={m.movement_type === "purchase" ? "default" : m.movement_type === "sale" ? "destructive" : "secondary"}
+                            className="shrink-0 text-xs"
+                          >
+                            {m.movement_type === "purchase" ? "+" : m.movement_type === "sale" ? "-" : ""}
+                            {formatQtyCompact(Math.abs(m.qty))}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant={m.movement_type === "purchase" ? "default" : m.movement_type === "sale" ? "destructive" : "secondary"}
-                          className="shrink-0"
-                        >
-                          {m.movement_type === "purchase" ? "+" : m.movement_type === "sale" ? "-" : ""}
-                          {Math.abs(m.qty).toFixed(2)}
-                        </Badge>
+                        
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-foreground/80">{getMovementLabel()}</p>
+                          <p className="text-xs text-muted-foreground">{getMovementDescription()}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/30">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{format(new Date(m.created_at), "MMM d, h:mm a")}</span>
+                          </div>
+                          {m.created_by_name && (
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              <span className="truncate max-w-[100px]">{m.created_by_name}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {m.notes && (
+                          <p className="text-xs text-muted-foreground italic break-words">"{m.notes}"</p>
+                        )}
                       </div>
-                      {m.notes && (
-                        <p className="text-xs text-muted-foreground mt-2 truncate">{m.notes}</p>
-                      )}
-                      {m.to_location_name && (
-                        <p className="text-xs text-muted-foreground mt-1">→ {m.to_location_name}</p>
-                      )}
                     </div>
                   );
                 })
