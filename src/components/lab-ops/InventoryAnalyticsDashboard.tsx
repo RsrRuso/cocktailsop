@@ -51,6 +51,9 @@ interface DailySummary {
   sold: number;
   adjustments: number;
   net_change: number;
+  // UI detail
+  received_items: { name: string; qty: number }[];
+  received_items_count: number;
 }
 
 interface ItemSummary {
@@ -298,45 +301,55 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   const dailySummaries = useMemo<DailySummary[]>(() => {
     const byDate = new Map<string, DailySummary>();
 
+    const emptyDay = (date: string): DailySummary => ({
+      date,
+      received: 0,
+      sold: 0,
+      adjustments: 0,
+      net_change: 0,
+      received_items: [],
+      received_items_count: 0,
+    });
+
+    const addReceivedItem = (day: DailySummary, name: string, qty: number) => {
+      const key = (name || "Unknown").trim() || "Unknown";
+      const existing = day.received_items.find((i) => i.name === key);
+      if (existing) existing.qty += qty;
+      else day.received_items.push({ name: key, qty });
+      day.received_items_count = day.received_items.length;
+    };
+
     movements.forEach((m) => {
       const date = format(new Date(m.created_at), "yyyy-MM-dd");
-      const existing = byDate.get(date) || {
-        date,
-        received: 0,
-        sold: 0,
-        adjustments: 0,
-        net_change: 0
-      };
+      const existing = byDate.get(date) || emptyDay(date);
 
       if (m.movement_type === "purchase") {
-        existing.received += Math.abs(m.qty);
+        const qty = Math.abs(m.qty);
+        existing.received += qty;
+        addReceivedItem(existing, m.item_name, qty);
       } else if (m.movement_type === "sale") {
         existing.sold += Math.abs(m.qty);
       } else {
         existing.adjustments += m.qty;
       }
+
       existing.net_change = existing.received - existing.sold + existing.adjustments;
       byDate.set(date, existing);
     });
 
     sales.forEach((s) => {
       const date = format(new Date(s.sold_at), "yyyy-MM-dd");
-      const existing = byDate.get(date) || {
-        date,
-        received: 0,
-        sold: 0,
-        adjustments: 0,
-        net_change: 0
-      };
+      const existing = byDate.get(date) || emptyDay(date);
       existing.sold += s.quantity;
       existing.net_change = existing.received - existing.sold + existing.adjustments;
       byDate.set(date, existing);
     });
 
-    return Array.from(byDate.values()).sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
+    return Array.from(byDate.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
   }, [movements, sales]);
+
 
   // Summary metrics
   const totalReceived = itemSummaries.reduce((sum, i) => sum + i.total_received, 0);
