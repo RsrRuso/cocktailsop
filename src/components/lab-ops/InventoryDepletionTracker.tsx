@@ -13,6 +13,20 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
+function normalizeName(input: string) {
+  return (input || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[’']/g, "'");
+}
+
+function namesLooselyMatch(a: string, b: string) {
+  const na = normalizeName(a);
+  const nb = normalizeName(b);
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
 interface InventoryDepletionTrackerProps {
   outletId: string;
 }
@@ -113,31 +127,20 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         movements = data || [];
       }
 
-      // Fetch ACTUAL sales from lab_ops_sales table (accurate quantities, not fractional movements)
+      // Fetch ACTUAL sales from lab_ops_sales table
       let salesQuery = supabase
         .from("lab_ops_sales")
-        .select("item_name, quantity, total_ml_sold, created_at")
+        .select("item_name, quantity, total_ml_sold, sold_at")
         .eq("outlet_id", outletId);
-      
+
       if (dateFilter) {
-        salesQuery = salesQuery.gte("created_at", dateFilter);
+        salesQuery = salesQuery.gte("sold_at", dateFilter);
       }
 
       const { data: salesData, error: salesError } = await salesQuery;
       if (salesError) {
         console.error("Error fetching sales:", salesError);
       }
-
-      // Create a map of item name to total sales quantity
-      const salesByItemName = new Map<string, number>();
-      salesData?.forEach(sale => {
-        const normalizedName = sale.item_name?.toLowerCase().trim() || '';
-        const currentQty = salesByItemName.get(normalizedName) || 0;
-        salesByItemName.set(normalizedName, currentQty + (sale.quantity || 0));
-      });
-
-      console.log("Sales by item name:", Object.fromEntries(salesByItemName));
-      console.log("Total sales records:", salesData?.length || 0);
 
       // Fetch pourer readings (ml_dispensed is the column name)
       let pourerQuery = supabase
@@ -169,9 +172,13 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         const stockLevels = (item.lab_ops_stock_levels as any[]) || [];
         const currentStock = stockLevels.reduce((sum, sl) => sum + (Number(sl.quantity) || 0), 0);
 
-        // Match sales by item name (case insensitive)
-        const normalizedItemName = item.name.toLowerCase().trim();
-        const salesQty = salesByItemName.get(normalizedItemName) || 0;
+        // Match sales by item name (loose matching)
+        const salesQty = (salesData || []).reduce((sum: number, sale: any) => {
+          if (!sale?.item_name) return sum;
+          return namesLooselyMatch(sale.item_name, item.name)
+            ? sum + (Number(sale.quantity) || 0)
+            : sum;
+        }, 0);
 
         depletionMap.set(item.id, {
           id: item.id,
