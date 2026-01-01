@@ -228,19 +228,19 @@ export function SpillageTracking({ outletId }: SpillageTrackingProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Droplets className="h-5 w-5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+          <Droplets className="h-4 w-4 sm:h-5 sm:w-5" />
           Spillage & Wastage
         </h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" variant="destructive" className="gap-2">
+            <Button size="sm" variant="destructive" className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Record Spillage
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Record Spillage / Wastage</DialogTitle>
             </DialogHeader>
@@ -330,22 +330,22 @@ export function SpillageTracking({ outletId }: SpillageTrackingProps) {
       </div>
 
       {/* Today's Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-red-500/10 to-red-500/5">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{todayStats.count}</div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        <Card className="bg-gradient-to-br from-red-500/10 to-red-500/5 min-w-[100px] flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="text-xl sm:text-2xl font-bold">{todayStats.count}</div>
             <p className="text-xs text-muted-foreground">Incidents Today</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{todayStats.totalQty.toFixed(1)}</div>
+        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 min-w-[100px] flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="text-xl sm:text-2xl font-bold">{todayStats.totalQty.toFixed(1)}</div>
             <p className="text-xs text-muted-foreground">Units Lost</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold flex items-center gap-1">
+        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 min-w-[100px] flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="text-xl sm:text-2xl font-bold flex items-center gap-1">
               <TrendingDown className="h-4 w-4" />
               {spillageRecords.length}
             </div>
@@ -356,13 +356,13 @@ export function SpillageTracking({ outletId }: SpillageTrackingProps) {
 
       {/* Spillage Records */}
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 px-3 sm:px-6">
           <CardTitle className="text-sm flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Recent Spillage Records
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {spillageRecords.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No spillage records found

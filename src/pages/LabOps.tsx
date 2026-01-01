@@ -51,7 +51,8 @@ import {
   Download, Video, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode, CalendarCheck, User, MapPin,
+  ArrowLeftRight, ClipboardCheck
 } from "lucide-react";
 import ReservationDesk from "@/components/lab-ops/ReservationDesk";
 import { CurrencySelector } from "@/components/lab-ops/CurrencySelector";
@@ -2972,22 +2973,45 @@ function InventoryModule({ outletId }: { outletId: string }) {
         setActiveTab(tab);
         if (tab === 'items' || tab === 'inventory') fetchItems();
       }}>
-        <TabsList className="w-full grid grid-cols-4 md:grid-cols-7">
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="po-received">PO Received</TabsTrigger>
-          <TabsTrigger value="spillage">Spillage</TabsTrigger>
-          <TabsTrigger value="movements">Movements</TabsTrigger>
-          <TabsTrigger value="stocktakes">Stock Takes</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1">
+          <TabsList className="w-max min-w-full flex h-auto p-1 gap-0.5">
+            <TabsTrigger value="items" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Items</span>
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Inventory</span>
+            </TabsTrigger>
+            <TabsTrigger value="po-received" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">PO</span>
+            </TabsTrigger>
+            <TabsTrigger value="spillage" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Spill</span>
+            </TabsTrigger>
+            <TabsTrigger value="movements" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Moves</span>
+            </TabsTrigger>
+            <TabsTrigger value="stocktakes" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <ClipboardCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Takes</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 sm:px-3 py-2 gap-1">
+              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Reports</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Items Tab */}
         <TabsContent value="items" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-              <CardTitle className="text-lg">Inventory Items ({items.length})</CardTitle>
-              <div className="flex gap-2 flex-wrap">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">Inventory Items ({items.length})</CardTitle>
+              <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                 {/* Import Dialog */}
                 <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
                   <DialogTrigger asChild>
@@ -3086,7 +3110,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
               </div>
             </CardHeader>
             {/* Search Field */}
-            <div className="px-6 pb-4">
+            <div className="px-3 sm:px-6 pb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -3097,7 +3121,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 />
               </div>
             </div>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               {(() => {
                 const filteredItems = items.filter(item => 
                   !inventorySearch || item.name.toLowerCase().includes(inventorySearch.toLowerCase())
@@ -3113,28 +3137,30 @@ function InventoryModule({ outletId }: { outletId: string }) {
                       const stock = getTotalStock(item);
                       const isLow = stock < (item.par_level || 0);
                       return (
-                        <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
-                          <div className="flex-1">
+                        <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 sm:p-3 rounded-lg ${isLow ? "bg-red-500/10 border border-red-500/50" : "bg-muted/50"}`}>
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="font-medium">{item.name}</p>
-                              {isLow && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                              <p className="font-medium text-sm sm:text-base truncate">{item.name}</p>
+                              {isLow && <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />}
                             </div>
                             <p className="text-xs text-muted-foreground">{item.sku || "No SKU"} • {item.base_unit}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right mr-2">
-                              <p className={`font-semibold ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
+                          <div className="flex items-center justify-between sm:justify-end gap-2">
+                            <div className="text-left sm:text-right">
+                              <p className={`font-semibold text-sm sm:text-base ${isLow ? "text-red-500" : ""}`}>{stock} {item.base_unit}</p>
                               <p className="text-xs text-muted-foreground">Par: {item.par_level || 0}</p>
                             </div>
-                            <Button size="icon" variant="outline" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => setEditingItem({ ...item })}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => deleteInventoryItem(item.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center gap-1 sm:ml-2">
+                              <Button size="icon" variant="outline" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => { setSelectedItem(item); setShowAddStock(true); }}>
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setEditingItem({ ...item })}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => deleteInventoryItem(item.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -3149,16 +3175,16 @@ function InventoryModule({ outletId }: { outletId: string }) {
         {/* Inventory Tab - Now shows full analytics dashboard */}
         <TabsContent value="inventory" className="mt-4">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5" />
+            <CardHeader className="pb-4 px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 Inventory Analytics
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Live stock tracking: received, sold, current levels, and movement history
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <InventoryAnalyticsDashboard outletId={outletId} />
             </CardContent>
           </Card>
@@ -3167,16 +3193,16 @@ function InventoryModule({ outletId }: { outletId: string }) {
         {/* PO Received Tab */}
         <TabsContent value="po-received" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5" />
+            <CardHeader className="px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
                 PO Received Stock
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Items received from Purchase Orders synced to inventory
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <POReceivedStock outletId={outletId} />
             </CardContent>
           </Card>
@@ -3185,32 +3211,31 @@ function InventoryModule({ outletId }: { outletId: string }) {
         {/* Spillage Tab */}
         <TabsContent value="spillage" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
+            <CardHeader className="px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                 Spillage & Wastage
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Record spillage, breakage and wastage to keep stock accurate
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <SpillageTracking outletId={outletId} />
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Movements Tab */}
         <TabsContent value="movements" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Stock Movements</CardTitle>
+            <CardHeader className="px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">Stock Movements</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               {movements.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No stock movements yet</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {movements.map((mov) => {
                     const isIncoming = ['purchase', 'receive', 'in', 'return'].includes(mov.movement_type);
                     const typeLabel = mov.movement_type === 'purchase' ? 'Received' :
@@ -3226,16 +3251,16 @@ function InventoryModule({ outletId }: { outletId: string }) {
                     const fromStore = mov.from_location?.name;
                     
                     return (
-                      <div key={mov.id} className="p-4 bg-muted/50 rounded-lg border border-border/50">
-                        <div className="flex items-start justify-between gap-3">
+                      <div key={mov.id} className="p-3 sm:p-4 bg-muted/50 rounded-lg border border-border/50">
+                        <div className="flex items-start justify-between gap-2 sm:gap-3">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-semibold truncate">{mov.lab_ops_inventory_items?.name}</p>
+                            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                              <p className="font-semibold text-sm sm:text-base truncate">{mov.lab_ops_inventory_items?.name}</p>
                               <Badge variant={isIncoming ? "default" : "secondary"} className="text-xs shrink-0">
                                 {typeLabel}
                               </Badge>
                             </div>
-                            <div className="space-y-1 text-sm text-muted-foreground">
+                            <div className="space-y-0.5 sm:space-y-1 text-xs sm:text-sm text-muted-foreground">
                               <p className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
                                 {new Date(mov.created_at).toLocaleString()}
@@ -3283,7 +3308,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                           </div>
                           <Badge 
                             variant={isIncoming ? "default" : "destructive"}
-                            className="text-base font-bold px-3 py-1 shrink-0"
+                            className="text-sm sm:text-base font-bold px-2 sm:px-3 py-0.5 sm:py-1 shrink-0"
                           >
                             {isIncoming ? "+" : "-"}{quantity}
                           </Badge>
@@ -3300,13 +3325,13 @@ function InventoryModule({ outletId }: { outletId: string }) {
         {/* Stock Takes Tab */}
         <TabsContent value="stocktakes" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-              <CardTitle className="text-lg">Stock Takes</CardTitle>
-              <Button size="sm" onClick={startStockTake}>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 px-3 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">Stock Takes</CardTitle>
+              <Button size="sm" onClick={startStockTake} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-1" />Start Stock Take
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               {stockTakes.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No stock takes yet</p>
               ) : (
@@ -3314,19 +3339,19 @@ function InventoryModule({ outletId }: { outletId: string }) {
                   {stockTakes.map((st) => (
                     <div 
                       key={st.id} 
-                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                      className="flex items-center justify-between p-2.5 sm:p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
                       onClick={() => {
                         setSelectedStockTake(st);
                         setStockTakeCounts({});
                       }}
                     >
-                      <div>
-                        <p className="font-medium">Stock Take #{st.id.slice(0, 8)}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm sm:text-base truncate">Stock Take #{st.id.slice(0, 8)}</p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(st.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <Badge variant={st.status === "completed" ? "default" : "secondary"}>
+                      <Badge variant={st.status === "completed" ? "default" : "secondary"} className="shrink-0 ml-2">
                         {st.status}
                       </Badge>
                     </div>
@@ -3339,51 +3364,51 @@ function InventoryModule({ outletId }: { outletId: string }) {
 
         {/* Reports Tab - Comprehensive analytics */}
         <TabsContent value="reports" className="mt-4">
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Sales Analytics */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
+              <CardHeader className="px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
                   Sales Analytics
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Revenue, average check per cover/table, staff performance, top sellers
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 sm:px-6">
                 <SalesAnalyticsDashboard outletId={outletId} />
               </CardContent>
             </Card>
 
             {/* Inventory Depletion */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+              <CardHeader className="px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
                   Inventory Depletion Report
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Track physical vs. virtual consumption variance
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 sm:px-6">
                 <InventoryDepletionTracker outletId={outletId} />
               </CardContent>
             </Card>
             
             {/* Report Builder */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+              <CardHeader className="px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                   AI Report Builder
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Generate custom operational reports
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 sm:px-6">
                 <ReportBuilder outletId={outletId} />
               </CardContent>
             </Card>
