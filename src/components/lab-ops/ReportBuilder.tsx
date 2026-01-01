@@ -198,11 +198,11 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
       const inventoryItemIds = (inventoryRes.data || []).map(i => i.id);
 
       // Fetch remaining data in parallel
-      const [movementsRes, menuItemsRes, ordersRes, salesRes, pourerRes] = await Promise.all([
-        inventoryItemIds.length > 0 
+      const [movementsRes, menuItemsRes, ordersRes, pourerRes] = await Promise.all([
+        inventoryItemIds.length > 0
           ? supabase
               .from("lab_ops_stock_movements")
-              .select("inventory_item_id, qty, movement_type")
+              .select("inventory_item_id, qty, movement_type, reference_type")
               .in("inventory_item_id", inventoryItemIds)
           : Promise.resolve({ data: [] }),
         supabase
@@ -214,10 +214,6 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .select("id, total_amount")
           .eq("outlet_id", outletId)
           .eq("status", "closed"),
-        supabase
-          .from("lab_ops_sales")
-          .select("item_name, quantity")
-          .eq("outlet_id", outletId),
         supabase
           .from("lab_ops_pourer_readings")
           .select("bottle_id, ml_dispensed")
@@ -237,19 +233,17 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .filter((m: any) => m.movement_type === "purchase")
           .reduce((sum: number, m: any) => sum + Math.abs(m.qty || 0), 0);
 
-        const salesQtyFromMovements = itemMovements
+        // Calculate sales from movements - convert spirit servings properly
+        const salesQty = itemMovements
           .filter((m: any) => m.movement_type === "sale")
-          .reduce((sum: number, m: any) => sum + Math.abs(m.qty || 0), 0);
-
-        const salesQtyFromSales = (salesRes.data || []).reduce((sum: number, s: any) => {
-          if (!s?.item_name) return sum;
-          return namesLooselyMatch(s.item_name, item.name)
-            ? sum + (Number(s.quantity) || 0)
-            : sum;
-        }, 0);
-
-        // Prefer sales table (servings/units), but fall back to movement sales if needed (e.g., spirits fractional)
-        const salesQty = Math.max(salesQtyFromSales, salesQtyFromMovements);
+          .reduce((sum: number, m: any) => {
+            // For spirit servings, convert fractional bottles back to servings
+            if (m.reference_type === "spirit_serving") {
+              const servings = Math.round(Math.abs(m.qty || 0) / 0.04);
+              return sum + (servings > 0 ? servings : 1);
+            }
+            return sum + Math.abs(m.qty || 0);
+          }, 0);
 
         // Find linked menu item for pricing
         const menuItem = (menuItemsRes.data || []).find((m: any) => m.inventory_item_id === item.id);
