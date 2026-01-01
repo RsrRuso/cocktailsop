@@ -197,7 +197,7 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
       
       const inventoryItemIds = (inventoryRes.data || []).map(i => i.id);
 
-      // Fetch remaining data in parallel
+      // Fetch remaining data in parallel including menu items for serving_ml
       const [movementsRes, menuItemsRes, ordersRes, pourerRes] = await Promise.all([
         inventoryItemIds.length > 0
           ? supabase
@@ -207,7 +207,7 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           : Promise.resolve({ data: [] }),
         supabase
           .from("lab_ops_menu_items")
-          .select("id, name, base_price, category_id, inventory_item_id")
+          .select("id, name, base_price, category_id, inventory_item_id, serving_ml, serving_ratio_ml")
           .eq("outlet_id", outletId),
         supabase
           .from("lab_ops_orders")
@@ -219,6 +219,26 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .select("bottle_id, ml_dispensed")
           .eq("outlet_id", outletId),
       ]);
+
+      // Create map of inventory item to serving ml
+      const servingMlMap = new Map<string, number>();
+      (menuItemsRes.data || []).forEach((mi: any) => {
+        if (mi.inventory_item_id) {
+          servingMlMap.set(mi.inventory_item_id, mi.serving_ml || mi.serving_ratio_ml || 30);
+        }
+      });
+
+      // Helper: infer bottle size from name
+      const inferBottleMl = (name: string): number => {
+        const s = name.toLowerCase();
+        const ml = s.match(/(\d+(?:\.\d+)?)\s*ml\b/i);
+        if (ml?.[1]) return Math.round(Number(ml[1]));
+        const cl = s.match(/(\d+(?:\.\d+)?)\s*cl\b/i);
+        if (cl?.[1]) return Math.round(Number(cl[1]) * 10);
+        const l = s.match(/(\d+(?:\.\d+)?)\s*l\b/i);
+        if (l?.[1]) return Math.round(Number(l[1]) * 1000);
+        return 700; // Default
+      };
 
       const vatMultiplier = parseFloat(vatRate) / 100;
 
@@ -233,13 +253,17 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .filter((m: any) => m.movement_type === "purchase")
           .reduce((sum: number, m: any) => sum + Math.abs(m.qty || 0), 0);
 
-        // Calculate sales from movements - convert spirit servings properly
+        // Calculate sales from movements - use serving_ml from recipe for accurate conversion
+        const servingMl = servingMlMap.get(item.id) || 30;
+        const bottleMl = inferBottleMl(item.name);
+        const fractionPerServing = servingMl / bottleMl;
+
         const salesQty = itemMovements
           .filter((m: any) => m.movement_type === "sale")
           .reduce((sum: number, m: any) => {
-            // For spirit servings, convert fractional bottles back to servings
+            // For spirit servings, convert fractional bottles back to servings using recipe ratio
             if (m.reference_type === "spirit_serving") {
-              const servings = Math.round(Math.abs(m.qty || 0) / 0.04);
+              const servings = Math.round(Math.abs(m.qty || 0) / fractionPerServing);
               return sum + (servings > 0 ? servings : 1);
             }
             return sum + Math.abs(m.qty || 0);

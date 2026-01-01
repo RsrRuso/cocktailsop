@@ -361,45 +361,45 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-green-500/10 border-green-500/30">
-          <CardContent className="p-4">
+      {/* Summary Cards - Mobile responsive with horizontal scroll */}
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+        <Card className="bg-green-500/10 border-green-500/30 min-w-[140px] flex-shrink-0">
+          <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <ArrowDownRight className="h-4 w-4 text-green-500" />
               <span className="text-xs text-muted-foreground">Received</span>
             </div>
-            <p className="text-2xl font-bold text-green-600">{totalReceived}</p>
+            <p className="text-xl font-bold text-green-600">{totalReceived}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-red-500/10 border-red-500/30">
-          <CardContent className="p-4">
+        <Card className="bg-red-500/10 border-red-500/30 min-w-[140px] flex-shrink-0">
+          <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <ArrowUpRight className="h-4 w-4 text-red-500" />
               <span className="text-xs text-muted-foreground">Sold</span>
             </div>
-            <p className="text-2xl font-bold text-red-600">{totalSold}</p>
+            <p className="text-xl font-bold text-red-600">{totalSold}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-blue-500/10 border-blue-500/30">
-          <CardContent className="p-4">
+        <Card className="bg-blue-500/10 border-blue-500/30 min-w-[140px] flex-shrink-0">
+          <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <Package className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">Current Stock</span>
+              <span className="text-xs text-muted-foreground">Stock</span>
             </div>
-            <p className="text-2xl font-bold text-blue-600">{totalStock}</p>
+            <p className="text-xl font-bold text-blue-600">{totalStock}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-emerald-500/10 border-emerald-500/30">
-          <CardContent className="p-4">
+        <Card className="bg-emerald-500/10 border-emerald-500/30 min-w-[140px] flex-shrink-0">
+          <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="h-4 w-4 text-emerald-500" />
               <span className="text-xs text-muted-foreground">Revenue</span>
             </div>
-            <p className="text-2xl font-bold text-emerald-600">{formatPrice(totalRevenue)}</p>
+            <p className="text-xl font-bold text-emerald-600">{formatPrice(totalRevenue)}</p>
           </CardContent>
         </Card>
       </div>
