@@ -601,7 +601,8 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                         {day.net_change >= 0 ? "+" : ""}{day.net_change} net
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
+                    
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-2">
                       <div className="flex items-center gap-1">
                         <ArrowDownRight className="h-3 w-3 text-green-500" />
                         <span className="text-green-600 font-medium">{day.received}</span>
@@ -621,6 +622,20 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                         </div>
                       )}
                     </div>
+
+                    {/* Products Received Detail */}
+                    {day.received_items.length > 0 && (
+                      <div className="pt-2 border-t border-border/30">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Products Received:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {day.received_items.map((item, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs font-normal bg-green-500/10 border-green-500/30 text-green-700">
+                              {item.name} ({item.qty})
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
