@@ -356,6 +356,21 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   const totalSold = itemSummaries.reduce((sum, i) => sum + i.total_sold, 0);
   const totalStock = itemSummaries.reduce((sum, i) => sum + i.current_stock, 0);
   const totalRevenue = sales.reduce((sum, s) => sum + s.total_price, 0);
+  
+  // Calculate total cost from purchase movements (using price data if available)
+  const totalCost = useMemo(() => {
+    // Get cost from movements with notes containing price info, or estimate from PO data
+    return movements
+      .filter((m) => m.movement_type === "purchase")
+      .reduce((sum, m) => {
+        // Try to extract cost from notes if available (format: "cost: X" or similar)
+        const costMatch = m.notes?.match(/(?:cost|price)[:\s]*(\d+(?:\.\d+)?)/i);
+        if (costMatch) return sum + Number(costMatch[1]) * Math.abs(m.qty);
+        return sum;
+      }, 0);
+  }, [movements]);
+  
+  const netProfit = totalRevenue - totalCost;
 
   const filteredItems = itemSummaries.filter(
     (item) =>
@@ -413,6 +428,28 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
               <span className="text-xs text-muted-foreground">Revenue</span>
             </div>
             <p className="text-xl font-bold text-emerald-600">{formatPrice(totalRevenue)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-orange-500/10 border-orange-500/30 min-w-[140px] flex-shrink-0">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <ArrowUpRight className="h-4 w-4 text-orange-500" />
+              <span className="text-xs text-muted-foreground">Cost</span>
+            </div>
+            <p className="text-xl font-bold text-orange-600">{formatPrice(totalCost)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className={`min-w-[140px] flex-shrink-0 ${netProfit >= 0 ? 'bg-purple-500/10 border-purple-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className={`h-4 w-4 ${netProfit >= 0 ? 'text-purple-500' : 'text-red-500'}`} />
+              <span className="text-xs text-muted-foreground">Net Profit</span>
+            </div>
+            <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+              {formatPrice(netProfit)}
+            </p>
           </CardContent>
         </Card>
       </div>
