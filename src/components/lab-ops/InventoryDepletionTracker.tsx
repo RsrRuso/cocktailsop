@@ -93,14 +93,14 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       // Get inventory item IDs for this outlet to filter movements
       const inventoryItemIds = inventoryItems?.map(i => i.id) || [];
 
-      // Fetch stock movements for received and sales - filter by inventory items in this outlet
+      // Fetch stock movements for RECEIVED only (purchases) - filter by inventory items in this outlet
       let movements: any[] = [];
       if (inventoryItemIds.length > 0) {
         let movementsQuery = supabase
           .from("lab_ops_stock_movements")
           .select("inventory_item_id, qty, movement_type, created_at")
           .in("inventory_item_id", inventoryItemIds)
-          .in("movement_type", ["purchase", "sale", "adjustment"]);
+          .eq("movement_type", "purchase"); // Only purchases for received
         
         if (dateFilter) {
           movementsQuery = movementsQuery.gte("created_at", dateFilter);
@@ -112,6 +112,32 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         }
         movements = data || [];
       }
+
+      // Fetch ACTUAL sales from lab_ops_sales table (accurate quantities, not fractional movements)
+      let salesQuery = supabase
+        .from("lab_ops_sales")
+        .select("item_name, quantity, total_ml_sold, created_at")
+        .eq("outlet_id", outletId);
+      
+      if (dateFilter) {
+        salesQuery = salesQuery.gte("created_at", dateFilter);
+      }
+
+      const { data: salesData, error: salesError } = await salesQuery;
+      if (salesError) {
+        console.error("Error fetching sales:", salesError);
+      }
+
+      // Create a map of item name to total sales quantity
+      const salesByItemName = new Map<string, number>();
+      salesData?.forEach(sale => {
+        const normalizedName = sale.item_name?.toLowerCase().trim() || '';
+        const currentQty = salesByItemName.get(normalizedName) || 0;
+        salesByItemName.set(normalizedName, currentQty + (sale.quantity || 0));
+      });
+
+      console.log("Sales by item name:", Object.fromEntries(salesByItemName));
+      console.log("Total sales records:", salesData?.length || 0);
 
       // Fetch pourer readings (ml_dispensed is the column name)
       let pourerQuery = supabase
@@ -143,6 +169,10 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         const stockLevels = (item.lab_ops_stock_levels as any[]) || [];
         const currentStock = stockLevels.reduce((sum, sl) => sum + (Number(sl.quantity) || 0), 0);
 
+        // Match sales by item name (case insensitive)
+        const normalizedItemName = item.name.toLowerCase().trim();
+        const salesQty = salesByItemName.get(normalizedItemName) || 0;
+
         depletionMap.set(item.id, {
           id: item.id,
           name: item.name,
@@ -150,7 +180,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           base_unit: item.base_unit,
           par_level: item.par_level || 0,
           received_qty: 0,
-          sales_qty: 0,
+          sales_qty: salesQty, // Use actual sales quantity from lab_ops_sales
           pourer_qty: 0,
           current_stock: currentStock,
           system_depletion: 0,
@@ -160,15 +190,13 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         });
       });
 
-      // Process movements
+      // Process movements for RECEIVED only
       movements?.forEach(mov => {
         const item = depletionMap.get(mov.inventory_item_id);
         if (!item) return;
 
         if (mov.movement_type === "purchase") {
           item.received_qty += Math.abs(mov.qty || 0);
-        } else if (mov.movement_type === "sale") {
-          item.sales_qty += Math.abs(mov.qty || 0);
         }
       });
 
