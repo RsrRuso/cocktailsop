@@ -1,6 +1,4 @@
 import { useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 export const usePushNotifications = () => {
   const requestPermission = useCallback(async () => {
@@ -33,11 +31,10 @@ export const usePushNotifications = () => {
       silent?: boolean;
     }
   ) => {
-    const hasPermission = await requestPermission();
-    
-    if (!hasPermission) {
-      return;
-    }
+    // IMPORTANT: Never prompt for permission from background code paths.
+    // Only show notifications if the user has already granted permission.
+    if (!(typeof window !== 'undefined' && 'Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
 
     // Check if service worker is available
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -96,37 +93,34 @@ export const usePushNotifications = () => {
         }
       };
     }
-  }, [requestPermission]);
+  }, []);
 
   const initializeNotifications = useCallback(async () => {
     // Never register a Service Worker in dev/preview: it can cache Vite chunks and break module imports.
     if (!import.meta.env.PROD) return;
 
-    // Request permission on initialization
-    const hasPermission = await requestPermission();
+    // Only initialize if permission is already granted.
+    // IMPORTANT: Do NOT call Notification.requestPermission() automatically on app load.
+    if (!(typeof window !== 'undefined' && 'Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
 
-    if (hasPermission) {
-      // Register service worker if not already registered
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
-          console.log('Service Worker registered for notifications');
+    // Register service worker if not already registered
+    if ('serviceWorker' in navigator) {
+      try {
+        await navigator.serviceWorker.register('/sw.js');
+        console.log('Service Worker registered for notifications');
 
-          // Set up notification listener
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data.type === 'NOTIFICATION_CLICKED') {
-              // Handle notification click
-              if (event.data.url) {
-                window.location.href = event.data.url;
-              }
-            }
-          });
-        } catch (error) {
-          console.error('Service Worker registration failed:', error);
-        }
+        // Set up notification listener
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data.type === 'NOTIFICATION_CLICKED') {
+            if (event.data.url) window.location.href = event.data.url;
+          }
+        });
+      } catch (error) {
+        console.error('Service Worker registration failed:', error);
       }
     }
-  }, [requestPermission]);
+  }, []);
 
   useEffect(() => {
     // Initialize notifications when component mounts

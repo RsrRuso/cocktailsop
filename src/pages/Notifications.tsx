@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { NotificationSoundPicker } from "@/components/NotificationSoundPicker";
 import { NotificationGroup } from "@/components/notifications/NotificationGroup";
@@ -27,7 +28,7 @@ const Notifications = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const navigate = useNavigate();
   const { showNotification } = useInAppNotificationContext();
-  const { showNotification: showPushNotification } = usePushNotifications();
+  const { showNotification: showPushNotification, requestPermission: requestPushPermission } = usePushNotifications();
   const processedNotificationsRef = useRef<Set<string>>(new Set());
   const subscriptionRef = useRef<any>(null);
 
@@ -115,6 +116,9 @@ const Notifications = () => {
   const unreadCount = dedupedNotifications.filter(n => !n.read).length;
 
   const handleTestNotification = async () => {
+    // Only request permission as part of a user action (button click)
+    await requestPushPermission();
+
     await showPushNotification(
       "Test Notification 🔔",
       "This is a test notification with sound!",
@@ -138,8 +142,13 @@ const Notifications = () => {
       }
 
       try {
-        await LocalNotifications.requestPermissions();
-      } catch (error) {}
+        // Only request native notification permissions on native platforms.
+        if (Capacitor.isNativePlatform()) {
+          await LocalNotifications.requestPermissions();
+        }
+      } catch (error) {
+        // ignore
+      }
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
