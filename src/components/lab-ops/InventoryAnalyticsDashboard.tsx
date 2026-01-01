@@ -385,42 +385,56 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
               {movements.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No movements recorded</p>
               ) : (
-                movements.slice(0, 50).map((m) => (
-                  <div
-                    key={m.id}
-                    className="p-3 rounded-lg bg-muted/40 border border-border/50"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate">{m.item_name}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(m.created_at), "MMM d, HH:mm")}
-                          {m.created_by_name && (
-                            <>
-                              <span>•</span>
-                              <User className="h-3 w-3" />
-                              {m.created_by_name}
-                            </>
-                          )}
+                movements.slice(0, 50).map((m) => {
+                  // Determine if this is a spirit serving (fractional deduction)
+                  const isSpiritServing = m.movement_type === 'sale' && Math.abs(m.qty) < 1;
+                  const servingMl = isSpiritServing ? Math.round(Math.abs(m.qty) * 700 * 10) / 10 : null;
+                  
+                  const getMovementLabel = () => {
+                    switch (m.movement_type) {
+                      case 'purchase': return 'Received';
+                      case 'sale': return isSpiritServing ? 'Spirit serving' : 'Sale';
+                      case 'adjustment': return 'Adjustment';
+                      case 'transfer': return 'Transfer';
+                      case 'spillage': return 'Spillage';
+                      default: return m.movement_type;
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-3 rounded-lg bg-muted/40 border border-border/50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{m.item_name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(m.created_at), "MMM d, HH:mm")}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getMovementLabel()}
+                            {servingMl && <span className="ml-1">({servingMl}ml)</span>}
+                          </p>
                         </div>
+                        <Badge
+                          variant={m.movement_type === "purchase" ? "default" : m.movement_type === "sale" ? "destructive" : "secondary"}
+                          className="shrink-0"
+                        >
+                          {m.movement_type === "purchase" ? "+" : m.movement_type === "sale" ? "-" : ""}
+                          {Math.abs(m.qty).toFixed(2)}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={m.movement_type === "purchase" ? "default" : m.movement_type === "sale" ? "destructive" : "secondary"}
-                        className="shrink-0"
-                      >
-                        {m.movement_type === "purchase" ? "+" : m.movement_type === "sale" ? "-" : ""}
-                        {Math.abs(m.qty)}
-                      </Badge>
+                      {m.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 truncate">{m.notes}</p>
+                      )}
+                      {m.to_location_name && (
+                        <p className="text-xs text-muted-foreground mt-1">→ {m.to_location_name}</p>
+                      )}
                     </div>
-                    {m.notes && (
-                      <p className="text-xs text-muted-foreground mt-2 truncate">{m.notes}</p>
-                    )}
-                    {m.to_location_name && (
-                      <p className="text-xs text-muted-foreground mt-1">→ {m.to_location_name}</p>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </ScrollArea>
