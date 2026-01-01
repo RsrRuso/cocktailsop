@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { format } from "date-fns";
-import { 
-  Package, TrendingUp, TrendingDown, ArrowDownRight, ArrowUpRight,
-  Search, RefreshCw, Users, DollarSign, ShoppingCart, Clock, User
+import {
+  Package,
+  ArrowDownRight,
+  ArrowUpRight,
+  Search,
+  RefreshCw,
+  DollarSign,
+  Clock,
+  User,
 } from "lucide-react";
 
 interface InventoryAnalyticsDashboardProps {
@@ -19,6 +25,7 @@ interface InventoryAnalyticsDashboardProps {
 
 interface MovementLog {
   id: string;
+  inventory_item_id: string;
   item_name: string;
   movement_type: string;
   qty: number;
@@ -57,16 +64,66 @@ interface ItemSummary {
   last_movement?: string;
 }
 
+function normalizeName(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[’']/g, "'");
+}
+
+function namesLooselyMatch(a: string, b: string) {
+  const na = normalizeName(a);
+  const nb = normalizeName(b);
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+function inferBottleMlFromName(name: string): number | null {
+  const s = name.toLowerCase();
+  // Common formats: 70cl, 750ml, 1l, 1.5l
+  const ml = s.match(/(\d+(?:\.\d+)?)\s*ml\b/i);
+  if (ml?.[1]) return Math.round(Number(ml[1]));
+
+  const cl = s.match(/(\d+(?:\.\d+)?)\s*cl\b/i);
+  if (cl?.[1]) return Math.round(Number(cl[1]) * 10);
+
+  const l = s.match(/(\d+(?:\.\d+)?)\s*l\b/i);
+  if (l?.[1]) return Math.round(Number(l[1]) * 1000);
+
+  // Fallback for "70CL" without space is already covered, keep safe default unknown
+  return null;
+}
+
+function formatQtyCompact(qty: number) {
+  const abs = Math.abs(qty);
+  if (abs === 0) return "0";
+  if (abs >= 1) return Number.isInteger(abs) ? String(abs) : abs.toFixed(2);
+  // show up to 3 decimals for small fractional movements
+  return abs
+    .toFixed(3)
+    .replace(/0+$/, "")
+    .replace(/\.$/, "");
+}
+
 export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDashboardProps) {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeView, setActiveView] = useState<"summary" | "movements" | "daily">("summary");
-  
+  const [activeView, setActiveView] = useState<"summary" | "movements" | "daily">(
+    "summary",
+  );
+
   const [items, setItems] = useState<any[]>([]);
   const [movements, setMovements] = useState<MovementLog[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
-  const [profiles, setProfiles] = useState<Map<string, string>>(new Map());
+
+  const refreshTimeoutRef = useRef<number | null>(null);
+  const scheduleRefresh = () => {
+    if (refreshTimeoutRef.current) window.clearTimeout(refreshTimeoutRef.current);
+    refreshTimeoutRef.current = window.setTimeout(() => {
+      fetchData();
+    }, 350);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,20 +131,24 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
       // Fetch inventory items with stock levels
       const { data: itemsData } = await supabase
         .from("lab_ops_inventory_items")
-        .select(`
+        .select(
+          `
           id, name, sku, base_unit, category,
           lab_ops_stock_levels(id, location_id, quantity)
-        `)
+        `,
+        )
         .eq("outlet_id", outletId);
 
       // Fetch stock movements
       const { data: movementsData } = await supabase
         .from("lab_ops_stock_movements")
-        .select(`
+        .select(
+          `
           id, inventory_item_id, movement_type, qty, notes, created_at, created_by, to_location_id,
           lab_ops_inventory_items(name),
           lab_ops_locations!lab_ops_stock_movements_to_location_id_fkey(name)
-        `)
+        `,
+        )
         .eq("lab_ops_inventory_items.outlet_id", outletId)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -105,31 +166,31 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
       movementsData?.forEach((m: any) => m.created_by && userIds.add(m.created_by));
       salesData?.forEach((s: any) => s.sold_by && userIds.add(s.sold_by));
 
+      const profileMap = new Map<string, string>();
       if (userIds.size > 0) {
         const { data: profilesData } = await supabase
           .from("profiles")
           .select("id, full_name, username")
           .in("id", Array.from(userIds));
-        
-        const profileMap = new Map<string, string>();
+
         profilesData?.forEach((p: any) => {
           profileMap.set(p.id, p.full_name || p.username || "Unknown");
         });
-        setProfiles(profileMap);
       }
 
       setItems(itemsData || []);
-      
+
       // Transform movements
       const formattedMovements: MovementLog[] = (movementsData || []).map((m: any) => ({
         id: m.id,
+        inventory_item_id: m.inventory_item_id,
         item_name: m.lab_ops_inventory_items?.name || "Unknown",
         movement_type: m.movement_type,
         qty: Number(m.qty) || 0,
         created_at: m.created_at,
-        created_by_name: m.created_by ? profiles.get(m.created_by) : undefined,
+        created_by_name: m.created_by ? profileMap.get(m.created_by) : undefined,
         notes: m.notes,
-        to_location_name: m.lab_ops_locations?.name
+        to_location_name: m.lab_ops_locations?.name,
       }));
       setMovements(formattedMovements);
 
@@ -140,10 +201,9 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         quantity: s.quantity || 1,
         total_price: Number(s.total_price) || 0,
         sold_at: s.sold_at,
-        sold_by_name: s.sold_by ? profiles.get(s.sold_by) : undefined
+        sold_by_name: s.sold_by ? profileMap.get(s.sold_by) : undefined,
       }));
       setSales(formattedSales);
-
     } catch (error) {
       console.error("Error fetching inventory data:", error);
     } finally {
@@ -152,7 +212,39 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   };
 
   useEffect(() => {
-    if (outletId) fetchData();
+    if (!outletId) return;
+
+    fetchData();
+
+    const channel = supabase
+      .channel(`inventory-analytics-${outletId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "lab_ops_sales",
+          filter: `outlet_id=eq.${outletId}`,
+        },
+        scheduleRefresh,
+      )
+      // Stock movements may not always include outlet_id, so we listen broadly and refresh.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lab_ops_stock_movements" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lab_ops_stock_levels" },
+        scheduleRefresh,
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimeoutRef.current) window.clearTimeout(refreshTimeoutRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [outletId]);
 
   // Calculate item summaries
