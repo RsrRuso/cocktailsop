@@ -104,6 +104,20 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       
       console.log("InventoryDepletionTracker: fetched", inventoryItems?.length || 0, "items for outlet", outletId);
 
+      // Fetch menu items to get serving_ml for accurate serving calculation
+      const { data: menuItems } = await supabase
+        .from("lab_ops_menu_items")
+        .select("id, name, inventory_item_id, serving_ml, serving_ratio_ml")
+        .eq("outlet_id", outletId);
+
+      // Create map of inventory item to serving ml
+      const servingMlMap = new Map<string, number>();
+      menuItems?.forEach((mi: any) => {
+        if (mi.inventory_item_id) {
+          servingMlMap.set(mi.inventory_item_id, mi.serving_ml || mi.serving_ratio_ml || 30);
+        }
+      });
+
       // Get inventory item IDs for this outlet to filter movements
       const inventoryItemIds = inventoryItems?.map(i => i.id) || [];
 
@@ -175,6 +189,18 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         });
       });
 
+      // Helper: infer bottle size from name
+      const inferBottleMl = (name: string): number => {
+        const s = name.toLowerCase();
+        const ml = s.match(/(\d+(?:\.\d+)?)\s*ml\b/i);
+        if (ml?.[1]) return Math.round(Number(ml[1]));
+        const cl = s.match(/(\d+(?:\.\d+)?)\s*cl\b/i);
+        if (cl?.[1]) return Math.round(Number(cl[1]) * 10);
+        const l = s.match(/(\d+(?:\.\d+)?)\s*l\b/i);
+        if (l?.[1]) return Math.round(Number(l[1]) * 1000);
+        return 700; // Default
+      };
+
       // Process movements for RECEIVED and SALES from stock_movements table
       movements?.forEach(mov => {
         const item = depletionMap.get(mov.inventory_item_id);
@@ -184,10 +210,12 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           item.received_qty += Math.abs(mov.qty || 0);
         } else if (mov.movement_type === "sale") {
           // For spirit servings, convert fractional bottles back to servings
-          // e.g., 0.04 btl = 1 serving (30ml from 700ml bottle)
+          // Use serving_ml from recipe if available, else calculate from bottle size
           if (mov.reference_type === "spirit_serving") {
-            // Each 0.04 is roughly 1 serving (30ml pour from 700ml bottle)
-            const servings = Math.round(Math.abs(mov.qty || 0) / 0.04);
+            const servingMl = servingMlMap.get(mov.inventory_item_id) || 30;
+            const bottleMl = inferBottleMl(item.name);
+            const fractionPerServing = servingMl / bottleMl;
+            const servings = Math.round(Math.abs(mov.qty || 0) / fractionPerServing);
             item.sales_qty += servings > 0 ? servings : 1;
           } else {
             item.sales_qty += Math.abs(mov.qty || 0);
