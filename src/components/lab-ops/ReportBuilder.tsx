@@ -197,8 +197,8 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
       
       const inventoryItemIds = (inventoryRes.data || []).map(i => i.id);
 
-      // Fetch remaining data in parallel including menu items for serving_ml
-      const [movementsRes, menuItemsRes, ordersRes, pourerRes] = await Promise.all([
+      // Fetch remaining data in parallel including menu items for serving_ml AND cost data from PO
+      const [movementsRes, menuItemsRes, ordersRes, pourerRes, costDataRes] = await Promise.all([
         inventoryItemIds.length > 0
           ? supabase
               .from("lab_ops_stock_movements")
@@ -218,7 +218,23 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           .from("lab_ops_pourer_readings")
           .select("bottle_id, ml_dispensed")
           .eq("outlet_id", outletId),
+        // Fetch actual cost data from PO received items
+        supabase
+          .from("lab_ops_pending_received_items")
+          .select("item_name, unit_price, quantity")
+          .eq("status", "approved"),
       ]);
+
+      // Build cost lookup map from PO data - use latest/average price per item
+      const costMap = new Map<string, number>();
+      (costDataRes.data || []).forEach((po: any) => {
+        const poName = normalizeName(po.item_name);
+        const price = Number(po.unit_price) || 0;
+        if (price > 0) {
+          // Use the latest price (overwrite) or average if needed
+          costMap.set(poName, price);
+        }
+      });
 
       // Create map of inventory item to serving ml
       const servingMlMap = new Map<string, number>();
@@ -238,6 +254,22 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
         const l = s.match(/(\d+(?:\.\d+)?)\s*l\b/i);
         if (l?.[1]) return Math.round(Number(l[1]) * 1000);
         return 700; // Default
+      };
+
+      // Helper: find cost from PO data by fuzzy matching
+      const findCostPrice = (itemName: string): number => {
+        const normalized = normalizeName(itemName);
+        // Exact match first
+        if (costMap.has(normalized)) {
+          return costMap.get(normalized)!;
+        }
+        // Fuzzy match - find any PO item that loosely matches
+        for (const [poName, price] of costMap.entries()) {
+          if (namesLooselyMatch(normalized, poName)) {
+            return price;
+          }
+        }
+        return 0; // No cost data found
       };
 
       const vatMultiplier = parseFloat(vatRate) / 100;
@@ -273,8 +305,8 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
         const menuItem = (menuItemsRes.data || []).find((m: any) => m.inventory_item_id === item.id);
         const salePrice = menuItem?.base_price || 0;
         
-        // Estimate cost (you'd want to pull from cost table in real implementation)
-        const costPrice = salePrice * 0.3; // Example: 30% food cost
+        // Get REAL cost from PO data instead of hardcoded percentage
+        const costPrice = findCostPrice(item.name);
         const markup = costPrice > 0 ? ((salePrice - costPrice) / costPrice) * 100 : 0;
         const profitMargin = salePrice - costPrice;
         const vatAmount = salePrice * vatMultiplier;
