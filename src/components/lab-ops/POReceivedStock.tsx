@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw, Users, Building2, Crown } from "lucide-react";
+import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, AlertTriangle, RefreshCw, Users, Building2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { detectBottleSizeMl } from "@/lib/bottleSize";
 import { useProcurementWorkspace } from "@/hooks/useProcurementWorkspace";
 
 interface POReceivedStockProps {
@@ -63,7 +62,7 @@ interface Outlet {
 
 export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockProps) => {
   const { user } = useAuth();
-  const { workspaces, isLoadingWorkspaces } = useProcurementWorkspace();
+  const { workspaces } = useProcurementWorkspace();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutletId, setSelectedOutletId] = useState(initialOutletId);
@@ -270,15 +269,47 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
 
       setSyncedRecords(Array.from(recordMap.values()));
 
-      // Fetch pending items
-      const { data: pending } = await supabase
+      // Fetch pending items (filtered by selected procurement workspace)
+      const { data: pending, error: pendingError } = await supabase
         .from('lab_ops_pending_received_items')
         .select('*')
         .eq('outlet_id', selectedOutletId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      setPendingItems(pending || []);
+      if (pendingError) throw pendingError;
+
+      const rawPending: PendingItem[] = (pending || []) as any;
+
+      const recordIdsForPending = Array.from(
+        new Set(rawPending.map((p) => p.po_record_id).filter(Boolean) as string[])
+      );
+
+      let allowedRecordIds = new Set<string>();
+      if (recordIdsForPending.length > 0) {
+        let recQuery = (supabase as any)
+          .from('po_received_records')
+          .select('id, workspace_id')
+          .in('id', recordIdsForPending);
+
+        if (selectedWorkspaceId) {
+          recQuery = recQuery.eq('workspace_id', selectedWorkspaceId);
+        } else {
+          recQuery = recQuery.is('workspace_id', null);
+        }
+
+        const { data: poRecs, error: poRecsError } = await recQuery;
+        if (poRecsError) throw poRecsError;
+
+        allowedRecordIds = new Set((poRecs || []).map((r: any) => r.id));
+      }
+
+      const workspaceFilteredPending = rawPending.filter((p) => {
+        if (!p.po_record_id) return !selectedWorkspaceId; // keep only for Personal
+        return allowedRecordIds.has(p.po_record_id);
+      });
+
+      setPendingItems(workspaceFilteredPending);
     } catch (error) {
       console.error('Error fetching PO received data:', error);
     } finally {
@@ -453,7 +484,7 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
                   <Users className="h-4 w-4 text-primary" />
                   {workspace.name}
                   {workspace.owner_id === user?.id && (
-                    <Crown className="h-3 w-3 text-yellow-500" />
+                    <Crown className="h-3 w-3 text-primary" />
                   )}
                 </div>
               </SelectItem>
