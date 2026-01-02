@@ -45,6 +45,17 @@ interface SaleRecord {
   table_number?: string;
 }
 
+interface OrderRecord {
+  id: string;
+  total_amount: number;
+  closed_at: string;
+}
+
+interface ReceivedCost {
+  id: string;
+  total_price: number;
+}
+
 interface DailySummary {
   date: string;
   received: number;
@@ -119,6 +130,8 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   const [items, setItems] = useState<any[]>([]);
   const [movements, setMovements] = useState<MovementLog[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
+  const [closedOrders, setClosedOrders] = useState<OrderRecord[]>([]);
+  const [receivedCosts, setReceivedCosts] = useState<ReceivedCost[]>([]);
 
   const refreshTimeoutRef = useRef<number | null>(null);
   const scheduleRefresh = () => {
@@ -164,6 +177,20 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         .order("sold_at", { ascending: false })
         .limit(200);
 
+      // Fetch closed orders for revenue calculation
+      const { data: ordersData } = await supabase
+        .from("lab_ops_orders")
+        .select("id, total_amount, closed_at")
+        .eq("outlet_id", outletId)
+        .eq("status", "closed");
+
+      // Fetch approved received items for cost calculation
+      const { data: receivedData } = await supabase
+        .from("lab_ops_pending_received_items")
+        .select("id, total_price")
+        .eq("outlet_id", outletId)
+        .eq("status", "approved");
+
       // Collect unique user IDs for profile lookup
       const userIds = new Set<string>();
       movementsData?.forEach((m: any) => m.created_by && userIds.add(m.created_by));
@@ -207,6 +234,19 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         sold_by_name: s.sold_by ? profileMap.get(s.sold_by) : undefined,
       }));
       setSales(formattedSales);
+
+      // Set closed orders for revenue
+      setClosedOrders((ordersData || []).map((o: any) => ({
+        id: o.id,
+        total_amount: Number(o.total_amount) || 0,
+        closed_at: o.closed_at,
+      })));
+
+      // Set received costs
+      setReceivedCosts((receivedData || []).map((r: any) => ({
+        id: r.id,
+        total_price: Number(r.total_price) || 0,
+      })));
     } catch (error) {
       console.error("Error fetching inventory data:", error);
     } finally {
@@ -355,20 +395,18 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   const totalReceived = itemSummaries.reduce((sum, i) => sum + i.total_received, 0);
   const totalSold = itemSummaries.reduce((sum, i) => sum + i.total_sold, 0);
   const totalStock = itemSummaries.reduce((sum, i) => sum + i.current_stock, 0);
-  const totalRevenue = sales.reduce((sum, s) => sum + s.total_price, 0);
   
-  // Calculate total cost from purchase movements (using price data if available)
+  // Revenue from closed orders (primary source) or fall back to sales table
+  const totalRevenue = useMemo(() => {
+    const ordersRevenue = closedOrders.reduce((sum, o) => sum + o.total_amount, 0);
+    if (ordersRevenue > 0) return ordersRevenue;
+    return sales.reduce((sum, s) => sum + s.total_price, 0);
+  }, [closedOrders, sales]);
+  
+  // Total cost from approved received items
   const totalCost = useMemo(() => {
-    // Get cost from movements with notes containing price info, or estimate from PO data
-    return movements
-      .filter((m) => m.movement_type === "purchase")
-      .reduce((sum, m) => {
-        // Try to extract cost from notes if available (format: "cost: X" or similar)
-        const costMatch = m.notes?.match(/(?:cost|price)[:\s]*(\d+(?:\.\d+)?)/i);
-        if (costMatch) return sum + Number(costMatch[1]) * Math.abs(m.qty);
-        return sum;
-      }, 0);
-  }, [movements]);
+    return receivedCosts.reduce((sum, r) => sum + r.total_price, 0);
+  }, [receivedCosts]);
   
   const netProfit = totalRevenue - totalCost;
 
