@@ -36,6 +36,7 @@ import Home from "./pages/Home"; // Eager load Home for instant navigation
 
 // Lazy load other routes for code splitting
 const Profile = lazy(() => import("./pages/Profile"));
+const ProfileGrowth = lazy(() => import("./pages/ProfileGrowth"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
 const EditPost = lazy(() => import("./pages/EditPost"));
@@ -276,6 +277,7 @@ const AppContent = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/profile/growth" element={<ProfileGrowth />} />
           <Route path="/edit-post/:id" element={<EditPost />} />
           <Route path="/edit-reel/:id" element={<EditReel />} />
           <Route path="/post/:id" element={<PostDetail />} />
