@@ -106,6 +106,7 @@ const MusicBox = lazy(() => import("./pages/MusicBox"));
 const MusicBoxAdmin = lazy(() => import("./pages/MusicBoxAdmin"));
 const Introduction = lazy(() => import("./pages/Introduction"));
 const CocktailSOPPromo = lazy(() => import("./pages/CocktailSOPPromo"));
+const VenueVerificationPromo = lazy(() => import("./pages/VenueVerificationPromo"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Community = lazy(() => import("./pages/Community"));
 const Calendar = lazy(() => import("./pages/Calendar"));
@@ -352,6 +353,7 @@ const AppContent = () => {
           <Route path="/cocktail-sop" element={<CocktailSOP />} />
           <Route path="/cocktail-sop-library" element={<CocktailSOPLibrary />} />
           <Route path="/cocktail-sop-promo" element={<CocktailSOPPromo />} />
+          <Route path="/venue-verification-promo" element={<VenueVerificationPromo />} />
           <Route path="/crm" element={<CRM />} />
           <Route path="/crm/leads" element={<CRMLeads />} />
           <Route path="/crm/contacts" element={<CRMContacts />} />
