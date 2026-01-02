@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Camera, Link, ImagePlus } from "lucide-react";
+import { ArrowLeft, Save, Camera } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { AvatarCropper } from "@/components/AvatarCropper";
@@ -33,12 +33,6 @@ const EditProfile = () => {
   const [croppedCoverBlob, setCroppedCoverBlob] = useState<Blob | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Website icon upload
-  const [websiteIconUrl, setWebsiteIconUrl] = useState<string>("");
-  const [tempWebsiteIconUrl, setTempWebsiteIconUrl] = useState<string>("");
-  const [showWebsiteIconCropper, setShowWebsiteIconCropper] = useState(false);
-  const [croppedWebsiteIconBlob, setCroppedWebsiteIconBlob] = useState<Blob | null>(null);
-  const websiteIconInputRef = useRef<HTMLInputElement>(null);
   const initialProfileRef = useRef<any | null>(null);
 
   const [profile, setProfile] = useState({
@@ -92,7 +86,6 @@ const EditProfile = () => {
       });
       setAvatarUrl(data.avatar_url || "");
       setCoverUrl(data.cover_url || "");
-      setWebsiteIconUrl(data.website_icon_url || "");
     }
   };
 
@@ -144,31 +137,6 @@ const EditProfile = () => {
     setCoverUrl(url);
     setShowCoverCropper(false);
     toast.success("Cover photo cropped! Click Save to update your profile.");
-  };
-
-  const handleWebsiteIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB");
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setTempWebsiteIconUrl(reader.result as string);
-        setShowWebsiteIconCropper(true);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleWebsiteIconCropComplete = (blob: Blob) => {
-    setCroppedWebsiteIconBlob(blob);
-    const url = URL.createObjectURL(blob);
-    setWebsiteIconUrl(url);
-    setShowWebsiteIconCropper(false);
-    toast.success("Website icon cropped! Click Save to update your profile.");
   };
 
   const handleSave = async () => {
@@ -227,9 +195,6 @@ const EditProfile = () => {
         patch.cover_url = await uploadBlob("covers", croppedCoverBlob, "cover.jpg");
       }
 
-      if (croppedWebsiteIconBlob) {
-        patch.website_icon_url = await uploadBlob("avatars", croppedWebsiteIconBlob, "website-icon.png");
-      }
 
       if (Object.keys(patch).length === 0) {
         toast.message("No changes to save");
@@ -280,16 +245,6 @@ const EditProfile = () => {
         />
       )}
 
-      {showWebsiteIconCropper && tempWebsiteIconUrl && (
-        <AvatarCropper
-          imageUrl={tempWebsiteIconUrl}
-          onCropComplete={handleWebsiteIconCropComplete}
-          onCancel={() => {
-            setShowWebsiteIconCropper(false);
-            setTempWebsiteIconUrl("");
-          }}
-        />
-      )}
 
       <div className="px-4 py-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
@@ -511,65 +466,12 @@ const EditProfile = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <label className="text-sm font-medium">Website</label>
-              
-              {/* Website Icon Upload */}
-              <div className="flex items-start gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted border-2 border-dashed border-primary/30 flex items-center justify-center">
-                    {websiteIconUrl ? (
-                      <img src={websiteIconUrl} alt="Website icon" className="w-full h-full object-cover" />
-                    ) : (
-                      <Link className="w-6 h-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => websiteIconInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center transition-all"
-                  >
-                    <ImagePlus className="w-3 h-3 text-white" />
-                  </button>
-                  <input
-                    ref={websiteIconInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleWebsiteIconChange}
-                    className="hidden"
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Input
-                    type="url"
-                    value={profile.website}
-                    onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                    placeholder="https://yourwebsite.com"
-                    className="glass border-primary/20"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Upload a custom icon for your website link (max 5MB)
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-website"
-                  checked={profile.show_website}
-                  onCheckedChange={(checked) => setProfile({ ...profile, show_website: checked })}
-                />
-                <Label htmlFor="show-website" className="text-sm text-muted-foreground">
-                  Show website on profile
-                </Label>
-              </div>
-            </div>
           </div>
 
           {/* Custom Links Section */}
           <div className="space-y-4 pt-4 border-t border-border/50">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Custom Links</h3>
+              <h3 className="text-lg font-semibold">Links</h3>
               <p className="text-xs text-muted-foreground">Add social media, portfolios & more</p>
             </div>
             {user && <ProfileLinksEditor userId={user.id} />}
