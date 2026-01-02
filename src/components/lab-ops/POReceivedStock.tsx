@@ -97,17 +97,31 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      // First get inventory item IDs for this outlet to filter movements
+      const { data: outletItems } = await supabase
+        .from('lab_ops_inventory_items')
+        .select('id')
+        .eq('outlet_id', outletId);
+      
+      const itemIds = outletItems?.map(i => i.id) || [];
+      
       // Fetch synced stock movements from PO receiving (both auto-synced and approved)
-      const { data: movements } = await supabase
-        .from('lab_ops_stock_movements')
-        .select(`
-          *,
-          lab_ops_inventory_items (name, sku),
-          lab_ops_locations!lab_ops_stock_movements_to_location_id_fkey (name)
-        `)
-        .in('reference_type', ['po_receiving', 'po_receiving_approved'])
-        .order('created_at', { ascending: false })
-        .limit(100);
+      // ONLY for items belonging to this outlet
+      let movements: any[] = [];
+      if (itemIds.length > 0) {
+        const { data } = await supabase
+          .from('lab_ops_stock_movements')
+          .select(`
+            *,
+            lab_ops_inventory_items (name, sku),
+            lab_ops_locations!lab_ops_stock_movements_to_location_id_fkey (name)
+          `)
+          .in('inventory_item_id', itemIds)
+          .in('reference_type', ['po_receiving', 'po_receiving_approved'])
+          .order('created_at', { ascending: false })
+          .limit(100);
+        movements = data || [];
+      }
 
       // Group movements by reference_id (po_record_id)
       const recordMap = new Map<string, ReceivedRecord>();
