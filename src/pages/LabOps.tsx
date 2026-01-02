@@ -3280,7 +3280,7 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
                 Live stock tracking: received, sold, current levels, and movement history
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6">
+            <CardContent className="px-3 sm:px-6 pt-4">
               <InventoryAnalyticsDashboard outletId={selectedOutletId} />
             </CardContent>
           </Card>
