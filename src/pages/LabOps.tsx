@@ -3270,7 +3270,7 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
 
         {/* Inventory Tab - Now shows full analytics dashboard */}
         <TabsContent value="inventory" className="mt-4">
-          <Card className="overflow-hidden">
+          <Card>
             <CardHeader className="pb-4 px-3 sm:px-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <Package className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -3280,7 +3280,7 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
                 Live stock tracking: received, sold, current levels, and movement history
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6 overflow-hidden">
+            <CardContent className="px-3 sm:px-6">
               <InventoryAnalyticsDashboard outletId={selectedOutletId} />
             </CardContent>
           </Card>
