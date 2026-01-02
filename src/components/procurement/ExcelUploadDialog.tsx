@@ -440,7 +440,7 @@ export const ExcelUploadDialog = ({
 
         {step === 'upload' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <Label>Document Number *</Label>
                 <Input
@@ -465,12 +465,16 @@ export const ExcelUploadDialog = ({
                 )}
               </div>
               <div>
-                <Label>Supplier/Location</Label>
+                <Label>Supplier/Location *</Label>
                 <Input
-                  placeholder="e.g. Fresh Produce Supplier"
+                  placeholder="Enter supplier name"
                   value={supplier}
                   onChange={(e) => setSupplier(e.target.value)}
+                  className={!supplier.trim() ? 'border-yellow-500/50' : ''}
                 />
+                {!supplier.trim() && (
+                  <p className="text-xs text-yellow-500 mt-1">Required for saving</p>
+                )}
               </div>
               {type === 'po' && (
                 <div>
