@@ -27,6 +27,41 @@ function namesLooselyMatch(a: string, b: string) {
   return na === nb || na.includes(nb) || nb.includes(na);
 }
 
+// Strict spirit detection - handles null category by checking name patterns
+function isSpiritLike(category: string | null | undefined, name: string): boolean {
+  const categoryLower = (category || "").toLowerCase();
+  const nameLower = (name || "").toLowerCase();
+
+  const isSpirit =
+    categoryLower === "spirits" ||
+    nameLower.includes("whisky") ||
+    nameLower.includes("whiskey") ||
+    nameLower.includes("vodka") ||
+    nameLower.includes("rum") ||
+    nameLower.includes("tequila") ||
+    nameLower.includes("brandy") ||
+    nameLower.includes("cognac") ||
+    nameLower.includes("mezcal") ||
+    nameLower.includes("bourbon") ||
+    nameLower.includes("scotch") ||
+    nameLower.includes("gin") ||
+    nameLower.startsWith("jw ") ||
+    nameLower.includes("johnnie walker") ||
+    nameLower.includes(" jw ");
+
+  const isNonSpirit =
+    categoryLower.includes("soft") ||
+    categoryLower.includes("mixer") ||
+    categoryLower.includes("food") ||
+    nameLower.includes("ginger beer") ||
+    nameLower.includes("tonic") ||
+    nameLower.includes("soda") ||
+    nameLower.includes("juice") ||
+    nameLower.includes("cola");
+
+  return isSpirit && !isNonSpirit;
+}
+
 interface InventoryDepletionTrackerProps {
   outletId: string;
 }
@@ -190,37 +225,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         return 700; // Default
       };
 
-      // Strict spirit detection (category may be null in some datasets)
-      const isSpiritLike = (category: string | null | undefined, name: string) => {
-        const categoryLower = (category || "").toLowerCase();
-        const nameLower = (name || "").toLowerCase();
-
-        const isSpirit =
-          categoryLower === "spirits" ||
-          nameLower.includes("whisky") ||
-          nameLower.includes("whiskey") ||
-          nameLower.includes("vodka") ||
-          nameLower.includes("rum") ||
-          nameLower.includes("tequila") ||
-          nameLower.includes("brandy") ||
-          nameLower.includes("cognac") ||
-          nameLower.includes("mezcal") ||
-          nameLower.includes("bourbon") ||
-          nameLower.includes("scotch") ||
-          nameLower.includes("gin");
-
-        const isNonSpirit =
-          categoryLower.includes("soft") ||
-          categoryLower.includes("mixer") ||
-          categoryLower.includes("food") ||
-          nameLower.includes("ginger beer") ||
-          nameLower.includes("tonic") ||
-          nameLower.includes("soda") ||
-          nameLower.includes("juice") ||
-          nameLower.includes("cola");
-
-        return isSpirit && !isNonSpirit;
-      };
+      // Use top-level isSpiritLike function for spirit detection
 
       // Process movements for RECEIVED and SALES from stock_movements table
       movements?.forEach(mov => {
@@ -484,19 +489,19 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
                     <div className="bg-blue-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Sales Qty</p>
                       <p className="text-sm font-semibold text-blue-500">
-                        {((item.category || "").toLowerCase() === "spirits") ? item.sales_qty.toFixed(2) : item.sales_qty.toFixed(0)}
+                        {isSpiritLike(item.category, item.name) ? item.sales_qty.toFixed(2) : item.sales_qty.toFixed(0)}
                       </p>
                     </div>
                     <div className="bg-purple-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Pourer</p>
                       <p className="text-sm font-semibold text-purple-500">
-                        {((item.category || "").toLowerCase() === "spirits") ? item.pourer_qty.toFixed(2) : item.pourer_qty.toFixed(1)}
+                        {isSpiritLike(item.category, item.name) ? item.pourer_qty.toFixed(2) : item.pourer_qty.toFixed(1)}
                       </p>
                     </div>
                     <div className={`rounded-lg p-2 min-w-[80px] flex-shrink-0 text-center ${item.variance < 0 ? 'bg-red-500/10' : item.variance > 0 ? 'bg-green-500/10' : 'bg-muted/50'}`}>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Variance</p>
                       <p className={`text-sm font-semibold ${item.variance < 0 ? 'text-red-500' : item.variance > 0 ? 'text-green-500' : ''}`}>
-                        {item.variance > 0 ? '+' : ''}{((item.category || "").toLowerCase() === "spirits") ? item.variance.toFixed(2) : item.variance.toFixed(1)}
+                        {item.variance > 0 ? '+' : ''}{isSpiritLike(item.category, item.name) ? item.variance.toFixed(2) : item.variance.toFixed(1)}
                       </p>
                     </div>
                   </div>
