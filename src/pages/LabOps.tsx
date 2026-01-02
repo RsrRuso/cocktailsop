@@ -3023,10 +3023,10 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
         </Card>
       )}
 
-      {/* Outlet Selector */}
-      {outlets.length > 1 && (
+      {/* Outlet Selector - Always show dropdown for consistency */}
+      {outlets.length > 0 && (
         <div className="flex items-center gap-2">
-          <Label className="text-sm text-muted-foreground whitespace-nowrap">Outlet:</Label>
+          <MapPin className="h-4 w-4 text-primary shrink-0" />
           <Select value={selectedOutletId} onValueChange={setSelectedOutletId}>
             <SelectTrigger className="w-full bg-background">
               <SelectValue placeholder="Select outlet" />
@@ -3039,14 +3039,6 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      )}
-
-      {/* Current Outlet Display (single outlet) */}
-      {outlets.length === 1 && (
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-          <MapPin className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">{outlets[0]?.name}</span>
         </div>
       )}
 
