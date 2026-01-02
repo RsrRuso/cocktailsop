@@ -291,7 +291,11 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   }, [outletId]);
 
   // Calculate item summaries - use loose matching AND count from both sales table and sale movements
+  // Sales qty is converted to bottle parts for spirits (e.g., 3 sold × 0.04 = 0.12 bottles)
   const itemSummaries = useMemo<ItemSummary[]>(() => {
+    const SERVING_ML = 30; // Standard pour size
+    const DEFAULT_BOTTLE_ML = 700; // Default bottle size for spirits
+    
     return items.map((item) => {
       const itemMovements = movements.filter(
         (m) => namesLooselyMatch(m.item_name, item.name)
@@ -306,16 +310,34 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         .filter((m) => m.movement_type === "purchase" || (m.movement_type === "adjustment" && m.qty > 0))
         .reduce((sum, m) => sum + Math.abs(m.qty), 0);
 
-      // Calculate sold from sales table (primary source)
-      const soldFromSales = itemSales.reduce((sum, s) => sum + s.quantity, 0);
+      // Get raw sales count from sales table
+      const rawSalesQty = itemSales.reduce((sum, s) => sum + s.quantity, 0);
       
-      // Also count sale movements (fractional spirit servings)
+      // Detect bottle size from item name for spirits
+      const bottleMl = inferBottleMlFromName(item.name) || DEFAULT_BOTTLE_ML;
+      const isSpirit = item.category?.toLowerCase() === 'spirits' || 
+                       item.name?.toLowerCase().includes('whisky') ||
+                       item.name?.toLowerCase().includes('whiskey') ||
+                       item.name?.toLowerCase().includes('vodka') ||
+                       item.name?.toLowerCase().includes('gin') ||
+                       item.name?.toLowerCase().includes('rum') ||
+                       item.name?.toLowerCase().includes('tequila') ||
+                       item.name?.toLowerCase().includes('brandy') ||
+                       item.name?.toLowerCase().includes('cognac') ||
+                       inferBottleMlFromName(item.name) !== null; // Has bottle size = likely spirit
+      
+      // Convert sales qty to bottle parts for spirits (qty × 30ml / bottle_ml)
+      // E.g., 3 drinks sold from 700ml bottle = 3 × (30/700) = 0.128 bottles
+      const fractionPerServing = isSpirit ? (SERVING_ML / bottleMl) : 1;
+      const soldInBottleParts = rawSalesQty * fractionPerServing;
+      
+      // Also check sale movements (which are already in bottle parts)
       const soldFromMovements = itemMovements
         .filter((m) => m.movement_type === "sale")
         .reduce((sum, m) => sum + Math.abs(m.qty), 0);
       
-      // Use the higher value to avoid missing any sales
-      const totalSold = Math.max(soldFromSales, soldFromMovements);
+      // Use the higher value - movements are already fractional, sales are now converted
+      const totalSold = Math.max(soldInBottleParts, soldFromMovements);
 
       const currentStock = (item.lab_ops_stock_levels || []).reduce(
         (sum: number, sl: any) => sum + (Number(sl.quantity) || 0),
@@ -330,7 +352,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         sku: item.sku || "",
         base_unit: item.base_unit || "unit",
         total_received: totalReceived,
-        total_sold: totalSold,
+        total_sold: totalSold, // Now in bottle parts for spirits
         current_stock: currentStock,
         last_movement: lastMovement
       };
