@@ -469,7 +469,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   }
 
   return (
-    <div className="space-y-4 overflow-hidden">
+    <div className="space-y-4">
       {/* Summary Cards - Mobile responsive with horizontal scroll */}
       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-thin -mx-1 px-1">
         <Card className="bg-green-500/10 border-green-500/30 min-w-[140px] flex-shrink-0">
@@ -560,8 +560,8 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
 
         {/* Item Summary View */}
         <TabsContent value="summary" className="mt-4">
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2 pr-3">
+          <div className="h-[400px] overflow-y-auto scrollbar-thin">
+            <div className="space-y-2 p-1 pr-6">
               {filteredItems.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No items found</p>
               ) : (
@@ -609,13 +609,13 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                 ))
               )}
             </div>
-          </ScrollArea>
+          </div>
         </TabsContent>
 
         {/* Movement Log View */}
         <TabsContent value="movements" className="mt-4">
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2 pr-3">
+          <div className="h-[400px] overflow-y-auto scrollbar-thin">
+            <div className="space-y-2 p-1 pr-6">
               {movements.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No movements recorded</p>
               ) : (
@@ -694,13 +694,13 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                 })
               )}
             </div>
-          </ScrollArea>
+          </div>
         </TabsContent>
 
         {/* Daily Summary View */}
         <TabsContent value="daily" className="mt-4">
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2 pr-3">
+          <div className="h-[400px] overflow-y-auto scrollbar-thin">
+            <div className="space-y-2 p-1 pr-6">
               {dailySummaries.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No daily data available</p>
               ) : (
@@ -758,7 +758,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                 ))
               )}
             </div>
-          </ScrollArea>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
