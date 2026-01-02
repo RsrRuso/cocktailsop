@@ -82,16 +82,25 @@ export const POFIFOSyncPanel = ({
   });
 
   // Fetch recent received records - RQ codes only (materials, not ML market list)
+  // ONLY from selected workspace or personal records
   const { data: receivedRecords, isLoading: loadingReceived } = useQuery({
     queryKey: ['po-received-records', userId, workspaceId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('po_received_records')
         .select('id, document_number, supplier_name, received_date, total_items, workspace_id')
         .ilike('document_number', 'RQ%') // Only RQ codes (materials), not ML (market list)
         .order('received_date', { ascending: false })
         .limit(20);
       
+      // Filter by workspace if selected, otherwise show only personal records
+      if (workspaceId) {
+        query = query.eq('workspace_id', workspaceId);
+      } else {
+        query = query.eq('user_id', userId).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },

@@ -2031,7 +2031,14 @@ const POReceivedItems = () => {
 
   const deleteReceivedRecord = async (id: string) => {
     try {
-      // Delete items linked to this record by record_id first
+      // Delete FIFO sync records linked to this record first
+      // This ensures pending items in stock sync are removed when invoice is deleted
+      await supabase
+        .from('po_fifo_sync')
+        .delete()
+        .eq('po_received_record_id', id);
+      
+      // Delete items linked to this record by record_id
       await (supabase as any)
         .from('purchase_order_received_items')
         .delete()
@@ -2043,11 +2050,13 @@ const POReceivedItems = () => {
         .delete()
         .eq('id', id);
       
-      // Invalidate all related queries so PO status updates correctly
+      // Invalidate all related queries so PO status and sync panel update correctly
       queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
       queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }); // Update PO status
-      toast.success("Record deleted - PO status updated");
+      queryClient.invalidateQueries({ queryKey: ['po-fifo-sync'] }); // Update FIFO sync panel
+      queryClient.invalidateQueries({ queryKey: ['po-received-records'] }); // Update stock sync panel
+      toast.success("Record deleted - PO and stock sync updated");
     } catch (error: any) {
       toast.error("Failed to delete: " + error.message);
     }
