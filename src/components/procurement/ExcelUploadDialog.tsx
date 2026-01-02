@@ -51,6 +51,7 @@ interface ExcelUploadDialogProps {
   currencySymbol: string;
   type: 'po' | 'receiving';
   workspaceId?: string | null;
+  checkDuplicateDocument?: (docNumber: string) => Promise<{ exists: boolean; message?: string }>;
 }
 
 export const ExcelUploadDialog = ({
@@ -59,7 +60,8 @@ export const ExcelUploadDialog = ({
   onConfirmSave,
   currencySymbol,
   type,
-  workspaceId
+  workspaceId,
+  checkDuplicateDocument
 }: ExcelUploadDialogProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -299,6 +301,16 @@ export const ExcelUploadDialog = ({
 
     setIsSaving(true);
     try {
+      // Check for duplicate document number if handler provided
+      if (checkDuplicateDocument) {
+        const duplicateCheck = await checkDuplicateDocument(docNumber.trim());
+        if (duplicateCheck.exists) {
+          toast.error(duplicateCheck.message || `Document "${docNumber}" already exists`);
+          setIsSaving(false);
+          return;
+        }
+      }
+
       await onConfirmSave({
         docNumber: docNumber.trim(),
         supplier: supplier.trim() || 'Excel Import',

@@ -3269,6 +3269,25 @@ const POReceivedItems = () => {
             );
           }
         }}
+        checkDuplicateDocument={async (docNumber) => {
+          // Check po_received_records table for duplicate
+          let query = supabase
+            .from('po_received_records')
+            .select('id, document_number')
+            .eq('document_number', docNumber);
+          
+          if (selectedWorkspaceId) {
+            query = query.eq('workspace_id', selectedWorkspaceId);
+          } else {
+            query = query.eq('user_id', user?.id).is('workspace_id', null);
+          }
+          
+          const { data: existing } = await query;
+          if (existing && existing.length > 0) {
+            return { exists: true, message: `Document "${docNumber}" already received. Cannot create duplicate.` };
+          }
+          return { exists: false };
+        }}
         currencySymbol={currencySymbols[currency]}
         type="receiving"
         workspaceId={selectedWorkspaceId}
