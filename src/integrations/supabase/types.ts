@@ -11843,7 +11843,9 @@ export type Database = {
         Row: {
           created_at: string
           document_number: string | null
+          follow_up_notes: string | null
           id: string
+          is_received: boolean
           item_name: string
           master_item_id: string | null
           purchase_order_id: string | null
@@ -11853,13 +11855,16 @@ export type Database = {
           total_price: number | null
           unit: string | null
           unit_price: number | null
+          updated_at: string | null
           user_id: string
           workspace_id: string | null
         }
         Insert: {
           created_at?: string
           document_number?: string | null
+          follow_up_notes?: string | null
           id?: string
+          is_received?: boolean
           item_name: string
           master_item_id?: string | null
           purchase_order_id?: string | null
@@ -11869,13 +11874,16 @@ export type Database = {
           total_price?: number | null
           unit?: string | null
           unit_price?: number | null
+          updated_at?: string | null
           user_id: string
           workspace_id?: string | null
         }
         Update: {
           created_at?: string
           document_number?: string | null
+          follow_up_notes?: string | null
           id?: string
+          is_received?: boolean
           item_name?: string
           master_item_id?: string | null
           purchase_order_id?: string | null
@@ -11885,6 +11893,7 @@ export type Database = {
           total_price?: number | null
           unit?: string | null
           unit_price?: number | null
+          updated_at?: string | null
           user_id?: string
           workspace_id?: string | null
         }
