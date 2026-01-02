@@ -305,9 +305,9 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-visible">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 overflow-visible">
         <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -444,7 +444,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
                   </div>
 
                   {/* Metrics Grid - Mobile friendly with horizontal scroll */}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                  <div className="flex gap-2 overflow-x-auto pb-2 px-0.5">
                     <div className="bg-green-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Received</p>
                       <p className="text-sm font-semibold text-green-500">+{item.received_qty.toFixed(1)}</p>
