@@ -2784,6 +2784,29 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
       })
       .eq("id", editingItem.id);
 
+    // Update or create cost record if cost is provided
+    const unitCost = parseFloat(editingItem.unit_cost);
+    if (!isNaN(unitCost) && unitCost >= 0) {
+      const { data: existingCost } = await supabase
+        .from("lab_ops_inventory_item_costs")
+        .select("id")
+        .eq("inventory_item_id", editingItem.id)
+        .limit(1)
+        .maybeSingle();
+      
+      if (existingCost) {
+        await supabase
+          .from("lab_ops_inventory_item_costs")
+          .update({ unit_cost: unitCost })
+          .eq("id", existingCost.id);
+      } else {
+        await supabase.from("lab_ops_inventory_item_costs").insert({
+          inventory_item_id: editingItem.id,
+          unit_cost: unitCost,
+        });
+      }
+    }
+
     setEditingItem(null);
     fetchItems();
     toast({ title: "Inventory item updated" });
@@ -3568,6 +3591,16 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
                   onChange={(e) => setEditingItem({ ...editingItem, par_level: e.target.value })} 
                 />
               </div>
+              <div>
+                <Label>Unit Cost (per bottle)</Label>
+                <Input 
+                  type="number" 
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editingItem.unit_cost || ""} 
+                  onChange={(e) => setEditingItem({ ...editingItem, unit_cost: e.target.value })} 
+                />
+              </div>
               <Button onClick={updateInventoryItem} className="w-full">Save Changes</Button>
             </div>
           )}
@@ -3855,7 +3888,7 @@ function PurchasingModule({ outletId }: { outletId: string }) {
         .update({ status: "closed" })
         .eq("id", po.id);
 
-      // Add stock for each line item
+      // Add stock for each line item and update costs
       const lines = po.lab_ops_purchase_order_lines || [];
       for (const line of lines) {
         // Get or create stock level
@@ -3867,6 +3900,8 @@ function PurchasingModule({ outletId }: { outletId: string }) {
           .single();
 
         const qtyOrdered = line.qty_ordered || 0;
+        const unitPrice = line.unit_price || 0;
+        
         if (existing) {
           await supabase
             .from("lab_ops_stock_levels")
@@ -3886,6 +3921,28 @@ function PurchasingModule({ outletId }: { outletId: string }) {
               inventory_item_id: line.inventory_item_id,
               location_id: loc.id,
               quantity: qtyOrdered,
+            });
+          }
+        }
+        
+        // Update or create cost record for the item with the PO price
+        if (unitPrice > 0) {
+          const { data: existingCost } = await supabase
+            .from("lab_ops_inventory_item_costs")
+            .select("id")
+            .eq("inventory_item_id", line.inventory_item_id)
+            .limit(1)
+            .maybeSingle();
+          
+          if (existingCost) {
+            await supabase
+              .from("lab_ops_inventory_item_costs")
+              .update({ unit_cost: unitPrice })
+              .eq("id", existingCost.id);
+          } else {
+            await supabase.from("lab_ops_inventory_item_costs").insert({
+              inventory_item_id: line.inventory_item_id,
+              unit_cost: unitPrice,
             });
           }
         }
@@ -4172,15 +4229,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
   const fetchInventoryItems = async () => {
     const { data } = await supabase
       .from("lab_ops_inventory_items")
-      .select("*, lab_ops_stock_levels(quantity)")
+      .select("*, lab_ops_stock_levels(quantity), lab_ops_inventory_item_costs(unit_cost)")
       .eq("outlet_id", outletId)
       .order("name");
     
-    // Calculate total stock for each item - unit_cost is per-bottle from receiving PO
-    const itemsWithStock = (data || []).map(item => ({
-      ...item,
-      totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0)
-    }));
+    // Calculate total stock and get unit_cost from costs table
+    const itemsWithStock = (data || []).map(item => {
+      const costs = item.lab_ops_inventory_item_costs as any[] | undefined;
+      const latestCost = costs?.[0]?.unit_cost ?? 0;
+      return {
+        ...item,
+        totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0),
+        unit_cost: latestCost
+      };
+    });
     setInventoryItems(itemsWithStock);
   };
   const createRecipe = async () => {
