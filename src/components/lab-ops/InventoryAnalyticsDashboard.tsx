@@ -469,10 +469,9 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   }
 
   return (
-    <div className="space-y-4 overflow-visible">
+    <div className="space-y-4 overflow-hidden">
       {/* Summary Cards - Mobile responsive with horizontal scroll */}
-      <div className="flex gap-3 overflow-x-auto pb-3 px-1 scrollbar-thin"
-           style={{ marginLeft: '-4px', marginRight: '-4px', paddingLeft: '4px', paddingRight: '4px' }}>
+      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-thin -mx-1 px-1">
         <Card className="bg-green-500/10 border-green-500/30 min-w-[140px] flex-shrink-0">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -569,18 +568,18 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                 filteredItems.map((item) => (
                   <div
                     key={item.item_id}
-                    className="p-3 rounded-lg bg-muted/40 border border-border/50"
+                    className="p-3 rounded-lg bg-muted/40 border border-border/50 overflow-hidden"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1 overflow-hidden">
                         <p className="font-semibold truncate">{item.item_name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {item.sku || "No SKU"} • {item.base_unit}
                         </p>
                       </div>
                       <Badge 
                         variant={item.current_stock > 0 ? "secondary" : "destructive"}
-                        className="text-sm font-bold px-2 shrink-0"
+                        className="text-sm font-bold px-2 shrink-0 whitespace-nowrap max-w-[120px] truncate"
                       >
                         {item.current_stock} {item.base_unit}
                       </Badge>
