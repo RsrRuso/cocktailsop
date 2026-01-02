@@ -74,6 +74,8 @@ export default function ReelEditorPro() {
     try {
       await exportVideo();
       toast.success('Video exported successfully!');
+      // Navigate to reels page after successful export
+      navigate('/reels');
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export video');
