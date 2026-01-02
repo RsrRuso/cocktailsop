@@ -2090,6 +2090,25 @@ Example format:
             }))
           });
         }}
+        checkDuplicateDocument={async (docNumber) => {
+          // Check purchase_orders table for duplicate
+          let query = supabase
+            .from('purchase_orders')
+            .select('id, order_number')
+            .eq('order_number', docNumber);
+          
+          if (selectedWorkspaceId) {
+            query = query.eq('workspace_id', selectedWorkspaceId);
+          } else {
+            query = query.eq('user_id', user?.id).is('workspace_id', null);
+          }
+          
+          const { data: existing } = await query;
+          if (existing && existing.length > 0) {
+            return { exists: true, message: `PO "${docNumber}" already exists. Cannot create duplicate.` };
+          }
+          return { exists: false };
+        }}
         currencySymbol={currencySymbols[currency]}
         type="po"
         workspaceId={selectedWorkspaceId}
