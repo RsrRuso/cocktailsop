@@ -493,6 +493,16 @@ const OpsTools = () => {
         featured: false,
       },
       {
+        name: "Venue Verification Promo",
+        description: "Watch the venue verification showcase",
+        details: "Interactive promo reel showcasing venue verification benefits, process, and features. See how verified venues stand out.",
+        icon: Video,
+        gradient: "from-purple-600 to-pink-500",
+        premium: false,
+        path: "/venue-verification-promo",
+        featured: true,
+      },
+      {
         name: "My Venues",
         description: "Manage your registered venues",
         details: "Access your venue dashboards to manage outlets, verify staff claims, add admins, and track verification status.",
