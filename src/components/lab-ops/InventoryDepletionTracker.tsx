@@ -190,6 +190,38 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         return 700; // Default
       };
 
+      // Strict spirit detection (category may be null in some datasets)
+      const isSpiritLike = (category: string | null | undefined, name: string) => {
+        const categoryLower = (category || "").toLowerCase();
+        const nameLower = (name || "").toLowerCase();
+
+        const isSpirit =
+          categoryLower === "spirits" ||
+          nameLower.includes("whisky") ||
+          nameLower.includes("whiskey") ||
+          nameLower.includes("vodka") ||
+          nameLower.includes("rum") ||
+          nameLower.includes("tequila") ||
+          nameLower.includes("brandy") ||
+          nameLower.includes("cognac") ||
+          nameLower.includes("mezcal") ||
+          nameLower.includes("bourbon") ||
+          nameLower.includes("scotch") ||
+          nameLower.includes("gin");
+
+        const isNonSpirit =
+          categoryLower.includes("soft") ||
+          categoryLower.includes("mixer") ||
+          categoryLower.includes("food") ||
+          nameLower.includes("ginger beer") ||
+          nameLower.includes("tonic") ||
+          nameLower.includes("soda") ||
+          nameLower.includes("juice") ||
+          nameLower.includes("cola");
+
+        return isSpirit && !isNonSpirit;
+      };
+
       // Process movements for RECEIVED and SALES from stock_movements table
       movements?.forEach(mov => {
         const item = depletionMap.get(mov.inventory_item_id);
@@ -219,7 +251,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
 
         if (!matchingItem) return;
 
-        const isSpirit = (matchingItem.category || "").toLowerCase() === "spirits";
+        const isSpirit = isSpiritLike(matchingItem.category ?? null, matchingItem.name);
         if (!isSpirit) return;
 
         const bottleMl = inferBottleMl(matchingItem.name);
