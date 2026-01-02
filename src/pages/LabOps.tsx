@@ -2548,9 +2548,16 @@ function MenuModule({ outletId }: { outletId: string }) {
 }
 
 // ====================== INVENTORY MODULE ======================
-function InventoryModule({ outletId }: { outletId: string }) {
+interface InventoryOutlet {
+  id: string;
+  name: string;
+}
+
+function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [outlets, setOutlets] = useState<InventoryOutlet[]>([]);
+  const [selectedOutletId, setSelectedOutletId] = useState(initialOutletId);
   const [items, setItems] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [stockTakes, setStockTakes] = useState<any[]>([]);
@@ -2579,15 +2586,62 @@ function InventoryModule({ outletId }: { outletId: string }) {
   const [stockLocation, setStockLocation] = useState("");
   const [stockNotes, setStockNotes] = useState("");
 
+  // Fetch outlets on mount
   useEffect(() => {
-    fetchItems();
-    fetchLocations();
-    fetchStockTakes();
-    fetchMovements();
-  }, [outletId]);
+    const fetchOutlets = async () => {
+      if (!user?.id) return;
+      
+      // Fetch outlets user owns or is staff of
+      const { data: ownedOutlets } = await supabase
+        .from('lab_ops_outlets')
+        .select('id, name')
+        .eq('user_id', user.id);
+      
+      const { data: staffOutlets } = await supabase
+        .from('lab_ops_staff')
+        .select('outlet_id, lab_ops_outlets(id, name)')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      
+      const allOutlets: InventoryOutlet[] = [];
+      const seenIds = new Set<string>();
+      
+      ownedOutlets?.forEach(o => {
+        if (!seenIds.has(o.id)) {
+          allOutlets.push({ id: o.id, name: o.name });
+          seenIds.add(o.id);
+        }
+      });
+      
+      staffOutlets?.forEach((s: any) => {
+        if (s.lab_ops_outlets && !seenIds.has(s.lab_ops_outlets.id)) {
+          allOutlets.push({ id: s.lab_ops_outlets.id, name: s.lab_ops_outlets.name });
+          seenIds.add(s.lab_ops_outlets.id);
+        }
+      });
+      
+      setOutlets(allOutlets);
+      
+      // If initial outlet is not in the list, select the first one
+      if (allOutlets.length > 0 && !seenIds.has(selectedOutletId)) {
+        setSelectedOutletId(allOutlets[0].id);
+      }
+    };
+    
+    fetchOutlets();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (selectedOutletId) {
+      fetchItems();
+      fetchLocations();
+      fetchStockTakes();
+      fetchMovements();
+    }
+  }, [selectedOutletId]);
 
   const fetchItems = async () => {
-    if (!outletId) {
+    if (!selectedOutletId) {
       console.warn("fetchItems: No outletId provided");
       setItems([]);
       return;
@@ -2595,13 +2649,13 @@ function InventoryModule({ outletId }: { outletId: string }) {
     const { data, error } = await supabase
       .from("lab_ops_inventory_items")
       .select("*, lab_ops_stock_levels(*)")
-      .eq("outlet_id", outletId)
+      .eq("outlet_id", selectedOutletId)
       .order("name");
     
     if (error) {
       console.error("fetchItems error:", error);
     }
-    console.log("fetchItems for outlet", outletId, "returned", data?.length || 0, "items");
+    console.log("fetchItems for outlet", selectedOutletId, "returned", data?.length || 0, "items");
     setItems(data || []);
   };
 
@@ -2609,7 +2663,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
     const { data } = await supabase
       .from("lab_ops_locations")
       .select("*")
-      .eq("outlet_id", outletId)
+      .eq("outlet_id", selectedOutletId)
       .order("name");
     setLocations(data || []);
   };
@@ -2618,7 +2672,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
     const { data } = await supabase
       .from("lab_ops_stock_takes")
       .select("*")
-      .eq("outlet_id", outletId)
+      .eq("outlet_id", selectedOutletId)
       .order("created_at", { ascending: false })
       .limit(10);
     setStockTakes(data || []);
@@ -2629,7 +2683,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
     const { data: outletItems } = await supabase
       .from("lab_ops_inventory_items")
       .select("id")
-      .eq("outlet_id", outletId);
+      .eq("outlet_id", selectedOutletId);
     
     const itemIds = outletItems?.map(i => i.id) || [];
     
@@ -2684,7 +2738,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
     if (!newItemName.trim()) return;
 
     await supabase.from("lab_ops_inventory_items").insert({
-      outlet_id: outletId,
+      outlet_id: selectedOutletId,
       name: newItemName.trim(),
       sku: newItemSku.trim() || null,
       base_unit: newItemUnit,
@@ -2696,7 +2750,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
       const { data: newItem } = await supabase
         .from("lab_ops_inventory_items")
         .select("id")
-        .eq("outlet_id", outletId)
+        .eq("outlet_id", selectedOutletId)
         .eq("name", newItemName.trim())
         .single();
       
@@ -2776,7 +2830,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
       await Promise.all(deletePromises);
       
       // Delete all items for this outlet
-      const { error } = await supabase.from("lab_ops_inventory_items").delete().eq("outlet_id", outletId);
+      const { error } = await supabase.from("lab_ops_inventory_items").delete().eq("outlet_id", selectedOutletId);
       
       if (error) throw error;
 
@@ -2822,7 +2876,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
         const { data: existing } = await supabase
           .from("lab_ops_inventory_items")
           .select("id")
-          .eq("outlet_id", outletId)
+          .eq("outlet_id", selectedOutletId)
           .eq("name", name)
           .single();
 
@@ -2835,7 +2889,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
         const { data: newItem, error } = await supabase
           .from("lab_ops_inventory_items")
           .insert({
-            outlet_id: outletId,
+            outlet_id: selectedOutletId,
             name,
             sku: sku || null,
             base_unit: unit || "piece",
@@ -2911,7 +2965,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
   };
 
   const startStockTake = async () => {
-    if (!outletId) {
+    if (!selectedOutletId) {
       toast({ title: "Please select an outlet first", variant: "destructive" });
       return;
     }
@@ -2920,7 +2974,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
       const { data, error } = await supabase
         .from("lab_ops_stock_takes")
         .insert({
-          outlet_id: outletId,
+          outlet_id: selectedOutletId,
           status: "in_progress",
           started_by: user?.id,
         })
@@ -2969,7 +3023,34 @@ function InventoryModule({ outletId }: { outletId: string }) {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={(tab) => { 
+      {/* Outlet Selector */}
+      {outlets.length > 1 && (
+        <div className="flex items-center gap-2">
+          <Label className="text-sm text-muted-foreground whitespace-nowrap">Outlet:</Label>
+          <Select value={selectedOutletId} onValueChange={setSelectedOutletId}>
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="Select outlet" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border shadow-lg z-50">
+              {outlets.map(outlet => (
+                <SelectItem key={outlet.id} value={outlet.id}>
+                  {outlet.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Current Outlet Display (single outlet) */}
+      {outlets.length === 1 && (
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+          <MapPin className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{outlets[0]?.name}</span>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={(tab) => {
         setActiveTab(tab);
         if (tab === 'items' || tab === 'inventory') fetchItems();
       }}>
@@ -3185,7 +3266,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-6 overflow-visible">
-              <InventoryAnalyticsDashboard outletId={outletId} />
+              <InventoryAnalyticsDashboard outletId={selectedOutletId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -3203,7 +3284,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-6">
-              <POReceivedStock outletId={outletId} />
+              <POReceivedStock outletId={selectedOutletId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -3221,7 +3302,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-6">
-              <SpillageTracking outletId={outletId} />
+              <SpillageTracking outletId={selectedOutletId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -3377,7 +3458,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                <SalesAnalyticsDashboard outletId={outletId} />
+                <SalesAnalyticsDashboard outletId={selectedOutletId} />
               </CardContent>
             </Card>
 
@@ -3393,7 +3474,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                <InventoryDepletionTracker outletId={outletId} />
+                <InventoryDepletionTracker outletId={selectedOutletId} />
               </CardContent>
             </Card>
             
@@ -3409,7 +3490,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                <ReportBuilder outletId={outletId} />
+                <ReportBuilder outletId={selectedOutletId} />
               </CardContent>
             </Card>
           </div>
