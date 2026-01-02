@@ -469,9 +469,10 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-visible">
       {/* Summary Cards - Mobile responsive with horizontal scroll */}
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+      <div className="flex gap-3 overflow-x-auto pb-3 px-1 scrollbar-thin"
+           style={{ marginLeft: '-4px', marginRight: '-4px', paddingLeft: '4px', paddingRight: '4px' }}>
         <Card className="bg-green-500/10 border-green-500/30 min-w-[140px] flex-shrink-0">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
