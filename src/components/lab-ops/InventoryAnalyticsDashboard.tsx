@@ -313,22 +313,43 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
       // Get raw sales count from sales table
       const rawSalesQty = itemSales.reduce((sum, s) => sum + s.quantity, 0);
       
-      // Detect bottle size from item name for spirits
+      // ONLY apply fractional conversion for spirits category or spirit keywords
+      // Soft drinks, food, etc. should NOT be converted - they sell as 1:1 units
       const bottleMl = inferBottleMlFromName(item.name) || DEFAULT_BOTTLE_ML;
-      const isSpirit = item.category?.toLowerCase() === 'spirits' || 
-                       item.name?.toLowerCase().includes('whisky') ||
-                       item.name?.toLowerCase().includes('whiskey') ||
-                       item.name?.toLowerCase().includes('vodka') ||
-                       item.name?.toLowerCase().includes('gin') ||
-                       item.name?.toLowerCase().includes('rum') ||
-                       item.name?.toLowerCase().includes('tequila') ||
-                       item.name?.toLowerCase().includes('brandy') ||
-                       item.name?.toLowerCase().includes('cognac') ||
-                       inferBottleMlFromName(item.name) !== null; // Has bottle size = likely spirit
+      const categoryLower = item.category?.toLowerCase() || '';
+      const nameLower = item.name?.toLowerCase() || '';
       
-      // Convert sales qty to bottle parts for spirits (qty × 30ml / bottle_ml)
-      // E.g., 3 drinks sold from 700ml bottle = 3 × (30/700) = 0.128 bottles
-      const fractionPerServing = isSpirit ? (SERVING_ML / bottleMl) : 1;
+      // Strict spirit detection - ONLY category 'spirits' or explicit spirit keywords
+      const isSpirit = categoryLower === 'spirits' || 
+                       nameLower.includes('whisky') ||
+                       nameLower.includes('whiskey') ||
+                       nameLower.includes('vodka') ||
+                       nameLower.includes('rum') ||
+                       nameLower.includes('tequila') ||
+                       nameLower.includes('brandy') ||
+                       nameLower.includes('cognac') ||
+                       nameLower.includes('mezcal') ||
+                       nameLower.includes('bourbon') ||
+                       nameLower.includes('scotch');
+      
+      // Exclude soft drinks, mixers, food explicitly
+      const isNonSpirit = categoryLower.includes('soft') || 
+                          categoryLower.includes('mixer') ||
+                          categoryLower.includes('food') ||
+                          categoryLower.includes('beverage') ||
+                          nameLower.includes('ginger beer') ||
+                          nameLower.includes('tonic') ||
+                          nameLower.includes('soda') ||
+                          nameLower.includes('juice') ||
+                          nameLower.includes('cola');
+      
+      // Final spirit check: must be spirit AND not explicitly non-spirit
+      const applyFractionalConversion = isSpirit && !isNonSpirit;
+      
+      // Convert sales qty to bottle parts ONLY for spirits (qty × 30ml / bottle_ml)
+      // E.g., 3 drinks sold from 700ml spirit bottle = 3 × (30/700) = 0.128 bottles
+      // Non-spirits (soft drinks, food, etc.) use 1:1 ratio - no conversion
+      const fractionPerServing = applyFractionalConversion ? (SERVING_ML / bottleMl) : 1;
       const soldInBottleParts = rawSalesQty * fractionPerServing;
       
       // Also check sale movements (which are already in bottle parts)
