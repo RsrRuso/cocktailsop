@@ -501,7 +501,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
                     <div className={`rounded-lg p-2 min-w-[80px] flex-shrink-0 text-center ${item.variance < 0 ? 'bg-red-500/10' : item.variance > 0 ? 'bg-green-500/10' : 'bg-muted/50'}`}>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Variance</p>
                       <p className={`text-sm font-semibold ${item.variance < 0 ? 'text-red-500' : item.variance > 0 ? 'text-green-500' : ''}`}>
-                        {item.variance > 0 ? '+' : ''}{isSpiritLike(item.category, item.name) ? item.variance.toFixed(2) : item.variance.toFixed(1)}
+                        {item.variance > 0 ? '+' : ''}{isSpiritLike(item.category, item.name) ? item.variance.toFixed(2) : Math.round(item.variance)}
                       </p>
                     </div>
                   </div>
