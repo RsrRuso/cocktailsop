@@ -15,10 +15,11 @@ import TopNav from "@/components/TopNav";
 import { AvatarCropper } from "@/components/AvatarCropper";
 import { CoverPhotoCropper } from "@/components/CoverPhotoCropper";
 import { smartUpload } from "@/lib/uploadUtils";
+import ProfileLinksEditor from "@/components/profile/ProfileLinksEditor";
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [tempAvatarUrl, setTempAvatarUrl] = useState<string>("");
@@ -563,6 +564,15 @@ const EditProfile = () => {
                 </Label>
               </div>
             </div>
+          </div>
+
+          {/* Custom Links Section */}
+          <div className="space-y-4 pt-4 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Custom Links</h3>
+              <p className="text-xs text-muted-foreground">Add social media, portfolios & more</p>
+            </div>
+            {user && <ProfileLinksEditor userId={user.id} />}
           </div>
 
           <Button

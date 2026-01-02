@@ -11495,6 +11495,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_links: {
+        Row: {
+          created_at: string
+          icon_type: string | null
+          icon_url: string | null
+          id: string
+          is_visible: boolean | null
+          sort_order: number | null
+          title: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon_type?: string | null
+          icon_url?: string | null
+          id?: string
+          is_visible?: boolean | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          icon_type?: string | null
+          icon_url?: string | null
+          id?: string
+          is_visible?: boolean | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_views: {
         Row: {
           id: string
