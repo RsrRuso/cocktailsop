@@ -36,17 +36,18 @@ interface DepletionItem {
   name: string;
   sku: string | null;
   base_unit: string;
+  category?: string | null;
   par_level: number;
   // Quantities
   received_qty: number;
-  sales_qty: number;
-  pourer_qty: number;
+  sales_qty: number; // For spirits: bottle parts (e.g., 0.12). For non-spirits: units (e.g., 2)
+  pourer_qty: number; // For spirits: bottle parts derived from ml. For non-spirits: typically 0
   current_stock: number;
   // Calculated
   system_depletion: number;
   physical_depletion: number;
-  variance: number;
-  variance_pct: number;
+  variance: number; // received - sold (negative means oversold vs received)
+  variance_pct: number; // only computed for shortages (variance < 0)
 }
 
 export default function InventoryDepletionTracker({ outletId }: InventoryDepletionTrackerProps) {
@@ -93,7 +94,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       const { data: inventoryItems, error: invError } = await supabase
         .from("lab_ops_inventory_items")
         .select(`
-          id, name, sku, base_unit, par_level,
+          id, name, sku, base_unit, category, par_level,
           lab_ops_stock_levels (quantity)
         `)
         .eq("outlet_id", outletId);
@@ -104,19 +105,6 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
       
       console.log("InventoryDepletionTracker: fetched", inventoryItems?.length || 0, "items for outlet", outletId);
 
-      // Fetch menu items to get serving_ml for accurate serving calculation
-      const { data: menuItems } = await supabase
-        .from("lab_ops_menu_items")
-        .select("id, name, inventory_item_id, serving_ml, serving_ratio_ml")
-        .eq("outlet_id", outletId);
-
-      // Create map of inventory item to serving ml
-      const servingMlMap = new Map<string, number>();
-      menuItems?.forEach((mi: any) => {
-        if (mi.inventory_item_id) {
-          servingMlMap.set(mi.inventory_item_id, mi.serving_ml || mi.serving_ratio_ml || 30);
-        }
-      });
 
       // Get inventory item IDs for this outlet to filter movements
       const inventoryItemIds = inventoryItems?.map(i => i.id) || [];
@@ -177,6 +165,7 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           name: item.name,
           sku: item.sku,
           base_unit: item.base_unit,
+          category: (item as any).category,
           par_level: item.par_level || 0,
           received_qty: 0,
           sales_qty: 0,
@@ -209,43 +198,46 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         if (mov.movement_type === "purchase") {
           item.received_qty += Math.abs(mov.qty || 0);
         } else if (mov.movement_type === "sale") {
-          // For spirit servings, convert fractional bottles back to servings
-          // Use serving_ml from recipe if available, else calculate from bottle size
-          if (mov.reference_type === "spirit_serving") {
-            const servingMl = servingMlMap.get(mov.inventory_item_id) || 30;
-            const bottleMl = inferBottleMl(item.name);
-            const fractionPerServing = servingMl / bottleMl;
-            const servings = Math.round(Math.abs(mov.qty || 0) / fractionPerServing);
-            item.sales_qty += servings > 0 ? servings : 1;
-          } else {
-            item.sales_qty += Math.abs(mov.qty || 0);
-          }
+          // IMPORTANT:
+          // - For spirits: sale qty is already stored as fractional bottles ("bottle parts") in stock movements.
+          // - For non-spirits: sale qty is stored as 1:1 units.
+          // So we never convert sale movements into servings here.
+          item.sales_qty += Math.abs(mov.qty || 0);
         }
       });
 
       // Process pourer readings - match by bottle name to inventory item name
+      // We convert pourer ml to bottle parts ONLY for spirits.
       pourerReadings?.forEach(reading => {
         const bottleName = bottleToItemName.get(reading.bottle_id);
         if (!bottleName) return;
 
-        // Find matching inventory item by name (case insensitive)
         const matchingItem = Array.from(depletionMap.values()).find(
           item => item.name.toLowerCase().includes(bottleName.toLowerCase()) ||
                   bottleName.toLowerCase().includes(item.name.toLowerCase())
         );
-        
-        if (matchingItem) {
-          matchingItem.pourer_qty += reading.ml_dispensed || 0;
-        }
+
+        if (!matchingItem) return;
+
+        const isSpirit = (matchingItem.category || "").toLowerCase() === "spirits";
+        if (!isSpirit) return;
+
+        const bottleMl = inferBottleMl(matchingItem.name);
+        const ml = Number(reading.ml_dispensed || 0);
+        matchingItem.pourer_qty += bottleMl > 0 ? (ml / bottleMl) : 0;
       });
 
       // Calculate variance
+      // Variance here is INVENTORY variance: received vs sold.
+      // - For spirits: both received_qty and sales_qty are in bottle parts.
+      // - For non-spirits: both are in units.
       depletionMap.forEach(item => {
         item.system_depletion = item.sales_qty;
         item.physical_depletion = item.pourer_qty;
-        item.variance = item.physical_depletion - item.system_depletion;
-        item.variance_pct = item.system_depletion > 0 
-          ? (item.variance / item.system_depletion) * 100 
+
+        item.variance = item.received_qty - item.sales_qty;
+        item.variance_pct = item.variance < 0 && item.received_qty > 0
+          ? (Math.abs(item.variance) / item.received_qty) * 100
           : 0;
       });
 
@@ -279,8 +271,8 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
     const totalReceived = items.reduce((sum, i) => sum + i.received_qty, 0);
     const totalSales = items.reduce((sum, i) => sum + i.sales_qty, 0);
     const totalPourer = items.reduce((sum, i) => sum + i.pourer_qty, 0);
-    const totalVariance = totalPourer - totalSales;
-    const itemsWithVariance = items.filter(i => Math.abs(i.variance_pct) > 5).length;
+    const totalVariance = items.reduce((sum, i) => sum + i.variance, 0);
+    const itemsWithVariance = items.filter(i => i.variance_pct > 5).length;
     const lowStockItems = items.filter(i => i.current_stock < i.par_level).length;
 
     return { totalReceived, totalSales, totalPourer, totalVariance, itemsWithVariance, lowStockItems };
@@ -459,16 +451,20 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
                     </div>
                     <div className="bg-blue-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Sales Qty</p>
-                      <p className="text-sm font-semibold text-blue-500">{item.sales_qty.toFixed(0)}</p>
+                      <p className="text-sm font-semibold text-blue-500">
+                        {((item.category || "").toLowerCase() === "spirits") ? item.sales_qty.toFixed(2) : item.sales_qty.toFixed(0)}
+                      </p>
                     </div>
                     <div className="bg-purple-500/10 rounded-lg p-2 min-w-[70px] flex-shrink-0 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Pourer</p>
-                      <p className="text-sm font-semibold text-purple-500">{item.pourer_qty.toFixed(1)}</p>
+                      <p className="text-sm font-semibold text-purple-500">
+                        {((item.category || "").toLowerCase() === "spirits") ? item.pourer_qty.toFixed(2) : item.pourer_qty.toFixed(1)}
+                      </p>
                     </div>
-                    <div className={`rounded-lg p-2 min-w-[80px] flex-shrink-0 text-center ${item.variance > 0 ? 'bg-red-500/10' : item.variance < 0 ? 'bg-green-500/10' : 'bg-muted/50'}`}>
+                    <div className={`rounded-lg p-2 min-w-[80px] flex-shrink-0 text-center ${item.variance < 0 ? 'bg-red-500/10' : item.variance > 0 ? 'bg-green-500/10' : 'bg-muted/50'}`}>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Variance</p>
-                      <p className={`text-sm font-semibold ${item.variance > 0 ? 'text-red-500' : item.variance < 0 ? 'text-green-500' : ''}`}>
-                        {item.variance > 0 ? '+' : ''}{item.variance.toFixed(1)}
+                      <p className={`text-sm font-semibold ${item.variance < 0 ? 'text-red-500' : item.variance > 0 ? 'text-green-500' : ''}`}>
+                        {item.variance > 0 ? '+' : ''}{((item.category || "").toLowerCase() === "spirits") ? item.variance.toFixed(2) : item.variance.toFixed(1)}
                       </p>
                     </div>
                   </div>
