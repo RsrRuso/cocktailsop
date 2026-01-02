@@ -4233,14 +4233,30 @@ function RecipesModule({ outletId }: { outletId: string }) {
       .eq("outlet_id", outletId)
       .order("name");
     
-    // Calculate total stock and get unit_cost from costs table
+    // Also fetch pending received items to get unit prices as fallback
+    const { data: pendingItems } = await supabase
+      .from("lab_ops_pending_received_items")
+      .select("item_name, unit_price")
+      .eq("outlet_id", outletId);
+    
+    // Build a map of item name -> latest unit price from pending items
+    const pendingPriceMap = new Map<string, number>();
+    for (const p of pendingItems || []) {
+      if (p.unit_price && p.unit_price > 0) {
+        pendingPriceMap.set(p.item_name.toLowerCase(), p.unit_price);
+      }
+    }
+    
+    // Calculate total stock and get unit_cost from costs table or pending items
     const itemsWithStock = (data || []).map(item => {
       const costs = item.lab_ops_inventory_item_costs as any[] | undefined;
       const latestCost = costs?.[0]?.unit_cost ?? 0;
+      const pendingPrice = pendingPriceMap.get(item.name.toLowerCase()) ?? 0;
       return {
         ...item,
         totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0),
-        unit_cost: latestCost
+        unit_cost: latestCost,
+        pending_unit_price: pendingPrice
       };
     });
     setInventoryItems(itemsWithStock);
