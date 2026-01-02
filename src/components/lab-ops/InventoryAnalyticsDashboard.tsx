@@ -560,7 +560,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
 
         {/* Item Summary View */}
         <TabsContent value="summary" className="mt-4">
-          <div className="h-[400px] overflow-y-auto scrollbar-thin">
+          <div className="h-[400px] overflow-y-auto scrollbar-thin pr-[max(1.25rem,env(safe-area-inset-right))]">
             <div className="space-y-2 p-1 pr-6">
               {filteredItems.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No items found</p>
@@ -614,7 +614,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
 
         {/* Movement Log View */}
         <TabsContent value="movements" className="mt-4">
-          <div className="h-[400px] overflow-y-auto scrollbar-thin">
+          <div className="h-[400px] overflow-y-auto scrollbar-thin pr-[max(1.25rem,env(safe-area-inset-right))]">
             <div className="space-y-2 p-1 pr-6">
               {movements.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No movements recorded</p>
@@ -622,7 +622,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                 movements.slice(0, 50).map((m) => {
                   // Determine bottle size from item name for accurate ml calculation
                   const bottleMl = inferBottleMlFromName(m.item_name) || 700;
-                  const isSpiritServing = m.movement_type === 'sale' && Math.abs(m.qty) < 1;
+                  const isSpiritServing = m.movement_type === "sale" && Math.abs(m.qty) < 1;
                   const servingMl = isSpiritServing ? Math.round(Math.abs(m.qty) * bottleMl) : null;
                   
                   const getMovementLabel = () => {
@@ -699,7 +699,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
 
         {/* Daily Summary View */}
         <TabsContent value="daily" className="mt-4">
-          <div className="h-[400px] overflow-y-auto scrollbar-thin">
+          <div className="h-[400px] overflow-y-auto scrollbar-thin pr-[max(1.25rem,env(safe-area-inset-right))]">
             <div className="space-y-2 p-1 pr-6">
               {dailySummaries.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No daily data available</p>
