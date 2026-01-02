@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
+import { Package, Clock, CheckCircle, XCircle, Plus, Search, FileText, User, Calendar, MapPin, ArrowRight, AlertTriangle, RefreshCw, Users, Building2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { detectBottleSizeMl } from "@/lib/bottleSize";
+import { useProcurementWorkspace } from "@/hooks/useProcurementWorkspace";
 
 interface POReceivedStockProps {
   outletId: string;
@@ -29,6 +30,7 @@ interface ReceivedRecord {
   received_by_name: string;
   created_at: string;
   items?: any[];
+  workspace_id?: string | null;
 }
 
 interface PendingItem {
@@ -46,6 +48,7 @@ interface PendingItem {
   status: string;
   created_at: string;
   po_record_id: string | null;
+  workspace_id?: string | null;
 }
 
 interface Location {
@@ -60,6 +63,8 @@ interface Outlet {
 
 export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockProps) => {
   const { user } = useAuth();
+  const { workspaces, isLoadingWorkspaces } = useProcurementWorkspace();
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutletId, setSelectedOutletId] = useState(initialOutletId);
   const [activeTab, setActiveTab] = useState("synced");
@@ -76,6 +81,26 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
   const [newItemSku, setNewItemSku] = useState("");
   const [baseUnit, setBaseUnit] = useState("");
   const [parLevel, setParLevel] = useState("0");
+
+  // Load saved workspace preference
+  useEffect(() => {
+    const savedWorkspaceId = localStorage.getItem('procurement-workspace-id');
+    if (savedWorkspaceId && savedWorkspaceId !== 'null') {
+      setSelectedWorkspaceId(savedWorkspaceId);
+    }
+  }, []);
+
+  // Save workspace preference
+  const handleWorkspaceChange = (workspaceId: string | null) => {
+    setSelectedWorkspaceId(workspaceId);
+    if (workspaceId) {
+      localStorage.setItem('procurement-workspace-id', workspaceId);
+    } else {
+      localStorage.removeItem('procurement-workspace-id');
+    }
+  };
+
+  const selectedWorkspace = workspaces?.find(w => w.id === selectedWorkspaceId);
 
   // Fetch outlets on mount
   useEffect(() => {
@@ -128,7 +153,7 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
       fetchLocations();
       setupRealtime();
     }
-  }, [selectedOutletId]);
+  }, [selectedOutletId, selectedWorkspaceId]);
 
   const setupRealtime = () => {
     const channel = supabase
@@ -203,14 +228,26 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
         });
       });
 
-      // Fetch additional details from po_received_records
+      // Fetch additional details from po_received_records filtered by workspace
       const recordIds = Array.from(recordMap.keys());
       if (recordIds.length > 0) {
-        const { data: poRecords } = await (supabase as any)
+        let poQuery = (supabase as any)
           .from('po_received_records')
-          .select('id, supplier_name, document_number, received_date, total_value, received_by_name')
+          .select('id, supplier_name, document_number, received_date, total_value, received_by_name, workspace_id')
           .in('id', recordIds);
+        
+        // Filter by workspace
+        if (selectedWorkspaceId) {
+          poQuery = poQuery.eq('workspace_id', selectedWorkspaceId);
+        } else {
+          poQuery = poQuery.is('workspace_id', null);
+        }
+        
+        const { data: poRecords } = await poQuery;
 
+        // Clear and repopulate with workspace-filtered records
+        const filteredRecordIds = new Set(poRecords?.map((pr: any) => pr.id) || []);
+        
         poRecords?.forEach((pr: any) => {
           const record = recordMap.get(pr.id);
           if (record) {
@@ -219,8 +256,16 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
             record.received_date = pr.received_date;
             record.total_value = pr.total_value || 0;
             record.received_by_name = pr.received_by_name || '';
+            record.workspace_id = pr.workspace_id;
           }
         });
+        
+        // Remove records not in the selected workspace
+        for (const [id] of recordMap) {
+          if (!filteredRecordIds.has(id)) {
+            recordMap.delete(id);
+          }
+        }
       }
 
       setSyncedRecords(Array.from(recordMap.values()));
@@ -374,6 +419,49 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
 
   return (
     <div className="space-y-4">
+      {/* Procurement Workspace Selector - Like Purchase Orders */}
+      <div className="flex items-center gap-2">
+        <Select 
+          value={selectedWorkspaceId || "personal"} 
+          onValueChange={(v) => handleWorkspaceChange(v === "personal" ? null : v)}
+        >
+          <SelectTrigger className="flex-1 bg-background">
+            <div className="flex items-center gap-2">
+              {selectedWorkspace ? (
+                <>
+                  <Users className="h-4 w-4 text-primary" />
+                  <span>{selectedWorkspace.name}</span>
+                </>
+              ) : (
+                <>
+                  <Building2 className="h-4 w-4" />
+                  <span>Personal</span>
+                </>
+              )}
+            </div>
+          </SelectTrigger>
+          <SelectContent className="bg-popover border shadow-lg z-50">
+            <SelectItem value="personal">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Personal
+              </div>
+            </SelectItem>
+            {workspaces?.map((workspace) => (
+              <SelectItem key={workspace.id} value={workspace.id}>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  {workspace.name}
+                  {workspace.owner_id === user?.id && (
+                    <Crown className="h-3 w-3 text-yellow-500" />
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Outlet Selector */}
       {outlets.length > 1 && (
         <div className="flex items-center gap-2">
