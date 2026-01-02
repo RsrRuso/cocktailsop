@@ -30,6 +30,7 @@ import {
   detectDocumentType,
   normalizeItemCode 
 } from "@/components/procurement/EnhancedReceivingDialog";
+import { ReceivedItemsManager } from "@/components/procurement/ReceivedItemsManager";
 import { ManualTextUploadDialog } from "@/components/procurement/ManualTextUploadDialog";
 import { ExcelUploadDialog } from "@/components/procurement/ExcelUploadDialog";
 import { DocumentScanner } from "@/components/procurement/DocumentScanner";
@@ -159,6 +160,16 @@ const POReceivedItems = () => {
   const [showManualUpload, setShowManualUpload] = useState(false);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showItemsManager, setShowItemsManager] = useState(false);
+  const [itemsManagerData, setItemsManagerData] = useState<{
+    recordId: string;
+    items: any[];
+    documentNumber?: string;
+    supplierName?: string;
+    receivedDate: string;
+    totalValue: number;
+  } | null>(null);
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
 
   // Workspace state - use staff workspace if in staffMode, otherwise from localStorage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
@@ -1974,6 +1985,50 @@ const POReceivedItems = () => {
   
   const forecast = calculateForecast();
 
+  // Load items for a specific record to manage tick/untick
+  const loadRecordItems = async (record: RecentReceived) => {
+    setIsLoadingItems(true);
+    try {
+      const { data: items, error } = await supabase
+        .from('purchase_order_received_items')
+        .select('id, item_name, quantity, unit, unit_price, total_price, is_received, follow_up_notes, document_number, received_date')
+        .eq('record_id', record.id)
+        .order('item_name');
+      
+      if (error) throw error;
+      
+      if (!items || items.length === 0) {
+        // Fall back to variance_data if no items in database
+        if (record.variance_data?.items) {
+          toast.info("Items loaded from record data (read-only)");
+          setShowRecordContent(record);
+        } else {
+          toast.error("No items found for this record");
+        }
+        return;
+      }
+      
+      setItemsManagerData({
+        recordId: record.id,
+        items: items.map(i => ({
+          ...i,
+          is_received: i.is_received ?? true
+        })),
+        documentNumber: record.document_number || undefined,
+        supplierName: record.supplier_name || undefined,
+        receivedDate: record.received_date,
+        totalValue: record.total_value || 0
+      });
+      setShowItemsManager(true);
+    } catch (error: any) {
+      toast.error("Failed to load items: " + error.message);
+      // Fall back to simple view
+      setShowRecordContent(record);
+    } finally {
+      setIsLoadingItems(false);
+    }
+  };
+
   const deleteReceivedRecord = async (id: string) => {
     try {
       // Delete items linked to this record by record_id first
@@ -2249,7 +2304,13 @@ const POReceivedItems = () => {
                           </div>
                         </div>
                         <div className="flex gap-0.5 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRecordContent(record)}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7" 
+                            onClick={() => loadRecordItems(record)}
+                            disabled={isLoadingItems}
+                          >
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteReceivedRecord(record.id)}>
@@ -3292,6 +3353,28 @@ const POReceivedItems = () => {
         type="receiving"
         workspaceId={selectedWorkspaceId}
       />
+
+      {/* Received Items Manager - for tick/untick after receiving */}
+      {itemsManagerData && (
+        <ReceivedItemsManager
+          open={showItemsManager}
+          onOpenChange={(open) => {
+            setShowItemsManager(open);
+            if (!open) setItemsManagerData(null);
+          }}
+          recordId={itemsManagerData.recordId}
+          documentNumber={itemsManagerData.documentNumber}
+          supplierName={itemsManagerData.supplierName}
+          receivedDate={itemsManagerData.receivedDate}
+          totalValue={itemsManagerData.totalValue}
+          items={itemsManagerData.items}
+          currencySymbol={currencySymbols[currency]}
+          onItemsUpdated={() => {
+            queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+            queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
+          }}
+        />
+      )}
 
     </div>
   );
