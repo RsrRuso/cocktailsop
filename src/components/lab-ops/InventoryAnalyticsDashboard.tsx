@@ -561,25 +561,25 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         {/* Item Summary View */}
         <TabsContent value="summary" className="mt-4">
           <ScrollArea className="h-[400px]">
-            <div className="space-y-2">
+            <div className="space-y-2 pr-3">
               {filteredItems.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No items found</p>
               ) : (
                 filteredItems.map((item) => (
                   <div
                     key={item.item_id}
-                    className="p-3 rounded-lg bg-muted/40 border border-border/50 overflow-hidden"
+                    className="p-3 rounded-lg bg-muted/40 border border-border/50"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1 overflow-hidden">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
                         <p className="font-semibold truncate">{item.item_name}</p>
                         <p className="text-xs text-muted-foreground truncate">
                           {item.sku || "No SKU"} • {item.base_unit}
                         </p>
                       </div>
-                      <Badge 
+                      <Badge
                         variant={item.current_stock > 0 ? "secondary" : "destructive"}
-                        className="text-sm font-bold px-2 shrink-0 whitespace-nowrap max-w-[120px] truncate"
+                        className="text-sm font-bold px-2 shrink-0 whitespace-nowrap"
                       >
                         {item.current_stock} {item.base_unit}
                       </Badge>
@@ -615,7 +615,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         {/* Movement Log View */}
         <TabsContent value="movements" className="mt-4">
           <ScrollArea className="h-[400px]">
-            <div className="space-y-2">
+            <div className="space-y-2 pr-3">
               {movements.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No movements recorded</p>
               ) : (
@@ -700,7 +700,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         {/* Daily Summary View */}
         <TabsContent value="daily" className="mt-4">
           <ScrollArea className="h-[400px]">
-            <div className="space-y-2">
+            <div className="space-y-2 pr-3">
               {dailySummaries.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No daily data available</p>
               ) : (
