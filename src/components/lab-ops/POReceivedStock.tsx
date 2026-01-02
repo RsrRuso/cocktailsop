@@ -53,8 +53,15 @@ interface Location {
   name: string;
 }
 
-export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
+interface Outlet {
+  id: string;
+  name: string;
+}
+
+export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockProps) => {
   const { user } = useAuth();
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [selectedOutletId, setSelectedOutletId] = useState(initialOutletId);
   const [activeTab, setActiveTab] = useState("synced");
   const [syncedRecords, setSyncedRecords] = useState<ReceivedRecord[]>([]);
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
@@ -70,13 +77,58 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
   const [baseUnit, setBaseUnit] = useState("");
   const [parLevel, setParLevel] = useState("0");
 
+  // Fetch outlets on mount
   useEffect(() => {
-    if (outletId) {
+    const fetchOutlets = async () => {
+      if (!user?.id) return;
+      
+      // Fetch outlets user owns or is staff of
+      const { data: ownedOutlets } = await supabase
+        .from('lab_ops_outlets')
+        .select('id, name')
+        .eq('user_id', user.id);
+      
+      const { data: staffOutlets } = await supabase
+        .from('lab_ops_staff')
+        .select('outlet_id, lab_ops_outlets(id, name)')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      
+      const allOutlets: Outlet[] = [];
+      const seenIds = new Set<string>();
+      
+      ownedOutlets?.forEach(o => {
+        if (!seenIds.has(o.id)) {
+          allOutlets.push({ id: o.id, name: o.name });
+          seenIds.add(o.id);
+        }
+      });
+      
+      staffOutlets?.forEach((s: any) => {
+        if (s.lab_ops_outlets && !seenIds.has(s.lab_ops_outlets.id)) {
+          allOutlets.push({ id: s.lab_ops_outlets.id, name: s.lab_ops_outlets.name });
+          seenIds.add(s.lab_ops_outlets.id);
+        }
+      });
+      
+      setOutlets(allOutlets);
+      
+      // If initial outlet is not in the list, select the first one
+      if (allOutlets.length > 0 && !seenIds.has(selectedOutletId)) {
+        setSelectedOutletId(allOutlets[0].id);
+      }
+    };
+    
+    fetchOutlets();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (selectedOutletId) {
       fetchData();
       fetchLocations();
       setupRealtime();
     }
-  }, [outletId]);
+  }, [selectedOutletId]);
 
   const setupRealtime = () => {
     const channel = supabase
@@ -85,7 +137,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
         event: '*',
         schema: 'public',
         table: 'lab_ops_pending_received_items',
-        filter: `outlet_id=eq.${outletId}`
+        filter: `outlet_id=eq.${selectedOutletId}`
       }, () => {
         fetchData();
       })
@@ -101,7 +153,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
       const { data: outletItems } = await supabase
         .from('lab_ops_inventory_items')
         .select('id')
-        .eq('outlet_id', outletId);
+        .eq('outlet_id', selectedOutletId);
       
       const itemIds = outletItems?.map(i => i.id) || [];
       
@@ -177,7 +229,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
       const { data: pending } = await supabase
         .from('lab_ops_pending_received_items')
         .select('*')
-        .eq('outlet_id', outletId)
+        .eq('outlet_id', selectedOutletId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
@@ -193,7 +245,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
     const { data } = await supabase
       .from('lab_ops_locations')
       .select('id, name')
-      .eq('outlet_id', outletId);
+      .eq('outlet_id', selectedOutletId);
     setLocations(data || []);
   };
 
@@ -208,7 +260,7 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
       const { data: newItem, error: itemError } = await supabase
         .from('lab_ops_inventory_items')
         .insert({
-          outlet_id: outletId,
+          outlet_id: selectedOutletId,
           name: newItemName,
           sku: newItemSku || null,
           base_unit: baseUnit || approvalItem.unit || 'unit',
@@ -322,6 +374,33 @@ export const POReceivedStock = ({ outletId }: POReceivedStockProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Outlet Selector */}
+      {outlets.length > 1 && (
+        <div className="flex items-center gap-2">
+          <Label className="text-sm text-muted-foreground whitespace-nowrap">Outlet:</Label>
+          <Select value={selectedOutletId} onValueChange={setSelectedOutletId}>
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="Select outlet" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border shadow-lg z-50">
+              {outlets.map(outlet => (
+                <SelectItem key={outlet.id} value={outlet.id}>
+                  {outlet.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Current Outlet Display (single outlet) */}
+      {outlets.length === 1 && (
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+          <MapPin className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{outlets[0]?.name}</span>
+        </div>
+      )}
+      
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
