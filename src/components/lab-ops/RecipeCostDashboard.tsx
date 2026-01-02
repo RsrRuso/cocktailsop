@@ -14,7 +14,8 @@ type InventoryItem = {
   bottle_size_ml?: number | null;
   base_unit?: string | null;
   totalStock?: number | null;
-  unit_cost?: number | null; // Per bottle price from receiving PO
+  unit_cost?: number | null; // Per bottle/piece price from receiving PO or pending items
+  pending_unit_price?: number | null; // Fallback from lab_ops_pending_received_items
 };
 
 type RecipeIngredientRow = {
@@ -83,6 +84,7 @@ export function RecipeCostDashboard({
       servingsPerBottle: number;
       totalStock: number;
       stockUnit: string;
+      isPieceItem: boolean;
     }> = [];
 
     for (const ing of ingredients) {
@@ -95,21 +97,27 @@ export function RecipeCostDashboard({
       const unit = ing.unit || "ml";
       const unitMult = UNIT_TO_ML[unit] || 1;
       const qtyMl = unit === "piece" ? 0 : qty * unitMult;
-      // Bottle size: auto-detect from item name or inventory value (not editable)
+      
+      // Bottle size: auto-detect from item name or use inventory value
       const detected = detectBottleSizeMl(invItem.name);
-      const bottleSize = Number(invItem.bottle_size_ml || detected || 750);
+      const bottleSize = Number(invItem.bottle_size_ml || detected || 0);
+      const isPieceItem = unit === "piece" || bottleSize === 0;
 
-      // Unit cost is per bottle from receiving PO / inventory
-      const unitCostPerBottle = Number(invItem.unit_cost || 0);
+      // Unit cost: try costs table first, fallback to pending items price
+      const unitCostPerBottle = Number(invItem.unit_cost || invItem.pending_unit_price || 0);
 
-      // Calculate cost per ml
+      // Calculate cost per ml (only for liquid items with known bottle size)
       const costPerMl = bottleSize > 0 ? unitCostPerBottle / bottleSize : 0;
 
       // Ingredient cost for this recipe serve
-      const ingredientCost = unit === "piece" ? 0 : qtyMl * costPerMl;
+      // For piece items: qty * unit cost per piece
+      // For liquid items: qtyMl * cost per ml
+      const ingredientCost = isPieceItem 
+        ? qty * unitCostPerBottle 
+        : qtyMl * costPerMl;
 
-      // Servings per bottle
-      const servingsPerBottle = qtyMl > 0 ? Math.floor(bottleSize / qtyMl) : 0;
+      // Servings per bottle (only meaningful for liquid items)
+      const servingsPerBottle = (!isPieceItem && qtyMl > 0) ? Math.floor(bottleSize / qtyMl) : 0;
 
       total += ingredientCost;
 
@@ -124,6 +132,7 @@ export function RecipeCostDashboard({
         servingsPerBottle,
         totalStock: Number(invItem.totalStock || 0),
         stockUnit: invItem.base_unit || "btl",
+        isPieceItem,
       });
     }
 
@@ -181,7 +190,7 @@ export function RecipeCostDashboard({
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {b.qty} {b.unit} @ {b.bottleSize}ml bottle
+                        {b.qty} {b.unit} {b.isPieceItem ? "@ per piece" : `@ ${b.bottleSize}ml bottle`}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -190,12 +199,20 @@ export function RecipeCostDashboard({
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                     <span>Unit cost: {formatPrice(b.unitCostPerBottle)}</span>
-                    <span className="text-amber-500 font-medium">{b.servingsPerBottle} servings/bottle</span>
+                    {!b.isPieceItem && (
+                      <span className="text-amber-500 font-medium">{b.servingsPerBottle} servings/bottle</span>
+                    )}
                   </div>
-                  {/* Total servings = bottles × servings/bottle */}
-                  <div className="text-xs font-semibold text-emerald-500">
-                    Total: {totalServings} servings ({b.totalStock.toFixed(2)} btl × {b.servingsPerBottle})
-                  </div>
+                  {/* Total servings = bottles × servings/bottle (only for liquid items) */}
+                  {!b.isPieceItem ? (
+                    <div className="text-xs font-semibold text-emerald-500">
+                      Total: {totalServings} servings ({b.totalStock.toFixed(2)} btl × {b.servingsPerBottle})
+                    </div>
+                  ) : (
+                    <div className="text-xs font-semibold text-emerald-500">
+                      Total: {b.totalStock.toFixed(0)} pieces in stock
+                    </div>
+                  )}
                 </div>
               );
             })}
