@@ -254,9 +254,9 @@ export const uploadWithRetry = async (
 ): Promise<UploadResult> => {
   const { onProgress = () => {}, onStageChange = () => {} } = options;
 
-  // For large files (>30MB), use SDK directly (more reliable for large uploads)
-  if (file.size > 30 * 1024 * 1024) {
-    return uploadFallback(bucket, path, file, options);
+  // For large files (>100MB), use SDK directly (more reliable for large uploads)
+  if (file.size > 100 * 1024 * 1024) {
+    return uploadLargeFile(bucket, path, file, options);
   }
 
   // Try XHR upload with progress for smaller files
@@ -324,14 +324,14 @@ export const smartUpload = async (
     const fileExt = mimeToExt(fileToUpload.type);
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    // Check file size - 200MB limit for reels
-    const maxSize = 200 * 1024 * 1024; // 200MB limit
+    // Check file size - 500MB limit for reels/videos
+    const maxSize = 500 * 1024 * 1024; // 500MB limit
     if (fileToUpload.size > maxSize) {
-      onStageChange("File too large (max 200MB)");
+      onStageChange("File too large (max 500MB)");
       return {
         publicUrl: "",
         path: "",
-        error: new Error(`File size ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB exceeds 200MB limit. Please compress your video.`),
+        error: new Error(`File size ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB exceeds 500MB limit. Please compress your video.`),
       };
     }
 
