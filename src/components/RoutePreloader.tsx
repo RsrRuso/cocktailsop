@@ -29,12 +29,14 @@ export const RoutePreloader = () => {
     };
   }, []);
 
-  // Prefetch ALL core data immediately on mount
+  // Prefetch ALL core data shortly after mount (defer to idle so it doesn't block first interaction)
   useEffect(() => {
-    if (!hasPrefetchedCore.current) {
-      hasPrefetchedCore.current = true;
-      const region = localStorage.getItem('selectedRegion');
-      
+    if (hasPrefetchedCore.current) return;
+    hasPrefetchedCore.current = true;
+
+    const region = localStorage.getItem('selectedRegion');
+
+    const run = () => {
       Promise.all([
         prefetchHomeFeed(region),
         prefetchStoriesData(),
@@ -42,7 +44,16 @@ export const RoutePreloader = () => {
         prefetchNotificationsData(),
         user?.id ? prefetchProfile(user.id) : Promise.resolve(),
       ]);
+    };
+
+    // Defer heavy prefetch work so Wasabi (and any first route) feels instant
+    if ('requestIdleCallback' in window) {
+      const id = (window as any).requestIdleCallback(run, { timeout: 2000 });
+      return () => (window as any).cancelIdleCallback?.(id);
     }
+
+    const t = globalThis.setTimeout(run, 1200);
+    return () => globalThis.clearTimeout(t);
   }, [user?.id]);
 
   const prefetchRoute = useCallback(async (path: string) => {
