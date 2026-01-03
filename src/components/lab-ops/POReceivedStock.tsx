@@ -332,7 +332,10 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
     }
 
     try {
-      // Create new inventory item
+      // Calculate unit cost from PO
+      const unitCost = approvalItem.unit_price || (approvalItem.total_price / Math.max(approvalItem.quantity, 1)) || 0;
+      
+      // Create new inventory item with unit_cost from PO
       const { data: newItem, error: itemError } = await supabase
         .from('lab_ops_inventory_items')
         .insert({
@@ -340,14 +343,16 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
           name: newItemName,
           sku: newItemSku || null,
           base_unit: baseUnit || approvalItem.unit || 'unit',
-          par_level: parseInt(parLevel) || 0
+          par_level: parseInt(parLevel) || 0,
+          unit_cost: unitCost
         })
         .select('id')
         .single();
 
       if (itemError) throw itemError;
 
-      // Create stock movement
+      // Create stock movement with unit_cost
+      const poRef = approvalItem.document_number || approvalItem.po_record_id || 'unknown';
       await supabase.from('lab_ops_stock_movements').insert({
         inventory_item_id: newItem.id,
         to_location_id: selectedLocation,
@@ -355,7 +360,8 @@ export const POReceivedStock = ({ outletId: initialOutletId }: POReceivedStockPr
         movement_type: 'purchase',
         reference_type: 'po_receiving_approved',
         reference_id: approvalItem.po_record_id,
-        notes: `Approved from PO: ${approvalItem.document_number}`,
+        notes: `Approved from PO: ${poRef}`,
+        unit_cost: unitCost,
         created_by: user?.id
       });
 
