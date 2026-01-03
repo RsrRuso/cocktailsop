@@ -3,8 +3,8 @@ import { prefetchProfile, prefetchHomeFeed, prefetchLabOps } from '@/lib/routePr
 import { prefetchStoriesData } from '@/hooks/useStoriesData';
 import { prefetchMessagesData } from '@/hooks/useMessagesData';
 import { prefetchNotificationsData } from '@/hooks/useNotificationsData';
+import { prefetchWasabiData } from '@/hooks/useWasabiData';
 import { useAuth } from '@/contexts/AuthContext';
-
 export const RoutePreloader = () => {
   const { user } = useAuth();
   const [pathname, setPathname] = useState(() => window.location.pathname);
@@ -61,6 +61,8 @@ export const RoutePreloader = () => {
       await prefetchNotificationsData();
     } else if (path.startsWith('/lab-ops') && user?.id) {
       await prefetchLabOps(user.id);
+    } else if (path === '/wasabi' || path.startsWith('/wasabi/')) {
+      await prefetchWasabiData();
     }
   }, [user?.id]);
 

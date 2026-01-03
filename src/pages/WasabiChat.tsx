@@ -19,40 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWasabiMedia } from "@/hooks/useWasabiMedia";
-
-interface Message {
-  id: string;
-  content: string | null;
-  message_type: string;
-  media_url: string | null;
-  sender_id: string;
-  created_at: string;
-  is_edited: boolean;
-  is_deleted: boolean;
-  reply_to_id: string | null;
-  reply_to?: Message;
-  sender?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-  reactions?: { emoji: string; user_id: string }[];
-  is_read?: boolean;
-}
-
-interface ChatInfo {
-  id: string;
-  name: string | null;
-  is_group: boolean;
-  avatar_url: string | null;
-  other_user?: {
-    id: string;
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-  members?: { user_id: string; role: string; username?: string }[];
-}
+import { useWasabiChat, Message } from "@/hooks/useWasabiChat";
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -65,16 +32,22 @@ const WasabiChat = () => {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [chatInfo, setChatInfo] = useState<ChatInfo | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const {
+    messages,
+    chatInfo,
+    loading,
+    sending,
+    currentUserId,
+    sendMessage,
+    handleReaction,
+    deleteMessage,
+  } = useWasabiChat(conversationId);
 
   const {
     isRecordingVoice,
@@ -94,14 +67,11 @@ const WasabiChat = () => {
   } = useWasabiMedia({
     conversationId: conversationId || '',
     currentUserId,
-    onMessageSent: () => {
-      // Messages will be updated via realtime subscription
-    }
+    onMessageSent: () => {}
   });
 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
 
-  // Set video stream to preview element
   useEffect(() => {
     if (videoPreviewRef.current && videoStream) {
       videoPreviewRef.current.srcObject = videoStream;
@@ -114,301 +84,17 @@ const WasabiChat = () => {
     }
   }, []);
 
-  const fetchChatInfo = useCallback(async () => {
-    if (!conversationId) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Please sign in to use chat');
-        navigate('/auth');
-        setLoading(false);
-        return;
-      }
-      setCurrentUserId(user.id);
-
-      // Guard: user must be a member of this conversation
-      const { data: membership, error: membershipError } = await supabase
-        .from('wasabi_members')
-        .select('id')
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (membershipError) throw membershipError;
-      if (!membership) {
-        toast.error("You don't have access to this chat");
-        navigate('/wasabi');
-        setLoading(false);
-        return;
-      }
-
-      const { data: conv, error } = await supabase
-        .from('wasabi_conversations')
-        .select('*')
-        .eq('id', conversationId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!conv) {
-        toast.error('Chat not found');
-        navigate('/wasabi');
-        setLoading(false);
-        return;
-      }
-
-      let info: ChatInfo = {
-        id: conv.id,
-        name: conv.name,
-        is_group: conv.is_group,
-        avatar_url: conv.avatar_url,
-      };
-
-      if (!conv.is_group) {
-        const { data: otherMember } = await supabase
-          .from('wasabi_members')
-          .select('user_id')
-          .eq('conversation_id', conversationId)
-          .neq('user_id', user.id)
-          .maybeSingle();
-
-        if (otherMember) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url')
-            .eq('id', otherMember.user_id)
-            .maybeSingle();
-          info.other_user = profile || undefined;
-        }
-      } else {
-        const { data: members } = await supabase
-          .from('wasabi_members')
-          .select('user_id, role')
-          .eq('conversation_id', conversationId);
-        info.members = members || [];
-      }
-
-      setChatInfo(info);
-    } catch (error: any) {
-      console.error('Error fetching chat info:', error);
-      const msg = String(error?.message || error);
-      toast.error(msg.includes('row-level security') ? "You don't have access to this chat" : 'Failed to load chat');
-    }
-  }, [conversationId, navigate]);
-
-  const fetchMessages = useCallback(async () => {
-    if (!conversationId) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // If user isn't a member, don't try to load messages (avoids confusing RLS errors)
-      const { data: membership, error: membershipError } = await supabase
-        .from('wasabi_members')
-        .select('id')
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (membershipError) throw membershipError;
-      if (!membership) {
-        setMessages([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('wasabi_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Fetch sender profiles and reactions
-      const messagesWithDetails: Message[] = await Promise.all(
-        (data || []).map(async (msg) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username, full_name, avatar_url')
-            .eq('id', msg.sender_id)
-            .maybeSingle();
-
-          const { data: reactions } = await supabase
-            .from('wasabi_reactions')
-            .select('emoji, user_id')
-            .eq('message_id', msg.id);
-
-          let replyTo: Message | undefined;
-          if (msg.reply_to_id) {
-            const { data: replyData } = await supabase
-              .from('wasabi_messages')
-              .select('id, content, message_type, sender_id')
-              .eq('id', msg.reply_to_id)
-              .maybeSingle();
-            if (replyData) {
-              const { data: replySender } = await supabase
-                .from('profiles')
-                .select('username, full_name')
-                .eq('id', replyData.sender_id)
-                .maybeSingle();
-              replyTo = { ...replyData, sender: replySender } as Message;
-            }
-          }
-
-          return {
-            ...msg,
-            sender: profile,
-            reactions: reactions || [],
-            reply_to: replyTo,
-          };
-        })
-      );
-
-      setMessages(messagesWithDetails);
-
-      // Update last read
-      await supabase
-        .from('wasabi_members')
-        .update({ last_read_at: new Date().toISOString() })
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user.id);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [conversationId]);
-
-  useEffect(() => {
-    if (!conversationId) return;
-
-    fetchChatInfo();
-    fetchMessages();
-
-    // Subscribe to new messages
-    const channel = supabase
-      .channel(`wasabi-chat-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'wasabi_messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        () => fetchMessages()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'wasabi_reactions',
-        },
-        () => fetchMessages()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId, fetchChatInfo, fetchMessages]);
-
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !currentUserId || !conversationId) return;
-
-    if (!navigator.onLine) {
-      toast.error("You're offline", { description: 'Reconnect to send messages' });
-      return;
-    }
-
-    setSending(true);
-    try {
-      const { error } = await supabase
-        .from('wasabi_messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: currentUserId,
-          content: newMessage.trim(),
-          message_type: 'text',
-          reply_to_id: replyingTo?.id || null,
-        });
-
-      if (error) throw error;
-
-      // Update conversation last message time
-      await supabase
-        .from('wasabi_conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversationId);
-
+    if (!newMessage.trim()) return;
+    const success = await sendMessage(newMessage, replyingTo?.id);
+    if (success) {
       setNewMessage('');
       setReplyingTo(null);
       inputRef.current?.focus();
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      const msg = String(error?.message || error);
-      toast.error(
-        msg.includes('row-level security')
-          ? "You can't send messages in this chat"
-          : 'Failed to send message'
-      );
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleReaction = async (messageId: string, emoji: string) => {
-    if (!currentUserId) return;
-
-    try {
-      // Check if reaction exists
-      const { data: existing } = await supabase
-        .from('wasabi_reactions')
-        .select('id')
-        .eq('message_id', messageId)
-        .eq('user_id', currentUserId)
-        .eq('emoji', emoji)
-        .single();
-
-      if (existing) {
-        await supabase
-          .from('wasabi_reactions')
-          .delete()
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('wasabi_reactions')
-          .insert({
-            message_id: messageId,
-            user_id: currentUserId,
-            emoji
-          });
-      }
-      setSelectedMessage(null);
-    } catch (error) {
-      console.error('Error toggling reaction:', error);
-    }
-  };
-
-  const handleDelete = async (messageId: string) => {
-    try {
-      await supabase
-        .from('wasabi_messages')
-        .update({ is_deleted: true, content: null })
-        .eq('id', messageId);
-      toast.success('Message deleted');
-    } catch (error) {
-      toast.error('Failed to delete');
     }
   };
 
@@ -436,6 +122,86 @@ const WasabiChat = () => {
     groups[date].push(msg);
     return groups;
   }, {} as Record<string, Message[]>);
+
+  const renderMessageContent = (msg: Message) => {
+    if (msg.is_deleted) {
+      return (
+        <span className="italic text-muted-foreground">
+          This message was deleted
+        </span>
+      );
+    }
+
+    switch (msg.message_type) {
+      case 'image':
+        return (
+          <img 
+            src={msg.media_url || ''} 
+            alt="Image" 
+            className="max-w-[280px] rounded-lg cursor-pointer"
+            onClick={() => window.open(msg.media_url || '', '_blank')}
+          />
+        );
+      case 'video':
+        return (
+          <video 
+            src={msg.media_url || ''} 
+            controls 
+            className="max-w-[280px] rounded-lg"
+          />
+        );
+      case 'voice':
+      case 'audio':
+        return (
+          <div className="flex items-center gap-3 p-2 bg-white/5 rounded-lg min-w-[200px]">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-10 h-10"
+              onClick={() => {
+                if (playingAudio === msg.id) {
+                  audioRef.current?.pause();
+                  setPlayingAudio(null);
+                } else {
+                  if (audioRef.current) {
+                    audioRef.current.src = msg.media_url || '';
+                    audioRef.current.play();
+                    setPlayingAudio(msg.id);
+                  }
+                }
+              }}
+            >
+              {playingAudio === msg.id ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5" />
+              )}
+            </Button>
+            <div className="flex-1 h-1 bg-white/20 rounded-full">
+              <div className="h-full w-0 bg-green-500 rounded-full" />
+            </div>
+          </div>
+        );
+      case 'document':
+        return (
+          <a 
+            href={msg.media_url || ''} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10"
+          >
+            <File className="w-8 h-8 text-blue-400" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">Document</p>
+              <p className="text-xs text-muted-foreground">Tap to download</p>
+            </div>
+            <Download className="w-5 h-5" />
+          </a>
+        );
+      default:
+        return <span className="whitespace-pre-wrap break-words">{msg.content}</span>;
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -498,14 +264,12 @@ const WasabiChat = () => {
           <div className="space-y-4 pb-4">
             {Object.entries(groupedMessages).map(([date, msgs]) => (
               <div key={date}>
-                {/* Date separator */}
                 <div className="flex justify-center my-4">
-                  <span className="px-3 py-1 rounded-full bg-muted text-xs text-muted-foreground">
+                  <span className="text-xs bg-muted px-3 py-1 rounded-full text-muted-foreground">
                     {date}
                   </span>
                 </div>
 
-                {/* Messages */}
                 {msgs.map((msg) => {
                   const isOwn = msg.sender_id === currentUserId;
                   
@@ -513,194 +277,109 @@ const WasabiChat = () => {
                     <div
                       key={msg.id}
                       className={cn(
-                        "flex mb-1",
+                        "flex mb-2",
                         isOwn ? "justify-end" : "justify-start"
                       )}
                     >
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-2xl px-3 py-2 relative group",
+                          "max-w-[80%] rounded-2xl px-4 py-2 relative group",
                           isOwn 
                             ? "bg-green-600 text-white rounded-br-sm" 
-                            : "bg-muted rounded-bl-sm",
-                          msg.is_deleted && "italic opacity-60"
+                            : "bg-muted rounded-bl-sm"
                         )}
                         onClick={() => setSelectedMessage(selectedMessage === msg.id ? null : msg.id)}
                       >
                         {/* Reply preview */}
-                        {msg.reply_to && !msg.is_deleted && (
+                        {msg.reply_to && (
                           <div className={cn(
-                            "text-xs px-2 py-1 rounded mb-1 border-l-2",
-                            isOwn 
-                              ? "bg-green-700/50 border-white/50" 
-                              : "bg-background/50 border-primary"
+                            "border-l-2 pl-2 mb-2 text-xs",
+                            isOwn ? "border-white/50" : "border-primary"
                           )}>
-                            <span className="font-semibold">
+                            <p className="font-medium opacity-70">
                               {msg.reply_to.sender?.full_name || msg.reply_to.sender?.username}
-                            </span>
-                            <p className="truncate opacity-80">{msg.reply_to.content}</p>
+                            </p>
+                            <p className="opacity-60 truncate">{msg.reply_to.content}</p>
                           </div>
                         )}
 
-                        {/* Message content */}
-                        {msg.is_deleted ? (
-                          <p className="text-sm italic">🚫 This message was deleted</p>
-                        ) : msg.message_type === 'voice' ? (
-                          <div className="flex items-center gap-2 min-w-[150px]">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (playingAudio === msg.id) {
-                                  audioRef.current?.pause();
-                                  setPlayingAudio(null);
-                                } else {
-                                  if (audioRef.current) {
-                                    audioRef.current.pause();
-                                  }
-                                  const audio = new Audio(msg.media_url || '');
-                                  audio.onended = () => setPlayingAudio(null);
-                                  audio.play();
-                                  audioRef.current = audio;
-                                  setPlayingAudio(msg.id);
-                                }
-                              }}
-                              className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center",
-                                isOwn ? "bg-white/20" : "bg-primary/20"
-                              )}
-                            >
-                              {playingAudio === msg.id ? (
-                                <Pause className="w-4 h-4" />
-                              ) : (
-                                <Play className="w-4 h-4 ml-0.5" />
-                              )}
-                            </button>
-                            <div className="flex-1">
-                              <div className="flex gap-0.5">
-                                {[...Array(20)].map((_, i) => (
-                                  <div 
-                                    key={i} 
-                                    className={cn(
-                                      "w-0.5 rounded-full",
-                                      isOwn ? "bg-white/40" : "bg-muted-foreground/40"
-                                    )}
-                                    style={{ height: `${Math.random() * 16 + 4}px` }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <Mic className="w-4 h-4 opacity-60" />
-                          </div>
-                        ) : msg.message_type === 'image' ? (
-                          <img 
-                            src={msg.media_url || ''} 
-                            alt="Shared image"
-                            className="max-w-[250px] rounded-lg cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(msg.media_url || '', '_blank');
-                            }}
-                          />
-                        ) : msg.message_type === 'video' ? (
-                          <video 
-                            src={msg.media_url || ''} 
-                            controls
-                            className="max-w-[250px] rounded-lg"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : msg.message_type === 'document' ? (
-                          <a 
-                            href={msg.media_url || ''} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                              "flex items-center gap-2 p-2 rounded-lg",
-                              isOwn ? "bg-white/10" : "bg-muted"
-                            )}
-                          >
-                            <File className="w-8 h-8" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm truncate">{msg.content || 'Document'}</p>
-                              <p className="text-xs opacity-60">Tap to open</p>
-                            </div>
-                            <Download className="w-4 h-4" />
-                          </a>
-                        ) : (
-                          <p className="text-sm break-words">{msg.content}</p>
+                        {/* Sender name for groups */}
+                        {chatInfo?.is_group && !isOwn && (
+                          <p className="text-xs font-medium text-primary mb-1">
+                            {msg.sender?.full_name || msg.sender?.username}
+                          </p>
                         )}
 
-                        {/* Time and status */}
+                        {/* Content */}
+                        {renderMessageContent(msg)}
+
+                        {/* Time & status */}
                         <div className={cn(
-                          "flex items-center justify-end gap-1 mt-1",
-                          isOwn ? "text-white/70" : "text-muted-foreground"
+                          "flex items-center gap-1 mt-1",
+                          isOwn ? "justify-end" : "justify-start"
                         )}>
-                          <span className="text-[10px]">
+                          <span className="text-[10px] opacity-60">
                             {format(new Date(msg.created_at), 'HH:mm')}
                           </span>
-                          {isOwn && !msg.is_deleted && (
-                            <CheckCheck className="w-3.5 h-3.5" />
+                          {isOwn && (
+                            <CheckCheck className="w-3 h-3 text-blue-300" />
                           )}
                         </div>
 
                         {/* Reactions */}
                         {msg.reactions && msg.reactions.length > 0 && (
-                          <div className={cn(
-                            "absolute -bottom-3 flex gap-0.5",
-                            isOwn ? "left-0" : "right-0"
-                          )}>
+                          <div className="absolute -bottom-3 left-2 flex gap-0.5 bg-background rounded-full px-1.5 py-0.5 shadow-sm border">
                             {[...new Set(msg.reactions.map(r => r.emoji))].map(emoji => (
-                              <span 
-                                key={emoji}
-                                className="bg-muted rounded-full px-1.5 py-0.5 text-xs shadow border"
-                              >
-                                {emoji} {msg.reactions?.filter(r => r.emoji === emoji).length}
-                              </span>
+                              <span key={emoji} className="text-xs">{emoji}</span>
                             ))}
                           </div>
                         )}
 
-                        {/* Quick actions */}
-                        {selectedMessage === msg.id && !msg.is_deleted && (
+                        {/* Message actions popup */}
+                        {selectedMessage === msg.id && (
                           <div className={cn(
-                            "absolute top-full mt-1 flex items-center gap-1 bg-popover rounded-lg shadow-lg p-1 z-10",
-                            isOwn ? "right-0" : "left-0"
+                            "absolute z-20 bg-popover border rounded-lg shadow-lg p-2",
+                            isOwn ? "right-0 -top-14" : "left-0 -top-14"
                           )}>
-                            {QUICK_EMOJIS.map(emoji => (
-                              <button
-                                key={emoji}
+                            <div className="flex gap-1 mb-2">
+                              {QUICK_EMOJIS.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  className="text-lg hover:scale-125 transition-transform"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReaction(msg.id, emoji);
+                                  }}
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-2 border-t pt-2">
+                              <button 
+                                className="p-1.5 hover:bg-muted rounded"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleReaction(msg.id, emoji);
-                                }}
-                                className="hover:bg-muted rounded p-1 text-lg"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setReplyingTo(msg);
-                                setSelectedMessage(null);
-                                inputRef.current?.focus();
-                              }}
-                              className="hover:bg-muted rounded p-1.5"
-                            >
-                              <Reply className="w-4 h-4" />
-                            </button>
-                            {isOwn && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(msg.id);
+                                  setReplyingTo(msg);
                                   setSelectedMessage(null);
+                                  inputRef.current?.focus();
                                 }}
-                                className="hover:bg-destructive/20 rounded p-1.5 text-destructive"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Reply className="w-4 h-4" />
                               </button>
-                            )}
+                              {isOwn && (
+                                <button 
+                                  className="p-1.5 hover:bg-muted rounded text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteMessage(msg.id);
+                                    setSelectedMessage(null);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -713,16 +392,57 @@ const WasabiChat = () => {
         )}
       </ScrollArea>
 
-      {/* Reply preview */}
+      {/* Audio player (hidden) */}
+      <audio 
+        ref={audioRef} 
+        onEnded={() => setPlayingAudio(null)}
+        className="hidden"
+      />
+
+      {/* Video Recording Overlay */}
+      {isRecordingVideo && (
+        <div className="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center">
+          <video
+            ref={videoPreviewRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-64 h-64 rounded-full object-cover mb-6"
+          />
+          <div className="text-2xl font-bold text-white mb-4">
+            {formatDuration(videoDuration)}
+          </div>
+          <div className="flex gap-4">
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={cancelVideoRecording}
+            >
+              <X className="w-5 h-5 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              size="lg"
+              onClick={stopVideoRecording}
+            >
+              <Square className="w-5 h-5 mr-2" />
+              Stop & Send
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Reply Bar */}
       {replyingTo && (
-        <div className="px-4 py-2 bg-muted/50 border-t flex items-center gap-2">
+        <div className="px-4 py-2 bg-muted/50 border-t flex items-center gap-3">
           <div className="w-1 h-10 bg-green-500 rounded-full" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-green-500 font-semibold">
+            <p className="text-xs font-medium text-green-600">
               Replying to {replyingTo.sender?.full_name || replyingTo.sender?.username}
             </p>
             <p className="text-sm text-muted-foreground truncate">
-              {replyingTo.content}
+              {replyingTo.content || 'Media'}
             </p>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setReplyingTo(null)}>
@@ -731,97 +451,38 @@ const WasabiChat = () => {
         </div>
       )}
 
-      {/* Video Recording UI */}
-      {isRecordingVideo && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col">
-          <video 
-            ref={videoPreviewRef}
-            autoPlay
-            muted
-            playsInline
-            className="flex-1 object-cover"
-          />
-          <div className="absolute top-4 left-0 right-0 flex justify-center">
-            <div className="bg-red-500 px-3 py-1 rounded-full flex items-center gap-2">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              <span className="text-white font-medium">{formatDuration(videoDuration)}</span>
-            </div>
-          </div>
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-8">
-            <Button 
-              size="lg"
-              variant="ghost" 
-              onClick={cancelVideoRecording}
-              className="text-white hover:bg-white/20 rounded-full w-14 h-14"
-            >
-              <X className="w-8 h-8" />
-            </Button>
-            <Button 
-              size="lg"
-              onClick={stopVideoRecording}
-              className="bg-red-500 hover:bg-red-600 rounded-full w-16 h-16"
-            >
-              <Square className="w-8 h-8 fill-white" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Voice Recording UI */}
+      {/* Voice Recording Bar */}
       {isRecordingVoice && (
-        <div className="sticky bottom-0 bg-red-500 px-4 py-3 flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={cancelVoiceRecording}
+        <div className="px-4 py-3 bg-green-600 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
             className="text-white hover:bg-white/20"
+            onClick={cancelVoiceRecording}
           >
             <Trash2 className="w-5 h-5" />
           </Button>
           <div className="flex-1 flex items-center gap-2">
-            <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-white font-medium">{formatDuration(voiceDuration)}</span>
-            <span className="text-white/80">Recording...</span>
           </div>
-          <Button 
-            size="icon" 
+          <Button
+            className="bg-white text-green-600 hover:bg-white/90"
             onClick={stopVoiceRecording}
-            className="bg-white text-red-500 hover:bg-white/90"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4 mr-2" />
+            Send
           </Button>
         </div>
       )}
 
-      {/* Input */}
-      {!isRecordingVoice && (
-        <div className="sticky bottom-0 bg-background border-t px-4 py-3">
-          {/* Hidden file inputs */}
-          <input 
-            ref={imageInputRef}
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            onChange={(e) => handleFileSelect(e, 'image')}
-          />
-          <input 
-            ref={videoInputRef}
-            type="file" 
-            accept="video/*" 
-            className="hidden" 
-            onChange={(e) => handleFileSelect(e, 'video')}
-          />
-          <input 
-            ref={documentInputRef}
-            type="file" 
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" 
-            className="hidden" 
-            onChange={(e) => handleFileSelect(e, 'document')}
-          />
-
+      {/* Input Bar */}
+      {!isRecordingVoice && !isRecordingVideo && (
+        <div className="px-4 py-3 border-t bg-background">
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            {/* Attachments */}
+            <Popover>
+              <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" disabled={isUploading}>
                   {isUploading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -829,48 +490,103 @@ const WasabiChat = () => {
                     <Paperclip className="w-5 h-5" />
                   )}
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
-                  <ImageIcon className="w-4 h-4 mr-2" /> Gallery
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={startVideoRecording}>
-                  <Camera className="w-4 h-4 mr-2" /> Record Video
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => videoInputRef.current?.click()}>
-                  <Video className="w-4 h-4 mr-2" /> Video from Gallery
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => documentInputRef.current?.click()}>
-                  <FileText className="w-4 h-4 mr-2" /> Document
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-2">
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="bg-blue-500/20 text-blue-500"
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <ImageIcon className="w-5 h-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="bg-purple-500/20 text-purple-500"
+                    onClick={() => videoInputRef.current?.click()}
+                  >
+                    <Video className="w-5 h-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="bg-red-500/20 text-red-500"
+                    onClick={startVideoRecording}
+                  >
+                    <Camera className="w-5 h-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="bg-orange-500/20 text-orange-500"
+                    onClick={() => documentInputRef.current?.click()}
+                  >
+                    <FileText className="w-5 h-5" />
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
 
-            <Input
-              ref={inputRef}
-              placeholder="Type a message"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              className="flex-1"
-              disabled={isUploading}
+            {/* Hidden file inputs */}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e, 'image')}
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e, 'video')}
+            />
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e, 'document')}
             />
 
+            {/* Message Input */}
+            <Input
+              ref={inputRef}
+              placeholder="Message"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              className="flex-1"
+            />
+
+            {/* Send or Voice */}
             {newMessage.trim() ? (
               <Button 
                 size="icon" 
+                className="bg-green-600 hover:bg-green-700"
                 onClick={handleSend}
                 disabled={sending}
-                className="bg-green-600 hover:bg-green-700"
               >
-                <Send className="w-5 h-5" />
+                {sending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
               </Button>
             ) : (
               <Button 
                 variant="ghost" 
                 size="icon"
+                className="text-green-600"
                 onClick={startVoiceRecording}
-                disabled={isUploading}
               >
                 <Mic className="w-5 h-5" />
               </Button>
