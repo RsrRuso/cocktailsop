@@ -308,7 +308,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       // Get existing master items to check for updates (workspace-aware)
       let existingMasterQuery = supabase
         .from('purchase_order_master_items')
-        .select('id, item_name');
+        .select('id, item_name, unit, last_price');
       
       if (workspaceId) {
         existingMasterQuery = existingMasterQuery.eq('workspace_id', workspaceId);
@@ -317,10 +317,24 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       }
       
       const { data: existingMaster } = await existingMasterQuery;
+
+      // Also pull received items as a pricing source (uploads often create received rows)
+      let receivedQuery = supabase
+        .from('purchase_order_received_items')
+        .select('item_name, unit, unit_price, total_price, quantity');
+
+      if (workspaceId) {
+        receivedQuery = receivedQuery.eq('workspace_id', workspaceId);
+      } else {
+        receivedQuery = receivedQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+
+      const { data: receivedForPricing, error: receivedError } = await receivedQuery;
+      if (receivedError) throw receivedError;
       
       // Build map of existing items (by name and by code)
-      const existingByName = new Map<string, { id: string; item_name: string }>();
-      const existingByCode = new Map<string, { id: string; item_name: string }>();
+      const existingByName = new Map<string, { id: string; item_name: string; unit: string | null; last_price: number | null }>();
+      const existingByCode = new Map<string, { id: string; item_name: string; unit: string | null; last_price: number | null }>();
       
       for (const item of existingMaster || []) {
         const key = item.item_name.trim().toLowerCase();
@@ -331,17 +345,57 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         }
       }
 
+      const normalizeKey = (name: string) => name.trim().toLowerCase();
+
+      const computeReceivedUnitPrice = (row: any): number => {
+        const direct = Number(row.unit_price ?? 0);
+        if (direct > 0) return direct;
+        const qty = Number(row.quantity ?? 0);
+        const total = Number(row.total_price ?? 0);
+        if (qty > 0 && total > 0) return total / qty;
+        return 0;
+      };
+
+      const considerPriceUpdate = (
+        key: string,
+        existingItem: { id: string; unit: string | null; last_price: number | null },
+        price: number,
+        unit?: string | null
+      ) => {
+        if (!price || price <= 0) return;
+
+        const prev = priceUpdates.get(key);
+        const existingUnitMissing = !existingItem.unit || existingItem.unit.trim() === '';
+        const shouldUpdateUnit = !!unit && unit.trim() !== '' && existingUnitMissing;
+
+        if (!prev || price > prev.price) {
+          priceUpdates.set(key, {
+            id: existingItem.id,
+            price,
+            unit: unit ?? undefined,
+            updateUnit: shouldUpdateUnit,
+          });
+          return;
+        }
+
+        // Keep better unit if we don't have one yet and the master item is missing it
+        if (shouldUpdateUnit && !prev.updateUnit) {
+          priceUpdates.set(key, { ...prev, unit: unit ?? prev.unit, updateUnit: true });
+        }
+      };
+
+      // Track best prices for existing items that need price updates
+      const priceUpdates = new Map<string, { id: string; price: number; unit?: string; updateUnit: boolean }>();
+      
       // Build unique items map from PO items - prefer actual names over codes
       const uniqueItems = new Map<string, any>();
       const itemsToUpdate: { id: string; newName: string; unit?: string; price?: number }[] = [];
-      // Track best prices for existing items that need price updates
-      const priceUpdates = new Map<string, { id: string; price: number; unit?: string }>();
       
       for (const item of items) {
         // Skip items that are just codes with no proper name
         if (!item.item_name || looksLikeCode(item.item_name)) continue;
         
-        const nameKey = item.item_name.trim().toLowerCase();
+        const nameKey = normalizeKey(item.item_name);
         const codeKey = item.item_code?.trim().toLowerCase();
         
         // Check if we have a master item with just the code that should be updated with the proper name
@@ -362,19 +416,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         // If proper name already exists, track price updates
         if (existingByName.has(nameKey)) {
           const existingItem = existingByName.get(nameKey)!;
-          const currentPrice = item.price_per_unit || 0;
-          
-          // Track highest price for this existing item
-          if (currentPrice > 0) {
-            const existing = priceUpdates.get(nameKey);
-            if (!existing || currentPrice > existing.price) {
-              priceUpdates.set(nameKey, { 
-                id: existingItem.id, 
-                price: currentPrice,
-                unit: item.unit
-              });
-            }
-          }
+          considerPriceUpdate(nameKey, existingItem, Number(item.price_per_unit ?? 0), item.unit);
           continue;
         }
         
@@ -389,6 +431,16 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         }
       }
 
+      // Also update prices/units from received items (covers uploads / invoices)
+      for (const row of receivedForPricing || []) {
+        if (!row.item_name || looksLikeCode(row.item_name)) continue;
+        const key = normalizeKey(row.item_name);
+        const existingItem = existingByName.get(key);
+        if (!existingItem) continue;
+
+        considerPriceUpdate(key, existingItem, computeReceivedUnitPrice(row), row.unit);
+      }
+
       let updatedCount = 0;
       let addedCount = 0;
       let priceUpdateCount = 0;
@@ -396,14 +448,16 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       // Update existing code-only items with proper names
       for (const update of itemsToUpdate) {
         try {
+          const updateData: any = {
+            item_name: update.newName,
+            updated_at: new Date().toISOString(),
+          };
+          if (update.unit && update.unit.trim() !== '') updateData.unit = update.unit;
+          if (typeof update.price === 'number' && update.price > 0) updateData.last_price = update.price;
+
           await supabase
             .from('purchase_order_master_items')
-            .update({ 
-              item_name: update.newName,
-              unit: update.unit || undefined,
-              last_price: update.price || undefined,
-              updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', update.id);
           updatedCount++;
         } catch (err) {
@@ -411,16 +465,18 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         }
       }
 
-      // Update prices for existing items that have prices in PO data
+      // Update prices for existing items that have prices in PO/received data
       for (const [, update] of priceUpdates) {
         try {
+          const updateData: any = {
+            last_price: update.price,
+            updated_at: new Date().toISOString(),
+          };
+          if (update.updateUnit && update.unit) updateData.unit = update.unit;
+
           await supabase
             .from('purchase_order_master_items')
-            .update({ 
-              last_price: update.price,
-              unit: update.unit || undefined,
-              updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', update.id);
           priceUpdateCount++;
         } catch (err) {
@@ -546,10 +602,15 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
             let addedCount = 0;
             for (const item of Array.from(uniqueItems.values())) {
               try {
+                const derivedPrice =
+                  item.price_per_unit ??
+                  item.unit_price ??
+                  (item.total_price && item.quantity ? item.total_price / item.quantity : undefined);
+
                 await addMasterItem.mutateAsync({
                   item_name: item.item_name.trim(),
                   unit: item.unit || undefined,
-                  last_price: item.price_per_unit || undefined
+                  last_price: derivedPrice || undefined
                 });
                 addedCount++;
               } catch (err) {
