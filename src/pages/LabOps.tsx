@@ -4265,16 +4265,25 @@ function RecipesModule({ outletId }: { outletId: string }) {
       }
     }
     
-    // Calculate total stock and get unit_cost from costs table or pending items
-    const itemsWithStock = (data || []).map(item => {
-      const costs = item.lab_ops_inventory_item_costs as any[] | undefined;
-      const latestCost = costs?.[0]?.unit_cost ?? 0;
-      const pendingPrice = pendingPriceMap.get(item.name.toLowerCase()) ?? 0;
+    // Calculate total stock and resolve unit cost (prefer inventory.unit_cost from PO)
+    const itemsWithStock = (data || []).map((item: any) => {
+      const nameKey = String(item.name || "").toLowerCase();
+      const pendingPrice = pendingPriceMap.get(nameKey) ?? 0;
+
+      // Prefer unit_cost stored on inventory_items (this is what PO approval writes)
+      const invUnitCost = Number(item.unit_cost ?? 0);
+
+      // Some older flows may still populate a related costs table; only use if unit_cost is missing
+      const costs = item.lab_ops_inventory_item_costs as Array<{ unit_cost?: number }> | undefined;
+      const relatedCost = Number(costs?.[0]?.unit_cost ?? 0);
+
+      const resolvedUnitCost = invUnitCost > 0 ? invUnitCost : (pendingPrice > 0 ? pendingPrice : relatedCost);
+
       return {
         ...item,
-        totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0),
-        unit_cost: latestCost,
-        pending_unit_price: pendingPrice
+        totalStock: (item.lab_ops_stock_levels || []).reduce((sum: number, s: any) => sum + (Number(s.quantity) || 0), 0),
+        unit_cost: resolvedUnitCost,
+        pending_unit_price: pendingPrice,
       };
     });
     setInventoryItems(itemsWithStock);
