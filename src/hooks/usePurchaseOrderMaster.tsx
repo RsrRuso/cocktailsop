@@ -232,6 +232,13 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
     }
   };
 
+  // Check if a string looks like a numeric code (SKU/article number)
+  const looksLikeCode = (name: string): boolean => {
+    const trimmed = name.trim();
+    // Pure numeric or starts with Z followed by numbers
+    return /^\d+$/.test(trimmed) || /^[A-Z]\d{5,}$/i.test(trimmed);
+  };
+
   // Sync all items from existing purchase orders (workspace-aware)
   const syncFromExistingOrders = async () => {
     try {
@@ -254,7 +261,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         return;
       }
 
-      // Get all items from all orders
+      // Get all items from all orders - include item_code for reference
       const { data: items, error: itemsError } = await supabase
         .from('purchase_order_items')
         .select('*')
@@ -266,10 +273,10 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         return;
       }
 
-      // Get existing master items to avoid duplicates (workspace-aware)
+      // Get existing master items to check for updates (workspace-aware)
       let existingMasterQuery = supabase
         .from('purchase_order_master_items')
-        .select('item_name');
+        .select('id, item_name');
       
       if (workspaceId) {
         existingMasterQuery = existingMasterQuery.eq('workspace_id', workspaceId);
@@ -279,60 +286,105 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       
       const { data: existingMaster } = await existingMasterQuery;
       
-      const existingNames = new Set(
-        (existingMaster || []).map(i => i.item_name.trim().toLowerCase())
-      );
-
-      // Build unique items map from PO items
-      const uniqueItems = new Map<string, any>();
-      for (const item of items) {
+      // Build map of existing items (by name and by code)
+      const existingByName = new Map<string, { id: string; item_name: string }>();
+      const existingByCode = new Map<string, { id: string; item_name: string }>();
+      
+      for (const item of existingMaster || []) {
         const key = item.item_name.trim().toLowerCase();
-        // Skip if already in master list
-        if (existingNames.has(key)) continue;
+        existingByName.set(key, item);
+        // If the existing name looks like a code, track it separately
+        if (looksLikeCode(item.item_name)) {
+          existingByCode.set(key, item);
+        }
+      }
+
+      // Build unique items map from PO items - prefer actual names over codes
+      const uniqueItems = new Map<string, any>();
+      const itemsToUpdate: { id: string; newName: string; unit?: string; price?: number }[] = [];
+      
+      for (const item of items) {
+        // Skip items that are just codes with no proper name
+        if (!item.item_name || looksLikeCode(item.item_name)) continue;
         
-        if (!uniqueItems.has(key)) {
-          uniqueItems.set(key, item);
+        const nameKey = item.item_name.trim().toLowerCase();
+        const codeKey = item.item_code?.trim().toLowerCase();
+        
+        // Check if we have a master item with just the code that should be updated with the proper name
+        if (codeKey && existingByCode.has(codeKey)) {
+          const codeItem = existingByCode.get(codeKey)!;
+          // The existing item is just a code, update it with the proper name
+          itemsToUpdate.push({
+            id: codeItem.id,
+            newName: item.item_name.trim(),
+            unit: item.unit,
+            price: item.price_per_unit
+          });
+          // Remove from code map so we don't update it twice
+          existingByCode.delete(codeKey);
+          continue;
+        }
+        
+        // Skip if proper name already exists
+        if (existingByName.has(nameKey)) continue;
+        
+        if (!uniqueItems.has(nameKey)) {
+          uniqueItems.set(nameKey, item);
         } else {
           // Keep highest price
-          const existing = uniqueItems.get(key);
+          const existing = uniqueItems.get(nameKey);
           if (item.price_per_unit > existing.price_per_unit) {
-            uniqueItems.set(key, item);
+            uniqueItems.set(nameKey, item);
           }
         }
       }
 
-      if (uniqueItems.size === 0) {
-        toast.info("All items already synced");
-        return;
+      let updatedCount = 0;
+      let addedCount = 0;
+      
+      // Update existing code-only items with proper names
+      for (const update of itemsToUpdate) {
+        try {
+          await supabase
+            .from('purchase_order_master_items')
+            .update({ 
+              item_name: update.newName,
+              unit: update.unit || undefined,
+              last_price: update.price || undefined,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', update.id);
+          updatedCount++;
+        } catch (err) {
+          console.log('Failed to update:', update.id);
+        }
       }
 
-      // Bulk upsert unique new items (handles duplicates gracefully)
-      const newItems = Array.from(uniqueItems.values()).map(item => ({
-        user_id: user?.id,
-        workspace_id: workspaceId || null,
-        item_name: item.item_name.trim(),
-        unit: item.unit,
-        last_price: item.price_per_unit
-      }));
-
-      // Insert items one by one to handle duplicates gracefully
-      let addedCount = 0;
-      for (const item of newItems) {
+      // Insert new items
+      for (const item of Array.from(uniqueItems.values())) {
         try {
           await addMasterItem.mutateAsync({
-            item_name: item.item_name,
+            item_name: item.item_name.trim(),
             unit: item.unit || undefined,
-            last_price: item.last_price || undefined
+            last_price: item.price_per_unit || undefined
           });
           addedCount++;
         } catch (err) {
-          // Skip duplicates silently
           console.log('Skipping duplicate:', item.item_name);
         }
       }
 
       queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
-      toast.success(`Added ${addedCount} unique items`);
+      
+      if (updatedCount > 0 && addedCount > 0) {
+        toast.success(`Updated ${updatedCount} items, added ${addedCount} new items`);
+      } else if (updatedCount > 0) {
+        toast.success(`Updated ${updatedCount} items with proper names`);
+      } else if (addedCount > 0) {
+        toast.success(`Added ${addedCount} unique items`);
+      } else {
+        toast.info("All items already synced");
+      }
     } catch (error: any) {
       toast.error("Failed to sync: " + error.message);
     }
