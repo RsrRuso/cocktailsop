@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Loader2, Share2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { WasabiShareChatDialog } from "./WasabiShareChatDialog";
 
@@ -37,10 +37,9 @@ export const WasabiNewChatDialog = ({
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState<string | null>(null);
   
-  // Share dialog state
+  // Share dialog state - use ref to persist across dialog close
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [createdChatId, setCreatedChatId] = useState<string | null>(null);
-  const [createdChatName, setCreatedChatName] = useState("");
+  const shareDataRef = useRef<{ chatId: string; chatName: string } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -83,19 +82,21 @@ export const WasabiNewChatDialog = ({
       const chatId = data;
       const chatName = otherUser.full_name || otherUser.username || 'Chat';
       
-      // Store for share dialog
-      setCreatedChatId(chatId);
-      setCreatedChatName(chatName);
+      // Store share data in ref so it persists
+      shareDataRef.current = { chatId, chatName };
       
-      onChatCreated(chatId);
+      // Close new chat dialog first
       onOpenChange(false);
+      
+      // Notify parent
+      onChatCreated(chatId);
       
       // Show share dialog after a brief delay
       setTimeout(() => {
         setShowShareDialog(true);
-      }, 300);
+      }, 200);
       
-      toast.success('Chat created!');
+      toast.success('Chat created! Share it with your connections.');
     } catch (error: any) {
       console.error('Error creating chat:', error);
       toast.error(error?.message || 'Failed to create chat');
@@ -172,15 +173,13 @@ export const WasabiNewChatDialog = ({
         </DialogContent>
       </Dialog>
 
-      {/* Share Dialog - appears after chat is created */}
-      {createdChatId && (
-        <WasabiShareChatDialog
-          open={showShareDialog}
-          onOpenChange={setShowShareDialog}
-          chatId={createdChatId}
-          chatName={createdChatName}
-        />
-      )}
+      {/* Share Dialog - rendered independently */}
+      <WasabiShareChatDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        chatId={shareDataRef.current?.chatId || ''}
+        chatName={shareDataRef.current?.chatName || ''}
+      />
     </>
   );
 };
