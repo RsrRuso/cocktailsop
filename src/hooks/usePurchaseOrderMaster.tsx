@@ -139,6 +139,38 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
     }
   });
 
+  // Update master item
+  const updateMasterItem = useMutation({
+    mutationFn: async (item: {
+      id: string;
+      unit?: string | null;
+      category?: string | null;
+      last_price?: number | null;
+    }) => {
+      const { data, error } = await supabase
+        .from('purchase_order_master_items')
+        .update({
+          unit: item.unit,
+          category: item.category,
+          last_price: item.last_price,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', item.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
+      toast.success("Item updated");
+    },
+    onError: (error: any) => {
+      toast.error("Failed to update: " + error.message);
+    }
+  });
+
   // Add received item - linked by record_id for proper isolation
   const addReceivedItem = useMutation({
     mutationFn: async (item: {
@@ -546,6 +578,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
     isLoadingMaster,
     isLoadingReceived,
     addMasterItem: addMasterItem.mutate,
+    updateMasterItem: updateMasterItem.mutateAsync,
     addReceivedItem: addReceivedItem.mutate,
     addItemsFromPurchaseOrder,
     syncFromExistingOrders,
