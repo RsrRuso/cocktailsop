@@ -1,5 +1,4 @@
 // App entry point - v5 (safe cache recovery)
-import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -16,13 +15,9 @@ initPerformanceBoost();
 const savedTheme = localStorage.getItem("theme") || "black";
 document.documentElement.classList.add(savedTheme);
 
-// Mount the app
+// Mount the app (no StrictMode to avoid double-render + duplicate fetches in dev)
 const container = document.getElementById("root");
 if (container) {
-  createRoot(container).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  createRoot(container).render(<App />);
 }
 
