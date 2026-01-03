@@ -2066,12 +2066,21 @@ function MenuModule({ outletId }: { outletId: string }) {
   const createMenuItem = async () => {
     if (!newItemName.trim() || !newItemPrice) return;
 
+    // Auto-link to inventory item by matching name (case-insensitive)
+    const { data: matchingInventory } = await supabase
+      .from("lab_ops_inventory_items")
+      .select("id")
+      .eq("outlet_id", outletId)
+      .ilike("name", newItemName.trim())
+      .maybeSingle();
+
     await supabase.from("lab_ops_menu_items").insert({
       outlet_id: outletId,
       name: newItemName.trim(),
       description: newItemDescription.trim() || null,
       base_price: parseFloat(newItemPrice),
       category_id: newItemCategory || null,
+      inventory_item_id: matchingInventory?.id || null,
     });
 
     setNewItemName("");
@@ -2080,7 +2089,7 @@ function MenuModule({ outletId }: { outletId: string }) {
     setNewItemDescription("");
     setShowAddItem(false);
     fetchMenuItems();
-    toast({ title: "Menu item created" });
+    toast({ title: matchingInventory ? "Menu item created & linked to inventory" : "Menu item created" });
   };
 
   const updateMenuItem = async () => {
