@@ -558,19 +558,19 @@ export default function ReportBuilder({ outletId }: ReportBuilderProps) {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[300px]">
-              <div className="space-y-2 pr-4">
+              <div className="space-y-2 pl-1 pr-[max(1rem,env(safe-area-inset-right))]">
                 {reportData.map((item, idx) => (
                   <div key={idx} className="p-3 bg-muted/50 rounded-lg border">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm min-w-0">
                       {selectedFields.map(fieldId => {
                         const fieldDef = Object.values(REPORT_FIELDS)
                           .flatMap(cat => cat.fields)
                           .find(f => f.id === fieldId);
                         
                         return (
-                          <div key={fieldId}>
-                            <p className="text-xs text-muted-foreground">{fieldDef?.label || fieldId}</p>
-                            <p className="font-medium">{formatValue(item[fieldId], fieldId)}</p>
+                          <div key={fieldId} className="min-w-0">
+                            <p className="text-xs text-muted-foreground truncate">{fieldDef?.label || fieldId}</p>
+                            <p dir="auto" className="font-medium break-words leading-snug">{formatValue(item[fieldId], fieldId)}</p>
                           </div>
                         );
                       })}
