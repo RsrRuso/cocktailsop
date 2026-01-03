@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-
+import { detectBottleSizeMl } from '@/lib/bottleSize';
 export interface RecipeIngredient {
   inventory_item_id: string;
   qty: number;
@@ -11,6 +11,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   base_unit: string;
+  unit_cost?: number;
   bottle_size_ml?: number;
   lab_ops_inventory_item_costs?: Array<{ unit_cost: number }>;
   totalStock?: number;
@@ -42,7 +43,7 @@ export interface RecipeCostSummary {
 
 const UNIT_TO_ML: Record<string, number> = {
   ml: 1,
-  L: 1000,
+  l: 1000,
   cl: 10,
   oz: 29.5735,
   dash: 0.9,
@@ -71,22 +72,34 @@ export function useRecipeCostCalculator(
       const invItem = inventoryItems.find(i => i.id === ing.inventory_item_id);
       if (!invItem) continue;
 
-      const bottleSize = ing.bottle_size || invItem.bottle_size_ml || defaultBottleSize;
-      const unitCost = invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost || 0;
-      
-      // unit_cost is stored as per-ml cost in Lab Ops
-      const costPerMl = unitCost;
+      const bottleSize =
+        ing.bottle_size ||
+        invItem.bottle_size_ml ||
+        detectBottleSizeMl(invItem.name) ||
+        defaultBottleSize;
 
-      
-      // Convert quantity to ml
-      const unitMultiplier = UNIT_TO_ML[ing.unit] || 1;
-      const qtyInMl = ing.unit === 'piece' ? 0 : ing.qty * unitMultiplier;
-      
+      // Prefer inventory item unit_cost; fall back to related cost record
+      const unitCostRaw =
+        Number(invItem.unit_cost ?? 0) ||
+        Number(invItem.lab_ops_inventory_item_costs?.[0]?.unit_cost ?? 0) ||
+        0;
+
+      // Convert unit_cost to per-ml cost:
+      // - If base_unit is a measurable unit (ml/L/cl/etc), unit_cost is per base_unit
+      // - Otherwise, treat unit_cost as per bottle and divide by bottle size
+      const baseUnitKey = String(invItem.base_unit || '').toLowerCase();
+      const baseUnitToMl = UNIT_TO_ML[baseUnitKey] || 0;
+      const costPerMl = baseUnitToMl > 0 ? unitCostRaw / baseUnitToMl : (bottleSize > 0 ? unitCostRaw / bottleSize : 0);
+
+      // Convert ingredient qty to ml
+      const unitKey = String(ing.unit || '').toLowerCase();
+      const unitMultiplier = UNIT_TO_ML[unitKey] || 1;
+      const qtyInMl = unitKey === 'piece' ? 0 : ing.qty * unitMultiplier;
+
       // Calculate ingredient cost
       let ingredientCost = 0;
-      if (ing.unit === 'piece') {
-        // For piece items, use unit cost directly multiplied by qty
-        ingredientCost = unitCost * ing.qty;
+      if (unitKey === 'piece') {
+        ingredientCost = unitCostRaw * ing.qty;
       } else {
         ingredientCost = qtyInMl * costPerMl;
       }

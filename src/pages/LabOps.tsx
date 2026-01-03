@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getLabOpsFromCache, labOpsCache } from "@/lib/routePrefetch";
 import { detectBottleSizeMl } from "@/lib/bottleSize";
+import { costPerMlFromUnitCost, qtyToMl } from "@/lib/labOpsCosting";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
@@ -4420,24 +4421,25 @@ function RecipesModule({ outletId }: { outletId: string }) {
       if (!invItem) continue;
 
       const qty = Number(ing.qty || 0);
-      const unit = String(ing.unit || 'ml');
+      const unit = String(ing.unit || "ml");
+      const unitCostPerUnit = Number(invItem.unit_cost || 0);
 
-      const unitCostPerBottleOrPiece = Number(invItem.unit_cost || 0);
-      if (unit === 'piece') {
-        totalCost += unitCostPerBottleOrPiece * qty;
+      if (unit === "piece") {
+        totalCost += unitCostPerUnit * qty;
         continue;
       }
 
       const bottleSize = Number(
-        ing.bottle_size ||
-          invItem.bottle_size_ml ||
-          detectBottleSizeMl(invItem.name) ||
-          750
+        ing.bottle_size || invItem.bottle_size_ml || detectBottleSizeMl(invItem.name) || 750
       );
 
-      const unitMult = UNIT_TO_ML[unit] ?? 1;
-      const qtyMl = qty * unitMult;
-      const costPerMl = bottleSize > 0 ? unitCostPerBottleOrPiece / bottleSize : 0;
+      const qtyMl = qtyToMl(qty, unit);
+      const costPerMl = costPerMlFromUnitCost({
+        unitCost: unitCostPerUnit,
+        baseUnit: invItem.base_unit,
+        bottleSizeMl: bottleSize,
+      });
+
       totalCost += qtyMl * costPerMl;
     }
 
@@ -4459,13 +4461,20 @@ function RecipesModule({ outletId }: { outletId: string }) {
             <CardTitle className="text-lg">Recipes & Costing</CardTitle>
             <CardDescription className="text-sm">Manage recipes and calculate food costs</CardDescription>
           </div>
-          <Dialog open={showAddRecipe} onOpenChange={(open) => { if (!open) closeDialog(); else setShowAddRecipe(true); }}>
+          <Dialog open={showAddRecipe} onOpenChange={(open) => {
+            if (!open) closeDialog();
+            else {
+              setShowAddRecipe(true);
+              // Ensure latest inventory unit_cost is loaded (PO approvals can change it)
+              fetchInventoryItems();
+            }
+          }}>
             <DialogTrigger asChild>
               <Button size="sm" disabled={menuItems.length === 0}>
                 <Plus className="h-4 w-4 mr-1" />Add Recipe
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
               <DialogHeader>
                 <DialogTitle>{selectedRecipe ? "Edit Recipe" : "Create Recipe"}</DialogTitle>
               </DialogHeader>
@@ -4539,20 +4548,6 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
                 <RecipeCostingLivePanel
                   costPerServe={useMemo(() => {
-                    const UNIT_TO_ML: Record<string, number> = {
-                      ml: 1,
-                      L: 1000,
-                      cl: 10,
-                      oz: 29.5735,
-                      dash: 0.9,
-                      drop: 0.05,
-                      tsp: 4.929,
-                      tbsp: 14.787,
-                      g: 1,
-                      kg: 1000,
-                      piece: 0,
-                    };
-
                     const yieldQty = Number(recipeYield || 1) || 1;
                     let total = 0;
 
@@ -4563,19 +4558,21 @@ function RecipesModule({ outletId }: { outletId: string }) {
 
                       const qty = Number(ing.qty || 0);
                       const unit = String(ing.unit || "ml");
-                      const unitCostPerBottleOrPiece = Number(invItem.unit_cost || 0);
+                      const unitCostPerUnit = Number(invItem.unit_cost || 0);
 
                       if (unit === "piece") {
-                        total += unitCostPerBottleOrPiece * qty;
+                        total += unitCostPerUnit * qty;
                         continue;
                       }
 
-                      const bottleSize = Number(
-                        invItem.bottle_size_ml || detectBottleSizeMl(invItem.name) || 750
-                      );
-                      const unitMult = UNIT_TO_ML[unit] ?? 1;
-                      const qtyMl = qty * unitMult;
-                      const costPerMl = bottleSize > 0 ? unitCostPerBottleOrPiece / bottleSize : 0;
+                      const bottleSize = Number(invItem.bottle_size_ml || detectBottleSizeMl(invItem.name) || 750);
+                      const qtyMl = qtyToMl(qty, unit);
+                      const costPerMl = costPerMlFromUnitCost({
+                        unitCost: unitCostPerUnit,
+                        baseUnit: invItem.base_unit,
+                        bottleSizeMl: bottleSize,
+                      });
+
                       total += qtyMl * costPerMl;
                     }
 

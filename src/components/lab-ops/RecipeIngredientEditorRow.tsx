@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { detectBottleSizeMl } from "@/lib/bottleSize";
+import { costPerMlFromUnitCost, qtyToMl } from "@/lib/labOpsCosting";
 
 export type RecipeIngredientDraft = {
   itemId: string;
@@ -19,22 +20,8 @@ type InventoryItem = {
   name: string;
   base_unit?: string | null;
   totalStock?: number | null;
-  unit_cost?: number | null; // Per bottle price from receiving PO
+  unit_cost?: number | null;
   bottle_size_ml?: number | null;
-};
-
-const UNIT_TO_ML: Record<string, number> = {
-  ml: 1,
-  L: 1000,
-  cl: 10,
-  oz: 29.5735,
-  dash: 0.9,
-  drop: 0.05,
-  tsp: 4.929,
-  tbsp: 14.787,
-  g: 1,
-  kg: 1000,
-  piece: 0,
 };
 
 export function RecipeIngredientEditorRow({
@@ -53,24 +40,23 @@ export function RecipeIngredientEditorRow({
   const { formatPrice } = useCurrency();
   const invItem = useMemo(() => inventoryItems.find((i) => i.id === ing.itemId), [inventoryItems, ing.itemId]);
 
-  // Bottle size: auto-detect from item name or use inventory value, NO manual override
+  // Bottle size: auto-detect from item name or use inventory value
   const bottleSize = useMemo(() => {
     if (!invItem) return 750;
-    // Priority: inventory bottle_size_ml > detected from name > default 750
     const detected = detectBottleSizeMl(invItem.name);
     return Number(invItem.bottle_size_ml || detected || 750);
   }, [invItem]);
 
-  // Unit cost per bottle from receiving PO / inventory
-  const unitCostPerBottle = Number(invItem?.unit_cost || 0);
+  const unitCostPerUnit = Number(invItem?.unit_cost || 0);
 
-  // Cost per ml = bottle price / bottle size
-  const costPerMl = bottleSize > 0 ? unitCostPerBottle / bottleSize : 0;
+  const qtyInMl = qtyToMl(Number(ing.qty || 0), ing.unit);
+  const costPerMl = costPerMlFromUnitCost({
+    unitCost: unitCostPerUnit,
+    baseUnit: invItem?.base_unit,
+    bottleSizeMl: bottleSize,
+  });
 
-  const unitMultiplier = UNIT_TO_ML[ing.unit] || 1;
-  const qtyInMl = ing.unit === "piece" ? 0 : Number(ing.qty || 0) * unitMultiplier;
-
-  const ingredientCost = ing.unit === "piece" ? 0 : qtyInMl * costPerMl;
+  const ingredientCost = ing.unit === "piece" ? unitCostPerUnit * Number(ing.qty || 0) : qtyInMl * costPerMl;
   const servesPerBottle = qtyInMl > 0 ? Math.floor(bottleSize / qtyInMl) : 0;
 
   const stock = Number(invItem?.totalStock || 0);
@@ -139,13 +125,13 @@ export function RecipeIngredientEditorRow({
         <div className="flex flex-wrap items-center gap-2 justify-between text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-muted-foreground">
-              Unit cost: {unitCostPerBottle > 0 ? formatPrice(unitCostPerBottle) : <span className="text-destructive">missing</span>}
+              Unit cost: {unitCostPerUnit > 0 ? formatPrice(unitCostPerUnit) : <span className="text-destructive">missing</span>}
             </span>
             <span className="text-amber-500 font-medium">{servesPerBottle} servings/bottle</span>
-          </div>
-          <span className="font-semibold">
-            Cost: <span className="text-primary">{formatPrice(ingredientCost)}</span>
-          </span>
+           </div>
+           <span className="font-semibold">
+             Cost: <span className="text-primary">{formatPrice(ingredientCost)}</span>
+           </span>
         </div>
       )}
 
