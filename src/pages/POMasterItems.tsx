@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePurchaseOrderMaster } from "@/hooks/usePurchaseOrderMaster";
+import { usePurchaseOrderMaster, MasterItem } from "@/hooks/usePurchaseOrderMaster";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Package, Search, List, RefreshCw, Upload, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Package, Search, List, RefreshCw, Upload, TrendingUp, Pencil } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import ParLevelPrediction from "@/components/procurement/ParLevelPrediction";
@@ -28,6 +29,8 @@ const POMasterItems = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currency, setCurrency] = useState(() => localStorage.getItem('po-currency') || 'USD');
   const [showParLevel, setShowParLevel] = useState(false);
+  const [editingItem, setEditingItem] = useState<MasterItem | null>(null);
+  const [editForm, setEditForm] = useState({ unit: '', category: '' });
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -54,7 +57,7 @@ const POMasterItems = () => {
     return localStorage.getItem('po-workspace-id') || null;
   });
   
-  const { masterItems, isLoadingMaster, syncFromExistingOrders, importFromFile } = usePurchaseOrderMaster(selectedWorkspaceId);
+  const { masterItems, isLoadingMaster, syncFromExistingOrders, importFromFile, updateMasterItem } = usePurchaseOrderMaster(selectedWorkspaceId);
 
   if (!user) {
     navigate('/auth');
@@ -87,6 +90,28 @@ const POMasterItems = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleEditItem = (item: MasterItem) => {
+    setEditingItem(item);
+    setEditForm({ 
+      unit: item.unit || '', 
+      category: item.category || '' 
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+    try {
+      await updateMasterItem({
+        id: editingItem.id,
+        unit: editForm.unit || null,
+        category: editForm.category || null
+      });
+      setEditingItem(null);
+    } catch (error) {
+      // Error handled in hook
     }
   };
 
@@ -184,11 +209,16 @@ const POMasterItems = () => {
           ) : (
             <div className="space-y-2 pb-20">
               {filteredItems.map((item) => (
-                <Card key={item.id} className="p-3">
+                <Card 
+                  key={item.id} 
+                  className="p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => handleEditItem(item)}
+                >
                   {/* Item Name Row */}
                   <div className="flex items-center gap-2 mb-2">
                     <Package className="h-4 w-4 text-primary shrink-0" />
                     <p className="font-medium text-sm flex-1">{item.item_name}</p>
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                   
                   {/* Details Grid - Always Visible */}
@@ -224,6 +254,51 @@ const POMasterItems = () => {
           )}
         </ScrollArea>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">Edit Item</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground font-medium">{editingItem.item_name}</p>
+              
+              <div className="space-y-2">
+                <Label htmlFor="unit" className="text-xs">Unit</Label>
+                <Input
+                  id="unit"
+                  placeholder="e.g., kg, pcs, bottle"
+                  value={editForm.unit}
+                  onChange={(e) => setEditForm(f => ({ ...f, unit: e.target.value }))}
+                  className="h-9"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-xs">Category</Label>
+                <Input
+                  id="category"
+                  placeholder="e.g., Produce, Dairy, Spirits"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm(f => ({ ...f, category: e.target.value }))}
+                  className="h-9"
+                />
+              </div>
+              
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setEditingItem(null)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={handleSaveEdit}>
+                  Save
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <ParLevelPrediction 
         workspaceId={selectedWorkspaceId}
