@@ -140,7 +140,7 @@ export function IntroductionPromoVideo() {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full aspect-[9/16] max-h-[70vh] rounded-2xl overflow-hidden shadow-2xl border border-border/30"
+      className="relative w-full max-w-[360px] mx-auto h-[640px] md:h-[720px] rounded-2xl overflow-hidden shadow-2xl border border-border/30"
     >
       {/* Animated Background */}
       <AnimatePresence mode="wait">
