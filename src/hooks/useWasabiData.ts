@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface WasabiConversation {
@@ -52,7 +52,7 @@ const CACHE_KEYS = {
   timestamp: 'wasabi_cache_timestamp',
 };
 
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 300000; // 5 minutes
 
 const getCache = <T>(key: string): T | null => {
   try {
@@ -77,7 +77,7 @@ const setCache = <T>(key: string, data: T): void => {
 };
 
 export const useWasabiData = () => {
-  const [conversations, setConversations] = useState<WasabiConversation[]>(() => 
+  const [conversations, setConversations] = useState<WasabiConversation[]>(() =>
     getCache<WasabiConversation[]>(CACHE_KEYS.conversations) || []
   );
   const [channels, setChannels] = useState<CommunityChannel[]>(() =>
@@ -91,17 +91,31 @@ export const useWasabiData = () => {
   const [loading, setLoading] = useState(!getCache(CACHE_KEYS.conversations));
   const [channelsLoading, setChannelsLoading] = useState(!getCache(CACHE_KEYS.channels));
 
+  const convsDebounceRef = useRef<number | null>(null);
+  const channelsDebounceRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (convsDebounceRef.current) window.clearTimeout(convsDebounceRef.current);
+      if (channelsDebounceRef.current) window.clearTimeout(channelsDebounceRef.current);
+    };
+  }, []);
+
   const fetchConversations = useCallback(async (showLoading = true) => {
+    const cachedConvs = getCache<WasabiConversation[]>(CACHE_KEYS.conversations);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setCurrentUserId(user.id);
 
-      if (showLoading && !getCache(CACHE_KEYS.conversations)) {
+      if (showLoading && !cachedConvs) {
         setLoading(true);
       }
 
-      // Optimized: Single query with join for better performance
+      // Memberships + conversation meta (single query)
       const { data: membershipsData, error: memberError } = await supabase
         .from('wasabi_members')
         .select(`
@@ -110,88 +124,108 @@ export const useWasabiData = () => {
           archived,
           last_read_at,
           wasabi_conversations (
-            id, name, is_group, avatar_url, last_message_at, pinned, created_by
+            id, name, is_group, avatar_url, last_message_at, pinned
           )
         `)
         .eq('user_id', user.id)
-        .order('last_read_at', { ascending: false });
+        .order('last_read_at', { ascending: false })
+        .limit(50);
 
       if (memberError) throw memberError;
 
-      // Batch fetch last messages for all conversations
-      const convIds = (membershipsData || [])
-        .map(m => (m.wasabi_conversations as any)?.id)
-        .filter(Boolean);
+      const membershipRows = membershipsData || [];
+      const convRows = membershipRows
+        .map((m: any) => ({ membership: m, conv: m.wasabi_conversations as any }))
+        .filter((x) => Boolean(x.conv?.id));
 
-      // Get unread counts in parallel
-      const unreadResults = await Promise.all(convIds.map(async (convId: string) => {
-        const membership = membershipsData?.find(m => (m.wasabi_conversations as any)?.id === convId);
-        const { count } = await supabase
+      const convIds = convRows.map((x) => x.conv.id as string);
+
+      // Batch: last messages (single query, then pick latest per conversation)
+      const lastMessageByConv = new Map<string, any>();
+      if (convIds.length) {
+        const limit = Math.min(Math.max(convIds.length * 5, 25), 300);
+        const { data: recentMessages, error: recentErr } = await supabase
           .from('wasabi_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', convId)
-          .neq('sender_id', user.id)
-          .gt('created_at', membership?.last_read_at || '1970-01-01');
-        return { convId, count: count || 0 };
-      }));
-
-      // Build unread map
-      const unreadMap = new Map(unreadResults.map(r => [r.convId, r.count]));
-
-      // Build conversations with details
-      const conversationsData: WasabiConversation[] = [];
-
-      for (const membership of membershipsData || []) {
-        const conv = membership.wasabi_conversations as any;
-        if (!conv) continue;
-
-        // Fetch last message for this conversation
-        const { data: lastMessage } = await supabase
-          .from('wasabi_messages')
-          .select('content, message_type, sender_id, created_at')
-          .eq('conversation_id', conv.id)
+          .select('conversation_id, content, message_type, sender_id, created_at')
+          .in('conversation_id', convIds)
           .eq('is_deleted', false)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(limit);
 
-        let otherUser = null;
-        if (!conv.is_group) {
-          const { data: otherMember } = await supabase
-            .from('wasabi_members')
-            .select('user_id')
-            .eq('conversation_id', conv.id)
-            .neq('user_id', user.id)
-            .single();
+        if (recentErr) throw recentErr;
 
-          if (otherMember) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, username, full_name, avatar_url')
-              .eq('id', otherMember.user_id)
-              .single();
-            otherUser = profile;
+        for (const msg of recentMessages || []) {
+          if (!lastMessageByConv.has(msg.conversation_id)) {
+            lastMessageByConv.set(msg.conversation_id, msg);
           }
         }
+      }
 
-        conversationsData.push({
+      // Batch: other user profiles for 1:1 conversations
+      const oneToOneConvIds = convRows
+        .filter((x) => !x.conv.is_group)
+        .map((x) => x.conv.id as string);
+
+      const otherUserByConv = new Map<string, WasabiConversation['other_user']>();
+
+      if (oneToOneConvIds.length) {
+        const { data: otherMembers, error: otherErr } = await supabase
+          .from('wasabi_members')
+          .select('conversation_id, user_id')
+          .in('conversation_id', oneToOneConvIds)
+          .neq('user_id', user.id);
+
+        if (otherErr) throw otherErr;
+
+        const otherUserIds = Array.from(
+          new Set((otherMembers || []).map((m: any) => m.user_id).filter(Boolean))
+        ) as string[];
+
+        if (otherUserIds.length) {
+          const { data: profiles, error: profErr } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url')
+            .in('id', otherUserIds);
+
+          if (profErr) throw profErr;
+
+          const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+          for (const m of otherMembers || []) {
+            if (!otherUserByConv.has(m.conversation_id)) {
+              otherUserByConv.set(
+                m.conversation_id,
+                (profileMap.get(m.user_id) as any) || undefined
+              );
+            }
+          }
+        }
+      }
+
+      // Build conversations (fast path: no unread counts yet)
+      const conversationsData: WasabiConversation[] = convRows.map(({ membership, conv }) => {
+        const last = lastMessageByConv.get(conv.id);
+
+        return {
           id: conv.id,
           name: conv.name,
           is_group: conv.is_group,
           avatar_url: conv.avatar_url,
-          last_message_at: lastMessage?.created_at || conv.last_message_at,
-          last_message: lastMessage ? {
-            content: lastMessage.content,
-            message_type: lastMessage.message_type,
-            sender_id: lastMessage.sender_id
-          } : undefined,
-          unread_count: unreadMap.get(conv.id) || 0,
-          other_user: otherUser,
+          last_message_at: last?.created_at || conv.last_message_at,
+          last_message: last
+            ? {
+                content: last.content,
+                message_type: last.message_type,
+                sender_id: last.sender_id,
+              }
+            : undefined,
+          unread_count: 0,
+          other_user: conv.is_group ? undefined : otherUserByConv.get(conv.id),
           muted: membership.muted,
           archived: membership.archived,
-          pinned: conv.pinned
-        });
-      }
+          pinned: conv.pinned,
+        };
+      });
 
       // Sort: pinned first, then by last message time
       conversationsData.sort((a, b) => {
@@ -204,6 +238,53 @@ export const useWasabiData = () => {
 
       setConversations(conversationsData);
       setCache(CACHE_KEYS.conversations, conversationsData);
+
+      // Background: unread counts (doesn't block UI)
+      if (convIds.length) {
+        const lastReadMap = new Map<string, string>();
+        for (const m of membershipRows as any[]) {
+          const id = (m.wasabi_conversations as any)?.id;
+          if (id) lastReadMap.set(id, m.last_read_at);
+        }
+
+        const queue = [...convIds];
+        const results = new Map<string, number>();
+        const workerCount = Math.min(5, queue.length);
+
+        void (async () => {
+          await Promise.all(
+            Array.from({ length: workerCount }).map(async () => {
+              while (queue.length) {
+                const convId = queue.shift();
+                if (!convId) return;
+
+                const lastReadAt = lastReadMap.get(convId) || '1970-01-01';
+                const { count, error } = await supabase
+                  .from('wasabi_messages')
+                  .select('id', { count: 'exact', head: true })
+                  .eq('conversation_id', convId)
+                  .neq('sender_id', user.id)
+                  .gt('created_at', lastReadAt);
+
+                if (!error) results.set(convId, count || 0);
+              }
+            })
+          );
+
+          if (!isMountedRef.current || results.size === 0) return;
+
+          setConversations((prev) => {
+            const next = prev.map((c) => ({
+              ...c,
+              unread_count: results.has(c.id)
+                ? (results.get(c.id) as number)
+                : c.unread_count,
+            }));
+            setCache(CACHE_KEYS.conversations, next);
+            return next;
+          });
+        })();
+      }
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
@@ -259,17 +340,31 @@ export const useWasabiData = () => {
     fetchConversations();
     fetchChannels();
 
+    const scheduleConversations = () => {
+      if (convsDebounceRef.current) window.clearTimeout(convsDebounceRef.current);
+      convsDebounceRef.current = window.setTimeout(() => {
+        fetchConversations(false);
+      }, 350);
+    };
+
+    const scheduleChannels = () => {
+      if (channelsDebounceRef.current) window.clearTimeout(channelsDebounceRef.current);
+      channelsDebounceRef.current = window.setTimeout(() => {
+        fetchChannels(false);
+      }, 350);
+    };
+
     const channel = supabase
       .channel('wasabi-updates-main')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'wasabi_messages' },
-        () => fetchConversations(false)
+        scheduleConversations
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'community_messages' },
-        () => fetchChannels(false)
+        scheduleChannels
       )
       .subscribe();
 
