@@ -334,6 +334,8 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
       // Build unique items map from PO items - prefer actual names over codes
       const uniqueItems = new Map<string, any>();
       const itemsToUpdate: { id: string; newName: string; unit?: string; price?: number }[] = [];
+      // Track best prices for existing items that need price updates
+      const priceUpdates = new Map<string, { id: string; price: number; unit?: string }>();
       
       for (const item of items) {
         // Skip items that are just codes with no proper name
@@ -357,8 +359,24 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
           continue;
         }
         
-        // Skip if proper name already exists
-        if (existingByName.has(nameKey)) continue;
+        // If proper name already exists, track price updates
+        if (existingByName.has(nameKey)) {
+          const existingItem = existingByName.get(nameKey)!;
+          const currentPrice = item.price_per_unit || 0;
+          
+          // Track highest price for this existing item
+          if (currentPrice > 0) {
+            const existing = priceUpdates.get(nameKey);
+            if (!existing || currentPrice > existing.price) {
+              priceUpdates.set(nameKey, { 
+                id: existingItem.id, 
+                price: currentPrice,
+                unit: item.unit
+              });
+            }
+          }
+          continue;
+        }
         
         if (!uniqueItems.has(nameKey)) {
           uniqueItems.set(nameKey, item);
@@ -373,6 +391,7 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
 
       let updatedCount = 0;
       let addedCount = 0;
+      let priceUpdateCount = 0;
       
       // Update existing code-only items with proper names
       for (const update of itemsToUpdate) {
@@ -392,6 +411,23 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
         }
       }
 
+      // Update prices for existing items that have prices in PO data
+      for (const [, update] of priceUpdates) {
+        try {
+          await supabase
+            .from('purchase_order_master_items')
+            .update({ 
+              last_price: update.price,
+              unit: update.unit || undefined,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', update.id);
+          priceUpdateCount++;
+        } catch (err) {
+          console.log('Failed to update price:', update.id);
+        }
+      }
+
       // Insert new items
       for (const item of Array.from(uniqueItems.values())) {
         try {
@@ -408,12 +444,13 @@ export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
 
       queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
       
-      if (updatedCount > 0 && addedCount > 0) {
-        toast.success(`Updated ${updatedCount} items, added ${addedCount} new items`);
-      } else if (updatedCount > 0) {
-        toast.success(`Updated ${updatedCount} items with proper names`);
-      } else if (addedCount > 0) {
-        toast.success(`Added ${addedCount} unique items`);
+      const messages = [];
+      if (updatedCount > 0) messages.push(`renamed ${updatedCount}`);
+      if (priceUpdateCount > 0) messages.push(`updated ${priceUpdateCount} prices`);
+      if (addedCount > 0) messages.push(`added ${addedCount} new`);
+      
+      if (messages.length > 0) {
+        toast.success(`Synced: ${messages.join(', ')}`);
       } else {
         toast.info("All items already synced");
       }
