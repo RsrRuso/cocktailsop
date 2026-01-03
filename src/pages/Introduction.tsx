@@ -1,11 +1,65 @@
 import { useState } from "react";
-import { Download, Users, Zap, Shield, Globe, Heart, Music, Calendar, MessageSquare } from "lucide-react";
+import { motion } from "framer-motion";
+import { Download, Users, Zap, Shield, Globe, Heart, Music, Calendar, MessageSquare, Video, Briefcase, ChefHat, Building2, Star, Play, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { IntroductionPromoVideo } from "@/components/promo/IntroductionPromoVideo";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
+
+// Platform sections for the map
+const PLATFORM_MAP_SECTIONS = [
+  {
+    id: 'social',
+    title: 'Social Hub',
+    icon: Video,
+    color: 'from-blue-500 to-cyan-500',
+    description: 'Connect, share, and grow your network',
+    features: ['Reels & Stories', 'Posts & Feed', 'Direct Messaging', 'Community Channels', 'Live Streaming', 'Discovery']
+  },
+  {
+    id: 'professional',
+    title: 'Professional Network',
+    icon: Briefcase,
+    color: 'from-purple-500 to-pink-500',
+    description: 'Build your career and find opportunities',
+    features: ['Profile Portfolio', 'Job Marketplace', 'Venue Verification', 'Certifications', 'Competitions', 'Networking']
+  },
+  {
+    id: 'tools',
+    title: 'Industry Tools',
+    icon: ChefHat,
+    color: 'from-amber-500 to-orange-500',
+    description: 'Professional tools for hospitality',
+    features: ['Cocktail SOP Builder', 'Batch Calculator', 'Lab Operations', 'Purchase Orders', 'Inventory Sync', 'Cost Analysis']
+  },
+  {
+    id: 'content',
+    title: 'Content Studio',
+    icon: Video,
+    color: 'from-rose-500 to-red-500',
+    description: 'Create professional content',
+    features: ['Reel Editor Pro 4K', 'Music Library', 'Story Creator', 'Drafts & Scheduling', 'Analytics', 'Collaboration']
+  },
+  {
+    id: 'business',
+    title: 'Business Suite',
+    icon: Building2,
+    color: 'from-emerald-500 to-teal-500',
+    description: 'Tools for venue owners and managers',
+    features: ['Venue Management', 'Staff Directory', 'Workspace', 'Task Management', 'Calendar', 'Reports']
+  },
+  {
+    id: 'monetization',
+    title: 'Creator Economy',
+    icon: Star,
+    color: 'from-yellow-500 to-amber-500',
+    description: 'Earn from your content and expertise',
+    features: ['Tips & Donations', 'Subscriptions', 'Creator Badges', 'Business Ideas', 'Sponsorships', 'Payouts']
+  }
+];
 
 const Introduction = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -189,14 +243,24 @@ const Introduction = () => {
       <TopNav />
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        {/* Hero Section */}
-        <div className="text-center space-y-4">
+        {/* Hero Section with Promo Video */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-6"
+        >
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
             Welcome to SPECVERSE
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Capital & Career Ecosystem for Hospitality Professionals
           </p>
+          
+          {/* Promo Video Reel */}
+          <div className="max-w-sm mx-auto">
+            <IntroductionPromoVideo />
+          </div>
+          
           <Button 
             onClick={handleDownloadPDF}
             disabled={isGenerating}
@@ -206,7 +270,51 @@ const Introduction = () => {
             <Download className="w-5 h-5" />
             {isGenerating ? "Generating..." : "Download Introduction (PDF)"}
           </Button>
-        </div>
+        </motion.div>
+
+        {/* Platform Map Section */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="space-y-6"
+        >
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-2">Platform Map</h2>
+            <p className="text-muted-foreground">Explore everything SpecVerse has to offer</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PLATFORM_MAP_SECTIONS.map((section, idx) => (
+              <motion.div
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Card className="h-full glass hover:glass-hover transition-all group cursor-pointer overflow-hidden">
+                  <div className={`h-1.5 bg-gradient-to-r ${section.color}`} />
+                  <CardContent className="p-5">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${section.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <section.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-1">{section.title}</h3>
+                    <p className="text-xs text-muted-foreground mb-3">{section.description}</p>
+                    <ul className="space-y-1.5">
+                      {section.features.map((feature, fidx) => (
+                        <li key={fidx} className="flex items-center gap-2 text-xs">
+                          <div className={`w-1 h-1 rounded-full bg-gradient-to-r ${section.color}`} />
+                          <span className="text-muted-foreground">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
         {/* What is SPECVERSE */}
         <Card className="glass p-6 space-y-4">
