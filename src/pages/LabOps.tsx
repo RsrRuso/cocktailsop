@@ -3043,9 +3043,13 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
           </CardHeader>
           <CardContent className="p-3">
             <ScrollArea className="h-24">
-              <div className="flex gap-2 flex-wrap pr-3">
+              <div className="flex gap-2 flex-wrap pl-[max(0.25rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
                 {lowStockItems.map((item) => (
-                  <Badge key={item.id} variant="destructive" className="text-xs">
+                  <Badge
+                    key={item.id}
+                    variant="destructive"
+                    className="text-xs max-w-full whitespace-normal break-words leading-snug"
+                  >
                     {item.name}: {getTotalStock(item)} / {item.par_level}
                   </Badge>
                 ))}
@@ -3354,6 +3358,11 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
                     const receivedBy = mov.created_by_profile?.full_name || mov.created_by_profile?.username || mov.created_by_profile?.email || 'Unknown';
                     const toStore = mov.to_location?.name;
                     const fromStore = mov.from_location?.name;
+                    const cleanedNotes = typeof mov.notes === "string"
+                      ? mov.notes
+                          .replace(/Approved from PO:\s*(null|unknown|undefined)\b/gi, "Approved from PO")
+                          .trim()
+                      : "";
                     
                     return (
                       <div key={mov.id} className="p-3 sm:p-4 bg-muted/50 rounded-lg border border-border/50">
@@ -3406,8 +3415,8 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
                                   <span className="text-xs">Ref: {mov.reference_type}</span>
                                 </p>
                               )}
-                              {mov.notes && (
-                                <p className="text-xs italic">"{mov.notes}"</p>
+                              {cleanedNotes && (
+                                <p className="text-xs italic break-words">"{cleanedNotes}"</p>
                               )}
                             </div>
                           </div>
