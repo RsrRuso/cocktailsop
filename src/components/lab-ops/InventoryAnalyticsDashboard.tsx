@@ -319,7 +319,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
       const categoryLower = item.category?.toLowerCase() || '';
       const nameLower = item.name?.toLowerCase() || '';
       
-      // Strict spirit detection - ONLY category 'spirits' or explicit spirit keywords
+      // Strict spirit detection - category 'spirits' or explicit spirit keywords
       const isSpirit = categoryLower === 'spirits' || 
                        nameLower.includes('whisky') ||
                        nameLower.includes('whiskey') ||
@@ -330,7 +330,20 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                        nameLower.includes('cognac') ||
                        nameLower.includes('mezcal') ||
                        nameLower.includes('bourbon') ||
-                       nameLower.includes('scotch');
+                       nameLower.includes('scotch') ||
+                       nameLower.includes('gin') ||
+                       nameLower.includes('jagermeister') ||
+                       nameLower.includes('liqueur') ||
+                       nameLower.includes('liquer') ||
+                       nameLower.includes('black label') ||
+                       nameLower.includes('red label') ||
+                       nameLower.includes('blue label') ||
+                       nameLower.includes('hennessy') ||
+                       nameLower.includes('baileys') ||
+                       nameLower.includes('aperol') ||
+                       nameLower.includes('campari') ||
+                       nameLower.includes('amaretto') ||
+                       nameLower.includes('kahlua');
       
       // Exclude soft drinks, mixers, food explicitly
       const isNonSpirit = categoryLower.includes('soft') || 
@@ -341,7 +354,9 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                           nameLower.includes('tonic') ||
                           nameLower.includes('soda') ||
                           nameLower.includes('juice') ||
-                          nameLower.includes('cola');
+                          nameLower.includes('cola') ||
+                          nameLower.includes('water') ||
+                          nameLower.includes('be wtr');
       
       // Final spirit check: must be spirit AND not explicitly non-spirit
       const applyFractionalConversion = isSpirit && !isNonSpirit;
@@ -357,8 +372,9 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
         .filter((m) => m.movement_type === "sale")
         .reduce((sum, m) => sum + Math.abs(m.qty), 0);
       
-      // Use the higher value - movements are already fractional, sales are now converted
-      const totalSold = Math.max(soldInBottleParts, soldFromMovements);
+      // Trust movement data first if it exists (already fractional), otherwise use sales conversion
+      // Movement data is the source of truth for actual stock deductions
+      const totalSold = soldFromMovements > 0 ? soldFromMovements : soldInBottleParts;
 
       const currentStock = (item.lab_ops_stock_levels || []).reduce(
         (sum: number, sl: any) => sum + (Number(sl.quantity) || 0),
@@ -581,7 +597,7 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                         variant={item.current_stock > 0 ? "secondary" : "destructive"}
                         className="text-sm font-bold px-2 shrink-0 whitespace-nowrap"
                       >
-                        {item.current_stock} {item.base_unit}
+                        {formatQtyCompact(item.current_stock)} {item.base_unit}
                       </Badge>
                     </div>
 
@@ -589,12 +605,12 @@ export function InventoryAnalyticsDashboard({ outletId }: InventoryAnalyticsDash
                       <div className="flex items-center gap-1">
                         <ArrowDownRight className="h-3 w-3 text-green-500" />
                         <span className="text-muted-foreground">In:</span>
-                        <span className="font-medium text-green-600">{item.total_received}</span>
+                        <span className="font-medium text-green-600">{formatQtyCompact(item.total_received)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <ArrowUpRight className="h-3 w-3 text-red-500" />
                         <span className="text-muted-foreground">Out:</span>
-                        <span className="font-medium text-red-600">{item.total_sold}</span>
+                        <span className="font-medium text-red-600">{formatQtyCompact(item.total_sold)}</span>
                       </div>
                       {item.last_movement && (
                         <div className="flex items-center gap-1">
