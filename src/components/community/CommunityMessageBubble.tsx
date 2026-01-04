@@ -169,18 +169,27 @@ function CommunityMessageBubbleComponent({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           className={`flex gap-2 ${isOwn ? "flex-row-reverse" : ""}`}
-          style={{ x }}
+          style={{ 
+            x,
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+            WebkitTouchCallout: 'none',
+          } as React.CSSProperties}
           drag="x"
           dragConstraints={{ left: 0, right: isOwn ? 0 : 80 }}
           dragElastic={0.1}
           onDragEnd={handleDragEnd}
-          onTouchStart={startLongPress}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            startLongPress();
+          }}
           onTouchEnd={cancelLongPress}
           onTouchMove={cancelLongPress}
           onMouseDown={startLongPress}
           onMouseUp={cancelLongPress}
           onMouseLeave={cancelLongPress}
           onClick={handleTap}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {/* Avatar */}
           {showAvatar ? (
