@@ -61,8 +61,8 @@ export default function CommunityDiscoverDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl bg-slate-900 border-white/10 text-white p-0 overflow-hidden rounded-xl">
-        <DialogHeader className="p-4 sm:p-6 pb-0">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] bg-slate-900 border-white/10 text-white p-0 overflow-hidden rounded-xl flex flex-col">
+        <DialogHeader className="p-4 sm:p-6 pb-2 flex-shrink-0">
           <DialogTitle className="text-lg sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -71,7 +71,7 @@ export default function CommunityDiscoverDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex flex-col">
+        <div className="p-4 sm:p-6 pt-2 space-y-3 sm:space-y-4 flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Search */}
           <div className="relative flex-shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-white/40" />
@@ -107,8 +107,8 @@ export default function CommunityDiscoverDialog({
           </div>
 
           {/* Channel List */}
-          <ScrollArea className="max-h-[50vh]">
-            <div className="space-y-2 sm:space-y-3 pr-2">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="space-y-2 sm:space-y-3 pr-2 pb-2">
               {filteredChannels.length === 0 ? (
                 <div className="text-center py-6 text-white/40">
                   <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 sm:mb-3 opacity-50" />
