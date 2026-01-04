@@ -2,9 +2,17 @@ import { memo, useCallback, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { format, isToday, isYesterday } from "date-fns";
-import { Reply, Smile, Check, CheckCheck, RotateCcw, Loader2 } from "lucide-react";
+import { Reply, Smile, Check, CheckCheck, RotateCcw, Loader2, Pin, Edit2, Forward, MoreVertical, Trash2, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -12,6 +20,9 @@ interface Message {
   content: string | null;
   created_at: string;
   reactions: Record<string, string[]>;
+  is_pinned?: boolean;
+  edited?: boolean;
+  forwarded_from?: string | null;
   profile?: {
     username: string;
     avatar_url: string | null;
@@ -28,12 +39,17 @@ interface CommunityMessageBubbleProps {
   isOwn: boolean;
   showAvatar: boolean;
   userId: string;
+  isAdmin?: boolean;
   onReply: (message: Message) => void;
   onReaction: (messageId: string, emoji: string) => void;
   onRetry?: (messageId: string) => void;
+  onPin?: (messageId: string, pin: boolean) => void;
+  onEdit?: (message: Message) => void;
+  onDelete?: (messageId: string) => void;
+  onForward?: (message: Message) => void;
 }
 
-const quickReactions = ["❤️", "👍", "😂", "😮", "😢"];
+const quickReactions = ["❤️", "👍", "😂", "😮", "😢", "🔥"];
 
 const formatMessageTime = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -47,12 +63,24 @@ function CommunityMessageBubbleComponent({
   isOwn,
   showAvatar,
   userId,
+  isAdmin = false,
   onReply,
   onReaction,
   onRetry,
+  onPin,
+  onEdit,
+  onDelete,
+  onForward,
 }: CommunityMessageBubbleProps) {
   const [showReactions, setShowReactions] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    if (message.content) {
+      navigator.clipboard.writeText(message.content);
+      toast.success("Copied to clipboard");
+    }
+  }, [message.content]);
 
   const handleLongPress = useCallback(async () => {
     try {
@@ -122,6 +150,12 @@ function CommunityMessageBubbleComponent({
             <span className="text-xs font-medium text-white/70">
               {message.profile?.full_name || message.profile?.username || "Unknown"}
             </span>
+            {message.is_pinned && (
+              <Pin className="w-3 h-3 text-blue-400" />
+            )}
+            {message.edited && (
+              <span className="text-[10px] text-white/40 italic">edited</span>
+            )}
             <span className="text-[10px] text-white/40">
               {formatMessageTime(message.created_at)}
             </span>
@@ -182,7 +216,7 @@ function CommunityMessageBubbleComponent({
           {/* Quick actions on hover */}
           <div
             className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-150 flex gap-0.5 bg-slate-800/90 rounded-full p-1 ${
-              isOwn ? "-left-16" : "-right-16"
+              isOwn ? "-left-20" : "-right-20"
             }`}
           >
             <Button
@@ -207,6 +241,66 @@ function CommunityMessageBubbleComponent({
             >
               <Smile className="w-3.5 h-3.5" />
             </Button>
+            {/* More actions dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
+                >
+                  <MoreVertical className="w-3.5 h-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-slate-800 border-white/10 min-w-[140px]">
+                {onForward && (
+                  <DropdownMenuItem
+                    onClick={() => onForward(message)}
+                    className="text-white/80 hover:bg-white/10 focus:bg-white/10"
+                  >
+                    <Forward className="w-4 h-4 mr-2" />
+                    Forward
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={handleCopy}
+                  className="text-white/80 hover:bg-white/10 focus:bg-white/10"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy
+                </DropdownMenuItem>
+                {(isAdmin || isOwn) && onPin && (
+                  <DropdownMenuItem
+                    onClick={() => onPin(message.id, !message.is_pinned)}
+                    className="text-white/80 hover:bg-white/10 focus:bg-white/10"
+                  >
+                    <Pin className="w-4 h-4 mr-2" />
+                    {message.is_pinned ? "Unpin" : "Pin"}
+                  </DropdownMenuItem>
+                )}
+                {isOwn && onEdit && (
+                  <DropdownMenuItem
+                    onClick={() => onEdit(message)}
+                    className="text-white/80 hover:bg-white/10 focus:bg-white/10"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {(isAdmin || isOwn) && onDelete && (
+                  <>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem
+                      onClick={() => onDelete(message.id)}
+                      className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </motion.div>
 

@@ -10,6 +10,9 @@ interface Message {
   content: string | null;
   created_at: string;
   reactions: Record<string, string[]>;
+  is_pinned?: boolean;
+  edited?: boolean;
+  forwarded_from?: string | null;
   profile?: {
     username: string;
     avatar_url: string | null;
@@ -25,18 +28,28 @@ interface CommunityMessageListProps {
   messages: Message[];
   userId: string;
   loading: boolean;
+  isAdmin?: boolean;
   onReply: (message: Message) => void;
   onReaction: (messageId: string, emoji: string) => void;
   onRetry: (messageId: string) => void;
+  onPin?: (messageId: string, pin: boolean) => void;
+  onEdit?: (message: Message) => void;
+  onDelete?: (messageId: string) => void;
+  onForward?: (message: Message) => void;
 }
 
 function CommunityMessageListComponent({
   messages,
   userId,
   loading,
+  isAdmin = false,
   onReply,
   onReaction,
   onRetry,
+  onPin,
+  onEdit,
+  onDelete,
+  onForward,
 }: CommunityMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -136,9 +149,14 @@ function CommunityMessageListComponent({
               isOwn={isOwn}
               showAvatar={showAvatar}
               userId={userId}
+              isAdmin={isAdmin}
               onReply={onReply}
               onReaction={onReaction}
               onRetry={onRetry}
+              onPin={onPin}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onForward={onForward}
             />
           );
         })}
