@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Mail, Send, Star, Archive, Inbox, Trash2, FileText, Search, X, Check } from "lucide-react";
+import { Mail, Send, Star, Archive, Inbox, Trash2, FileText, Search, X, Check, UserPlus, Loader2 } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { useNavigate } from "react-router-dom";
 
 interface EmailType {
   id: string;
@@ -105,6 +106,7 @@ let profileCache: Map<string, Profile> = new Map(CACHE.get("profiles") || []);
 const saveProfileCache = () => CACHE.set("profiles", [...profileCache]);
 
 const Email = () => {
+  const navigate = useNavigate();
   // Initialize from cache immediately - no loading state needed
   const [userId] = useState<string | null>(() => CACHE.get("uid"));
   const [emails, setEmails] = useState<EmailType[]>(() => CACHE.get("inbox") || []);
@@ -123,6 +125,7 @@ const Email = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecipientPicker, setShowRecipientPicker] = useState(false);
   const [isReady, setIsReady] = useState(!!CACHE.get("uid")); // Ready if we have cached user
+  const [acceptingInvite, setAcceptingInvite] = useState(false);
 
   useEffect(() => {
     // Background auth check - don't block rendering
@@ -245,6 +248,90 @@ const Email = () => {
       p.username?.toLowerCase().includes(q)
     );
   }, [profiles, searchQuery]);
+
+  // Check if email is a channel invitation
+  const isChannelInvitation = (email: EmailType | null): boolean => {
+    if (!email) return false;
+    return email.subject?.includes('Invitation to join "') && email.subject?.includes('" channel');
+  };
+
+  // Extract channel name from subject
+  const getChannelNameFromSubject = (subject: string): string | null => {
+    const match = subject.match(/Invitation to join "(.+)" channel/);
+    return match ? match[1] : null;
+  };
+
+  // Accept channel invitation
+  const acceptChannelInvitation = async (email: EmailType) => {
+    if (!uid) return;
+    setAcceptingInvite(true);
+    
+    try {
+      const channelName = getChannelNameFromSubject(email.subject);
+      if (!channelName) throw new Error("Could not extract channel name");
+
+      // Find the pending invitation from this sender
+      const { data: invitation, error: fetchError } = await supabase
+        .from("channel_invitations")
+        .select("id, channel_id")
+        .eq("invited_user_id", uid)
+        .eq("invited_by", email.sender_id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError || !invitation) {
+        throw new Error("Invitation not found or already accepted");
+      }
+
+      // Update invitation status
+      const { error: updateError } = await supabase
+        .from("channel_invitations")
+        .update({ status: "accepted", responded_at: new Date().toISOString() })
+        .eq("id", invitation.id);
+
+      if (updateError) throw updateError;
+
+      // Add user as member of the channel
+      const { error: memberError } = await supabase
+        .from("community_channel_members")
+        .insert({
+          channel_id: invitation.channel_id,
+          user_id: uid,
+          role: "member",
+        });
+
+      if (memberError && !memberError.message.includes("duplicate")) {
+        throw memberError;
+      }
+
+      // Update member count manually
+      const { data: channelData } = await supabase
+        .from("community_channels")
+        .select("member_count")
+        .eq("id", invitation.channel_id)
+        .single();
+
+      if (channelData) {
+        await supabase
+          .from("community_channels")
+          .update({ member_count: (channelData.member_count || 0) + 1 })
+          .eq("id", invitation.channel_id);
+      }
+
+      toast.success(`Joined "${channelName}" channel!`);
+      setSelectedEmail(null);
+      
+      // Navigate to the community page with the channel
+      navigate(`/community?channel=${invitation.channel_id}`);
+    } catch (error: any) {
+      console.error("Failed to accept invitation:", error);
+      toast.error(error.message || "Failed to accept invitation");
+    } finally {
+      setAcceptingInvite(false);
+    }
+  };
 
   const tabs = useMemo(() => [
     { id: "inbox", icon: Inbox, label: "Inbox" },
@@ -430,6 +517,33 @@ const Email = () => {
                   " 
                   dangerouslySetInnerHTML={{ __html: decodeHtml(selectedEmail.body) }} 
                 />
+                
+                {/* Channel Invitation Accept Button */}
+                {isChannelInvitation(selectedEmail) && selectedEmail.recipient_id === uid && (
+                  <div className="mt-4 p-4 bg-primary/10 rounded-xl border border-primary/30">
+                    <p className="text-sm text-foreground/80 mb-3">
+                      You've been invited to join <strong>"{getChannelNameFromSubject(selectedEmail.subject)}"</strong>
+                    </p>
+                    <Button 
+                      onClick={() => acceptChannelInvitation(selectedEmail)}
+                      disabled={acceptingInvite}
+                      className="w-full bg-primary hover:bg-primary/90"
+                    >
+                      {acceptingInvite ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Joining...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Accept & Join Channel
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+                
                 <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border/30">{new Date(selectedEmail.created_at).toLocaleString()}</p>
               </div>
             </>
