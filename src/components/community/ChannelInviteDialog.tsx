@@ -190,21 +190,21 @@ export default function ChannelInviteDialog({
       return (
         <div
           key={profile.id}
-          className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+          className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
         >
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+            <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
               <AvatarImage src={profile.avatar_url || ""} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm">
                 {(profile.full_name || profile.username || "U")[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-medium text-white">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-white text-sm sm:text-base truncate">
                 {profile.full_name || profile.username || "Unknown"}
               </p>
               {profile.username && (
-                <p className="text-sm text-white/50">@{profile.username}</p>
+                <p className="text-xs sm:text-sm text-white/50 truncate">@{profile.username}</p>
               )}
             </div>
           </div>
@@ -212,19 +212,19 @@ export default function ChannelInviteDialog({
             size="sm"
             onClick={() => sendInvitation(profile.id, profile.full_name || profile.username || "User")}
             disabled={isSent}
-            className={isSent 
+            className={`flex-shrink-0 h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm ${isSent 
               ? "bg-green-600/20 text-green-400 border border-green-500/30"
               : "bg-blue-600 hover:bg-blue-700 text-white"
-            }
+            }`}
           >
             {isSent ? (
               <>
-                <Check className="w-4 h-4 mr-1" />
+                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                 Sent
               </>
             ) : (
               <>
-                <Mail className="w-4 h-4 mr-1" />
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                 Invite
               </>
             )}
@@ -236,47 +236,47 @@ export default function ChannelInviteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-slate-900 border-white/10 text-white">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-white" />
+      <DialogContent className="sm:max-w-lg w-[95vw] max-h-[85vh] bg-slate-900 border-white/10 text-white p-4 sm:p-6 rounded-t-2xl sm:rounded-xl fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 left-0 right-0 translate-x-0 translate-y-0">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 sm:gap-3">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+              <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            Invite to {channelName}
+            <span className="truncate">Invite to {channelName}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search connections..."
-              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 h-10 sm:h-11"
             />
           </div>
 
           <Tabs defaultValue="following" className="w-full">
-            <TabsList className="w-full bg-white/5">
-              <TabsTrigger value="following" className="flex-1 data-[state=active]:bg-blue-600">
+            <TabsList className="w-full bg-white/5 h-9 sm:h-10">
+              <TabsTrigger value="following" className="flex-1 text-sm sm:text-base data-[state=active]:bg-blue-600">
                 Following
               </TabsTrigger>
-              <TabsTrigger value="followers" className="flex-1 data-[state=active]:bg-blue-600">
+              <TabsTrigger value="followers" className="flex-1 text-sm sm:text-base data-[state=active]:bg-blue-600">
                 Followers
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="following">
-              <ScrollArea className="h-[300px] pr-4">
+            <TabsContent value="following" className="mt-2">
+              <ScrollArea className="h-[40vh] sm:h-[300px] pr-2 sm:pr-4">
                 <div className="space-y-2">
                   {renderUserList(following, "You're not following anyone yet")}
                 </div>
               </ScrollArea>
             </TabsContent>
             
-            <TabsContent value="followers">
-              <ScrollArea className="h-[300px] pr-4">
+            <TabsContent value="followers" className="mt-2">
+              <ScrollArea className="h-[40vh] sm:h-[300px] pr-2 sm:pr-4">
                 <div className="space-y-2">
                   {renderUserList(followers, "You don't have any followers yet")}
                 </div>
@@ -286,7 +286,7 @@ export default function ChannelInviteDialog({
 
           <Button
             onClick={() => onOpenChange(false)}
-            className="w-full bg-white/10 hover:bg-white/20 text-white"
+            className="w-full bg-white/10 hover:bg-white/20 text-white h-10 sm:h-11"
           >
             Done
           </Button>
