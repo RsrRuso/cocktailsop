@@ -1,12 +1,20 @@
 /**
  * Performance boost initialization
  * This file contains critical performance optimizations that run on app startup
- * v5 - Aggressive cache invalidation
+ * v6 - Ultra-aggressive instant loading for avatars, stories, posts, reels
  */
 
-// Preload critical resources on idle
+import { prefetchImmediate } from './routePrefetch';
+
+// Preload critical resources IMMEDIATELY on app start
 export const initPerformanceBoost = () => {
   try {
+    // INSTANT: Start prefetching data before anything else renders
+    prefetchImmediate();
+    
+    // INSTANT: Preload cached avatars from localStorage/sessionStorage
+    preloadCachedMedia();
+    
     // CRITICAL: Clear stale caches immediately for dev/preview
     clearStaleCachesImmediately();
     
@@ -29,6 +37,74 @@ export const initPerformanceBoost = () => {
   }
 };
 
+// INSTANT: Preload avatars and media from cache on cold start
+const preloadCachedMedia = () => {
+  try {
+    // Check for cached profile in localStorage
+    const cachedAuth = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
+    if (cachedAuth) {
+      const parsed = JSON.parse(cachedAuth);
+      const profile = parsed?.user?.user_metadata;
+      if (profile?.avatar_url) {
+        // Preload current user avatar IMMEDIATELY
+        const img = new Image();
+        (img as any).fetchPriority = 'high';
+        img.src = profile.avatar_url;
+      }
+    }
+    
+    // Preload feed avatars from localStorage cache
+    const feedCache = localStorage.getItem('feed_cache_v2');
+    if (feedCache) {
+      const parsed = JSON.parse(feedCache);
+      const avatarUrls: string[] = [];
+      
+      // Collect all avatar URLs from cached feed
+      parsed.posts?.slice(0, 10).forEach((post: any) => {
+        if (post.profiles?.avatar_url) avatarUrls.push(post.profiles.avatar_url);
+        // Also preload first post image
+        if (post.media_urls?.[0]) {
+          const img = new Image();
+          (img as any).fetchPriority = 'high';
+          img.src = post.media_urls[0];
+        }
+      });
+      
+      parsed.reels?.slice(0, 5).forEach((reel: any) => {
+        if (reel.profiles?.avatar_url) avatarUrls.push(reel.profiles.avatar_url);
+      });
+      
+      // Preload unique avatars with high priority
+      const uniqueUrls = [...new Set(avatarUrls)];
+      uniqueUrls.slice(0, 15).forEach(url => {
+        const img = new Image();
+        (img as any).fetchPriority = 'high';
+        img.src = url;
+      });
+    }
+    
+    // Preload story avatars from sessionStorage
+    const storiesCache = sessionStorage.getItem('stories_cache');
+    if (storiesCache) {
+      const parsed = JSON.parse(storiesCache);
+      parsed.data?.slice(0, 10).forEach((story: any) => {
+        if (story.profiles?.avatar_url) {
+          const img = new Image();
+          (img as any).fetchPriority = 'high';
+          img.src = story.profiles.avatar_url;
+        }
+        // Preload first story media (only images)
+        if (story.media_urls?.[0] && !story.media_types?.[0]?.startsWith('video')) {
+          const img = new Image();
+          img.src = story.media_urls[0];
+        }
+      });
+    }
+  } catch (e) {
+    // Silent fail - non-critical
+  }
+};
+
 // CRITICAL: Clear all stale caches immediately on load
 const clearStaleCachesImmediately = async () => {
   const isDevOrPreview = import.meta.env.DEV || 
@@ -42,18 +118,12 @@ const clearStaleCachesImmediately = async () => {
     if ('serviceWorker' in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.map(reg => reg.unregister()));
-      if (registrations.length > 0) {
-        console.log('[Cache] Unregistered', registrations.length, 'service workers');
-      }
     }
 
     // Clear all caches
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
-      if (cacheNames.length > 0) {
-        console.log('[Cache] Cleared', cacheNames.length, 'caches');
-      }
     }
   } catch (e) {
     // Silent fail - non-critical
@@ -67,12 +137,10 @@ const cleanupOldCache = () => {
     const now = Date.now();
     
     if (!lastCleanup || now - parseInt(lastCleanup) > 24 * 60 * 60 * 1000) {
-      // Clear localStorage cache markers
       localStorage.setItem('lastCacheCleanup', now.toString());
-      console.log('✅ Cache cleanup markers updated');
     }
   } catch (error) {
-    console.error('Cache cleanup failed:', error);
+    // Silent fail
   }
 };
 
@@ -100,11 +168,17 @@ const enableResourceHints = () => {
   preconnect.href = 'https://cbfqwaqwliehgxsdueem.supabase.co';
   preconnect.crossOrigin = 'anonymous';
   document.head.appendChild(preconnect);
+  
+  // Preconnect to Supabase storage for instant avatar loading
+  const storagePreconnect = document.createElement('link');
+  storagePreconnect.rel = 'preconnect';
+  storagePreconnect.href = 'https://cbfqwaqwliehgxsdueem.supabase.co/storage';
+  storagePreconnect.crossOrigin = 'anonymous';
+  document.head.appendChild(storagePreconnect);
 };
 
 // Optimize images on-the-fly
 export const optimizeImageLoading = () => {
-  // Use Intersection Observer for lazy loading
   if ('IntersectionObserver' in window) {
     const imageObserver = new IntersectionObserver(
       (entries) => {
@@ -120,11 +194,10 @@ export const optimizeImageLoading = () => {
         });
       },
       {
-        rootMargin: '100px', // Load images 100px before they enter viewport
+        rootMargin: '200px',
       }
     );
 
-    // Observe all images with data-src
     document.querySelectorAll('img[data-src]').forEach(img => {
       imageObserver.observe(img);
     });

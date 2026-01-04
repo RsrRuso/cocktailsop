@@ -98,12 +98,15 @@ export const preloadAvatar = async (url: string, retryCount = 0): Promise<string
   const loadPromise = new Promise<string>((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    // Use high priority for faster loading
+    (img as any).fetchPriority = 'high';
+    img.loading = 'eager';
     
-    // Timeout for slow connections
+    // Shorter timeout for faster fallback
     const timeout = setTimeout(() => {
       avatarLoadPromises.delete(cacheKey);
       resolve(url);
-    }, 5000);
+    }, 3000);
     
     img.onload = () => {
       clearTimeout(timeout);
@@ -124,7 +127,7 @@ export const preloadAvatar = async (url: string, retryCount = 0): Promise<string
       
       // Retry once on failure
       if (retryCount < 1) {
-        setTimeout(() => preloadAvatar(url, retryCount + 1), 1000);
+        setTimeout(() => preloadAvatar(url, retryCount + 1), 500);
       } else {
         failedUrls.add(cacheKey);
       }

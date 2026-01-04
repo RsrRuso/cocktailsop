@@ -22,6 +22,29 @@ let storiesCache: {
 } | null = null;
 
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes for instant loads
+const STORAGE_KEY = 'stories_cache';
+
+// Load from sessionStorage for instant cold starts
+const loadStoriesFromStorage = (): typeof storiesCache => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Date.now() - parsed.timestamp < CACHE_TIME) return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+// Save to sessionStorage for instant cold starts  
+const saveStoriesToStorage = (cache: typeof storiesCache) => {
+  try {
+    if (cache) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+  } catch {}
+};
+
+// Initialize from storage on module load
+if (!storiesCache) storiesCache = loadStoriesFromStorage();
 
 // Preload media and avatars for instant viewing
 const preloadStoryMedia = (stories: Story[]) => {
@@ -95,6 +118,9 @@ export const useStoriesData = (userId?: string) => {
         timestamp: Date.now(),
         userHasStory: hasStory
       };
+      
+      // Persist to sessionStorage for instant cold starts
+      saveStoriesToStorage(storiesCache);
 
       // Preload media
       preloadStoryMedia(uniqueStories);
@@ -130,7 +156,16 @@ export const useStoriesData = (userId?: string) => {
 
 // Prefetch stories for instant loading
 export const prefetchStoriesData = async () => {
+  // Use cached data if valid
   if (storiesCache && Date.now() - storiesCache.timestamp < CACHE_TIME) return;
+  
+  // Try loading from sessionStorage first
+  const stored = loadStoriesFromStorage();
+  if (stored) {
+    storiesCache = stored;
+    preloadStoryMedia(stored.data);
+    return;
+  }
 
   try {
     const { data } = await supabase
@@ -150,6 +185,11 @@ export const prefetchStoriesData = async () => {
       
       const uniqueStories = Array.from(userStoriesMap.values());
       storiesCache = { data: uniqueStories, timestamp: Date.now(), userHasStory: false };
+      
+      // Persist for instant cold starts
+      saveStoriesToStorage(storiesCache);
+      
+      // Preload media aggressively
       preloadStoryMedia(uniqueStories);
     }
   } catch (e) {
