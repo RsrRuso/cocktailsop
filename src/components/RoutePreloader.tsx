@@ -72,7 +72,7 @@ export const RoutePreloader = () => {
       await prefetchNotificationsData();
     } else if (path.startsWith('/lab-ops') && user?.id) {
       await prefetchLabOps(user.id);
-    } else if (path === '/wasabi' || path.startsWith('/wasabi/')) {
+    } else if (path === '/community' || path.startsWith('/wasabi/')) {
       await prefetchWasabiData();
     }
   }, [user?.id]);

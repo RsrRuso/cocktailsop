@@ -187,7 +187,7 @@ export default function CommunityChannelInfo({
             {/* Stats */}
             <div className="flex gap-6">
               <div>
-                <p className="text-2xl font-bold text-white">{channel.member_count}</p>
+                <p className="text-2xl font-bold text-white">{members.length || channel.member_count}</p>
                 <p className="text-xs text-white/50">Members</p>
               </div>
               <div>

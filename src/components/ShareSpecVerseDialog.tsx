@@ -117,13 +117,13 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   },
   {
     id: 'wasabi',
-    name: 'Wasabi',
+    name: 'Community',
     tagline: 'Team Messaging That Works',
     problem: 'Restaurant teams use WhatsApp, creating chaos. Personal and work messages mix. Staff changes break group continuity. No message search or organization. Voice notes get lost. Shift handovers are verbal and forgotten. There\'s no professional team communication system built for hospitality.',
-    solution: 'Wasabi is team messaging designed for hospitality. Create team channels for FOH, BOH, and management. Voice notes, media sharing, and reactions built-in. Pin important messages. Archive old chats. Read receipts show who\'s seen updates. Search past conversations. Separate work from personal WhatsApp completely.',
+    solution: 'Community is team messaging designed for hospitality. Create team channels for FOH, BOH, and management. Voice notes, media sharing, and reactions built-in. Pin important messages. Archive old chats. Read receipts show who\'s seen updates. Search past conversations. Separate work from personal WhatsApp completely.',
     benefits: ['Dedicated work messaging channels', 'Voice notes, media & reactions', 'Message pinning & archive system', 'Complete conversation search'],
     icon: <Users className="w-6 h-6" />,
-    path: '/wasabi',
+    path: '/community',
     gradient: 'from-green-500 to-emerald-500',
     emoji: '💬'
   },
