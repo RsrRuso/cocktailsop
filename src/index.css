@@ -1853,3 +1853,142 @@ All colors MUST be HSL.
 .animate-wiggle {
   animation: wiggle 0.2s ease-in-out infinite;
 }
+
+/* GPU Acceleration Classes - 60fps animations */
+.gpu-accelerate {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.gpu-transform {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* Instant transitions - no perceived delay */
+.instant-transition {
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ultra-fast-transition {
+  transition: all 100ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* No transition for instant updates */
+.no-transition {
+  transition: none !important;
+}
+
+/* Optimized list rendering */
+.virtualized-item {
+  content-visibility: auto;
+  contain: layout style paint;
+}
+
+/* Touch feedback - iOS style */
+.touch-feedback {
+  transition: transform 100ms ease-out, opacity 100ms ease-out;
+}
+
+.touch-feedback:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* Smooth scroll snap for reels/stories */
+.snap-container {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* High-performance skeleton loading */
+.skeleton-pulse {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Native feel tap highlight */
+.native-tap {
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+}
+
+.native-tap:active {
+  background-color: hsl(var(--muted) / 0.3);
+}
+
+/* Optimized image loading */
+.img-loading {
+  background-color: hsl(var(--muted));
+  transition: opacity 200ms ease-out;
+}
+
+.img-loaded {
+  opacity: 1;
+}
+
+/* Page transition animations */
+.page-enter {
+  opacity: 0;
+  transform: translate3d(10px, 0, 0);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translate3d(-10px, 0, 0);
+  transition: opacity 100ms ease-out, transform 100ms ease-out;
+}
+
+/* Video optimization */
+.video-optimized {
+  object-fit: cover;
+  background-color: hsl(var(--background));
+  will-change: contents;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .gpu-accelerate,
+  .instant-transition,
+  .ultra-fast-transition,
+  .touch-feedback,
+  .skeleton-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+}
