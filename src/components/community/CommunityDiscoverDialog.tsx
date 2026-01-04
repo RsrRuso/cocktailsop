@@ -61,7 +61,7 @@ export default function CommunityDiscoverDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl h-[85vh] sm:h-[80vh] bg-slate-900 border-white/10 text-white p-0 overflow-hidden rounded-xl">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] sm:max-h-[80vh] bg-slate-900 border-white/10 text-white p-0 overflow-hidden rounded-xl">
         <DialogHeader className="p-4 sm:p-6 pb-0">
           <DialogTitle className="text-lg sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
@@ -71,7 +71,7 @@ export default function CommunityDiscoverDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex flex-col h-[calc(85vh-80px)] sm:h-[calc(80vh-100px)]">
+        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex flex-col max-h-[calc(85vh-80px)] sm:max-h-[calc(80vh-100px)]">
           {/* Search */}
           <div className="relative flex-shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-white/40" />
