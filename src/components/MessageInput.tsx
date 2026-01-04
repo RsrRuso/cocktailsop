@@ -199,8 +199,9 @@ export const MessageInput = memo(({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Message..."
-          className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 focus:border-blue-500/50 focus:bg-white/8 rounded-2xl px-4 py-3 text-sm sm:text-base text-white placeholder:text-white/40 transition-all duration-200 resize-none min-h-[44px] max-h-[120px] overflow-y-auto focus:ring-1 focus:ring-blue-500/20"
+          className="flex-1 min-w-0 bg-white/5 backdrop-blur-sm border border-white/10 focus:border-blue-500/50 focus:bg-white/8 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-base leading-relaxed text-white placeholder:text-white/40 transition-all duration-200 resize-none min-h-[40px] sm:min-h-[44px] max-h-[120px] overflow-y-auto focus:ring-1 focus:ring-blue-500/20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           rows={1}
+          style={{ fontSize: '16px' }}
         />
 
         <AIMessageToolsWrapper 
