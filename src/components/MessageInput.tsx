@@ -7,6 +7,7 @@ import { Message } from '@/hooks/useMessageThread';
 import { AttachmentMenu } from './AttachmentMenu';
 import MusicSelectionDialog from './MusicSelectionDialog';
 import { AIMessageToolsWrapper } from './neuron/AIMessageToolsWrapper';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 interface MessageInputProps {
   value: string;
@@ -48,14 +49,16 @@ export const MessageInput = memo(({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const keyboardInset = useKeyboardInset();
 
   // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-    }
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    const nextHeight = Math.min(textarea.scrollHeight + 2, 160);
+    textarea.style.height = `${nextHeight}px`;
   }, [value]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -81,7 +84,10 @@ export const MessageInput = memo(({
   }, [onSend]);
 
   return (
-    <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/90 backdrop-blur-2xl shadow-2xl relative z-[100]">
+    <div
+      className="px-3 sm:px-4 pt-3 sm:pt-4 border-t border-white/10 bg-slate-900/90 backdrop-blur-2xl shadow-2xl relative z-[100]"
+      style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + ${keyboardInset}px + 12px)` }}
+    >
       {/* Premium glow effect */}
       <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 via-transparent to-transparent pointer-events-none" />
       <div className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
@@ -199,9 +205,8 @@ export const MessageInput = memo(({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Message..."
-          className="flex-1 min-w-0 bg-white/5 backdrop-blur-sm border border-white/10 focus:border-blue-500/50 focus:bg-white/8 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-base leading-relaxed text-white placeholder:text-white/40 transition-all duration-200 resize-none min-h-[40px] sm:min-h-[44px] max-h-[120px] overflow-y-auto focus:ring-1 focus:ring-blue-500/20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="flex-1 min-w-0 bg-white/5 backdrop-blur-sm border border-white/10 focus:border-blue-500/50 focus:bg-white/8 rounded-2xl px-3 sm:px-4 py-3 text-[16px] leading-6 text-white placeholder:text-white/40 transition-all duration-200 resize-none min-h-[48px] sm:min-h-[52px] max-h-[160px] overflow-y-auto focus:ring-1 focus:ring-blue-500/20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           rows={1}
-          style={{ fontSize: '16px' }}
         />
 
         <AIMessageToolsWrapper 

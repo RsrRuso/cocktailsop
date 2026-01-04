@@ -126,7 +126,7 @@ const MessageThread = () => {
   const showSmartReplies = lastMessage && lastMessage.sender_id !== currentUser?.id && !replyingTo && !editingMessage;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden h-[100dvh]">
       {/* 3D Perspective Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Deep gradient base */}

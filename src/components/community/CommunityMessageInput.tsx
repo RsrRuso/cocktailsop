@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Paperclip, Smile, X, Mic, Image } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 interface Message {
   id: string;
@@ -30,6 +31,7 @@ function CommunityMessageInputComponent({
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const keyboardInset = useKeyboardInset();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -76,7 +78,10 @@ function CommunityMessageInputComponent({
   }, [handleSend]);
 
   return (
-    <div className="border-t border-white/10 bg-slate-900/80 backdrop-blur-lg">
+    <div
+      className="border-t border-white/10 bg-slate-900/80 backdrop-blur-lg"
+      style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + ${keyboardInset}px)` }}
+    >
       {/* Reply Preview */}
       <AnimatePresence>
         {replyTo && (
@@ -135,8 +140,7 @@ function CommunityMessageInputComponent({
             placeholder="Type a message..."
             disabled={disabled}
             rows={1}
-            className="flex-1 bg-transparent text-white placeholder:text-white/40 text-sm py-2 resize-none outline-none max-h-[120px] min-h-[36px]"
-            style={{ lineHeight: "1.4" }}
+            className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/40 text-[16px] leading-6 py-2.5 resize-none outline-none max-h-[120px] min-h-[44px]"
           />
 
           {/* Emoji Button */}
