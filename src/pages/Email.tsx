@@ -270,28 +270,45 @@ const Email = () => {
       const channelName = getChannelNameFromSubject(email.subject);
       if (!channelName) throw new Error("Could not extract channel name");
 
-      // Find the pending invitation from this sender
+      // Find any invitation from this sender (pending or accepted)
       const { data: invitation, error: fetchError } = await supabase
         .from("channel_invitations")
-        .select("id, channel_id")
+        .select("id, channel_id, status")
         .eq("invited_user_id", uid)
         .eq("invited_by", email.sender_id)
-        .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (fetchError || !invitation) {
-        throw new Error("Invitation not found or already accepted");
+        throw new Error("Invitation not found");
       }
 
-      // Update invitation status
-      const { error: updateError } = await supabase
-        .from("channel_invitations")
-        .update({ status: "accepted", responded_at: new Date().toISOString() })
-        .eq("id", invitation.id);
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from("community_channel_members")
+        .select("id")
+        .eq("channel_id", invitation.channel_id)
+        .eq("user_id", uid)
+        .maybeSingle();
 
-      if (updateError) throw updateError;
+      if (existingMember) {
+        // Already a member, just navigate to the channel
+        toast.success(`You're already a member of "${channelName}"!`);
+        setSelectedEmail(null);
+        navigate(`/community?channel=${invitation.channel_id}`);
+        return;
+      }
+
+      // Update invitation status if still pending
+      if (invitation.status === "pending") {
+        const { error: updateError } = await supabase
+          .from("channel_invitations")
+          .update({ status: "accepted", responded_at: new Date().toISOString() })
+          .eq("id", invitation.id);
+
+        if (updateError) throw updateError;
+      }
 
       // Add user as member of the channel
       const { error: memberError } = await supabase
