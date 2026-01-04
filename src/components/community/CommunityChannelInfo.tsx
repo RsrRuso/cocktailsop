@@ -13,9 +13,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
   Users, Hash, Lock, Megaphone, Bell, BellOff, 
-  UserPlus, LogOut, Settings, Crown, Shield
+  UserPlus, LogOut, Settings, Crown, Shield, Mail
 } from "lucide-react";
 import { format } from "date-fns";
+import ChannelInviteDialog from "./ChannelInviteDialog";
 
 interface Channel {
   id: string;
@@ -61,12 +62,33 @@ export default function CommunityChannelInfo({
 }: CommunityChannelInfoProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && channel) {
       fetchMembers();
+      checkCurrentUserRole();
     }
   }, [open, channel]);
+
+  const checkCurrentUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("community_channel_members")
+        .select("role")
+        .eq("channel_id", channel.id)
+        .eq("user_id", user.id)
+        .single();
+
+      setCurrentUserRole(data?.role || null);
+    } catch (error) {
+      console.error("Failed to check user role:", error);
+    }
+  };
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -182,6 +204,27 @@ export default function CommunityChannelInfo({
             <div className="space-y-2">
               {isMember ? (
                 <>
+                  {/* Add Members & Invite buttons for admins/moderators */}
+                  {(currentUserRole === 'admin' || currentUserRole === 'moderator') && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowInviteDialog(true)}
+                        className="w-full justify-start text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                      >
+                        <UserPlus className="w-4 h-4 mr-3" />
+                        Add Members
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowInviteDialog(true)}
+                        className="w-full justify-start text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                      >
+                        <Mail className="w-4 h-4 mr-3" />
+                        Invite via Email
+                      </Button>
+                    </>
+                  )}
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
@@ -251,6 +294,14 @@ export default function CommunityChannelInfo({
           </div>
         </ScrollArea>
       </SheetContent>
+
+      {/* Invite Dialog */}
+      <ChannelInviteDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        channelId={channel.id}
+        channelName={channel.name}
+      />
     </Sheet>
   );
 }
