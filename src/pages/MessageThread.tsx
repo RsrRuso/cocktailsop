@@ -126,9 +126,37 @@ const MessageThread = () => {
   const showSmartReplies = lastMessage && lastMessage.sender_id !== currentUser?.id && !replyingTo && !editingMessage;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
+      {/* 3D Perspective Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Deep gradient base */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/95 to-slate-950" />
+        
+        {/* 3D Grid floor effect */}
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(59, 130, 246, 0.15) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px',
+            transform: 'perspective(500px) rotateX(60deg) translateY(-50%)',
+            transformOrigin: 'top center',
+            maskImage: 'linear-gradient(to bottom, transparent, black 20%, black 60%, transparent)',
+          }}
+        />
+        
+        {/* Floating ambient orbs */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-cyan-500/8 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
+        
+        {/* Subtle vignette */}
+        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/40" />
+      </div>
       {/* Lightweight Header */}
-      <div className="border-b border-border/50 px-3 py-2.5 flex items-center gap-3 bg-background/95 backdrop-blur-sm z-10">
+      <div className="border-b border-white/10 px-3 py-2.5 flex items-center gap-3 bg-slate-900/80 backdrop-blur-xl z-10 relative">
         <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="shrink-0 h-9 w-9">
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -183,7 +211,7 @@ const MessageThread = () => {
       </div>
 
       {/* Messages - Simple scrollable area */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 relative z-10">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;

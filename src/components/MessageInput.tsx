@@ -81,9 +81,10 @@ export const MessageInput = memo(({
   }, [onSend]);
 
   return (
-    <div className="p-4 border-t backdrop-blur-3xl border-primary/30 bg-gradient-to-b from-background/90 to-background/95 shadow-2xl relative z-[100]">
-      {/* Glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50 blur-xl" />
+    <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/90 backdrop-blur-2xl shadow-2xl relative z-[100]">
+      {/* Premium glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
       
       {isUploading && (
         <div className="mb-3 glass backdrop-blur-2xl rounded-3xl p-4 border-2 border-primary/30 shadow-xl relative overflow-hidden">
@@ -127,7 +128,7 @@ export const MessageInput = memo(({
         </div>
       )}
 
-      <div className="flex gap-3 items-end relative z-10">
+      <div className="flex gap-2 sm:gap-3 items-end relative z-10">
         <input
           ref={fileInputRef}
           type="file"
@@ -153,9 +154,9 @@ export const MessageInput = memo(({
             size="icon"
             variant="ghost"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="shrink-0 glass hover:scale-125 transition-all duration-300 rounded-full h-12 w-12 hover:bg-gradient-to-br hover:from-primary/20 hover:to-accent/20 shadow-lg"
+            className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-105"
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip className="h-4 w-4 sm:h-5 sm:w-5 text-white/70" />
           </Button>
 
           {showAttachMenu && (
@@ -198,7 +199,7 @@ export const MessageInput = memo(({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Message..."
-          className="flex-1 glass backdrop-blur-2xl border-2 border-primary/20 focus:border-primary/50 rounded-3xl px-6 py-4 text-base transition-all shadow-lg hover:shadow-xl focus:shadow-2xl focus:shadow-primary/20 resize-none min-h-[48px] max-h-[200px] overflow-y-auto"
+          className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 focus:border-blue-500/50 focus:bg-white/8 rounded-2xl px-4 py-3 text-sm sm:text-base text-white placeholder:text-white/40 transition-all duration-200 resize-none min-h-[44px] max-h-[120px] overflow-y-auto focus:ring-1 focus:ring-blue-500/20"
           rows={1}
         />
 
@@ -211,10 +212,9 @@ export const MessageInput = memo(({
           <Button 
             onClick={onSend} 
             size="icon" 
-            className="shrink-0 bg-gradient-to-r from-primary via-accent to-primary hover:scale-125 transition-all duration-300 rounded-full h-12 w-12 shadow-xl hover:shadow-2xl hover:shadow-primary/40 animate-pulse"
-            style={{ animationDuration: '2s' }}
+            className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-200 hover:scale-105"
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         ) : (
           <Button
@@ -224,9 +224,13 @@ export const MessageInput = memo(({
             onMouseUp={onStopVoiceRecording}
             onTouchStart={isRecording ? onStopVoiceRecording : onStartVoiceRecording}
             onTouchEnd={onStopVoiceRecording}
-            className={`shrink-0 glass rounded-full h-12 w-12 shadow-lg ${isRecording ? 'bg-gradient-to-r from-red-500/30 to-red-600/30 animate-pulse scale-125 shadow-red-500/50' : 'hover:scale-125 hover:bg-gradient-to-br hover:from-primary/20 hover:to-accent/20'} transition-all duration-300`}
+            className={`shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-full border transition-all duration-200 ${
+              isRecording 
+                ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse scale-110' 
+                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white/70 hover:scale-105'
+            }`}
           >
-            <Mic className="h-5 w-5" />
+            <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         )}
       </div>
