@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { 
   Plus, Hash, Users, MessageCircle, Search, 
   Megaphone, Bell, BellOff, MoreVertical,
-  ArrowLeft, Globe, Lock, UserPlus
+  ArrowLeft, Globe, Lock, UserPlus, Pin
 } from "lucide-react";
 import { checkRateLimit } from "@/lib/rateLimit";
 import {
@@ -23,12 +23,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import CommunityChannelList from "@/components/community/CommunityChannelList";
 import CommunityDiscoverDialog from "@/components/community/CommunityDiscoverDialog";
 import CommunityCreateChannelDialog from "@/components/community/CommunityCreateChannelDialog";
 import CommunityChannelInfo from "@/components/community/CommunityChannelInfo";
 import { CommunityMessageList } from "@/components/community/CommunityMessageList";
 import { CommunityMessageInput } from "@/components/community/CommunityMessageInput";
+import { CommunityPinnedMessage } from "@/components/community/CommunityPinnedMessage";
+import { CommunityTypingIndicator } from "@/components/community/CommunityTypingIndicator";
+import CommunityForwardDialog from "@/components/community/CommunityForwardDialog";
 import { useCommunityChat } from "@/hooks/useCommunityChat";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,6 +65,17 @@ interface Membership {
   is_muted: boolean;
 }
 
+interface Message {
+  id: string;
+  content: string | null;
+  user_id: string;
+  profile?: {
+    username: string;
+    avatar_url: string | null;
+    full_name: string | null;
+  };
+}
+
 export default function Community() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -66,15 +90,24 @@ export default function Community() {
   const [replyTo, setReplyTo] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
+  const [pinnedMessageIndex, setPinnedMessageIndex] = useState(0);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<{userId: string, username: string}[]>([]);
 
   // Use optimized chat hook
   const {
     messages,
+    pinnedMessages,
     loading: messagesLoading,
     sending,
     sendMessage,
     handleReaction,
     retryMessage,
+    pinMessage,
+    editMessage,
+    deleteMessage,
   } = useCommunityChat(selectedChannel?.id || null, user?.id || null);
 
   // Handle channel from URL params
@@ -211,6 +244,32 @@ export default function Community() {
     }
     return success;
   }, [selectedChannel, user, memberships, sendMessage]);
+
+  const handlePinMessage = useCallback(async (messageId: string, pin: boolean) => {
+    await pinMessage(messageId, pin);
+    toast.success(pin ? "Message pinned" : "Message unpinned");
+  }, [pinMessage]);
+
+  const handleEditMessage = useCallback((message: Message) => {
+    setEditingMessage(message);
+  }, []);
+
+  const handleDeleteMessage = useCallback(async () => {
+    if (!deleteMessageId) return;
+    const success = await deleteMessage(deleteMessageId);
+    if (success) {
+      toast.success("Message deleted");
+    } else {
+      toast.error("Failed to delete message");
+    }
+    setDeleteMessageId(null);
+  }, [deleteMessageId, deleteMessage]);
+
+  const isAdmin = useMemo(() => {
+    if (!selectedChannel) return false;
+    const membership = memberships.get(selectedChannel.id);
+    return membership?.role === 'admin' || membership?.role === 'moderator';
+  }, [selectedChannel, memberships]);
 
   const getChannelIcon = useCallback((channel: Channel) => {
     switch (channel.type) {
@@ -437,15 +496,37 @@ export default function Community() {
                 </div>
               </div>
 
+              {/* Pinned Message Banner */}
+              {pinnedMessages.length > 0 && (
+                <CommunityPinnedMessage
+                  messages={pinnedMessages}
+                  currentIndex={pinnedMessageIndex}
+                  onNavigate={() => setPinnedMessageIndex(prev => (prev + 1) % pinnedMessages.length)}
+                  onDismiss={() => {}}
+                  onUnpin={isAdmin ? (id) => handlePinMessage(id, false) : undefined}
+                  canUnpin={isAdmin}
+                />
+              )}
+
               {/* Messages */}
               <CommunityMessageList
                 messages={messages}
                 userId={user?.id || ""}
                 loading={messagesLoading}
+                isAdmin={isAdmin}
                 onReply={setReplyTo}
                 onReaction={handleReaction}
                 onRetry={retryMessage}
+                onPin={handlePinMessage}
+                onEdit={handleEditMessage}
+                onDelete={(id) => setDeleteMessageId(id)}
+                onForward={(msg) => setForwardingMessage(msg)}
               />
+
+              {/* Typing Indicator */}
+              {typingUsers.length > 0 && (
+                <CommunityTypingIndicator typingUsers={typingUsers} />
+              )}
 
               {/* Message Input */}
               {memberships.has(selectedChannel.id) ? (
@@ -517,6 +598,37 @@ export default function Community() {
           onLeave={() => handleLeaveChannel(selectedChannel.id)}
         />
       )}
+
+      {/* Forward Dialog */}
+      <CommunityForwardDialog
+        open={!!forwardingMessage}
+        onOpenChange={(open) => !open && setForwardingMessage(null)}
+        message={forwardingMessage}
+        userId={user?.id || ""}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteMessageId} onOpenChange={(open) => !open && setDeleteMessageId(null)}>
+        <AlertDialogContent className="bg-slate-900 border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Message</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/60">
+              Are you sure you want to delete this message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-white/10 text-white border-white/10 hover:bg-white/20">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMessage}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>

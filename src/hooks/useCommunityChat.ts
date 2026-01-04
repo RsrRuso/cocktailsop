@@ -13,6 +13,8 @@ interface Message {
   is_pinned: boolean;
   reactions: Record<string, string[]>;
   created_at: string;
+  updated_at?: string;
+  forwarded_from?: string | null;
   profile?: {
     username: string;
     avatar_url: string | null;
@@ -22,6 +24,7 @@ interface Message {
   optimistic?: boolean;
   sending?: boolean;
   failed?: boolean;
+  edited?: boolean;
 }
 
 interface Profile {
@@ -371,13 +374,84 @@ export function useCommunityChat(channelId: string | null, userId: string | null
     }
   }, [userId, fetchProfiles]);
 
+  // Pin/Unpin message
+  const pinMessage = useCallback(async (messageId: string, pin: boolean) => {
+    // Optimistic update
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, is_pinned: pin } : msg
+    ));
+
+    const { error } = await supabase
+      .from("community_messages")
+      .update({ is_pinned: pin })
+      .eq("id", messageId);
+
+    if (error) {
+      // Revert on failure
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId ? { ...msg, is_pinned: !pin } : msg
+      ));
+    }
+  }, []);
+
+  // Edit message
+  const editMessage = useCallback(async (messageId: string, newContent: string): Promise<boolean> => {
+    if (!newContent.trim()) return false;
+
+    // Optimistic update
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, content: newContent.trim(), edited: true } : msg
+    ));
+
+    const { error } = await supabase
+      .from("community_messages")
+      .update({ content: newContent.trim(), updated_at: new Date().toISOString() })
+      .eq("id", messageId);
+
+    if (error) {
+      // Revert on failure
+      fetchMessages(true);
+      return false;
+    }
+
+    return true;
+  }, [fetchMessages]);
+
+  // Delete message
+  const deleteMessage = useCallback(async (messageId: string): Promise<boolean> => {
+    // Optimistic update
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
+    const { error } = await supabase
+      .from("community_messages")
+      .delete()
+      .eq("id", messageId);
+
+    if (error) {
+      fetchMessages(true);
+      return false;
+    }
+
+    return true;
+  }, [fetchMessages]);
+
+  // Get pinned messages
+  const pinnedMessages = useMemo(() => 
+    messages.filter(msg => msg.is_pinned),
+    [messages]
+  );
+
   return {
     messages,
+    pinnedMessages,
     loading,
     sending,
     sendMessage,
     handleReaction,
     retryMessage,
+    pinMessage,
+    editMessage,
+    deleteMessage,
     refresh: () => fetchMessages(true),
   };
 }
