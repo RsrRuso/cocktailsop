@@ -13,8 +13,6 @@ initPerformanceBoost();
 
 // Set initial theme from localStorage or default to black
 const savedTheme = localStorage.getItem("theme") || "black";
-// Remove any existing theme classes first, then add the saved theme
-document.documentElement.classList.remove('light', 'dark', 'black', 'grey', 'ocean', 'sunset', 'forest', 'purple', 'neon', 'midnight', 'sakura', 'arctic', 'lava', 'mint', 'rosegold', 'cyber');
 document.documentElement.classList.add(savedTheme);
 
 // Mount the app (no StrictMode to avoid double-render + duplicate fetches in dev)
