@@ -1260,6 +1260,44 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_invitations: {
+        Row: {
+          channel_id: string
+          created_at: string
+          id: string
+          invited_by: string
+          invited_user_id: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          id?: string
+          invited_by: string
+          invited_user_id: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invited_user_id?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_invitations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "community_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_channels: {
         Row: {
           created_at: string | null
