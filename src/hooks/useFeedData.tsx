@@ -122,6 +122,7 @@ export const useFeedData = (selectedRegion: string | null) => {
   const [reels, setReels] = useState<Reel[]>(initialReels);
   // INSTANT: Never show loading if we have ANY cached data
   const [isLoading, setIsLoading] = useState(initialPosts.length === 0 && initialReels.length === 0);
+  const hasFetchedRef = useRef(false);
 
   // Fetch posts and reels together for speed
   const fetchFeed = useCallback(async () => {
@@ -130,16 +131,16 @@ export const useFeedData = (selectedRegion: string | null) => {
     }
     
     try {
-      // Fetch posts and reels in parallel
+      // Fetch posts, reels, and profiles ALL in one parallel batch
       const [postsResult, reelsResult] = await Promise.all([
         supabase
           .from("posts")
-          .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id")
+          .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id, profiles:user_id(id, username, full_name, avatar_url, professional_title, badge_level, region)")
           .order("created_at", { ascending: false })
           .limit(INITIAL_LIMIT),
         supabase
           .from("reels")
-          .select(`id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id, mute_original_audio, is_image_reel, music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username))`)
+          .select(`id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id, mute_original_audio, is_image_reel, music_tracks:music_track_id(title, artist, preview_url, original_url, profiles:uploaded_by(username)), profiles:user_id(id, username, full_name, avatar_url, professional_title, badge_level, region)`)
           .order("created_at", { ascending: false })
           .limit(INITIAL_LIMIT)
       ]);
@@ -147,37 +148,23 @@ export const useFeedData = (selectedRegion: string | null) => {
       const postsData = postsResult.data || [];
       const reelsData = reelsResult.data || [];
 
-      // Collect all unique user IDs from both posts and reels
-      const allUserIds = [...new Set([
-        ...postsData.map(p => p.user_id),
-        ...reelsData.map(r => r.user_id)
-      ])];
-
-      // Single profiles fetch for all users
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url, professional_title, badge_level, region')
-        .in('id', allUserIds);
-
-      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-      // Map profiles to posts
-      const postsWithProfiles = postsData.map(post => ({
-        ...post,
-        profiles: profilesMap.get(post.user_id) || null
-      }));
-
-      // Map profiles to reels
-      const reelsWithProfiles: Reel[] = (reelsData as any[]).map(reel => ({
-        ...reel,
-        profiles: profilesMap.get(reel.user_id) || null
-      }));
+      // Profiles are now included in the query - no extra fetch needed
+      const postsWithProfiles = postsData as Post[];
+      const reelsWithProfiles = reelsData as Reel[];
 
       // Preload avatars
       preloadFeedAvatars([...postsWithProfiles, ...reelsWithProfiles]);
 
-      // Hydrate music tracks (non-blocking)
-      const hydratedReels = await hydrateReelsMusicTracks(reelsWithProfiles);
+      // Hydrate music tracks in background (non-blocking)
+      hydrateReelsMusicTracks(reelsWithProfiles).then(hydrated => {
+        setReels(prev => {
+          // Only update if data changed
+          if (JSON.stringify(prev.map(r => r.music_tracks)) !== JSON.stringify(hydrated.map(r => r.music_tracks))) {
+            return hydrated;
+          }
+          return prev;
+        });
+      });
 
       // Filter by region
       const filteredPosts = selectedRegion && selectedRegion !== "All"
@@ -185,8 +172,8 @@ export const useFeedData = (selectedRegion: string | null) => {
         : postsWithProfiles;
 
       const filteredReels = selectedRegion && selectedRegion !== "All"
-        ? hydratedReels.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
-        : hydratedReels;
+        ? reelsWithProfiles.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
+        : reelsWithProfiles;
 
       setPosts(filteredPosts);
       setReels(filteredReels);
@@ -198,11 +185,18 @@ export const useFeedData = (selectedRegion: string | null) => {
   }, [selectedRegion, posts, reels]);
 
   const refreshFeed = useCallback(async (forceRefresh: boolean = false) => {
+    // Skip if already fetched and not forced
+    if (!forceRefresh && hasFetchedRef.current && (posts.length > 0 || reels.length > 0)) {
+      setIsLoading(false);
+      return;
+    }
+
     // Instant display from cache - skip network completely if valid
     if (!forceRefresh && isCacheValid(selectedRegion)) {
       if (posts.length === 0) setPosts(feedCache!.posts);
       if (reels.length === 0) setReels(feedCache!.reels);
       setIsLoading(false);
+      hasFetchedRef.current = true;
 
       // Hydrate cached reels music labels in background
       void (async () => {
@@ -219,9 +213,10 @@ export const useFeedData = (selectedRegion: string | null) => {
     }
 
     // Only show loading if no cached data to display
-    if (!feedCache) setIsLoading(true);
+    if (!feedCache && posts.length === 0) setIsLoading(true);
     
     const result = await fetchFeed();
+    hasFetchedRef.current = true;
     
     // Update cache
     feedCache = {
@@ -235,12 +230,13 @@ export const useFeedData = (selectedRegion: string | null) => {
     saveToStorage(feedCache);
     
     setIsLoading(false);
-  }, [fetchFeed, selectedRegion]);
+  }, [fetchFeed, selectedRegion, posts.length, reels.length]);
 
   useEffect(() => {
-    // Only fetch once on mount, not when refreshFeed changes
-    refreshFeed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only fetch once on mount
+    if (!hasFetchedRef.current) {
+      refreshFeed();
+    }
   }, [selectedRegion]);
 
   // Realtime subscriptions for instant updates when content is published

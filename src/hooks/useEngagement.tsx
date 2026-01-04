@@ -45,6 +45,10 @@ const CONFIGS: Record<ContentType, EngagementConfig> = {
   },
 };
 
+// Module-level engagement cache for instant loading
+const engagementCache: Map<string, { state: EngagementState; timestamp: number }> = new Map();
+const ENGAGEMENT_CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Unified engagement hook - single source of truth for likes, saves, reposts
  * Uses refs to avoid stale closure issues
@@ -55,13 +59,16 @@ export const useEngagement = (
   onCountChange?: (itemId: string, type: 'like' | 'save' | 'repost', delta: number) => void
 ) => {
   const config = CONFIGS[contentType];
+  const cacheKey = `${userId}-${contentType}`;
+  
+  // Try to initialize from cache
+  const cachedState = engagementCache.get(cacheKey);
+  const initialState: EngagementState = cachedState && Date.now() - cachedState.timestamp < ENGAGEMENT_CACHE_TIME
+    ? cachedState.state
+    : { likedIds: new Set(), savedIds: new Set(), repostedIds: new Set() };
   
   // State for UI rendering
-  const [state, setState] = useState<EngagementState>({
-    likedIds: new Set(),
-    savedIds: new Set(),
-    repostedIds: new Set(),
-  });
+  const [state, setState] = useState<EngagementState>(initialState);
   
   // Refs for immediate access (avoids stale closures)
   const stateRef = useRef<EngagementState>(state);
@@ -72,6 +79,7 @@ export const useEngagement = (
   });
   // Timestamp-based debounce to prevent rapid clicks
   const lastActionRef = useRef<Map<string, number>>(new Map());
+  const hasFetchedRef = useRef(false);
   
   // Keep ref in sync with state
   useEffect(() => {
@@ -81,6 +89,20 @@ export const useEngagement = (
   // Fetch all engagement states in parallel (optimized)
   const fetchEngagement = useCallback(async () => {
     if (!userId) return;
+    
+    // Skip if already fetched in this session
+    if (hasFetchedRef.current) return;
+    
+    // Check cache validity - skip network if valid
+    const cached = engagementCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < ENGAGEMENT_CACHE_TIME) {
+      if (state.likedIds.size === 0 && cached.state.likedIds.size > 0) {
+        setState(cached.state);
+        stateRef.current = cached.state;
+      }
+      hasFetchedRef.current = true;
+      return;
+    }
 
     try {
       // Batch all queries in parallel for speed
@@ -107,18 +129,26 @@ export const useEngagement = (
         repostedIds: new Set(repostedItems),
       };
 
+      // Update cache
+      engagementCache.set(cacheKey, { state: newState, timestamp: Date.now() });
+      hasFetchedRef.current = true;
+
       setState(newState);
       stateRef.current = newState;
     } catch (error) {
       console.error(`[ENGAGEMENT] Error fetching ${contentType} engagement:`, error);
     }
-  }, [userId, config, contentType]);
+  }, [userId, config, contentType, cacheKey, state.likedIds.size]);
 
-  // Fetch on mount/userId change with debounce
+  // Fetch on mount/userId change - only once
   useEffect(() => {
-    if (userId) {
-      const timer = setTimeout(() => fetchEngagement(), 50);
-      return () => clearTimeout(timer);
+    if (userId && !hasFetchedRef.current) {
+      // Use requestIdleCallback for non-blocking fetch
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => fetchEngagement(), { timeout: 1000 });
+      } else {
+        setTimeout(() => fetchEngagement(), 100);
+      }
     }
   }, [userId, contentType]);
 
