@@ -441,13 +441,13 @@ const OpsTools = () => {
     ],
     communication: [
       {
-        name: "Wasabi",
+        name: "Community",
         description: "Team messaging",
         details: "Full-featured team chat with text, voice, media sharing, group chats, reactions, read receipts, and real-time messaging. Perfect for restaurant and bar team communication.",
         icon: MessageCircle,
         gradient: "from-green-600 to-emerald-500",
         premium: false,
-        path: "/wasabi",
+        path: "/community",
         featured: true,
       },
     ],
