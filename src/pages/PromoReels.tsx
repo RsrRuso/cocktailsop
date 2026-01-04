@@ -18,7 +18,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import svLogo from "@/assets/sv-logo.png";
+import svLogo from "@/assets/sv-logo-small.png";
 import ToolsPromoVideoReel from "@/components/promo/ToolsPromoVideoReel";
 
 interface PromoReel {
