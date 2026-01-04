@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Hash, Lock, Megaphone, Users, Loader2 } from "lucide-react";
+import { Hash, Lock, Users, Loader2, Share2, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import ChannelInviteDialog from "./ChannelInviteDialog";
 
 interface CommunityCreateChannelDialogProps {
   open: boolean;
@@ -31,8 +32,8 @@ const channelTypes = [
   },
   {
     id: "private",
-    name: "Private Group",
-    description: "Invite-only channel",
+    name: "Private Channel",
+    description: "Invite-only, members must be invited",
     icon: Lock,
     color: "from-purple-500 to-pink-500",
   },
@@ -63,6 +64,8 @@ export default function CommunityCreateChannelDialog({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
   const [isCreating, setIsCreating] = useState(false);
+  const [createdChannelId, setCreatedChannelId] = useState<string | null>(null);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
 
   const handleCreate = async () => {
     if (!name.trim() || !user) return;
@@ -97,8 +100,15 @@ export default function CommunityCreateChannelDialog({
       if (memberError) throw memberError;
 
       toast.success("Channel created successfully!");
-      resetForm();
-      onChannelCreated();
+      
+      // If private channel, show invite dialog
+      if (channelType === "private") {
+        setCreatedChannelId(channel.id);
+        setStep(3); // Move to success/invite step
+      } else {
+        resetForm();
+        onChannelCreated();
+      }
     } catch (error: any) {
       console.error("Failed to create channel:", error);
       toast.error("Failed to create channel");
@@ -107,144 +117,204 @@ export default function CommunityCreateChannelDialog({
     }
   };
 
+  const handleOpenInviteDialog = () => {
+    setShowInviteDialog(true);
+  };
+
+  const handleFinish = () => {
+    resetForm();
+    onChannelCreated();
+  };
+
   const resetForm = () => {
     setStep(1);
     setChannelType("public");
     setName("");
     setDescription("");
     setCategory("general");
+    setCreatedChannelId(null);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-      <DialogContent className="max-w-lg bg-slate-900 border-white/10 text-white overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            Create New Channel
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {step === 1 ? (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
-              <p className="text-white/60 text-sm">Choose channel type</p>
-              <div className="space-y-3">
-                {channelTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <motion.div
-                      key={type.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setChannelType(type.id)}
-                      className={`p-4 rounded-xl cursor-pointer transition-all border-2 ${
-                        channelType === type.id
-                          ? "border-blue-500 bg-blue-500/10"
-                          : "border-white/10 bg-white/5 hover:bg-white/10"
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${type.color} flex items-center justify-center`}>
-                          <Icon className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white">{type.name}</h3>
-                          <p className="text-sm text-white/50">{type.description}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+    <>
+      <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
+        <DialogContent className="max-w-lg bg-slate-900 border-white/10 text-white overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
               </div>
-              <Button
-                onClick={() => setStep(2)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
+              {step === 3 ? "Channel Created!" : "Create New Channel"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {step === 1 ? (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4"
               >
-                Continue
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
-              <div className="space-y-2">
-                <Label className="text-white/70">Channel Name</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., Weekend Events"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-white/70">Description (optional)</Label>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What's this channel about?"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-white/70">Category</Label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <Button
-                      key={cat}
-                      variant={category === cat ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setCategory(cat)}
-                      className={`capitalize ${
-                        category === cat
-                          ? "bg-blue-600 hover:bg-blue-700"
-                          : "bg-white/5 hover:bg-white/10 text-white/70"
-                      }`}
-                    >
-                      {cat}
-                    </Button>
-                  ))}
+                <p className="text-white/60 text-sm">Choose channel type</p>
+                <div className="space-y-3">
+                  {channelTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <motion.div
+                        key={type.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setChannelType(type.id)}
+                        className={`p-4 rounded-xl cursor-pointer transition-all border-2 ${
+                          channelType === type.id
+                            ? "border-blue-500 bg-blue-500/10"
+                            : "border-white/10 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${type.color} flex items-center justify-center`}>
+                            <Icon className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-white">{type.name}</h3>
+                            <p className="text-sm text-white/50">{type.description}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
-              </div>
+                <Button
+                  onClick={() => setStep(2)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
+                >
+                  Continue
+                </Button>
+              </motion.div>
+            ) : step === 2 ? (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label className="text-white/70">Channel Name</Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Weekend Events"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                  />
+                </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => setStep(1)}
-                  className="flex-1 text-white/70 hover:text-white hover:bg-white/10"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={!name.trim() || isCreating}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Channel"
-                  )}
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+                <div className="space-y-2">
+                  <Label className="text-white/70">Description (optional)</Label>
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="What's this channel about?"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white/70">Category</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <Button
+                        key={cat}
+                        variant={category === cat ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setCategory(cat)}
+                        className={`capitalize ${
+                          category === cat
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : "bg-white/5 hover:bg-white/10 text-white/70"
+                        }`}
+                      >
+                        {cat}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStep(1)}
+                    className="flex-1 text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={!name.trim() || isCreating}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Channel"
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6 text-center"
+              >
+                <div className="flex justify-center">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                    <Check className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    "{name}" has been created!
+                  </h3>
+                  <p className="text-white/60 text-sm">
+                    Your private channel is ready. Invite members via internal email to get started.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleOpenInviteDialog}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Invite Members via Internal Email
+                  </Button>
+                  
+                  <Button
+                    onClick={handleFinish}
+                    variant="ghost"
+                    className="w-full text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    Skip for Now
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {createdChannelId && (
+        <ChannelInviteDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          channelId={createdChannelId}
+          channelName={name}
+        />
+      )}
+    </>
   );
 }
