@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../features/social/notifications';
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ navigation }: { navigation: any }) {
   const { user } = useAuth();
   const { data, isLoading } = useNotifications(user?.id);
 

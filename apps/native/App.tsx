@@ -80,10 +80,18 @@ function Tabs({ navigation }: { navigation: any }) {
         {() => <Explore navigation={navigation} />}
       </Tab.Screen>
       <Tab.Screen name="Create" component={Create} />
-      <Tab.Screen name="Reels" component={Reels} />
-      <Tab.Screen name="Messages" component={Messages} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen as any} />
-      <Tab.Screen name="Profile" component={Profile} />
+      <Tab.Screen name="Reels">
+        {() => <Reels navigation={navigation} />}
+      </Tab.Screen>
+      <Tab.Screen name="Messages">
+        {() => <Messages navigation={navigation} />}
+      </Tab.Screen>
+      <Tab.Screen name="Notifications">
+        {() => <NotificationsScreen navigation={navigation} />}
+      </Tab.Screen>
+      <Tab.Screen name="Profile">
+        {() => <Profile navigation={navigation} />}
+      </Tab.Screen>
       <Tab.Screen name="Routes" component={RoutesScreen as any} />
     </Tab.Navigator>
   );

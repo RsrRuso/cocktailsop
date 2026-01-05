@@ -11,14 +11,14 @@ import { useAddReelComment, useReelComments } from '../features/engagement/comme
 
 const H = Dimensions.get('window').height;
 
-export default function ReelsScreen(){
+export default function ReelsScreen({ navigation }: { navigation: { navigate: (name: string, params?: any) => void } }){
   const { user } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ['reels'],
     queryFn: async () => {
       const res = await supabase
         .from('reels')
-        .select('id, video_url, caption, created_at, user_id, like_count, comment_count')
+        .select('id, video_url, caption, created_at, user_id, like_count, comment_count, profiles:profiles (id, username)')
         .order('created_at', { ascending: false })
         .limit(50);
       if (res.error) throw res.error;
@@ -53,6 +53,14 @@ export default function ReelsScreen(){
             )}
             <View style={{ position:'absolute', bottom:100, left:12, right:12 }}>
               <Text style={{ color:'#fff', fontWeight:'700' }}>{item.caption ?? ''}</Text>
+              <Pressable
+                onPress={() => navigation.navigate('UserProfile', { userId: item.user_id })}
+                style={{ alignSelf: 'flex-start', marginTop: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.35)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '800' }}>
+                  {item.profiles?.username ? `@${item.profiles.username}` : 'Profile'}
+                </Text>
+              </Pressable>
             </View>
 
             <View style={{ position:'absolute', right:12, bottom:180, gap:10, alignItems:'center' }}>
