@@ -63,6 +63,7 @@ import BreakevenReportScreen from './src/screens/BreakevenReport';
 import DailyOpsReportScreen from './src/screens/DailyOpsReport';
 import InventoryValuationReportScreen from './src/screens/InventoryValuationReport';
 import VarianceReportScreen from './src/screens/VarianceReport';
+import PourCostAnalysisScreen from './src/screens/PourCostAnalysis';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -292,6 +293,11 @@ function AppShell() {
         <Stack.Screen
           name="VarianceReport"
           component={VarianceReportScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PourCostAnalysis"
+          component={PourCostAnalysisScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
