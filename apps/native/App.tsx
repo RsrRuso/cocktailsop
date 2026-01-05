@@ -65,6 +65,7 @@ import InventoryValuationReportScreen from './src/screens/InventoryValuationRepo
 import VarianceReportScreen from './src/screens/VarianceReport';
 import PourCostAnalysisScreen from './src/screens/PourCostAnalysis';
 import MenuEngineeringScreen from './src/screens/MenuEngineering';
+import MenuEngineeringProScreen from './src/screens/MenuEngineeringPro';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -304,6 +305,11 @@ function AppShell() {
         <Stack.Screen
           name="MenuEngineering"
           component={MenuEngineeringScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MenuEngineeringPro"
+          component={MenuEngineeringProScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
