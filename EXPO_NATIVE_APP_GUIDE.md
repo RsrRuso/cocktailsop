@@ -14,7 +14,7 @@ Your project now has **TWO SEPARATE APPS**:
 - **Access**: Installed via App Store / Google Play or direct APK/IPA
 - **Deployment**: Requires separate setup (instructions below)
 - **Technology**: React Native + Expo
-- **Location**: `LAB_SOP_Expo_App_2.zip` file
+- **Location**: `apps/native/` (in this repo)
 
 ---
 
@@ -22,28 +22,16 @@ Your project now has **TWO SEPARATE APPS**:
 
 ### Step 1: Extract and Set Up
 
-1. **Download the ZIP** from this project:
-   - The file `LAB_SOP_Expo_App_2.zip` is now in your project
-   - Download it from Lovable's file explorer or export to GitHub
-
-2. **Extract locally** on your computer:
+1. **Install dependencies**:
    ```bash
-   unzip LAB_SOP_Expo_App_2.zip
-   cd LAB_SOP_Expo_App_2
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   npm install
-   # or
-   yarn install
+   npm --prefix apps/native install
    ```
 
 ### Step 2: Test Locally
 
 **Option A: Expo Go (Quick Test)**
 ```bash
-npx expo start
+npm run native:start
 ```
 - Scan QR code with Expo Go app on your phone
 - Best for quick testing during development
@@ -150,7 +138,7 @@ npx expo run:android
 
 ## 📱 What's in the Expo App?
 
-The `LAB_SOP_Expo_App_2.zip` contains a complete React Native/Expo project with:
+The `apps/native/` app contains a complete React Native/Expo project with:
 - LAB Cocktail SOP tool optimized for native mobile
 - Native navigation and gestures
 - Optimized for iOS and Android
@@ -170,8 +158,8 @@ The `LAB_SOP_Expo_App_2.zip` contains a complete React Native/Expo project with:
 ## ✅ Current Status
 
 - ✅ Web App: Already deployed and working in this Lovable project
-- 📦 Native App: ZIP file ready (`LAB_SOP_Expo_App_2.zip`)
-- ⏳ Next Steps: Extract ZIP, set up Expo, and build for app stores
+- ✅ Native App: Checked in at `apps/native/`
+- ⏳ Next Steps: Run it locally, then build with EAS for app stores
 
 ---
 
