@@ -60,6 +60,7 @@ import BudgetActualReportScreen from './src/screens/BudgetActualReport';
 import StockMovementReportScreen from './src/screens/StockMovementReport';
 import RevenueByCategoryReportScreen from './src/screens/RevenueByCategoryReport';
 import BreakevenReportScreen from './src/screens/BreakevenReport';
+import DailyOpsReportScreen from './src/screens/DailyOpsReport';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -274,6 +275,11 @@ function AppShell() {
         <Stack.Screen
           name="BreakevenReport"
           component={BreakevenReportScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="DailyOpsReport"
+          component={DailyOpsReportScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
