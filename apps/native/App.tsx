@@ -23,6 +23,7 @@ import NotificationsScreen from './src/screens/Notifications';
 import UserProfileScreen from './src/screens/UserProfile';
 import MessageThreadScreen from './src/screens/MessageThread';
 import ReelDetailScreen from './src/screens/ReelDetail';
+import OpsScreen from './src/screens/Ops';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -97,6 +98,9 @@ function Tabs({ navigation }: { navigation: any }) {
       </Tab.Screen>
       <Tab.Screen name="Profile">
         {() => <Profile navigation={navigation} />}
+      </Tab.Screen>
+      <Tab.Screen name="Ops">
+        {() => <OpsScreen navigation={navigation} />}
       </Tab.Screen>
       <Tab.Screen name="Routes" component={RoutesScreen as any} />
     </Tab.Navigator>

@@ -1,0 +1,160 @@
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+type Nav = { navigate: (name: string, params?: any) => void };
+
+type LinkItem = {
+  id: string;
+  title: string;
+  pathTemplate: string;
+  group: string;
+  note?: string;
+};
+
+const LINKS: LinkItem[] = [
+  // Inventory (first migration target)
+  { id: 'inventory-manager', title: 'Inventory Manager', pathTemplate: '/inventory-manager', group: 'Inventory' },
+  { id: 'all-inventory', title: 'All Inventory', pathTemplate: '/all-inventory', group: 'Inventory' },
+  { id: 'inventory-transactions', title: 'Inventory Transactions', pathTemplate: '/inventory-transactions', group: 'Inventory' },
+  { id: 'master-items', title: 'Master Items', pathTemplate: '/master-items', group: 'Inventory' },
+  { id: 'stores-admin', title: 'Stores Admin', pathTemplate: '/stores-admin', group: 'Inventory' },
+  { id: 'store-management', title: 'Store Management', pathTemplate: '/store-management', group: 'Inventory' },
+  { id: 'store-detail', title: 'Store Detail', pathTemplate: '/store/:id', group: 'Inventory', note: 'Requires :id' },
+  { id: 'workspace-management', title: 'Workspace Management', pathTemplate: '/workspace-management', group: 'Inventory' },
+
+  // Batch / calculators
+  { id: 'batch-calculator', title: 'Batch Calculator', pathTemplate: '/batch-calculator', group: 'Batch' },
+  { id: 'batch-recipes', title: 'Batch Recipes', pathTemplate: '/batch-recipes', group: 'Batch' },
+  { id: 'batch-view', title: 'Batch View', pathTemplate: '/batch-view/:productionId', group: 'Batch', note: 'Requires :productionId' },
+
+  // FIFO
+  { id: 'fifo-workspaces', title: 'FIFO Workspace Management', pathTemplate: '/fifo-workspace-management', group: 'FIFO' },
+  { id: 'fifo-activity', title: 'FIFO Activity Log', pathTemplate: '/fifo-activity-log', group: 'FIFO' },
+
+  // Procurement
+  { id: 'purchase-orders', title: 'Purchase Orders', pathTemplate: '/purchase-orders', group: 'Procurement' },
+  { id: 'po-master', title: 'PO Master Items', pathTemplate: '/po-master-items', group: 'Procurement' },
+  { id: 'po-received', title: 'PO Received Items', pathTemplate: '/po-received-items', group: 'Procurement' },
+
+  // Staff/POS
+  { id: 'staff-scheduling', title: 'Staff Scheduling', pathTemplate: '/staff-scheduling', group: 'Staff & POS' },
+  { id: 'staff-pos', title: 'Staff POS', pathTemplate: '/staff-pos', group: 'Staff & POS' },
+  { id: 'bar-kds', title: 'Bar KDS', pathTemplate: '/bar-kds', group: 'Staff & POS' },
+  { id: 'kitchen-kds', title: 'Kitchen KDS', pathTemplate: '/kitchen-kds', group: 'Staff & POS' },
+];
+
+function groupBy(items: LinkItem[]) {
+  const m = new Map<string, LinkItem[]>();
+  for (const it of items) {
+    const arr = m.get(it.group) ?? [];
+    arr.push(it);
+    m.set(it.group, arr);
+  }
+  return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+export default function OpsScreen({ navigation }: { navigation: Nav }) {
+  const [q, setQ] = useState('');
+
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    if (!query) return LINKS;
+    return LINKS.filter(
+      (l) =>
+        l.title.toLowerCase().includes(query) ||
+        l.pathTemplate.toLowerCase().includes(query) ||
+        l.group.toLowerCase().includes(query),
+    );
+  }, [q]);
+
+  const groups = useMemo(() => groupBy(filtered), [filtered]);
+
+  return (
+    <View style={styles.root}>
+      <View style={styles.top}>
+        <Text style={styles.title}>Ops</Text>
+        <Text style={styles.sub}>
+          Inventory-first native migration. Items open via WebView until replaced with true native screens.
+        </Text>
+        <TextInput
+          value={q}
+          onChangeText={setQ}
+          placeholder="Search ops…"
+          placeholderTextColor="#6b7280"
+          style={styles.search}
+        />
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 96 }}>
+        {groups.map(([group, items]) => (
+          <View key={group} style={{ marginBottom: 16 }}>
+            <Text style={styles.groupTitle}>{group}</Text>
+            <View style={{ gap: 8, marginTop: 8 }}>
+              {items.map((it) => (
+                <Pressable
+                  key={it.id}
+                  style={styles.item}
+                  onPress={() =>
+                    navigation.navigate('WebRoute', {
+                      title: it.title,
+                      pathTemplate: it.pathTemplate,
+                    })
+                  }
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle} numberOfLines={1}>
+                      {it.title}
+                    </Text>
+                    <Text style={styles.itemPath} numberOfLines={1}>
+                      {it.pathTemplate}
+                      {it.note ? ` • ${it.note}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.chev}>›</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#0b1220' },
+  top: {
+    paddingTop: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.10)',
+  },
+  title: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  sub: { color: '#9aa4b2', marginTop: 4, fontSize: 12 },
+  search: {
+    marginTop: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  groupTitle: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    padding: 12,
+    borderRadius: 14,
+  },
+  itemTitle: { color: '#fff', fontWeight: '700' },
+  itemPath: { color: '#9aa4b2', marginTop: 2, fontSize: 12 },
+  chev: { color: '#9aa4b2', fontSize: 22, marginLeft: 6 },
+});
+
