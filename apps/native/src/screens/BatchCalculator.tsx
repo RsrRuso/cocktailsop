@@ -4,23 +4,27 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBatchProductions, useBatchRecipes, useMixologistGroups } from '../features/ops/batch/queries';
 import { useCreateBatchProduction } from '../features/ops/batch/mutations';
 import type { BatchRecipeLite } from '../features/ops/batch/types';
+import type { BatchStaffSession } from '../features/ops/batch/staffSession';
 
 type Nav = { goBack: () => void; navigate: (name: string, params?: any) => void };
 
-export default function BatchCalculatorScreen({ navigation }: { navigation: Nav }) {
+export default function BatchCalculatorScreen({ navigation, route }: { navigation: Nav; route: any }) {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const groupsQ = useMixologistGroups(userId);
-  const recipesQ = useBatchRecipes(userId);
+  const staffSession: BatchStaffSession | null | undefined = route?.params?.staffSession ?? null;
+  const staffGroupId = staffSession?.group?.id ?? null;
 
-  const [groupId, setGroupId] = useState<string | null>(null);
+  const groupsQ = useMixologistGroups(userId);
+  const recipesQ = useBatchRecipes(userId, { staffSession, groupId: staffGroupId });
+
+  const [groupId, setGroupId] = useState<string | null>(staffGroupId);
   const [recipeId, setRecipeId] = useState<string | null>(null);
   const [targetServes, setTargetServes] = useState('1');
   const [targetLiters, setTargetLiters] = useState('0');
   const [notes, setNotes] = useState('');
 
-  const productionsQ = useBatchProductions(userId, groupId);
+  const productionsQ = useBatchProductions(userId, groupId, { staffSession });
   const createProd = useCreateBatchProduction(userId);
 
   const recipe: BatchRecipeLite | undefined = useMemo(() => {
@@ -45,16 +49,19 @@ export default function BatchCalculatorScreen({ navigation }: { navigation: Nav 
         Alert.alert('Missing recipe', 'Select a recipe first.');
         return;
       }
+      if (staffSession && groupId !== staffSession.group.id) {
+        setGroupId(staffSession.group.id);
+      }
       const id = await createProd.mutateAsync({
         recipe: { id: recipe.id, recipe_name: recipe.recipe_name, current_serves: recipe.current_serves, ingredients: recipe.ingredients },
-        group_id: groupId,
+        group_id: staffSession?.group?.id ?? groupId,
         target_serves: Number(targetServes),
         target_liters: Number(targetLiters),
-        produced_by_name: user?.user_metadata?.full_name || user?.email || undefined,
+        produced_by_name: staffSession?.name || user?.user_metadata?.full_name || user?.email || undefined,
         notes,
       });
       Alert.alert('Created', 'Batch production saved.');
-      navigation.navigate('BatchView', { productionId: id });
+      navigation.navigate('BatchView', { productionId: id, staffSession });
     } catch (e: any) {
       Alert.alert('Failed', e?.message ?? 'Could not create production.');
     }
@@ -92,6 +99,11 @@ export default function BatchCalculatorScreen({ navigation }: { navigation: Nav 
               </Pressable>
             ))}
           </ScrollView>
+          {staffSession ? (
+            <Text style={styles.muted}>
+              Staff mode: locked to {staffSession.group.name}. Use “Batch PIN Access” to switch group.
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -152,7 +164,7 @@ export default function BatchCalculatorScreen({ navigation }: { navigation: Nav 
           <Text style={styles.sectionTitle}>Recent productions</Text>
           {productionsQ.isLoading ? <Text style={styles.muted}>Loading…</Text> : null}
           {(productionsQ.data ?? []).slice(0, 8).map((p) => (
-            <Pressable key={p.id} style={styles.row} onPress={() => navigation.navigate('BatchView', { productionId: p.id })}>
+            <Pressable key={p.id} style={styles.row} onPress={() => navigation.navigate('BatchView', { productionId: p.id, staffSession })}>
               <Text style={{ color: '#fff', fontWeight: '900' }} numberOfLines={1}>
                 {p.batch_name}
               </Text>

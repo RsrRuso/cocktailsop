@@ -23,6 +23,7 @@ const LINKS: LinkItem[] = [
   { id: 'workspace-management', title: 'Workspace Management', pathTemplate: '/workspace-management', group: 'Inventory' },
 
   // Batch / calculators
+  { id: 'batch-pin-access', title: 'Batch PIN Access', pathTemplate: '/batch-calculator-pin-access', group: 'Batch' },
   { id: 'batch-calculator', title: 'Batch Calculator', pathTemplate: '/batch-calculator', group: 'Batch' },
   { id: 'batch-recipes', title: 'Batch Recipes', pathTemplate: '/batch-recipes', group: 'Batch' },
   { id: 'batch-view', title: 'Batch View', pathTemplate: '/batch-view/:productionId', group: 'Batch', note: 'Requires :productionId' },
@@ -154,6 +155,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'fifo-activity') {
                       navigation.navigate('FifoWorkspaceManagement');
+                      return;
+                    }
+                    if (it.id === 'batch-pin-access') {
+                      navigation.navigate('BatchPinAccess');
                       return;
                     }
                     if (it.id === 'batch-calculator') {

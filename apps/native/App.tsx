@@ -49,6 +49,7 @@ import ProcurementAnalyticsScreen from './src/screens/ProcurementAnalytics';
 import BatchCalculatorScreen from './src/screens/BatchCalculator';
 import BatchRecipesScreen from './src/screens/BatchRecipes';
 import BatchViewScreen from './src/screens/BatchView';
+import BatchPinAccessScreen from './src/screens/BatchPinAccess';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -198,6 +199,11 @@ function AppShell() {
         <Stack.Screen
           name="BatchCalculator"
           component={BatchCalculatorScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchPinAccess"
+          component={BatchPinAccessScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

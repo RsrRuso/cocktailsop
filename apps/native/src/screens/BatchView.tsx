@@ -3,17 +3,19 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { useAuth } from '../contexts/AuthContext';
 import { env } from '../lib/env';
 import { useBatchProductionById, useProductionIngredients } from '../features/ops/batch/queries';
+import type { BatchStaffSession } from '../features/ops/batch/staffSession';
 
 type Nav = { goBack: () => void };
 
 export default function BatchViewScreen({ navigation, route }: { navigation: Nav; route: any }) {
   const productionId = String(route?.params?.productionId ?? '');
+  const staffSession: BatchStaffSession | null | undefined = route?.params?.staffSession ?? null;
   const { user } = useAuth();
   const userId = user?.id;
 
-  const prodQ = useBatchProductionById(userId, productionId || undefined);
+  const prodQ = useBatchProductionById(userId, productionId || undefined, { staffSession });
   const prod = useMemo(() => prodQ.data ?? null, [prodQ.data]);
-  const ingQ = useProductionIngredients(productionId || undefined);
+  const ingQ = useProductionIngredients(productionId || undefined, { staffSession });
 
   async function openWeb() {
     const base = env.webBaseUrl?.trim();
