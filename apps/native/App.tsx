@@ -44,6 +44,7 @@ import POReceivedItemsScreen from './src/screens/POReceivedItems';
 import ProcurementPinAccessScreen from './src/screens/ProcurementPinAccess';
 import ProcurementStaffManagerScreen from './src/screens/ProcurementStaffManager';
 import POReceivedRecordDetailScreen from './src/screens/POReceivedRecordDetail';
+import POVarianceReportScreen from './src/screens/POVarianceReport';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -178,6 +179,11 @@ function AppShell() {
         <Stack.Screen
           name="POReceivedRecordDetail"
           component={POReceivedRecordDetailScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="POVarianceReport"
+          component={POVarianceReportScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

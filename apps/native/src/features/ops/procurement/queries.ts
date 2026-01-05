@@ -75,6 +75,28 @@ export function usePOReceivedRecords(userId?: string, workspaceId?: string | nul
   });
 }
 
+export function usePOReceivedRecordById(userId?: string, workspaceId?: string | null, recordId?: string | null) {
+  return useQuery({
+    queryKey: ['proc', 'po_received_record', userId, workspaceId ?? null, recordId ?? null],
+    enabled: !!userId && !!recordId,
+    queryFn: async () => {
+      let q = supabase
+        .from('po_received_records')
+        .select(
+          'id, user_id, workspace_id, supplier_name, document_number, received_date, total_items, total_quantity, total_value, status, variance_data, created_at',
+        )
+        .eq('id', recordId!);
+
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      else q = q.eq('user_id', userId!).is('workspace_id', null);
+
+      const res = await q.single();
+      if (res.error) throw res.error;
+      return res.data as any;
+    },
+  });
+}
+
 export function usePOReceivedItemsForRecord(userId?: string, workspaceId?: string | null, recordId?: string | null) {
   return useQuery({
     queryKey: ['proc', 'po_received_items', userId, workspaceId ?? null, recordId ?? null],

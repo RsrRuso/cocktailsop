@@ -5,7 +5,7 @@ import { useAddReceivedItem, useDeleteReceivedItem, useMatchReceivedRecordToPO }
 import { usePOReceivedItemsForRecord } from '../features/ops/procurement/queries';
 import { usePurchaseOrders } from '../features/ops/procurement/queries';
 
-type Nav = { goBack: () => void };
+type Nav = { goBack: () => void; navigate: (name: string, params?: any) => void };
 
 export default function POReceivedRecordDetailScreen({
   navigation,
@@ -98,6 +98,12 @@ export default function POReceivedRecordDetailScreen({
               disabled={!recordId || match.isPending}
             >
               <Text style={styles.btnText}>Match to PO</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.btn, styles.secondaryBtn]}
+              onPress={() => navigation.navigate('POVarianceReport', { recordId, workspaceId })}
+            >
+              <Text style={styles.btnText}>Variance</Text>
             </Pressable>
             <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => itemsQ.refetch()} disabled={itemsQ.isFetching}>
               <Text style={styles.btnText}>{itemsQ.isFetching ? '…' : 'Refresh'}</Text>
