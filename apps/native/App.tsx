@@ -22,6 +22,7 @@ import PostDetailScreen from './src/screens/PostDetail';
 import NotificationsScreen from './src/screens/Notifications';
 import UserProfileScreen from './src/screens/UserProfile';
 import MessageThreadScreen from './src/screens/MessageThread';
+import ReelDetailScreen from './src/screens/ReelDetail';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -51,6 +52,11 @@ function AppShell() {
         <Stack.Screen
           name="MessageThread"
           component={MessageThreadScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReelDetail"
+          component={ReelDetailScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

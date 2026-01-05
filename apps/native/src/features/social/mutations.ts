@@ -7,13 +7,13 @@ export function useCreatePost() {
     mutationFn: async ({
       userId,
       content,
-      mediaUrl,
+      mediaUrls,
     }: {
       userId: string;
       content: string;
-      mediaUrl?: string;
+      mediaUrls?: string[];
     }) => {
-      const media_urls = mediaUrl?.trim() ? [mediaUrl.trim()] : null;
+      const media_urls = mediaUrls && mediaUrls.length > 0 ? mediaUrls : null;
       const res = await supabase
         .from('posts')
         .insert({

@@ -83,7 +83,7 @@ export default function ProfileScreen({ navigation }: { navigation: { navigate: 
             style={{ width: '33.33%', padding: 2 }}
             onPress={() => {
               if (g.type === 'post') navigation.navigate('PostDetail', { postId: g.id });
-              else navigation.navigate('WebRoute', { title: 'Reels', pathTemplate: '/reels' });
+              else navigation.navigate('ReelDetail', { reelId: g.id });
             }}
           >
             {g.type === 'post' && g.media ? (

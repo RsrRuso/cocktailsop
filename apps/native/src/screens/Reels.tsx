@@ -1,13 +1,12 @@
 
-import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, View, Dimensions } from 'react-native';
+import React, { useMemo } from 'react';
+import { Pressable, Text, View, Dimensions } from 'react-native';
 import { Video } from 'expo-av';
 import { FlatList } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLikeIds, useToggleReelLike } from '../features/engagement/likes';
-import { useAddReelComment, useReelComments } from '../features/engagement/comments';
 
 const H = Dimensions.get('window').height;
 
@@ -30,11 +29,6 @@ export default function ReelsScreen({ navigation }: { navigation: { navigate: (n
   const likeIds = useLikeIds(user?.id);
   const reelLiked = useMemo(() => new Set(likeIds.data?.reelIds ?? []), [likeIds.data?.reelIds]);
   const toggleLike = useToggleReelLike(user?.id);
-
-  const [commentsFor, setCommentsFor] = useState<string | null>(null);
-  const reelComments = useReelComments(commentsFor ?? '');
-  const addReelComment = useAddReelComment(user?.id);
-  const [commentText, setCommentText] = useState('');
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -78,7 +72,7 @@ export default function ReelsScreen({ navigation }: { navigation: { navigate: (n
                 <Text style={{ color:'#fff', fontWeight:'900' }}>{reelLiked.has(item.id) ? '♥' : '♡'} {item.like_count ?? 0}</Text>
               </Pressable>
               <Pressable
-                onPress={() => setCommentsFor(item.id)}
+                onPress={() => navigation.navigate('ReelDetail', { reelId: item.id })}
                 style={{
                   paddingHorizontal: 12,
                   paddingVertical: 10,
@@ -96,71 +90,7 @@ export default function ReelsScreen({ navigation }: { navigation: { navigate: (n
         ListEmptyComponent={isLoading ? <Text style={{ color:'#9aa4b2', padding:12 }}>Loading…</Text> : <Text style={{ color:'#9aa4b2', padding:12 }}>No reels yet.</Text>}
       />
 
-      <Modal visible={!!commentsFor} transparent animationType="slide" onRequestClose={() => setCommentsFor(null)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' }}>
-          <View style={{ maxHeight: '75%', backgroundColor: '#0b1220', borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }}>
-            <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: '#fff', fontWeight: '900' }}>Comments</Text>
-              <Pressable onPress={() => setCommentsFor(null)} style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
-                <Text style={{ color: '#9aa4b2', fontWeight: '900' }}>Close</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: 12, gap: 10 }}>
-              {reelComments.isLoading ? <Text style={{ color: '#9aa4b2' }}>Loading…</Text> : null}
-              {(reelComments.data ?? []).map((c) => (
-                <View key={c.id} style={{ padding: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
-                  <Text style={{ color: '#fff', fontWeight: '800' }}>{c.profiles?.username ? `@${c.profiles.username}` : c.user_id}</Text>
-                  <Text style={{ color: '#e6e6e6', marginTop: 4 }}>{c.content}</Text>
-                </View>
-              ))}
-              {!reelComments.isLoading && (reelComments.data ?? []).length === 0 ? <Text style={{ color: '#9aa4b2' }}>No comments yet.</Text> : null}
-            </ScrollView>
-
-            <View style={{ padding: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)', flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
-              <TextInput
-                value={commentText}
-                onChangeText={setCommentText}
-                placeholder="Add a comment…"
-                placeholderTextColor="#6b7280"
-                style={{
-                  flex: 1,
-                  minHeight: 40,
-                  maxHeight: 120,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  color: '#fff',
-                }}
-                multiline
-              />
-              <Pressable
-                onPress={() => {
-                  const content = commentText.trim();
-                  if (!content || !commentsFor) return;
-                  setCommentText('');
-                  addReelComment.mutate({ reelId: commentsFor, content });
-                }}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                  borderRadius: 14,
-                  backgroundColor: 'rgba(37,99,235,0.28)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(37,99,235,0.35)',
-                  opacity: commentText.trim().length > 0 ? 1 : 0.5,
-                }}
-                disabled={commentText.trim().length === 0}
-              >
-                <Text style={{ color: '#fff', fontWeight: '900' }}>{addReelComment.isPending ? '…' : 'Send'}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* legacy comments modal removed in favor of ReelDetail */}
     </View>
   );
 }

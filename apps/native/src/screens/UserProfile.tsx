@@ -138,7 +138,7 @@ export default function UserProfileScreen({
               if (g.type === 'post') {
                 navigation.navigate('PostDetail', { postId: g.id });
               } else {
-                navigation.navigate('WebRoute', { title: 'Reels', pathTemplate: '/reels' });
+                navigation.navigate('ReelDetail', { reelId: g.id });
               }
             }}
           >

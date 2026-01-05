@@ -41,6 +41,13 @@ function bumpReelsLike(reelId: string, delta: number) {
   });
 }
 
+function bumpReelDetailLike(reelId: string, delta: number) {
+  queryClient.setQueryData(['reel', reelId], (old: any) => {
+    if (!old) return old;
+    return { ...old, like_count: Math.max(0, (old.like_count ?? 0) + delta) };
+  });
+}
+
 function bumpPostDetailLike(postId: string, delta: number) {
   queryClient.setQueryData(['post', postId], (old: any) => {
     if (!old) return old;
@@ -117,6 +124,7 @@ export function useToggleReelLike(userId?: string) {
 
       bumpHomeFeedLike('reel', vars.reelId, delta);
       bumpReelsLike(vars.reelId, delta);
+      bumpReelDetailLike(vars.reelId, delta);
       return { prev };
     },
     onError: (_err, _vars, ctx) => {

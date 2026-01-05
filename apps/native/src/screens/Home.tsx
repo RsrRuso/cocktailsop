@@ -38,7 +38,7 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (na
               onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.user_id })}
               onPress={() => {
                 if (item.type === 'post') navigation.navigate('PostDetail', { postId: item.id });
-                else navigation.navigate('WebRoute', { title: 'Reel', pathTemplate: `/reels` });
+                else navigation.navigate('ReelDetail', { reelId: item.id });
               }}
               liked={item.type === 'post' ? postLiked.has(item.id) : reelLiked.has(item.id)}
               onLikePress={() => {
@@ -50,7 +50,7 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (na
               }}
               onCommentPress={() => {
                 if (item.type === 'post') navigation.navigate('PostDetail', { postId: item.id });
-                else navigation.navigate('WebRoute', { title: 'Reels', pathTemplate: `/reels` });
+                else navigation.navigate('ReelDetail', { reelId: item.id });
               }}
             />
           )}
