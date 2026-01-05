@@ -49,10 +49,12 @@ export default function ReportsHubScreen({ navigation }: { navigation: Nav }) {
                 key={r.id}
                 style={styles.item}
                 onPress={() =>
-                  navigation.navigate('WebRoute', {
-                    title: r.label,
-                    pathTemplate: r.pathTemplate,
-                  })
+                  r.pathTemplate === '/reports/profit-loss'
+                    ? navigation.navigate('ProfitLossReport')
+                    : navigation.navigate('WebRoute', {
+                        title: r.label,
+                        pathTemplate: r.pathTemplate,
+                      })
                 }
               >
                 <View style={{ flex: 1 }}>
