@@ -78,6 +78,7 @@ export type ReceivedRecordLite = {
   total_quantity: number | null;
   total_value: number | null;
   status: string | null;
+  variance_data?: any | null;
   created_at: string | null;
 };
 

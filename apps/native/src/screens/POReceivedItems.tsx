@@ -3,6 +3,8 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useAuth } from '../contexts/AuthContext';
 import { useCreateReceivedRecord } from '../features/ops/procurement/mutations';
 import { usePOReceivedRecords, useProcurementWorkspaces } from '../features/ops/procurement/queries';
+import { createSignedProcurementDocUrl, pickAndUploadProcurementDocument } from '../features/ops/procurement/storage';
+import { Linking } from 'react-native';
 
 type Nav = { navigate: (name: string, params?: any) => void; goBack: () => void };
 
@@ -46,6 +48,10 @@ export default function POReceivedItemsScreen({ navigation }: { navigation: Nav 
   const [documentNumber, setDocumentNumber] = useState('');
   const [receivedDate, setReceivedDate] = useState(todayYmd());
   const [totalValue, setTotalValue] = useState('');
+  const [documentPath, setDocumentPath] = useState<string | null>(null);
+  const [documentName, setDocumentName] = useState<string | null>(null);
+  const [documentMimeType, setDocumentMimeType] = useState<string | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
 
   async function submit() {
     try {
@@ -54,12 +60,18 @@ export default function POReceivedItemsScreen({ navigation }: { navigation: Nav 
         documentNumber,
         receivedDate,
         totalValue: totalValue.trim() ? Number(totalValue) : 0,
+        documentPath,
+        documentName,
+        documentMimeType,
       });
       setOpen(false);
       setSupplierName('');
       setDocumentNumber('');
       setReceivedDate(todayYmd());
       setTotalValue('');
+      setDocumentPath(null);
+      setDocumentName(null);
+      setDocumentMimeType(null);
       Alert.alert('Saved', 'Received record added.');
     } catch (e: any) {
       Alert.alert('Failed', e?.message ?? 'Could not create record.');
@@ -133,6 +145,21 @@ export default function POReceivedItemsScreen({ navigation }: { navigation: Nav 
                 <Text style={{ color: '#9aa4b2', fontSize: 12, marginTop: 2 }} numberOfLines={1}>
                   {r.received_date ?? '—'} • {r.status ?? 'completed'} • Value {Number(r.total_value ?? 0).toFixed(2)}
                 </Text>
+                {r.variance_data?.document?.path ? (
+                  <Pressable
+                    style={[styles.btn, styles.secondaryBtn, { marginTop: 10 }]}
+                    onPress={async () => {
+                      try {
+                        const url = await createSignedProcurementDocUrl(r.variance_data.document.path);
+                        await Linking.openURL(url);
+                      } catch {
+                        Alert.alert('Cannot open', 'Document is not accessible for this account.');
+                      }
+                    }}
+                  >
+                    <Text style={styles.btnText}>Open document</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   style={[styles.btn, styles.secondaryBtn, { marginTop: 10 }]}
                   onPress={() =>
@@ -161,11 +188,67 @@ export default function POReceivedItemsScreen({ navigation }: { navigation: Nav 
             <TextInput value={documentNumber} onChangeText={setDocumentNumber} placeholder="Document #" placeholderTextColor="#6b7280" style={styles.input} />
             <TextInput value={receivedDate} onChangeText={setReceivedDate} placeholder="Received date (YYYY-MM-DD)" placeholderTextColor="#6b7280" style={styles.input} />
             <TextInput value={totalValue} onChangeText={setTotalValue} placeholder="Total value (optional)" placeholderTextColor="#6b7280" keyboardType="decimal-pad" style={styles.input} />
+
+            <View style={{ gap: 8 }}>
+              <Text style={styles.sectionTitle}>Document</Text>
+              <Pressable
+                style={[styles.btn, styles.secondaryBtn]}
+                onPress={async () => {
+                  if (!userId) return;
+                  try {
+                    setDocUploading(true);
+                    const uploaded = await pickAndUploadProcurementDocument({ userId });
+                    if (!uploaded) return;
+                    setDocumentPath(uploaded.path);
+                    setDocumentName(uploaded.name);
+                    setDocumentMimeType(uploaded.mimeType);
+                    Alert.alert('Uploaded', uploaded.name);
+                  } catch (e: any) {
+                    Alert.alert('Upload failed', e?.message ?? 'Could not upload document.');
+                  } finally {
+                    setDocUploading(false);
+                  }
+                }}
+                disabled={!userId || docUploading}
+              >
+                <Text style={styles.btnText}>{docUploading ? 'Uploading…' : documentPath ? 'Replace document' : 'Attach document'}</Text>
+              </Pressable>
+              {documentPath ? (
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Pressable
+                    style={[styles.btn, styles.secondaryBtn]}
+                    onPress={async () => {
+                      try {
+                        const url = await createSignedProcurementDocUrl(documentPath);
+                        await Linking.openURL(url);
+                      } catch {
+                        Alert.alert('Cannot open', 'Document is not accessible for this account.');
+                      }
+                    }}
+                  >
+                    <Text style={styles.btnText}>Preview</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.btn, styles.secondaryBtn]}
+                    onPress={() => {
+                      setDocumentPath(null);
+                      setDocumentName(null);
+                      setDocumentMimeType(null);
+                    }}
+                  >
+                    <Text style={styles.btnText}>Remove</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              <Text style={styles.muted} numberOfLines={2}>
+                {documentName ?? (documentPath ? documentPath : 'No document attached.')}
+              </Text>
+            </View>
             <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
               <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => setOpen(false)} disabled={createRecord.isPending}>
                 <Text style={styles.btnText}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.btn, styles.primaryBtn]} onPress={() => submit()} disabled={createRecord.isPending}>
+              <Pressable style={[styles.btn, styles.primaryBtn]} onPress={() => submit()} disabled={createRecord.isPending || docUploading}>
                 <Text style={styles.btnText}>{createRecord.isPending ? 'Saving…' : 'Save'}</Text>
               </Pressable>
             </View>

@@ -92,7 +92,15 @@ export function useUpdateMasterItem(userId?: string, workspaceId?: string | null
 
 export function useCreateReceivedRecord(userId?: string, workspaceId?: string | null) {
   return useMutation({
-    mutationFn: async (input: { supplierName?: string; documentNumber?: string; receivedDate?: string; totalValue?: number }) => {
+    mutationFn: async (input: {
+      supplierName?: string;
+      documentNumber?: string;
+      receivedDate?: string;
+      totalValue?: number;
+      documentPath?: string | null;
+      documentName?: string | null;
+      documentMimeType?: string | null;
+    }) => {
       if (!userId) throw new Error('Not signed in');
       const res = await supabase.from('po_received_records').insert({
         user_id: userId,
@@ -102,6 +110,15 @@ export function useCreateReceivedRecord(userId?: string, workspaceId?: string | 
         received_date: input.receivedDate ?? null,
         total_value: input.totalValue ?? 0,
         status: 'completed',
+        variance_data: input.documentPath
+          ? {
+              document: {
+                path: input.documentPath,
+                name: input.documentName ?? null,
+                mimeType: input.documentMimeType ?? null,
+              },
+            }
+          : null,
       } as any);
       if (res.error) throw res.error;
       return true;

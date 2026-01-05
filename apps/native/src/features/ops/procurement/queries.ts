@@ -61,7 +61,7 @@ export function usePOReceivedRecords(userId?: string, workspaceId?: string | nul
     queryFn: async (): Promise<ReceivedRecordLite[]> => {
       let q = supabase
         .from('po_received_records')
-        .select('id, user_id, workspace_id, supplier_name, document_number, received_date, total_items, total_quantity, total_value, status, created_at')
+        .select('id, user_id, workspace_id, supplier_name, document_number, received_date, total_items, total_quantity, total_value, status, variance_data, created_at')
         .order('received_date', { ascending: false })
         .limit(200);
 
