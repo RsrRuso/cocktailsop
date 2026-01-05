@@ -8,6 +8,19 @@ export type ProcurementWorkspace = {
   updated_at: string | null;
 };
 
+export type ProcurementStaffLite = {
+  id: string;
+  workspace_id: string;
+  user_id: string | null;
+  full_name: string;
+  role: string;
+  pin_code: string;
+  permissions: Record<string, boolean> | null;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export type PurchaseOrderLite = {
   id: string;
   user_id: string;

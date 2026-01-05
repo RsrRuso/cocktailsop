@@ -39,6 +39,7 @@ const LINKS: LinkItem[] = [
 
   // Procurement
   { id: 'proc-pin-access', title: 'Procurement PIN Access', pathTemplate: '/procurement-pin-access', group: 'Procurement' },
+  { id: 'proc-staff', title: 'Procurement Staff & PINs', pathTemplate: '/procurement-staff', group: 'Procurement' },
   { id: 'purchase-orders', title: 'Purchase Orders', pathTemplate: '/purchase-orders', group: 'Procurement' },
   { id: 'po-master', title: 'PO Master Items', pathTemplate: '/po-master-items', group: 'Procurement' },
   { id: 'po-received', title: 'PO Received Items', pathTemplate: '/po-received-items', group: 'Procurement' },
@@ -168,6 +169,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'proc-pin-access') {
                       navigation.navigate('ProcurementPinAccess');
+                      return;
+                    }
+                    if (it.id === 'proc-staff') {
+                      navigation.navigate('ProcurementStaffManager');
                       return;
                     }
                     navigation.navigate('WebRoute', {
