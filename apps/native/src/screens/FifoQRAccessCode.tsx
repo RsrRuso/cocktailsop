@@ -175,6 +175,12 @@ export default function FifoQRAccessCodeScreen({
               </Pressable>
               <Pressable
                 style={[styles.smallBtn, styles.secondaryBtn]}
+                onPress={() => navigation.navigate('FifoQrScanner')}
+              >
+                <Text style={styles.smallBtnText}>Scan (camera)</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.smallBtn, styles.secondaryBtn]}
                 onPress={() => {
                   if (!workspaceId) return;
                   Alert.alert('Created QR record', qrRow?.id ? `qr_codes.id = ${qrRow.id}` : 'No record yet.');

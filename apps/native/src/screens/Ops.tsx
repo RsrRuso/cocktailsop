@@ -33,6 +33,7 @@ const LINKS: LinkItem[] = [
   { id: 'fifo-scan-access', title: 'FIFO Join (QR / Workspace ID)', pathTemplate: '/fifo-scan-access/:qrCodeId?', group: 'FIFO' },
   { id: 'fifo-approvals', title: 'FIFO Access Approvals', pathTemplate: '/fifo-access-approval', group: 'FIFO' },
   { id: 'fifo-qr-access', title: 'FIFO QR Access Code', pathTemplate: '/fifo-qr-access-code', group: 'FIFO' },
+  { id: 'fifo-qr-scan', title: 'FIFO Scan QR (Camera)', pathTemplate: '/fifo-scan', group: 'FIFO' },
   { id: 'fifo-activity', title: 'FIFO Activity Log', pathTemplate: '/fifo-activity-log', group: 'FIFO' },
 
   // Procurement
@@ -137,6 +138,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'fifo-qr-access') {
                       navigation.navigate('FifoQRAccessCode');
+                      return;
+                    }
+                    if (it.id === 'fifo-qr-scan') {
+                      navigation.navigate('FifoQrScanner');
                       return;
                     }
                     if (it.id === 'fifo-activity') {

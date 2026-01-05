@@ -36,6 +36,7 @@ import FifoPinAccessScreen from './src/screens/FifoPinAccess';
 import FifoScanAccessScreen from './src/screens/FifoScanAccess';
 import FifoAccessApprovalScreen from './src/screens/FifoAccessApproval';
 import FifoQRAccessCodeScreen from './src/screens/FifoQRAccessCode';
+import FifoQrScannerScreen from './src/screens/FifoQrScanner';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -130,6 +131,11 @@ function AppShell() {
         <Stack.Screen
           name="FifoQRAccessCode"
           component={FifoQRAccessCodeScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FifoQrScanner"
+          component={FifoQrScannerScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
