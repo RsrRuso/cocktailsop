@@ -1,12 +1,18 @@
-import React from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { useMyCounts } from '../features/social/profile';
+import { useMyCounts, useUserPosts, useUserReels } from '../features/social/profile';
 import { useFollow, useIsFollowing, useUnfollow } from '../features/social/follows';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 
-export default function UserProfileScreen({ route }: { route: { params: { userId: string } } }) {
+export default function UserProfileScreen({
+  route,
+  navigation,
+}: {
+  route: { params: { userId: string } };
+  navigation: { navigate: (name: string, params?: any) => void };
+}) {
   const { user } = useAuth();
   const userId = route.params.userId;
 
@@ -24,6 +30,8 @@ export default function UserProfileScreen({ route }: { route: { params: { userId
   });
 
   const counts = useMyCounts(userId);
+  const posts = useUserPosts(userId);
+  const reels = useUserReels(userId);
   const isMe = !!user?.id && user.id === userId;
   const followState = useIsFollowing({ followerId: user?.id, followingId: userId });
   const follow = useFollow();
@@ -44,6 +52,12 @@ export default function UserProfileScreen({ route }: { route: { params: { userId
       Alert.alert('Failed', e?.message ?? 'Unknown error');
     }
   }
+
+  const [tab, setTab] = useState<'posts' | 'reels'>('posts');
+  const grid = useMemo(() => {
+    if (tab === 'posts') return (posts.data ?? []).map((p: any) => ({ id: p.id, media: p.media_urls?.[0] ?? null, type: 'post' as const }));
+    return (reels.data ?? []).map((r: any) => ({ id: r.id, media: r.video_url ?? null, type: 'reel' as const }));
+  }, [tab, posts.data, reels.data]);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#020617' }} contentContainerStyle={{ padding: 12, paddingBottom: 96 }}>
@@ -83,11 +97,60 @@ export default function UserProfileScreen({ route }: { route: { params: { userId
         ) : null}
       </View>
 
-      <View style={{ marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }}>
-        <Text style={{ color: '#fff', fontWeight: '800' }}>Next</Text>
-        <Text style={{ color: '#9aa4b2', marginTop: 6 }}>
-          Next I’ll add this user’s posts grid + reels list + follow counts, matching the web profile page.
-        </Text>
+      <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
+        <Pressable
+          onPress={() => setTab('posts')}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 12,
+            alignItems: 'center',
+            backgroundColor: tab === 'posts' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.12)',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '900' }}>Posts</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setTab('reels')}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 12,
+            alignItems: 'center',
+            backgroundColor: tab === 'reels' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.12)',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '900' }}>Reels</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12 }}>
+        {grid.map((g) => (
+          <Pressable
+            key={`${g.type}-${g.id}`}
+            style={{ width: '33.33%', padding: 2 }}
+            onPress={() => {
+              // Keep reels navigation simple for now; post detail is native.
+              if (g.type === 'post') {
+                navigation.navigate('PostDetail', { postId: g.id });
+              } else {
+                navigation.navigate('WebRoute', { title: 'Reels', pathTemplate: '/reels' });
+              }
+            }}
+          >
+            {g.type === 'post' && g.media ? (
+              <Image source={{ uri: g.media }} style={{ width: '100%', aspectRatio: 1 }} />
+            ) : (
+              <View style={{ width: '100%', aspectRatio: 1, backgroundColor: '#0b0f19', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#9aa4b2' }}>{g.type === 'reel' ? 'Video' : 'No media'}</Text>
+              </View>
+            )}
+          </Pressable>
+        ))}
       </View>
     </ScrollView>
   );

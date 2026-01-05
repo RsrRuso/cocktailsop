@@ -6,10 +6,16 @@ export function FeedItemCard({
   item,
   onPress,
   onAuthorPress,
+  liked,
+  onLikePress,
+  onCommentPress,
 }: {
   item: FeedItem;
   onPress?: () => void;
   onAuthorPress?: () => void;
+  liked?: boolean;
+  onLikePress?: () => void;
+  onCommentPress?: () => void;
 }) {
   const profile = item.profiles;
   const mediaUrl = item.type === 'post' ? item.media_urls?.[0] : item.video_url;
@@ -63,10 +69,10 @@ export function FeedItemCard({
           {item.type === 'post' ? item.content : item.caption}
         </Text>
         <View style={styles.actions}>
-          <Pressable style={styles.btn}>
-            <Text style={styles.btnText}>♥ {item.like_count ?? 0}</Text>
+          <Pressable style={[styles.btn, liked ? styles.btnActive : null]} onPress={onLikePress}>
+            <Text style={styles.btnText}>{liked ? '♥' : '♡'} {item.like_count ?? 0}</Text>
           </Pressable>
-          <Pressable style={styles.btn}>
+          <Pressable style={styles.btn} onPress={onCommentPress}>
             <Text style={styles.btnText}>💬 {item.comment_count ?? 0}</Text>
           </Pressable>
         </View>
@@ -121,6 +127,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
     backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  btnActive: {
+    borderColor: 'rgba(239,68,68,0.40)',
+    backgroundColor: 'rgba(239,68,68,0.16)',
   },
   btnText: { color: '#e6e6e6', fontWeight: '700' },
 });

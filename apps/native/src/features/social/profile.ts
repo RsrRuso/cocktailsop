@@ -48,3 +48,37 @@ export function useMyCounts(userId?: string) {
   });
 }
 
+export function useUserPosts(userId: string) {
+  return useQuery({
+    queryKey: ['user-posts', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const res = await supabase
+        .from('posts')
+        .select('id, content, media_urls, created_at, like_count, comment_count')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (res.error) throw res.error;
+      return res.data ?? [];
+    },
+  });
+}
+
+export function useUserReels(userId: string) {
+  return useQuery({
+    queryKey: ['user-reels', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const res = await supabase
+        .from('reels')
+        .select('id, video_url, caption, created_at, like_count, comment_count')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (res.error) throw res.error;
+      return res.data ?? [];
+    },
+  });
+}
+

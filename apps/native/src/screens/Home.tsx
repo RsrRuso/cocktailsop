@@ -1,11 +1,19 @@
 
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
+import { useLikeIds, useTogglePostLike, useToggleReelLike } from '../features/engagement/likes';
 import { useHomeFeed } from '../features/social/queries';
 import { FeedItemCard } from '../components/FeedItemCard';
 
 export default function HomeScreen({ navigation }: { navigation: { navigate: (name: string, params?: any) => void } }){
+  const { user } = useAuth();
+  const likeIds = useLikeIds(user?.id);
+  const togglePostLike = useTogglePostLike(user?.id);
+  const toggleReelLike = useToggleReelLike(user?.id);
   const { data, isLoading, error, refetch } = useHomeFeed({ limit: 30 });
+  const postLiked = new Set(likeIds.data?.postIds ?? []);
+  const reelLiked = new Set(likeIds.data?.reelIds ?? []);
   return (
     <View style={{ flex: 1, backgroundColor: '#020617' }}>
       <Header />
@@ -31,6 +39,18 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (na
               onPress={() => {
                 if (item.type === 'post') navigation.navigate('PostDetail', { postId: item.id });
                 else navigation.navigate('WebRoute', { title: 'Reel', pathTemplate: `/reels` });
+              }}
+              liked={item.type === 'post' ? postLiked.has(item.id) : reelLiked.has(item.id)}
+              onLikePress={() => {
+                if (item.type === 'post') {
+                  togglePostLike.mutate({ postId: item.id, isLiked: postLiked.has(item.id) });
+                } else {
+                  toggleReelLike.mutate({ reelId: item.id, isLiked: reelLiked.has(item.id) });
+                }
+              }}
+              onCommentPress={() => {
+                if (item.type === 'post') navigation.navigate('PostDetail', { postId: item.id });
+                else navigation.navigate('WebRoute', { title: 'Reels', pathTemplate: `/reels` });
               }}
             />
           )}
