@@ -64,6 +64,7 @@ import DailyOpsReportScreen from './src/screens/DailyOpsReport';
 import InventoryValuationReportScreen from './src/screens/InventoryValuationReport';
 import VarianceReportScreen from './src/screens/VarianceReport';
 import PourCostAnalysisScreen from './src/screens/PourCostAnalysis';
+import MenuEngineeringScreen from './src/screens/MenuEngineering';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -298,6 +299,11 @@ function AppShell() {
         <Stack.Screen
           name="PourCostAnalysis"
           component={PourCostAnalysisScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MenuEngineering"
+          component={MenuEngineeringScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
