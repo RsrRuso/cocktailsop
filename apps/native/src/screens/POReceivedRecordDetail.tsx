@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { useAddReceivedItem, useDeleteReceivedItem } from '../features/ops/procurement/mutations';
+import { useAddReceivedItem, useDeleteReceivedItem, useMatchReceivedRecordToPO } from '../features/ops/procurement/mutations';
 import { usePOReceivedItemsForRecord } from '../features/ops/procurement/queries';
+import { usePurchaseOrders } from '../features/ops/procurement/queries';
 
 type Nav = { goBack: () => void };
 
@@ -25,6 +26,10 @@ export default function POReceivedRecordDetailScreen({
   const itemsQ = usePOReceivedItemsForRecord(userId, workspaceId, recordId);
   const add = useAddReceivedItem(userId, workspaceId);
   const del = useDeleteReceivedItem(userId, workspaceId);
+  const match = useMatchReceivedRecordToPO(userId, workspaceId);
+  const orders = usePurchaseOrders(userId, workspaceId);
+  const [matchOpen, setMatchOpen] = useState(false);
+  const [matchQ, setMatchQ] = useState('');
 
   const items = itemsQ.data ?? [];
   const totals = useMemo(() => {
@@ -86,9 +91,18 @@ export default function POReceivedRecordDetailScreen({
           <Text style={styles.muted}>
             {totals.count} items • Qty {totals.qty.toFixed(2)} • Value {totals.value.toFixed(2)}
           </Text>
-          <Pressable style={[styles.btn, styles.secondaryBtn, { marginTop: 10 }]} onPress={() => itemsQ.refetch()} disabled={itemsQ.isFetching}>
-            <Text style={styles.btnText}>{itemsQ.isFetching ? '…' : 'Refresh'}</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <Pressable
+              style={[styles.btn, styles.secondaryBtn]}
+              onPress={() => setMatchOpen(true)}
+              disabled={!recordId || match.isPending}
+            >
+              <Text style={styles.btnText}>Match to PO</Text>
+            </Pressable>
+            <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => itemsQ.refetch()} disabled={itemsQ.isFetching}>
+              <Text style={styles.btnText}>{itemsQ.isFetching ? '…' : 'Refresh'}</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -138,6 +152,79 @@ export default function POReceivedRecordDetailScreen({
               </Pressable>
               <Pressable style={[styles.btn, styles.primaryBtn]} onPress={() => submit()} disabled={add.isPending}>
                 <Text style={styles.btnText}>{add.isPending ? 'Saving…' : 'Save'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={matchOpen} transparent animationType="fade" onRequestClose={() => setMatchOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Match to Purchase Order</Text>
+            <Text style={styles.muted} numberOfLines={2}>
+              Select the PO this delivery belongs to. This will mark the PO as received and generate variance.
+            </Text>
+            <TextInput
+              value={matchQ}
+              onChangeText={setMatchQ}
+              placeholder="Search by supplier or order #…"
+              placeholderTextColor="#6b7280"
+              style={styles.input}
+            />
+            <ScrollView style={{ maxHeight: 320 }}>
+              {(orders.data ?? [])
+                .filter((o) => {
+                  const q = matchQ.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    (o.supplier_name ?? '').toLowerCase().includes(q) ||
+                    (o.order_number ?? '').toLowerCase().includes(q) ||
+                    (o.status ?? '').toLowerCase().includes(q)
+                  );
+                })
+                .slice(0, 50)
+                .map((o) => (
+                  <Pressable
+                    key={o.id}
+                    style={styles.pickRow}
+                    onPress={() => {
+                      if (!recordId) return;
+                      Alert.alert('Match record to PO?', `${o.supplier_name ?? 'Supplier'} ${o.order_number ?? ''}`.trim(), [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Match',
+                          style: 'default',
+                          onPress: () => {
+                            match
+                              .mutateAsync({ recordId, purchaseOrderId: o.id })
+                              .then((summary) => {
+                                setMatchOpen(false);
+                                Alert.alert(
+                                  'Matched',
+                                  `Variance generated.\nMatched: ${summary.matched}\nShort: ${summary.short}\nOver: ${summary.over}\nMissing: ${summary.missing}\nExtra: ${summary.extra}`,
+                                );
+                              })
+                              .catch((e: any) => Alert.alert('Failed', e?.message ?? 'Could not match.'));
+                          },
+                        },
+                      ]);
+                    }}
+                    disabled={match.isPending}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '900' }} numberOfLines={1}>
+                      {o.supplier_name ?? 'Supplier'} {o.order_number ? `• ${o.order_number}` : ''}
+                    </Text>
+                    <Text style={{ color: '#9aa4b2', fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+                      {o.order_date ?? '—'} • {o.status ?? 'draft'} • Total {Number(o.total_amount ?? 0).toFixed(2)}
+                    </Text>
+                  </Pressable>
+                ))}
+              {(orders.data ?? []).length === 0 && !orders.isLoading ? <Text style={styles.muted}>No purchase orders found.</Text> : null}
+            </ScrollView>
+            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
+              <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => setMatchOpen(false)}>
+                <Text style={styles.btnText}>Close</Text>
               </Pressable>
             </View>
           </View>
@@ -227,6 +314,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: '#fff',
     backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  pickRow: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    marginBottom: 8,
   },
 });
 
