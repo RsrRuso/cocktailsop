@@ -56,6 +56,7 @@ import DailySalesReportScreen from './src/screens/DailySalesReport';
 import CashFlowReportScreen from './src/screens/CashFlowReport';
 import LaborCostReportScreen from './src/screens/LaborCostReport';
 import COGSReportScreen from './src/screens/COGSReport';
+import BudgetActualReportScreen from './src/screens/BudgetActualReport';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -250,6 +251,11 @@ function AppShell() {
         <Stack.Screen
           name="COGSReport"
           component={COGSReportScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BudgetActualReport"
+          component={BudgetActualReportScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
