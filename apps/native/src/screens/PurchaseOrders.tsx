@@ -6,6 +6,7 @@ import { useProcurementWorkspaces, usePurchaseOrders } from '../features/ops/pro
 import type { PurchaseOrderItemInput } from '../features/ops/procurement/types';
 import { createSignedProcurementDocUrl, pickAndUploadProcurementDocument } from '../features/ops/procurement/storage';
 import { Linking } from 'react-native';
+import { parsePurchaseOrderItems } from '../features/ops/procurement/parse';
 
 type Nav = { navigate: (name: string, params?: any) => void; goBack: () => void };
 
@@ -55,6 +56,8 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
   const [items, setItems] = useState<PurchaseOrderItemInput[]>([
     { item_name: '', item_code: '', quantity: 1, price_per_unit: 0 },
   ]);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
 
   const total = useMemo(() => {
     return (items ?? []).reduce((sum, it) => sum + Number(it.quantity ?? 0) * Number(it.price_per_unit ?? 0), 0);
@@ -261,6 +264,12 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
             </View>
 
             <Text style={styles.sectionTitle}>Items</Text>
+            <Pressable
+              style={[styles.btn, styles.secondaryBtn]}
+              onPress={() => setPasteOpen(true)}
+            >
+              <Text style={styles.btnText}>Paste items</Text>
+            </Pressable>
             <ScrollView style={{ maxHeight: 220 }}>
               {(items ?? []).map((it, idx) => (
                 <View key={idx} style={styles.itemRow}>
@@ -320,6 +329,46 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
               </Pressable>
               <Pressable style={[styles.btn, styles.primaryBtn]} onPress={() => submit()} disabled={createPo.isPending || docUploading}>
                 <Text style={styles.btnText}>{createPo.isPending ? 'Saving…' : 'Save'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={pasteOpen} transparent animationType="fade" onRequestClose={() => setPasteOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Paste items</Text>
+            <Text style={styles.muted}>
+              Paste lines like: <Text style={{ fontWeight: '900' }}>Name[TAB]Qty[TAB]UnitPrice</Text> (or CSV).
+            </Text>
+            <TextInput
+              value={pasteText}
+              onChangeText={setPasteText}
+              placeholder="Vodka\t2\t19.50"
+              placeholderTextColor="#6b7280"
+              style={[styles.input, { height: 180 }]}
+              multiline
+            />
+            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
+              <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => setPasteOpen(false)}>
+                <Text style={styles.btnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.btn, styles.primaryBtn]}
+                onPress={() => {
+                  const parsed = parsePurchaseOrderItems(pasteText);
+                  if (parsed.length === 0) {
+                    Alert.alert('Nothing parsed', 'Paste at least one valid line.');
+                    return;
+                  }
+                  setItems(parsed);
+                  setPasteText('');
+                  setPasteOpen(false);
+                  Alert.alert('Parsed', `Added ${parsed.length} item(s).`);
+                }}
+              >
+                <Text style={styles.btnText}>Parse</Text>
               </Pressable>
             </View>
           </View>
