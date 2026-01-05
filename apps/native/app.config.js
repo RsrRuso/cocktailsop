@@ -6,6 +6,8 @@ export default ({ config }) => ({
   name: "SpecVerse",
   slug: "specverse",
   scheme: "specverse",
+  // Ensures Expo Updates runtime matches SDK (SDK 54)
+  runtimeVersion: { policy: "sdkVersion" },
   extra: {
     ...config.extra,
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
