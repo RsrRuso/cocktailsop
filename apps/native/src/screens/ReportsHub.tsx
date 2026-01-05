@@ -71,6 +71,8 @@ export default function ReportsHubScreen({ navigation }: { navigation: Nav }) {
                               ? navigation.navigate('DailyOpsReport')
                             : r.pathTemplate === '/inventory-valuation-report'
                               ? navigation.navigate('InventoryValuationReport')
+                            : r.pathTemplate === '/variance-report'
+                              ? navigation.navigate('VarianceReport')
                       : navigation.navigate('WebRoute', {
                           title: r.label,
                           pathTemplate: r.pathTemplate,
