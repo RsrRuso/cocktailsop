@@ -7,7 +7,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLikeIds, useToggleReelLike } from '../features/engagement/likes';
 import { useAddReelComment, useReelComments } from '../features/engagement/comments';
 
-export default function ReelDetailScreen({ route }: { route: { params: { reelId: string } } }) {
+export default function ReelDetailScreen({
+  route,
+  navigation,
+}: {
+  route: { params: { reelId: string } };
+  navigation: { navigate: (name: string, params?: any) => void };
+}) {
   const { user } = useAuth();
   const reelId = route.params.reelId;
 
@@ -49,9 +55,14 @@ export default function ReelDetailScreen({ route }: { route: { params: { reelId:
 
           <ScrollView style={{ flex: 1, backgroundColor: '#020617' }} contentContainerStyle={{ padding: 12, paddingBottom: 110, gap: 10 }}>
             <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Reel</Text>
-            <Text style={{ color: '#9aa4b2' }}>
-              {data.profiles?.username ? `@${data.profiles.username}` : data.user_id} • {new Date(data.created_at).toLocaleString()}
-            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('UserProfile', { userId: data.user_id })}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              <Text style={{ color: '#9aa4b2' }}>
+                {data.profiles?.username ? `@${data.profiles.username}` : data.user_id} • {new Date(data.created_at).toLocaleString()}
+              </Text>
+            </Pressable>
             {data.caption ? <Text style={{ color: '#e6e6e6' }}>{data.caption}</Text> : null}
 
             <View style={{ flexDirection: 'row', gap: 8 }}>

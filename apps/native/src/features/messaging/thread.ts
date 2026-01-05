@@ -7,6 +7,8 @@ export type MessageRow = {
   conversation_id: string;
   sender_id: string;
   content: string;
+  media_url?: string | null;
+  media_type?: string | null;
   created_at: string;
 };
 
@@ -16,7 +18,7 @@ export function useThread(conversationId: string) {
     queryFn: async (): Promise<MessageRow[]> => {
       const res = await supabase
         .from('messages')
-        .select('id, conversation_id, sender_id, content, created_at')
+        .select('id, conversation_id, sender_id, content, media_url, media_type, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
         .limit(200);
@@ -32,15 +34,25 @@ export function useSendMessage() {
       conversationId,
       senderId,
       content,
+      mediaUrl,
+      mediaType,
     }: {
       conversationId: string;
       senderId: string;
       content: string;
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'voice' | 'document';
     }) => {
       const res = await supabase
         .from('messages')
-        .insert({ conversation_id: conversationId, sender_id: senderId, content })
-        .select('id, conversation_id, sender_id, content, created_at')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: senderId,
+          content,
+          media_url: mediaUrl ?? null,
+          media_type: mediaType ?? null,
+        })
+        .select('id, conversation_id, sender_id, content, media_url, media_type, created_at')
         .single();
       if (res.error) throw res.error;
       return res.data as unknown as MessageRow;
