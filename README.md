@@ -60,6 +60,15 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Native app (React Native / Expo)
+
+A native rewrite lives at `apps/native/`.
+
+```sh
+npm run native:install
+npm run native:start
+```
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/f6820a39-52e7-42af-bcec-46bcaaa4573d) and click on Share -> Publish.

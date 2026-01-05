@@ -8,11 +8,15 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "native:install": "npm --prefix apps/native install",
+    "native:start": "npm --prefix apps/native run start",
+    "native:android": "npm --prefix apps/native run android",
+    "native:ios": "npm --prefix apps/native run ios"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/app": "^8.0.0",
+    "@capacitor/app": "^7.0.0",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/haptics": "^7.0.2",
@@ -80,7 +84,7 @@
     "react-dropzone": "^14.3.8",
     "react-easy-crop": "^5.5.3",
     "react-hook-form": "^7.61.1",
-    "react-leaflet": "^5.0.0",
+    "react-leaflet": "^4.2.1",
     "react-map-gl": "^8.1.0",
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.1",

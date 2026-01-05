@@ -53,7 +53,8 @@ You now have **TWO MOBILE APP OPTIONS** for your LAB Cocktail SOP tool:
 - Updates require app store approval
 
 ### Files
-- 📦 `LAB_SOP_Expo_App_2.zip` - Full Expo project
+- 📦 `apps/native/` - Full Expo project (React Native)
+- (legacy) `LAB_SOP_Expo_App_2.zip` - Original exported Expo project snapshot
 
 ### Documentation
 📖 **[EXPO_NATIVE_APP_GUIDE.md](./EXPO_NATIVE_APP_GUIDE.md)**
