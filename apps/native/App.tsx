@@ -46,6 +46,9 @@ import ProcurementStaffManagerScreen from './src/screens/ProcurementStaffManager
 import POReceivedRecordDetailScreen from './src/screens/POReceivedRecordDetail';
 import POVarianceReportScreen from './src/screens/POVarianceReport';
 import ProcurementAnalyticsScreen from './src/screens/ProcurementAnalytics';
+import BatchCalculatorScreen from './src/screens/BatchCalculator';
+import BatchRecipesScreen from './src/screens/BatchRecipes';
+import BatchViewScreen from './src/screens/BatchView';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -190,6 +193,21 @@ function AppShell() {
         <Stack.Screen
           name="ProcurementAnalytics"
           component={ProcurementAnalyticsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchCalculator"
+          component={BatchCalculatorScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchRecipes"
+          component={BatchRecipesScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchView"
+          component={BatchViewScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

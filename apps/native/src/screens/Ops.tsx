@@ -156,6 +156,14 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                       navigation.navigate('FifoWorkspaceManagement');
                       return;
                     }
+                    if (it.id === 'batch-calculator') {
+                      navigation.navigate('BatchCalculator');
+                      return;
+                    }
+                    if (it.id === 'batch-recipes') {
+                      navigation.navigate('BatchRecipes');
+                      return;
+                    }
                     if (it.id === 'purchase-orders') {
                       navigation.navigate('PurchaseOrders');
                       return;
