@@ -2,15 +2,23 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { FeedItem } from '../features/social/types';
 
-export function FeedItemCard({ item, onPress }: { item: FeedItem; onPress?: () => void }) {
+export function FeedItemCard({
+  item,
+  onPress,
+  onAuthorPress,
+}: {
+  item: FeedItem;
+  onPress?: () => void;
+  onAuthorPress?: () => void;
+}) {
   const profile = item.profiles;
   const mediaUrl = item.type === 'post' ? item.media_urls?.[0] : item.video_url;
   const title = profile?.username ? `@${profile.username}` : 'User';
   const subtitle = profile?.professional_title ?? '';
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.header}>
+    <View style={styles.card}>
+      <Pressable style={styles.header} onPress={onAuthorPress}>
         <View style={styles.avatar}>
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
@@ -31,21 +39,23 @@ export function FeedItemCard({ item, onPress }: { item: FeedItem; onPress?: () =
         <View style={styles.pill}>
           <Text style={styles.pillText}>{item.type === 'reel' ? 'Reel' : 'Post'}</Text>
         </View>
-      </View>
+      </Pressable>
 
-      {mediaUrl ? (
-        item.type === 'post' ? (
-          <Image source={{ uri: mediaUrl }} style={styles.media} />
+      <Pressable onPress={onPress}>
+        {mediaUrl ? (
+          item.type === 'post' ? (
+            <Image source={{ uri: mediaUrl }} style={styles.media} />
+          ) : (
+            <View style={[styles.media, styles.videoPlaceholder]}>
+              <Text style={{ color: '#9aa4b2' }}>Video</Text>
+            </View>
+          )
         ) : (
           <View style={[styles.media, styles.videoPlaceholder]}>
-            <Text style={{ color: '#9aa4b2' }}>Video</Text>
+            <Text style={{ color: '#9aa4b2' }}>No media</Text>
           </View>
-        )
-      ) : (
-        <View style={[styles.media, styles.videoPlaceholder]}>
-          <Text style={{ color: '#9aa4b2' }}>No media</Text>
-        </View>
-      )}
+        )}
+      </Pressable>
 
       <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
         <Text style={{ color: '#e6e6e6' }}>
@@ -61,7 +71,7 @@ export function FeedItemCard({ item, onPress }: { item: FeedItem; onPress?: () =
           </Pressable>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 

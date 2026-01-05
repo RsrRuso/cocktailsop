@@ -1,9 +1,9 @@
 
 import React, { useMemo, useState } from 'react';
-import { View, TextInput, ScrollView, Image, Text } from 'react-native';
+import { View, TextInput, ScrollView, Image, Text, Pressable } from 'react-native';
 import { useExploreTop } from '../features/social/queries';
 
-export default function ExploreScreen(){
+export default function ExploreScreen({ navigation }: { navigation: { navigate: (name: string, params?: any) => void } }){
   const [q, setQ] = useState('');
   const { data, isLoading } = useExploreTop();
   const results = useMemo(() => {
@@ -21,7 +21,7 @@ export default function ExploreScreen(){
       {isLoading ? <Text style={{ color:'#9aa4b2' }}>Loading…</Text> : null}
       <View style={{ flexDirection:'row', flexWrap:'wrap' }}>
         {results.map((p: any) => (
-          <View key={p.id} style={{ width:'33.33%', padding:2 }}>
+          <Pressable key={p.id} style={{ width:'33.33%', padding:2 }} onPress={() => navigation.navigate('PostDetail', { postId: p.id })}>
             {p.media_urls?.[0] ? (
               <Image source={{ uri: p.media_urls[0] }} style={{ width:'100%', aspectRatio:1 }} />
             ) : (
@@ -29,7 +29,7 @@ export default function ExploreScreen(){
                 <Text style={{ color:'#94a3b8' }}>No media</Text>
               </View>
             )}
-          </View>
+          </Pressable>
         ))}
       </View>
     </ScrollView>

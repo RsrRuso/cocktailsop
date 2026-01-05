@@ -20,6 +20,8 @@ import WebRouteScreen from './src/screens/WebRoute';
 import { queryClient } from './src/lib/queryClient';
 import PostDetailScreen from './src/screens/PostDetail';
 import NotificationsScreen from './src/screens/Notifications';
+import UserProfileScreen from './src/screens/UserProfile';
+import MessageThreadScreen from './src/screens/MessageThread';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -39,6 +41,16 @@ function AppShell() {
         <Stack.Screen
           name="PostDetail"
           component={PostDetailScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="UserProfile"
+          component={UserProfileScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MessageThread"
+          component={MessageThreadScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -64,7 +76,9 @@ function Tabs({ navigation }: { navigation: any }) {
       <Tab.Screen name="Home">
         {() => <Home navigation={navigation} />}
       </Tab.Screen>
-      <Tab.Screen name="Explore" component={Explore} />
+      <Tab.Screen name="Explore">
+        {() => <Explore navigation={navigation} />}
+      </Tab.Screen>
       <Tab.Screen name="Create" component={Create} />
       <Tab.Screen name="Reels" component={Reels} />
       <Tab.Screen name="Messages" component={Messages} />

@@ -27,6 +27,7 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (na
           renderItem={({ item }) => (
             <FeedItemCard
               item={item}
+              onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.user_id })}
               onPress={() => {
                 if (item.type === 'post') navigation.navigate('PostDetail', { postId: item.id });
                 else navigation.navigate('WebRoute', { title: 'Reel', pathTemplate: `/reels` });

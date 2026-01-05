@@ -16,7 +16,7 @@ export default function MessagesScreen({ navigation }: { navigation: { navigate:
         return (
           <Pressable
             key={c.id}
-            onPress={() => navigation.navigate('WebRoute', { title: 'Messages', pathTemplate: `/messages/${c.id}` })}
+            onPress={() => navigation.navigate('MessageThread', { conversationId: c.id })}
             style={{ padding:12, borderRadius:12, backgroundColor:'rgba(255,255,255,0.06)', borderWidth:1, borderColor:'rgba(255,255,255,0.12)', flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}
           >
             <View style={{ flexDirection:'row', gap:8, alignItems:'center', flex: 1 }}>
