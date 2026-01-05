@@ -24,6 +24,7 @@ import UserProfileScreen from './src/screens/UserProfile';
 import MessageThreadScreen from './src/screens/MessageThread';
 import ReelDetailScreen from './src/screens/ReelDetail';
 import OpsScreen from './src/screens/Ops';
+import InventoryManagerScreen from './src/screens/InventoryManager';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -58,6 +59,11 @@ function AppShell() {
         <Stack.Screen
           name="ReelDetail"
           component={ReelDetailScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="InventoryManager"
+          component={InventoryManagerScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

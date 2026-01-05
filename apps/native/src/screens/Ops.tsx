@@ -94,12 +94,16 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                 <Pressable
                   key={it.id}
                   style={styles.item}
-                  onPress={() =>
+                  onPress={() => {
+                    if (it.id === 'inventory-manager') {
+                      navigation.navigate('InventoryManager');
+                      return;
+                    }
                     navigation.navigate('WebRoute', {
                       title: it.title,
                       pathTemplate: it.pathTemplate,
-                    })
-                  }
+                    });
+                  }}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.itemTitle} numberOfLines={1}>
