@@ -46,6 +46,9 @@ const LINKS: LinkItem[] = [
   { id: 'po-master', title: 'PO Master Items', pathTemplate: '/po-master-items', group: 'Procurement' },
   { id: 'po-received', title: 'PO Received Items', pathTemplate: '/po-received-items', group: 'Procurement' },
 
+  // Reports
+  { id: 'reports-hub', title: 'Reports Hub', pathTemplate: '/financial-reports', group: 'Reports' },
+
   // Staff/POS
   { id: 'staff-scheduling', title: 'Staff Scheduling', pathTemplate: '/staff-scheduling', group: 'Staff & POS' },
   { id: 'staff-pos', title: 'Staff POS', pathTemplate: '/staff-pos', group: 'Staff & POS' },
@@ -191,6 +194,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'proc-analytics') {
                       navigation.navigate('ProcurementAnalytics');
+                      return;
+                    }
+                    if (it.id === 'reports-hub') {
+                      navigation.navigate('ReportsHub');
                       return;
                     }
                     navigation.navigate('WebRoute', {

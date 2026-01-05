@@ -50,6 +50,7 @@ import BatchCalculatorScreen from './src/screens/BatchCalculator';
 import BatchRecipesScreen from './src/screens/BatchRecipes';
 import BatchViewScreen from './src/screens/BatchView';
 import BatchPinAccessScreen from './src/screens/BatchPinAccess';
+import ReportsHubScreen from './src/screens/ReportsHub';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -214,6 +215,11 @@ function AppShell() {
         <Stack.Screen
           name="BatchView"
           component={BatchViewScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReportsHub"
+          component={ReportsHubScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
