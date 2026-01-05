@@ -153,6 +153,18 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                       navigation.navigate('FifoWorkspaceManagement');
                       return;
                     }
+                    if (it.id === 'purchase-orders') {
+                      navigation.navigate('PurchaseOrders');
+                      return;
+                    }
+                    if (it.id === 'po-master') {
+                      navigation.navigate('POMasterItems');
+                      return;
+                    }
+                    if (it.id === 'po-received') {
+                      navigation.navigate('POReceivedItems');
+                      return;
+                    }
                     navigation.navigate('WebRoute', {
                       title: it.title,
                       pathTemplate: it.pathTemplate,

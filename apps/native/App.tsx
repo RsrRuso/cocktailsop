@@ -38,6 +38,9 @@ import FifoAccessApprovalScreen from './src/screens/FifoAccessApproval';
 import FifoQRAccessCodeScreen from './src/screens/FifoQRAccessCode';
 import FifoQrScannerScreen from './src/screens/FifoQrScanner';
 import FifoMemberManagerScreen from './src/screens/FifoMemberManager';
+import PurchaseOrdersScreen from './src/screens/PurchaseOrders';
+import POMasterItemsScreen from './src/screens/POMasterItems';
+import POReceivedItemsScreen from './src/screens/POReceivedItems';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -142,6 +145,21 @@ function AppShell() {
         <Stack.Screen
           name="FifoMemberManager"
           component={FifoMemberManagerScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PurchaseOrders"
+          component={PurchaseOrdersScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="POMasterItems"
+          component={POMasterItemsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="POReceivedItems"
+          component={POReceivedItemsScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
