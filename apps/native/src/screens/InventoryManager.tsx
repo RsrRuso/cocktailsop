@@ -6,19 +6,28 @@ import { useCreateFifoEmployee, useCreateFifoInventory, useCreateFifoItem, useCr
 
 type Nav = { navigate: (name: string, params?: any) => void };
 
-export default function InventoryManagerScreen({ navigation }: { navigation: Nav }) {
+export default function InventoryManagerScreen({
+  navigation,
+  route,
+}: {
+  navigation: Nav;
+  route?: any;
+}) {
   const { user } = useAuth();
-  const stores = useFifoStores(user?.id);
-  const items = useFifoItems(user?.id);
-  const inventory = useFifoInventory(user?.id);
-  const employees = useFifoEmployees(user?.id);
-  const transfers = useFifoTransfers(user?.id);
-  const activity = useFifoActivity(user?.id);
-  const createRow = useCreateFifoInventory(user?.id);
-  const createStore = useCreateFifoStore(user?.id);
-  const createItem = useCreateFifoItem(user?.id);
-  const createEmployee = useCreateFifoEmployee(user?.id);
-  const createTransfer = useCreateFifoTransfer(user?.id);
+  const scopedWorkspaceId: string | undefined = route?.params?.workspaceId;
+  const staffSession: boolean = Boolean(route?.params?.staffSession);
+
+  const stores = useFifoStores(user?.id, scopedWorkspaceId);
+  const items = useFifoItems(user?.id, scopedWorkspaceId);
+  const inventory = useFifoInventory(user?.id, scopedWorkspaceId);
+  const employees = useFifoEmployees(user?.id, scopedWorkspaceId);
+  const transfers = useFifoTransfers(user?.id, scopedWorkspaceId);
+  const activity = useFifoActivity(user?.id, scopedWorkspaceId);
+  const createRow = useCreateFifoInventory(user?.id, scopedWorkspaceId);
+  const createStore = useCreateFifoStore(user?.id, scopedWorkspaceId);
+  const createItem = useCreateFifoItem(user?.id, scopedWorkspaceId);
+  const createEmployee = useCreateFifoEmployee(user?.id, scopedWorkspaceId);
+  const createTransfer = useCreateFifoTransfer(user?.id, scopedWorkspaceId);
 
   const [tab, setTab] = useState<'inventory' | 'transfers' | 'activity' | 'setup'>('inventory');
   const [q, setQ] = useState('');
@@ -181,7 +190,11 @@ export default function InventoryManagerScreen({ navigation }: { navigation: Nav
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Inventory Manager</Text>
-            <Text style={styles.sub}>Native (FIFO inventory). Advanced tools still available via WebView.</Text>
+            <Text style={styles.sub}>
+              Native (FIFO inventory)
+              {scopedWorkspaceId ? ` • workspace scoped` : ''}
+              {staffSession ? ' • staff session' : ''}.
+            </Text>
           </View>
           <Pressable
             onPress={() => navigation.navigate('WebRoute', { title: 'Inventory Manager (Web)', pathTemplate: '/inventory-manager' })}

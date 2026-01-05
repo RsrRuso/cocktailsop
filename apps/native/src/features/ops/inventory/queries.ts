@@ -2,39 +2,40 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
 import type { FifoActivityRow, FifoEmployee, FifoInventoryRow, FifoItem, FifoStore, FifoTransferRow } from './types';
 
-export function useFifoStores(userId?: string) {
+export function useFifoStores(userId?: string, workspaceId?: string) {
   return useQuery({
-    queryKey: ['fifo', 'stores', userId],
+    queryKey: ['fifo', 'stores', userId, workspaceId ?? null],
     enabled: !!userId,
     queryFn: async (): Promise<FifoStore[]> => {
-      const res = await supabase.from('fifo_stores').select('id, name, location, store_type').order('name');
+      let q = supabase.from('fifo_stores').select('id, name, location, store_type').order('name');
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as FifoStore[];
     },
   });
 }
 
-export function useFifoItems(userId?: string) {
+export function useFifoItems(userId?: string, workspaceId?: string) {
   return useQuery({
-    queryKey: ['fifo', 'items', userId],
+    queryKey: ['fifo', 'items', userId, workspaceId ?? null],
     enabled: !!userId,
     queryFn: async (): Promise<FifoItem[]> => {
-      const res = await supabase
-        .from('fifo_items')
-        .select('id, name, brand, category, color_code, barcode, photo_url')
-        .order('name');
+      let q = supabase.from('fifo_items').select('id, name, brand, category, color_code, barcode, photo_url').order('name');
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as FifoItem[];
     },
   });
 }
 
-export function useFifoInventory(userId?: string) {
+export function useFifoInventory(userId?: string, workspaceId?: string) {
   return useQuery({
-    queryKey: ['fifo', 'inventory', userId],
+    queryKey: ['fifo', 'inventory', userId, workspaceId ?? null],
     enabled: !!userId,
     queryFn: async (): Promise<FifoInventoryRow[]> => {
-      const res = await supabase
+      let q = supabase
         .from('fifo_inventory')
         .select(
           `
@@ -45,30 +46,34 @@ export function useFifoInventory(userId?: string) {
         )
         .order('expiration_date', { ascending: true })
         .limit(500);
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as FifoInventoryRow[];
     },
   });
 }
 
-export function useFifoEmployees(userId?: string) {
+export function useFifoEmployees(userId?: string, workspaceId?: string) {
   return useQuery({
-    queryKey: ['fifo', 'employees', userId],
+    queryKey: ['fifo', 'employees', userId, workspaceId ?? null],
     enabled: !!userId,
     queryFn: async (): Promise<FifoEmployee[]> => {
-      const res = await supabase.from('fifo_employees').select('id, name, title').order('name');
+      let q = supabase.from('fifo_employees').select('id, name, title').order('name');
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as FifoEmployee[];
     },
   });
 }
 
-export function useFifoTransfers(userId?: string) {
+export function useFifoTransfers(userId?: string, workspaceId?: string) {
   return useQuery({
-    queryKey: ['fifo', 'transfers', userId],
+    queryKey: ['fifo', 'transfers', userId, workspaceId ?? null],
     enabled: !!userId,
     queryFn: async (): Promise<FifoTransferRow[]> => {
-      const res = await supabase
+      let q = supabase
         .from('fifo_transfers')
         .select(
           `
@@ -83,18 +88,20 @@ export function useFifoTransfers(userId?: string) {
         )
         .order('transfer_date', { ascending: false, nullsFirst: false })
         .limit(50);
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as FifoTransferRow[];
     },
   });
 }
 
-export function useFifoActivity(userId?: string) {
+export function useFifoActivity(userId?: string, workspaceId?: string) {
   return useQuery({
-    queryKey: ['fifo', 'activity', userId],
+    queryKey: ['fifo', 'activity', userId, workspaceId ?? null],
     enabled: !!userId,
     queryFn: async (): Promise<FifoActivityRow[]> => {
-      const res = await supabase
+      let q = supabase
         .from('fifo_activity_log')
         .select(
           `
@@ -105,6 +112,8 @@ export function useFifoActivity(userId?: string) {
         )
         .order('created_at', { ascending: false })
         .limit(100);
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as FifoActivityRow[];
     },

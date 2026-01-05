@@ -84,14 +84,12 @@ export default function FifoWorkspaceManagementScreen({ navigation }: { navigati
                   <Pressable
                     style={[styles.smallBtn, styles.secondaryBtn]}
                     onPress={() =>
-                      navigation.navigate('WebRoute', {
-                        title: 'FIFO PIN Access',
-                        pathTemplate: '/fifo-pin-access',
-                        params: { workspace: w.id },
+                      navigation.navigate('FifoPinAccess', {
+                        workspaceId: w.id,
                       })
                     }
                   >
-                    <Text style={styles.smallBtnText}>Open web</Text>
+                    <Text style={styles.smallBtnText}>PIN access</Text>
                   </Pressable>
                 </View>
               </View>

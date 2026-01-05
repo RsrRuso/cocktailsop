@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
 import { queryClient } from '../../../lib/queryClient';
 
-export function useCreateFifoInventory(userId?: string) {
+export function useCreateFifoInventory(userId?: string, workspaceId?: string) {
   return useMutation({
     mutationFn: async ({
       storeId,
@@ -20,6 +20,7 @@ export function useCreateFifoInventory(userId?: string) {
       if (!userId) throw new Error('Not signed in');
       const res = await supabase.from('fifo_inventory').insert({
         user_id: userId,
+        workspace_id: workspaceId ?? null,
         store_id: storeId,
         item_id: itemId,
         quantity,
@@ -35,12 +36,13 @@ export function useCreateFifoInventory(userId?: string) {
   });
 }
 
-export function useCreateFifoStore(userId?: string) {
+export function useCreateFifoStore(userId?: string, workspaceId?: string) {
   return useMutation({
     mutationFn: async ({ name, location, storeType }: { name: string; location?: string; storeType?: string }) => {
       if (!userId) throw new Error('Not signed in');
       const res = await supabase.from('fifo_stores').insert({
         user_id: userId,
+        workspace_id: workspaceId ?? null,
         name,
         location: location ?? null,
         store_type: storeType ?? null,
@@ -54,7 +56,7 @@ export function useCreateFifoStore(userId?: string) {
   });
 }
 
-export function useCreateFifoItem(userId?: string) {
+export function useCreateFifoItem(userId?: string, workspaceId?: string) {
   return useMutation({
     mutationFn: async ({
       name,
@@ -70,6 +72,7 @@ export function useCreateFifoItem(userId?: string) {
       if (!userId) throw new Error('Not signed in');
       const res = await supabase.from('fifo_items').insert({
         user_id: userId,
+        workspace_id: workspaceId ?? null,
         name,
         brand: brand ?? null,
         category: category ?? null,
@@ -84,11 +87,11 @@ export function useCreateFifoItem(userId?: string) {
   });
 }
 
-export function useCreateFifoEmployee(userId?: string) {
+export function useCreateFifoEmployee(userId?: string, workspaceId?: string) {
   return useMutation({
     mutationFn: async ({ name, title }: { name: string; title: string }) => {
       if (!userId) throw new Error('Not signed in');
-      const res = await supabase.from('fifo_employees').insert({ user_id: userId, name, title });
+      const res = await supabase.from('fifo_employees').insert({ user_id: userId, workspace_id: workspaceId ?? null, name, title });
       if (res.error) throw res.error;
       return true;
     },
@@ -98,7 +101,7 @@ export function useCreateFifoEmployee(userId?: string) {
   });
 }
 
-export function useCreateFifoTransfer(userId?: string) {
+export function useCreateFifoTransfer(userId?: string, workspaceId?: string) {
   return useMutation({
     mutationFn: async ({
       fromInventoryId,
@@ -134,6 +137,7 @@ export function useCreateFifoTransfer(userId?: string) {
         .from('fifo_transfers')
         .insert({
           user_id: userId,
+          workspace_id: workspaceId ?? null,
           inventory_id: inv.id,
           from_store_id: fromStoreId,
           to_store_id: toStoreId,
@@ -171,6 +175,7 @@ export function useCreateFifoTransfer(userId?: string) {
       } else {
         const ins2 = await supabase.from('fifo_inventory').insert({
           user_id: userId,
+          workspace_id: workspaceId ?? null,
           store_id: toStoreId,
           item_id: inv.item_id,
           quantity,
@@ -184,6 +189,7 @@ export function useCreateFifoTransfer(userId?: string) {
       // Activity log
       const act = await supabase.from('fifo_activity_log').insert({
         user_id: userId,
+        workspace_id: workspaceId ?? null,
         inventory_id: inv.id,
         store_id: fromStoreId,
         employee_id: transferredBy,

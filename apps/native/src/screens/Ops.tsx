@@ -29,6 +29,7 @@ const LINKS: LinkItem[] = [
 
   // FIFO
   { id: 'fifo-workspaces', title: 'FIFO Workspace Management', pathTemplate: '/fifo-workspace-management', group: 'FIFO' },
+  { id: 'fifo-pin-access', title: 'FIFO PIN Access', pathTemplate: '/fifo-pin-access', group: 'FIFO' },
   { id: 'fifo-activity', title: 'FIFO Activity Log', pathTemplate: '/fifo-activity-log', group: 'FIFO' },
 
   // Procurement
@@ -117,6 +118,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'fifo-workspaces') {
                       navigation.navigate('FifoWorkspaceManagement');
+                      return;
+                    }
+                    if (it.id === 'fifo-pin-access') {
+                      navigation.navigate('FifoPinAccess');
                       return;
                     }
                     if (it.id === 'fifo-activity') {
