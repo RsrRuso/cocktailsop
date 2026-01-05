@@ -6,6 +6,7 @@ type AuthContextValue = {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  refreshSession: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -21,6 +22,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  async function refreshSession() {
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session ?? null);
+    setUser(data.session?.user ?? null);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -53,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       session,
       isLoading,
+      refreshSession,
       signOut: async () => {
         await supabase.auth.signOut();
       },

@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 type Extra = {
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  webBaseUrl?: string;
 };
 
 function getExtra(): Extra {
@@ -14,5 +15,6 @@ function getExtra(): Extra {
 export const env = {
   supabaseUrl: getExtra().supabaseUrl ?? '',
   supabaseAnonKey: getExtra().supabaseAnonKey ?? '',
+  webBaseUrl: getExtra().webBaseUrl ?? '',
 };
 
