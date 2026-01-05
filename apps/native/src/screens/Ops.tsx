@@ -38,6 +38,7 @@ const LINKS: LinkItem[] = [
   { id: 'fifo-activity', title: 'FIFO Activity Log', pathTemplate: '/fifo-activity-log', group: 'FIFO' },
 
   // Procurement
+  { id: 'proc-pin-access', title: 'Procurement PIN Access', pathTemplate: '/procurement-pin-access', group: 'Procurement' },
   { id: 'purchase-orders', title: 'Purchase Orders', pathTemplate: '/purchase-orders', group: 'Procurement' },
   { id: 'po-master', title: 'PO Master Items', pathTemplate: '/po-master-items', group: 'Procurement' },
   { id: 'po-received', title: 'PO Received Items', pathTemplate: '/po-received-items', group: 'Procurement' },
@@ -163,6 +164,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'po-received') {
                       navigation.navigate('POReceivedItems');
+                      return;
+                    }
+                    if (it.id === 'proc-pin-access') {
+                      navigation.navigate('ProcurementPinAccess');
                       return;
                     }
                     navigation.navigate('WebRoute', {

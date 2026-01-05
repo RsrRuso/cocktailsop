@@ -41,6 +41,7 @@ import FifoMemberManagerScreen from './src/screens/FifoMemberManager';
 import PurchaseOrdersScreen from './src/screens/PurchaseOrders';
 import POMasterItemsScreen from './src/screens/POMasterItems';
 import POReceivedItemsScreen from './src/screens/POReceivedItems';
+import ProcurementPinAccessScreen from './src/screens/ProcurementPinAccess';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -160,6 +161,11 @@ function AppShell() {
         <Stack.Screen
           name="POReceivedItems"
           component={POReceivedItemsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ProcurementPinAccess"
+          component={ProcurementPinAccessScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

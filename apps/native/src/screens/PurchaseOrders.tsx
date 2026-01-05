@@ -20,7 +20,9 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
   const userId = user?.id;
 
   const workspaces = useProcurementWorkspaces(userId);
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const initialWorkspaceId = (arguments as any)[0]?.route?.params?.workspaceId as string | undefined;
+  const staffMode = Boolean((arguments as any)[0]?.route?.params?.staffMode);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(initialWorkspaceId ?? null);
   const wsName = useMemo(() => (workspaces.data ?? []).find((w) => w.id === workspaceId)?.name ?? null, [workspaces.data, workspaceId]);
 
   const orders = usePurchaseOrders(userId, workspaceId);
@@ -96,9 +98,15 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
       <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 96, gap: 10 }}>
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Workspace</Text>
-          <Text style={styles.muted}>Pick a procurement workspace, or stay in personal mode.</Text>
+          <Text style={styles.muted}>
+            {staffMode ? 'Workspace locked by staff PIN session.' : 'Pick a procurement workspace, or stay in personal mode.'}
+          </Text>
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-            <Pressable style={[styles.btn, !workspaceId ? styles.primaryBtn : styles.secondaryBtn]} onPress={() => setWorkspaceId(null)}>
+            <Pressable
+              style={[styles.btn, !workspaceId ? styles.primaryBtn : styles.secondaryBtn]}
+              onPress={() => setWorkspaceId(null)}
+              disabled={staffMode}
+            >
               <Text style={styles.btnText}>Personal</Text>
             </Pressable>
             <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => workspaces.refetch()} disabled={workspaces.isFetching}>
@@ -111,6 +119,7 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
                 key={w.id}
                 style={[styles.wsRow, w.id === workspaceId && { borderColor: 'rgba(59,130,246,0.55)' }]}
                 onPress={() => setWorkspaceId(w.id)}
+                disabled={staffMode}
               >
                 <Text style={{ color: '#fff', fontWeight: '900' }} numberOfLines={1}>
                   {w.name}
