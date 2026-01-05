@@ -15,9 +15,69 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
   const send = useSendMessage();
   const [text, setText] = useState('');
   const listRef = useRef<FlatList>(null);
+  const presenceRef = useRef<any>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentAtRef = useRef(0);
+  const [otherOnline, setOtherOnline] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
 
   const messages = data ?? [];
   const canSend = useMemo(() => !!user?.id && text.trim().length > 0 && !send.isPending, [user?.id, text, send.isPending]);
+
+  // Presence + typing using Supabase Realtime presence
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const presenceChannel = supabase.channel(`presence-${conversationId}`, {
+      config: {
+        presence: { key: user.id },
+      },
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state: any = presenceChannel.presenceState();
+        const entries = Object.values(state) as any[];
+        const other = entries.find((p) => p?.[0]?.user_id && p[0].user_id !== user.id);
+        if (other && other[0]) {
+          setOtherOnline(true);
+          setOtherTyping(!!other[0].typing);
+        } else {
+          setOtherOnline(false);
+          setOtherTyping(false);
+        }
+      })
+      .on('presence', { event: 'join' }, ({ key }: any) => {
+        if (key !== user.id) setOtherOnline(true);
+      })
+      .on('presence', { event: 'leave' }, ({ key }: any) => {
+        if (key !== user.id) {
+          setOtherOnline(false);
+          setOtherTyping(false);
+        }
+      })
+      .subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: user.id,
+            online_at: new Date().toISOString(),
+            typing: false,
+          });
+        }
+      });
+
+    presenceRef.current = presenceChannel;
+
+    return () => {
+      try {
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      } catch {
+        // ignore
+      }
+      supabase.removeChannel(presenceChannel);
+      presenceRef.current = null;
+    };
+  }, [conversationId, user?.id]);
 
   // Realtime: append new incoming messages instantly
   useEffect(() => {
@@ -50,6 +110,33 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
       supabase.removeChannel(channel);
     };
   }, [conversationId, user?.id]);
+
+  // Track typing state (updates presence payload)
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = presenceRef.current;
+    if (!channel) return;
+
+    const now = Date.now();
+    const wantsTyping = text.trim().length > 0;
+
+    if (!wantsTyping) {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      channel.track({ user_id: user.id, online_at: new Date().toISOString(), typing: false }).catch(() => {});
+      return;
+    }
+
+    // Throttle "typing:true" updates a bit
+    if (now - lastTypingSentAtRef.current > 600) {
+      lastTypingSentAtRef.current = now;
+      channel.track({ user_id: user.id, online_at: new Date().toISOString(), typing: true }).catch(() => {});
+    }
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      channel.track({ user_id: user.id, online_at: new Date().toISOString(), typing: false }).catch(() => {});
+    }, 1500);
+  }, [text, user?.id]);
 
   async function onSend() {
     if (!user?.id) return;
@@ -97,6 +184,9 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
       <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)' }}>
         <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>Messages</Text>
         <Text style={{ color: '#64748b', marginTop: 2, fontSize: 12 }}>{conversationId}</Text>
+        <Text style={{ color: otherTyping ? '#a7f3d0' : otherOnline ? '#34d399' : '#64748b', marginTop: 4, fontSize: 12, fontWeight: '700' }}>
+          {otherTyping ? 'Typing…' : otherOnline ? 'Online' : 'Offline'}
+        </Text>
       </View>
 
       {isLoading ? (
