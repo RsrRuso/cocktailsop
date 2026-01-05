@@ -25,6 +25,11 @@ import MessageThreadScreen from './src/screens/MessageThread';
 import ReelDetailScreen from './src/screens/ReelDetail';
 import OpsScreen from './src/screens/Ops';
 import InventoryManagerScreen from './src/screens/InventoryManager';
+import AllInventoryScreen from './src/screens/AllInventory';
+import InventoryTransactionsScreen from './src/screens/InventoryTransactions';
+import MasterItemsScreen from './src/screens/MasterItems';
+import StoreManagementScreen from './src/screens/StoreManagement';
+import StoreDetailScreen from './src/screens/StoreDetail';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -64,6 +69,31 @@ function AppShell() {
         <Stack.Screen
           name="InventoryManager"
           component={InventoryManagerScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AllInventory"
+          component={AllInventoryScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="InventoryTransactions"
+          component={InventoryTransactionsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MasterItems"
+          component={MasterItemsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StoreManagement"
+          component={StoreManagementScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StoreDetail"
+          component={StoreDetailScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

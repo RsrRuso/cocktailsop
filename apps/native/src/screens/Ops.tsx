@@ -99,6 +99,22 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                       navigation.navigate('InventoryManager');
                       return;
                     }
+                    if (it.id === 'all-inventory') {
+                      navigation.navigate('AllInventory');
+                      return;
+                    }
+                    if (it.id === 'inventory-transactions') {
+                      navigation.navigate('InventoryTransactions');
+                      return;
+                    }
+                    if (it.id === 'master-items') {
+                      navigation.navigate('MasterItems');
+                      return;
+                    }
+                    if (it.id === 'stores-admin' || it.id === 'store-management' || it.id === 'store-detail') {
+                      navigation.navigate('StoreManagement');
+                      return;
+                    }
                     navigation.navigate('WebRoute', {
                       title: it.title,
                       pathTemplate: it.pathTemplate,

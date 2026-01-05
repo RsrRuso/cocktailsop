@@ -204,3 +204,49 @@ export function useCreateFifoTransfer(userId?: string) {
   });
 }
 
+export function useUpdateFifoStore(userId?: string) {
+  return useMutation({
+    mutationFn: async ({ id, name, location, storeType }: { id: string; name: string; location?: string; storeType?: string }) => {
+      if (!userId) throw new Error('Not signed in');
+      const res = await supabase
+        .from('fifo_stores')
+        .update({ name, location: location ?? null, store_type: storeType ?? null })
+        .eq('id', id);
+      if (res.error) throw res.error;
+      return true;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['fifo', 'stores'] });
+    },
+  });
+}
+
+export function useUpdateFifoItem(userId?: string) {
+  return useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      brand,
+      category,
+      barcode,
+    }: {
+      id: string;
+      name: string;
+      brand?: string;
+      category?: string;
+      barcode?: string;
+    }) => {
+      if (!userId) throw new Error('Not signed in');
+      const res = await supabase
+        .from('fifo_items')
+        .update({ name, brand: brand ?? null, category: category ?? null, barcode: barcode ?? null })
+        .eq('id', id);
+      if (res.error) throw res.error;
+      return true;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['fifo', 'items'] });
+    },
+  });
+}
+
