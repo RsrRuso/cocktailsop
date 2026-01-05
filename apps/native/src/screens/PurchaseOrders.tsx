@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCreatePurchaseOrder } from '../features/ops/procurement/mutations';
 import { useProcurementWorkspaces, usePurchaseOrders } from '../features/ops/procurement/queries';
 import type { PurchaseOrderItemInput } from '../features/ops/procurement/types';
+import { createSignedProcurementDocUrl, pickAndUploadProcurementDocument } from '../features/ops/procurement/storage';
+import { Linking } from 'react-native';
 
 type Nav = { navigate: (name: string, params?: any) => void; goBack: () => void };
 
@@ -47,6 +49,9 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
   const [orderNumber, setOrderNumber] = useState('');
   const [orderDate, setOrderDate] = useState(todayYmd());
   const [notes, setNotes] = useState('');
+  const [documentPath, setDocumentPath] = useState<string | null>(null);
+  const [documentName, setDocumentName] = useState<string | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
   const [items, setItems] = useState<PurchaseOrderItemInput[]>([
     { item_name: '', item_code: '', quantity: 1, price_per_unit: 0 },
   ]);
@@ -62,6 +67,7 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
         orderNumber,
         orderDate,
         notes,
+        documentPath,
         items,
       });
       setCreateOpen(false);
@@ -69,6 +75,8 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
       setOrderNumber('');
       setOrderDate(todayYmd());
       setNotes('');
+      setDocumentPath(null);
+      setDocumentName(null);
       setItems([{ item_name: '', item_code: '', quantity: 1, price_per_unit: 0 }]);
       Alert.alert('Created', 'Purchase order saved.');
     } catch (e: any) {
@@ -153,6 +161,21 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
                 <Text style={{ color: '#9aa4b2', fontSize: 12, marginTop: 2 }} numberOfLines={1}>
                   {o.order_date ?? '—'} • {o.status ?? 'draft'} • Total {Number(o.total_amount ?? 0).toFixed(2)}
                 </Text>
+                {o.document_url ? (
+                  <Pressable
+                    style={[styles.btn, styles.secondaryBtn, { marginTop: 10 }]}
+                    onPress={async () => {
+                      try {
+                        const url = await createSignedProcurementDocUrl(o.document_url ?? '');
+                        await Linking.openURL(url);
+                      } catch {
+                        Alert.alert('Cannot open', 'Document is not accessible for this account.');
+                      }
+                    }}
+                  >
+                    <Text style={styles.btnText}>Open document</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   style={[styles.btn, styles.secondaryBtn, { marginTop: 10 }]}
                   onPress={() =>
@@ -182,6 +205,60 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
             <TextInput value={orderNumber} onChangeText={setOrderNumber} placeholder="Order # (optional)" placeholderTextColor="#6b7280" style={styles.input} />
             <TextInput value={orderDate} onChangeText={setOrderDate} placeholder="Order date (YYYY-MM-DD)" placeholderTextColor="#6b7280" style={styles.input} />
             <TextInput value={notes} onChangeText={setNotes} placeholder="Notes (optional)" placeholderTextColor="#6b7280" style={[styles.input, { height: 70 }]} multiline />
+
+            <View style={{ gap: 8 }}>
+              <Text style={styles.sectionTitle}>Document</Text>
+              <Pressable
+                style={[styles.btn, styles.secondaryBtn]}
+                onPress={async () => {
+                  if (!userId) return;
+                  try {
+                    setDocUploading(true);
+                    const uploaded = await pickAndUploadProcurementDocument({ userId });
+                    if (!uploaded) return;
+                    setDocumentPath(uploaded.path);
+                    setDocumentName(uploaded.name);
+                    Alert.alert('Uploaded', uploaded.name);
+                  } catch (e: any) {
+                    Alert.alert('Upload failed', e?.message ?? 'Could not upload document.');
+                  } finally {
+                    setDocUploading(false);
+                  }
+                }}
+                disabled={!userId || docUploading}
+              >
+                <Text style={styles.btnText}>{docUploading ? 'Uploading…' : documentPath ? 'Replace document' : 'Attach document'}</Text>
+              </Pressable>
+              {documentPath ? (
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Pressable
+                    style={[styles.btn, styles.secondaryBtn]}
+                    onPress={async () => {
+                      try {
+                        const url = await createSignedProcurementDocUrl(documentPath);
+                        await Linking.openURL(url);
+                      } catch {
+                        Alert.alert('Cannot open', 'Document is not accessible for this account.');
+                      }
+                    }}
+                  >
+                    <Text style={styles.btnText}>Preview</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.btn, styles.secondaryBtn]}
+                    onPress={() => {
+                      setDocumentPath(null);
+                      setDocumentName(null);
+                    }}
+                  >
+                    <Text style={styles.btnText}>Remove</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              <Text style={styles.muted} numberOfLines={2}>
+                {documentName ?? (documentPath ? documentPath : 'No document attached.')}
+              </Text>
+            </View>
 
             <Text style={styles.sectionTitle}>Items</Text>
             <ScrollView style={{ maxHeight: 220 }}>
@@ -241,7 +318,7 @@ export default function PurchaseOrdersScreen({ navigation }: { navigation: Nav }
               <Pressable style={[styles.btn, styles.secondaryBtn]} onPress={() => setCreateOpen(false)} disabled={createPo.isPending}>
                 <Text style={styles.btnText}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.btn, styles.primaryBtn]} onPress={() => submit()} disabled={createPo.isPending}>
+              <Pressable style={[styles.btn, styles.primaryBtn]} onPress={() => submit()} disabled={createPo.isPending || docUploading}>
                 <Text style={styles.btnText}>{createPo.isPending ? 'Saving…' : 'Save'}</Text>
               </Pressable>
             </View>

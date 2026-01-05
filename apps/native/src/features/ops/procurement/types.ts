@@ -31,6 +31,7 @@ export type PurchaseOrderLite = {
   total_amount: number | null;
   status: string | null;
   notes: string | null;
+  document_url: string | null;
   created_at: string | null;
 };
 

@@ -21,7 +21,7 @@ export function usePurchaseOrders(userId?: string, workspaceId?: string | null) 
     queryFn: async (): Promise<PurchaseOrderLite[]> => {
       let q = supabase
         .from('purchase_orders')
-        .select('id, user_id, workspace_id, order_number, supplier_name, order_date, total_amount, status, notes, created_at')
+        .select('id, user_id, workspace_id, order_number, supplier_name, order_date, total_amount, status, notes, document_url, created_at')
         .order('created_at', { ascending: false });
 
       if (workspaceId) q = q.eq('workspace_id', workspaceId);

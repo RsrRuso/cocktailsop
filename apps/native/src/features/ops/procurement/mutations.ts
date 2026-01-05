@@ -10,6 +10,7 @@ export function useCreatePurchaseOrder(userId?: string, workspaceId?: string | n
       orderNumber?: string;
       orderDate?: string;
       notes?: string;
+      documentPath?: string | null;
       items: PurchaseOrderItemInput[];
     }) => {
       if (!userId) throw new Error('Not signed in');
@@ -36,6 +37,7 @@ export function useCreatePurchaseOrder(userId?: string, workspaceId?: string | n
           order_number: input.orderNumber?.trim() || null,
           order_date: input.orderDate ?? null,
           notes: input.notes?.trim() || null,
+          document_url: input.documentPath ?? null,
           total_amount: total,
           status: 'draft',
         } as any)
