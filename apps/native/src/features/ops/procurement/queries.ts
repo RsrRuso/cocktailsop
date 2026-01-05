@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
-import type { MasterItemLite, ProcurementWorkspace, PurchaseOrderLite, ReceivedRecordLite } from './types';
+import type { MasterItemLite, ProcurementWorkspace, PurchaseOrderLite, ReceivedItemLite, ReceivedRecordLite } from './types';
 
 export function useProcurementWorkspaces(userId?: string) {
   return useQuery({
@@ -71,6 +71,30 @@ export function usePOReceivedRecords(userId?: string, workspaceId?: string | nul
       const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as ReceivedRecordLite[];
+    },
+  });
+}
+
+export function usePOReceivedItemsForRecord(userId?: string, workspaceId?: string | null, recordId?: string | null) {
+  return useQuery({
+    queryKey: ['proc', 'po_received_items', userId, workspaceId ?? null, recordId ?? null],
+    enabled: !!userId && !!recordId,
+    queryFn: async (): Promise<ReceivedItemLite[]> => {
+      let q = supabase
+        .from('purchase_order_received_items')
+        .select(
+          'id, user_id, workspace_id, record_id, document_number, is_received, item_name, quantity, unit, unit_price, total_price, received_date, created_at',
+        )
+        .eq('record_id', recordId!)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      else q = q.eq('user_id', userId!).is('workspace_id', null);
+
+      const res = await q;
+      if (res.error) throw res.error;
+      return (res.data ?? []) as unknown as ReceivedItemLite[];
     },
   });
 }

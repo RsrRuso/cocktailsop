@@ -58,6 +58,9 @@ export type ReceivedItemLite = {
   id: string;
   user_id: string;
   workspace_id: string | null;
+  record_id?: string | null;
+  document_number?: string | null;
+  is_received?: boolean;
   item_name: string;
   quantity: number;
   unit: string | null;

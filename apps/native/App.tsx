@@ -43,6 +43,7 @@ import POMasterItemsScreen from './src/screens/POMasterItems';
 import POReceivedItemsScreen from './src/screens/POReceivedItems';
 import ProcurementPinAccessScreen from './src/screens/ProcurementPinAccess';
 import ProcurementStaffManagerScreen from './src/screens/ProcurementStaffManager';
+import POReceivedRecordDetailScreen from './src/screens/POReceivedRecordDetail';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -172,6 +173,11 @@ function AppShell() {
         <Stack.Screen
           name="ProcurementStaffManager"
           component={ProcurementStaffManagerScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="POReceivedRecordDetail"
+          component={POReceivedRecordDetailScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

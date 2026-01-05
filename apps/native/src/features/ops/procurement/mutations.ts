@@ -90,6 +90,166 @@ export function useUpdateMasterItem(userId?: string, workspaceId?: string | null
   });
 }
 
+async function upsertMasterItem({
+  userId,
+  workspaceId,
+  itemName,
+  unit,
+  unitPrice,
+}: {
+  userId: string;
+  workspaceId?: string | null;
+  itemName: string;
+  unit?: string | null;
+  unitPrice?: number | null;
+}) {
+  const normalizedName = itemName.trim();
+  if (!normalizedName) return null;
+
+  let existingQuery = supabase.from('purchase_order_master_items').select('id, item_name').ilike('item_name', normalizedName);
+  if (workspaceId) existingQuery = existingQuery.eq('workspace_id', workspaceId);
+  else existingQuery = existingQuery.eq('user_id', userId).is('workspace_id', null);
+
+  const existing = await existingQuery.maybeSingle();
+  if (existing.error) throw existing.error;
+
+  if (existing.data?.id) {
+    // Optionally update last_price/unit
+    if (unitPrice != null || unit) {
+      const upd = await supabase
+        .from('purchase_order_master_items')
+        .update({ last_price: unitPrice ?? null, unit: unit ?? null, updated_at: new Date().toISOString() } as any)
+        .eq('id', existing.data.id);
+      if (upd.error) throw upd.error;
+    }
+    return existing.data.id as string;
+  }
+
+  const ins = await supabase
+    .from('purchase_order_master_items')
+    .insert({
+      user_id: userId,
+      workspace_id: workspaceId ?? null,
+      item_name: normalizedName,
+      unit: unit ?? null,
+      last_price: unitPrice ?? null,
+    } as any)
+    .select('id')
+    .single();
+  if (ins.error) throw ins.error;
+  return ins.data.id as string;
+}
+
+async function recomputeReceivedRecordTotals({
+  userId,
+  workspaceId,
+  recordId,
+}: {
+  userId: string;
+  workspaceId?: string | null;
+  recordId: string;
+}) {
+  let q = supabase
+    .from('purchase_order_received_items')
+    .select('quantity, total_price')
+    .eq('record_id', recordId)
+    .limit(5000);
+
+  if (workspaceId) q = q.eq('workspace_id', workspaceId);
+  else q = q.eq('user_id', userId).is('workspace_id', null);
+
+  const res = await q;
+  if (res.error) throw res.error;
+  const rows = res.data ?? [];
+  const totalItems = rows.length;
+  const totalQty = rows.reduce((sum: number, r: any) => sum + Number(r.quantity ?? 0), 0);
+  const totalValue = rows.reduce((sum: number, r: any) => sum + Number(r.total_price ?? 0), 0);
+
+  let upd = supabase.from('po_received_records').update({
+    total_items: totalItems,
+    total_quantity: totalQty,
+    total_value: totalValue,
+  } as any);
+  if (workspaceId) upd = upd.eq('workspace_id', workspaceId);
+  else upd = upd.eq('user_id', userId).is('workspace_id', null);
+
+  const updRes = await upd.eq('id', recordId);
+  if (updRes.error) throw updRes.error;
+}
+
+export function useAddReceivedItem(userId?: string, workspaceId?: string | null) {
+  return useMutation({
+    mutationFn: async (input: {
+      recordId: string;
+      documentNumber?: string | null;
+      receivedDate?: string | null;
+      item_name: string;
+      quantity: number;
+      unit?: string | null;
+      unit_price?: number | null;
+    }) => {
+      if (!userId) throw new Error('Not signed in');
+      const name = input.item_name.trim();
+      if (!name) throw new Error('Item name is required');
+      const qty = Number(input.quantity ?? 0);
+      if (!Number.isFinite(qty) || qty <= 0) throw new Error('Quantity must be > 0');
+      const unitPrice = input.unit_price != null ? Number(input.unit_price) : null;
+      const totalPrice = unitPrice != null ? qty * unitPrice : null;
+
+      const masterId = await upsertMasterItem({
+        userId,
+        workspaceId,
+        itemName: name,
+        unit: input.unit ?? null,
+        unitPrice,
+      });
+
+      const ins = await supabase.from('purchase_order_received_items').insert({
+        user_id: userId,
+        workspace_id: workspaceId ?? null,
+        record_id: input.recordId,
+        document_number: input.documentNumber ?? null,
+        received_date: input.receivedDate ?? undefined,
+        item_name: name,
+        quantity: qty,
+        unit: input.unit ?? null,
+        unit_price: unitPrice,
+        total_price: totalPrice,
+        master_item_id: masterId,
+        is_received: true,
+      } as any);
+      if (ins.error) throw ins.error;
+
+      await recomputeReceivedRecordTotals({ userId, workspaceId, recordId: input.recordId });
+      return true;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['proc', 'po_received_records'] });
+      await queryClient.invalidateQueries({ queryKey: ['proc', 'po_received_items'] });
+      await queryClient.invalidateQueries({ queryKey: ['proc', 'po_master_items'] });
+    },
+  });
+}
+
+export function useDeleteReceivedItem(userId?: string, workspaceId?: string | null) {
+  return useMutation({
+    mutationFn: async (input: { id: string; recordId: string }) => {
+      if (!userId) throw new Error('Not signed in');
+      let del = supabase.from('purchase_order_received_items').delete();
+      if (workspaceId) del = del.eq('workspace_id', workspaceId);
+      else del = del.eq('user_id', userId).is('workspace_id', null);
+      const res = await del.eq('id', input.id);
+      if (res.error) throw res.error;
+      await recomputeReceivedRecordTotals({ userId, workspaceId, recordId: input.recordId });
+      return true;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['proc', 'po_received_records'] });
+      await queryClient.invalidateQueries({ queryKey: ['proc', 'po_received_items'] });
+    },
+  });
+}
+
 export function useCreateReceivedRecord(userId?: string, workspaceId?: string | null) {
   return useMutation({
     mutationFn: async (input: {

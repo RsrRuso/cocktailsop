@@ -145,6 +145,20 @@ export default function POReceivedItemsScreen({ navigation }: { navigation: Nav 
                 <Text style={{ color: '#9aa4b2', fontSize: 12, marginTop: 2 }} numberOfLines={1}>
                   {r.received_date ?? '—'} • {r.status ?? 'completed'} • Value {Number(r.total_value ?? 0).toFixed(2)}
                 </Text>
+                <Pressable
+                  style={[styles.btn, styles.primaryBtn, { marginTop: 10 }]}
+                  onPress={() =>
+                    navigation.navigate('POReceivedRecordDetail', {
+                      recordId: r.id,
+                      workspaceId,
+                      supplierName: r.supplier_name ?? null,
+                      documentNumber: r.document_number ?? null,
+                      receivedDate: r.received_date ?? null,
+                    })
+                  }
+                >
+                  <Text style={styles.btnText}>Manage items</Text>
+                </Pressable>
                 {r.variance_data?.document?.path ? (
                   <Pressable
                     style={[styles.btn, styles.secondaryBtn, { marginTop: 10 }]}
