@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import Home from './src/screens/Home';
@@ -15,7 +16,6 @@ import Profile from './src/screens/Profile';
 import { AppProvider } from './src/state';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthScreen from './src/screens/Auth';
-import RoutesScreen from './src/screens/Routes';
 import WebRouteScreen from './src/screens/WebRoute';
 import { queryClient } from './src/lib/queryClient';
 import PostDetailScreen from './src/screens/PostDetail';
@@ -80,6 +80,21 @@ function AppShell() {
         <Stack.Screen
           name="Tabs"
           component={Tabs}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MessagesList"
+          component={Messages as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Reels"
+          component={Reels as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -327,34 +342,55 @@ function Tabs({ navigation }: { navigation: any }) {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: '#0b1220', borderTopColor: 'rgba(255,255,255,0.1)' },
+        tabBarShowLabel: false,
+        tabBarStyle: { backgroundColor: '#000', borderTopColor: 'rgba(255,255,255,0.10)', height: 62 },
         tabBarActiveTintColor: '#fff',
         tabBarInactiveTintColor: '#9aa4b2',
       }}
     >
-      <Tab.Screen name="Home">
+      <Tab.Screen
+        name="Home"
+        options={{
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'home' : 'home-outline'} size={26} color={color} />,
+        }}
+      >
         {() => <Home navigation={navigation} />}
       </Tab.Screen>
-      <Tab.Screen name="Explore">
+      <Tab.Screen
+        name="Explore"
+        options={{
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'search' : 'search-outline'} size={26} color={color} />,
+        }}
+      >
         {() => <Explore navigation={navigation} />}
       </Tab.Screen>
-      <Tab.Screen name="Create" component={Create} />
-      <Tab.Screen name="Reels">
-        {() => <Reels navigation={navigation} />}
-      </Tab.Screen>
-      <Tab.Screen name="Messages">
-        {() => <Messages navigation={navigation} />}
-      </Tab.Screen>
-      <Tab.Screen name="Notifications">
-        {() => <NotificationsScreen navigation={navigation} />}
-      </Tab.Screen>
-      <Tab.Screen name="Profile">
-        {() => <Profile navigation={navigation} />}
-      </Tab.Screen>
-      <Tab.Screen name="Ops">
+      <Tab.Screen
+        name="Create"
+        component={Create}
+        options={{
+          tabBarIcon: ({ color }) => <Ionicons name="add-circle" size={40} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Ops"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'navigate-circle' : 'navigate-circle-outline'} size={28} color={color} />
+          ),
+        }}
+      >
         {() => <OpsScreen navigation={navigation} />}
       </Tab.Screen>
-      <Tab.Screen name="Routes" component={RoutesScreen as any} />
+      <Tab.Screen
+        name="Profile"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={28} color={color} />
+          ),
+        }}
+      >
+        {() => <Profile navigation={navigation} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
