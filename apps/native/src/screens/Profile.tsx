@@ -1,5 +1,4 @@
 
-import React from 'react';
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';

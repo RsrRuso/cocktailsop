@@ -30,6 +30,8 @@ import InventoryTransactionsScreen from './src/screens/InventoryTransactions';
 import MasterItemsScreen from './src/screens/MasterItems';
 import StoreManagementScreen from './src/screens/StoreManagement';
 import StoreDetailScreen from './src/screens/StoreDetail';
+import FifoWorkspaceManagementScreen from './src/screens/FifoWorkspaceManagement';
+import FifoActivityLogScreen from './src/screens/FifoActivityLog';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -94,6 +96,16 @@ function AppShell() {
         <Stack.Screen
           name="StoreDetail"
           component={StoreDetailScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FifoWorkspaceManagement"
+          component={FifoWorkspaceManagementScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FifoActivityLog"
+          component={FifoActivityLogScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

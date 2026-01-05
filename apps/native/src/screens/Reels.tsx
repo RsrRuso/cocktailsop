@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Pressable, Text, View, Dimensions } from 'react-native';
-import { Video } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { FlatList } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
@@ -39,7 +39,14 @@ export default function ReelsScreen({ navigation }: { navigation: { navigate: (n
         renderItem={({item}:any) => (
           <View style={{ height: H, backgroundColor:'#000', justifyContent:'center' }}>
             {item.video_url ? (
-              <Video source={{ uri: item.video_url }} style={{ width:'100%', height:'100%' }} resizeMode="cover" isLooping shouldPlay isMuted />
+              <Video
+                source={{ uri: item.video_url }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode={ResizeMode.COVER}
+                isLooping
+                shouldPlay
+                isMuted
+              />
             ) : (
               <View style={{ width:'100%', height:'100%', alignItems:'center', justifyContent:'center' }}>
                 <Text style={{ color:'#9aa4b2' }}>Missing video</Text>

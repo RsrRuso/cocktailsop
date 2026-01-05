@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Video } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useAuth } from '../contexts/AuthContext';
 import { useSendMessage, useThread } from '../features/messaging/thread';
 import { uploadAssetToBucket } from '../lib/storageUpload';
@@ -225,7 +225,7 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
                       <Video
                         source={{ uri: item.media_url }}
                         style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
+                        resizeMode={ResizeMode.COVER}
                         useNativeControls
                         shouldPlay={false}
                         isLooping={false}

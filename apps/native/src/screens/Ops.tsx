@@ -115,6 +115,14 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                       navigation.navigate('StoreManagement');
                       return;
                     }
+                    if (it.id === 'fifo-workspaces') {
+                      navigation.navigate('FifoWorkspaceManagement');
+                      return;
+                    }
+                    if (it.id === 'fifo-activity') {
+                      navigation.navigate('FifoWorkspaceManagement');
+                      return;
+                    }
                     navigation.navigate('WebRoute', {
                       title: it.title,
                       pathTemplate: it.pathTemplate,

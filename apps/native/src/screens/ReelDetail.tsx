@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { Video } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -49,7 +49,14 @@ export default function ReelDetailScreen({
         <>
           <View style={{ height: 320, backgroundColor: '#000' }}>
             {data.video_url ? (
-              <Video source={{ uri: data.video_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" isLooping shouldPlay isMuted />
+              <Video
+                source={{ uri: data.video_url }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode={ResizeMode.COVER}
+                isLooping
+                shouldPlay
+                isMuted
+              />
             ) : null}
           </View>
 

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { Video } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { Post } from '../types';
 import { useApp } from '../state';
 
@@ -34,7 +34,16 @@ export default function PostCard({ post }:{ post: Post }){
 
       <View style={{ backgroundColor:'#000' }}>
         {isImage && <Image source={{ uri: post.media[0].url }} style={{ width:'100%', aspectRatio:1 }} resizeMode="cover" />}
-        {isVideo && <Video source={{ uri: post.media[0].url }} style={{ width:'100%', aspectRatio:1 }} resizeMode="cover" isMuted shouldPlay isLooping />}
+        {isVideo && (
+          <Video
+            source={{ uri: post.media[0].url }}
+            style={{ width: '100%', aspectRatio: 1 }}
+            resizeMode={ResizeMode.COVER}
+            isMuted
+            shouldPlay
+            isLooping
+          />
+        )}
         {!isImage && !isVideo && <View style={{ width:'100%', aspectRatio:1, backgroundColor:'#111' }} />}
       </View>
 
