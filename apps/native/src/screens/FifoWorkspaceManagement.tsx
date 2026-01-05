@@ -89,6 +89,14 @@ export default function FifoWorkspaceManagementScreen({ navigation }: { navigati
                       <Text style={styles.smallBtnText}>Approvals</Text>
                     </Pressable>
                   ) : null}
+                  {w.owner_id === userId ? (
+                    <Pressable
+                      style={[styles.smallBtn, styles.secondaryBtn]}
+                      onPress={() => navigation.navigate('FifoQRAccessCode', { workspaceId: w.id })}
+                    >
+                      <Text style={styles.smallBtnText}>QR code</Text>
+                    </Pressable>
+                  ) : null}
                   <Pressable
                     style={[styles.smallBtn, styles.secondaryBtn]}
                     onPress={() =>
