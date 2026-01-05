@@ -53,6 +53,7 @@ import BatchPinAccessScreen from './src/screens/BatchPinAccess';
 import ReportsHubScreen from './src/screens/ReportsHub';
 import ProfitLossReportScreen from './src/screens/ProfitLossReport';
 import DailySalesReportScreen from './src/screens/DailySalesReport';
+import CashFlowReportScreen from './src/screens/CashFlowReport';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -232,6 +233,11 @@ function AppShell() {
         <Stack.Screen
           name="DailySalesReport"
           component={DailySalesReportScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CashFlowReport"
+          component={CashFlowReportScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
