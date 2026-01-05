@@ -63,6 +63,8 @@ export default function ReportsHubScreen({ navigation }: { navigation: Nav }) {
                               ? navigation.navigate('BudgetActualReport')
                             : r.pathTemplate === '/reports/stock-movement'
                               ? navigation.navigate('StockMovementReport')
+                            : r.pathTemplate === '/reports/revenue-category'
+                              ? navigation.navigate('RevenueByCategoryReport')
                       : navigation.navigate('WebRoute', {
                           title: r.label,
                           pathTemplate: r.pathTemplate,
