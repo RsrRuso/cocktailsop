@@ -1,23 +1,36 @@
 
 import React from 'react';
-import { ScrollView, View, Text, Image, Pressable } from 'react-native';
-import { useApp } from '../state';
+import { ScrollView, View, Text, Pressable } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useMyCounts, useMyProfile } from '../features/social/profile';
 
 export default function ProfileScreen(){
-  const { state } = useApp();
-  const me = state.users.find(u=>u.id===state.meId)!;
-  const myPosts = state.posts.filter(p => p.authorId === me.id);
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const { data: profile, isLoading } = useMyProfile(user?.id);
+  const { data: counts } = useMyCounts(user?.id);
+
+  const name = profile?.full_name ?? profile?.username ?? 'User';
+  const username = profile?.username ? `@${profile.username}` : '';
+
   return (
     <ScrollView style={{ flex:1, backgroundColor:'#020617' }} contentContainerStyle={{ padding:12, paddingBottom:96 }}>
       <View style={{ flexDirection:'row', alignItems:'center', gap:12 }}>
-        <View style={{ height:64, width:64, borderRadius:999, backgroundColor:'rgba(255,255,255,0.08)', alignItems:'center', justifyContent:'center' }}><Text style={{ color:'#e6e6e6', fontSize:18 }}>{me.name[0]}</Text></View>
+        <View style={{ height:64, width:64, borderRadius:999, backgroundColor:'rgba(255,255,255,0.08)', alignItems:'center', justifyContent:'center' }}>
+          <Text style={{ color:'#e6e6e6', fontSize:18 }}>{name[0]?.toUpperCase() ?? 'U'}</Text>
+        </View>
         <View>
-          <Text style={{ color:'#fff', fontWeight:'700' }}>{me.name} <Text style={{ color:'#94a3b8', fontWeight:'400' }}>{me.handle}</Text></Text>
-          <Text style={{ color:'#9aa4b2', fontSize:12 }}>{me.role} • {myPosts.length} posts</Text>
+          <Text style={{ color:'#fff', fontWeight:'900' }}>
+            {name} <Text style={{ color:'#94a3b8', fontWeight:'500' }}>{username}</Text>
+          </Text>
+          <Text style={{ color:'#9aa4b2', fontSize:12 }}>
+            {isLoading ? 'Loading…' : `${(counts?.posts ?? 0)} posts • ${(counts?.reels ?? 0)} reels`}
+          </Text>
         </View>
       </View>
+
+      {profile?.bio ? (
+        <Text style={{ color:'#9aa4b2', marginTop:10 }}>{profile.bio}</Text>
+      ) : null}
 
       <Pressable
         onPress={() => signOut().catch(() => {})}
@@ -26,8 +39,11 @@ export default function ProfileScreen(){
         <Text style={{ color:'#fff', fontWeight:'700' }}>Sign out</Text>
       </Pressable>
 
-      <View style={{ flexDirection:'row', flexWrap:'wrap', marginTop:12 }}>
-        {myPosts.map(p => (<View key={p.id} style={{ width:'33.33%', padding:2 }}>{p.media[0]?.type==='image' ? <Image source={{ uri: p.media[0].url }} style={{ width:'100%', aspectRatio:1 }} /> : <View style={{ width:'100%', aspectRatio:1, backgroundColor:'#0b0f19' }} />}</View>))}
+      <View style={{ marginTop: 12, padding: 12, borderRadius: 12, backgroundColor:'rgba(255,255,255,0.06)', borderWidth:1, borderColor:'rgba(255,255,255,0.12)' }}>
+        <Text style={{ color:'#fff', fontWeight:'800' }}>Next</Text>
+        <Text style={{ color:'#9aa4b2', marginTop: 6 }}>
+          This screen will next show your posts grid + saved posts + reels, matching the web app profile tabs.
+        </Text>
       </View>
     </ScrollView>
   )

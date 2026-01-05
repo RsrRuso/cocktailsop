@@ -2,14 +2,14 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { FeedItem } from '../features/social/types';
 
-export function FeedItemCard({ item }: { item: FeedItem }) {
+export function FeedItemCard({ item, onPress }: { item: FeedItem; onPress?: () => void }) {
   const profile = item.profiles;
   const mediaUrl = item.type === 'post' ? item.media_urls?.[0] : item.video_url;
   const title = profile?.username ? `@${profile.username}` : 'User';
   const subtitle = profile?.professional_title ?? '';
 
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.header}>
         <View style={styles.avatar}>
           {profile?.avatar_url ? (
@@ -61,7 +61,7 @@ export function FeedItemCard({ item }: { item: FeedItem }) {
           </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

@@ -4,7 +4,7 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useHomeFeed } from '../features/social/queries';
 import { FeedItemCard } from '../components/FeedItemCard';
 
-export default function HomeScreen(){
+export default function HomeScreen({ navigation }: { navigation: { navigate: (name: string, params?: any) => void } }){
   const { data, isLoading, error, refetch } = useHomeFeed({ limit: 30 });
   return (
     <View style={{ flex: 1, backgroundColor: '#020617' }}>
@@ -24,7 +24,15 @@ export default function HomeScreen(){
           keyExtractor={(i) => `${i.type}-${i.id}`}
           contentContainerStyle={{ padding: 12, paddingBottom: 96 }}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-          renderItem={({ item }) => <FeedItemCard item={item} />}
+          renderItem={({ item }) => (
+            <FeedItemCard
+              item={item}
+              onPress={() => {
+                if (item.type === 'post') navigation.navigate('PostDetail', { postId: item.id });
+                else navigation.navigate('WebRoute', { title: 'Reel', pathTemplate: `/reels` });
+              }}
+            />
+          )}
           refreshing={isLoading}
           onRefresh={() => refetch()}
         />

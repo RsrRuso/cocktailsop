@@ -18,6 +18,8 @@ import AuthScreen from './src/screens/Auth';
 import RoutesScreen from './src/screens/Routes';
 import WebRouteScreen from './src/screens/WebRoute';
 import { queryClient } from './src/lib/queryClient';
+import PostDetailScreen from './src/screens/PostDetail';
+import NotificationsScreen from './src/screens/Notifications';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -35,6 +37,11 @@ function AppShell() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="PostDetail"
+          component={PostDetailScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="WebRoute"
           component={WebRouteScreen as any}
           options={{ headerShown: false }}
@@ -44,7 +51,7 @@ function AppShell() {
   );
 }
 
-function Tabs() {
+function Tabs({ navigation }: { navigation: any }) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -54,11 +61,14 @@ function Tabs() {
         tabBarInactiveTintColor: '#9aa4b2',
       }}
     >
-      <Tab.Screen name="Home" component={Home} />
+      <Tab.Screen name="Home">
+        {() => <Home navigation={navigation} />}
+      </Tab.Screen>
       <Tab.Screen name="Explore" component={Explore} />
       <Tab.Screen name="Create" component={Create} />
       <Tab.Screen name="Reels" component={Reels} />
       <Tab.Screen name="Messages" component={Messages} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen as any} />
       <Tab.Screen name="Profile" component={Profile} />
       <Tab.Screen name="Routes" component={RoutesScreen as any} />
     </Tab.Navigator>
