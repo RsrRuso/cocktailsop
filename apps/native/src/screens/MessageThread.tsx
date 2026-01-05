@@ -1,9 +1,12 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Video } from 'expo-av';
 import { useAuth } from '../contexts/AuthContext';
 import { useSendMessage, useThread } from '../features/messaging/thread';
 import { uploadAssetToBucket } from '../lib/storageUpload';
+import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
 
 export default function MessageThreadScreen({ route }: { route: { params: { conversationId: string } } }) {
   const { user } = useAuth();
@@ -15,6 +18,38 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
 
   const messages = data ?? [];
   const canSend = useMemo(() => !!user?.id && text.trim().length > 0 && !send.isPending, [user?.id, text, send.isPending]);
+
+  // Realtime: append new incoming messages instantly
+  useEffect(() => {
+    const channel = supabase
+      .channel(`thread:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const next = payload.new as any;
+          queryClient.setQueryData(['thread', conversationId], (old: any) => {
+            const arr = Array.isArray(old) ? old : [];
+            if (arr.some((m: any) => m.id === next.id)) return arr;
+            return [...arr, next];
+          });
+          if (user?.id) {
+            queryClient.invalidateQueries({ queryKey: ['conversations', user.id] }).catch(() => {});
+          }
+          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 30);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, user?.id]);
 
   async function onSend() {
     if (!user?.id) return;
@@ -96,7 +131,16 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
                     />
                   ) : null}
                   {item.media_url && item.media_type === 'video' ? (
-                    <Text style={{ color: '#9aa4b2', marginTop: 8 }}>Video attached</Text>
+                    <View style={{ width: 220, height: 220, borderRadius: 12, marginTop: 8, overflow: 'hidden', backgroundColor: '#0b0f19' }}>
+                      <Video
+                        source={{ uri: item.media_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                        useNativeControls
+                        shouldPlay={false}
+                        isLooping={false}
+                      />
+                    </View>
                   ) : null}
                 </View>
                 <Text style={{ color: '#64748b', fontSize: 10, marginTop: 4, alignSelf: mine ? 'flex-end' : 'flex-start' }}>
