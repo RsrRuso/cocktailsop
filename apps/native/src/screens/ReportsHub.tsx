@@ -69,6 +69,8 @@ export default function ReportsHubScreen({ navigation }: { navigation: Nav }) {
                               ? navigation.navigate('BreakevenReport')
                             : r.pathTemplate === '/reports/daily-ops'
                               ? navigation.navigate('DailyOpsReport')
+                            : r.pathTemplate === '/inventory-valuation-report'
+                              ? navigation.navigate('InventoryValuationReport')
                       : navigation.navigate('WebRoute', {
                           title: r.label,
                           pathTemplate: r.pathTemplate,
