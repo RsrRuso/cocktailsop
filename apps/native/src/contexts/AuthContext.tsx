@@ -23,8 +23,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  function isInvalidRefreshTokenError(err: unknown) {
+    const msg = (err as any)?.message as string | undefined;
+    if (!msg) return false;
+    const m = msg.toLowerCase();
+    return (
+      m.includes('invalid refresh token') ||
+      m.includes('refresh token not found') ||
+      m.includes('refresh_token_not_found') ||
+      m.includes('jwt expired') // sometimes manifests this way after long inactivity
+    );
+  }
+
+  async function signOutLocal() {
+    // Local sign out is safe even if network is flaky / token refresh failed.
+    try {
+      // supabase-js v2 supports scope; keep backwards compatible if types differ.
+      await (supabase.auth as any).signOut({ scope: 'local' });
+    } catch {
+      await supabase.auth.signOut();
+    } finally {
+      setSession(null);
+      setUser(null);
+    }
+  }
+
   async function refreshSession() {
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    if (error && isInvalidRefreshTokenError(error)) {
+      await signOutLocal();
+      return;
+    }
     setSession(data.session ?? null);
     setUser(data.session?.user ?? null);
   }
@@ -34,8 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         if (!isMounted) return;
+        if (error && isInvalidRefreshTokenError(error)) {
+          await signOutLocal();
+          return;
+        }
         setSession(data.session ?? null);
         setUser(data.session?.user ?? null);
       } finally {
@@ -43,8 +76,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!isMounted) return;
+      // When refresh fails (common in Expo Go after switching anon key/project), recover by clearing local session.
+      if ((event as unknown as string) === 'TOKEN_REFRESH_FAILED') {
+        void signOutLocal();
+        return;
+      }
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
     });
@@ -62,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       refreshSession,
       signOut: async () => {
-        await supabase.auth.signOut();
+        await signOutLocal();
       },
     }),
     [user, session, isLoading],
