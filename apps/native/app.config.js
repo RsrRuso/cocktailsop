@@ -3,8 +3,10 @@
 
 export default ({ config }) => ({
   ...config,
-  name: "SpecVerse",
-  slug: "specverse",
+  // NOTE: Use a unique slug so Expo Go doesn't reuse a cached bundle
+  // from another "specverse" project on the device.
+  name: "SpecVerse Native",
+  slug: "specverse-native",
   scheme: "specverse",
   // Ensures Expo Updates runtime matches SDK (SDK 54)
   runtimeVersion: { policy: "sdkVersion" },

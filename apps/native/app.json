@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SpecVerse",
-    "slug": "specverse",
+    "name": "SpecVerse Native",
+    "slug": "specverse-native",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
