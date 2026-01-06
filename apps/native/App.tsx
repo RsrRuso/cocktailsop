@@ -66,6 +66,7 @@ import VarianceReportScreen from './src/screens/VarianceReport';
 import PourCostAnalysisScreen from './src/screens/PourCostAnalysis';
 import MenuEngineeringScreen from './src/screens/MenuEngineering';
 import MenuEngineeringProScreen from './src/screens/MenuEngineeringPro';
+import WastageTrackerScreen from './src/screens/WastageTracker';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -325,6 +326,11 @@ function AppShell() {
         <Stack.Screen
           name="MenuEngineeringPro"
           component={MenuEngineeringProScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="WastageTracker"
+          component={WastageTrackerScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

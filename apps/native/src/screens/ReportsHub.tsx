@@ -75,6 +75,8 @@ export default function ReportsHubScreen({ navigation }: { navigation: Nav }) {
                               ? navigation.navigate('VarianceReport')
                             : r.pathTemplate === '/pour-cost-analysis'
                               ? navigation.navigate('PourCostAnalysis')
+                            : r.pathTemplate === '/wastage-tracker'
+                              ? navigation.navigate('WastageTracker')
                             : r.pathTemplate === '/menu-engineering'
                               ? navigation.navigate('MenuEngineering')
                             : r.pathTemplate === '/menu-engineering-pro'
