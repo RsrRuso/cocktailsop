@@ -61,9 +61,9 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (na
             <StoryBar
               meName={me.fullName ?? 'Your Story'}
               meAvatarUrl={me.avatarUrl ?? null}
-              onPressMyStory={() => navigation.navigate('Create')}
+              onPressMyStory={() => navigation.navigate('StoryOptions')}
               stories={stories}
-              onPressStory={(userId) => navigation.navigate('UserProfile', { userId })}
+              onPressStory={(userId) => navigation.navigate('StoryViewer', { userId })}
             />
           )}
           renderItem={({ item }) => (

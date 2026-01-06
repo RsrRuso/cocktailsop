@@ -69,6 +69,9 @@ import MenuEngineeringProScreen from './src/screens/MenuEngineeringPro';
 import WastageTrackerScreen from './src/screens/WastageTracker';
 import StockAuditScreen from './src/screens/StockAudit';
 import SalesReportScreen from './src/screens/SalesReport';
+import TemperatureLogScreen from './src/screens/TemperatureLog';
+import StoryViewerScreen from './src/screens/StoryViewer';
+import StoryOptionsScreen from './src/screens/StoryOptions';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -343,6 +346,21 @@ function AppShell() {
         <Stack.Screen
           name="SalesReport"
           component={SalesReportScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TemperatureLog"
+          component={TemperatureLogScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StoryViewer"
+          component={StoryViewerScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StoryOptions"
+          component={StoryOptionsScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

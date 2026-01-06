@@ -13,13 +13,22 @@ export function useCreateStory() {
       mediaUrl: string;
       mediaType: string;
     }) => {
-      const res = await supabase
+      // Newer schema stores arrays (media_urls/media_types). Older schema stored media_url/media_type.
+      // Write both shapes with graceful fallback for compatibility.
+      const tryArrays = await supabase
+        .from('stories')
+        .insert({ user_id: userId, media_urls: [mediaUrl], media_types: [mediaType] })
+        .select('id')
+        .single();
+      if (!tryArrays.error) return tryArrays.data;
+
+      const legacy = await supabase
         .from('stories')
         .insert({ user_id: userId, media_url: mediaUrl, media_type: mediaType })
         .select('id')
         .single();
-      if (res.error) throw res.error;
-      return res.data;
+      if (legacy.error) throw legacy.error;
+      return legacy.data;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['stories'] });

@@ -17,6 +17,7 @@ const LINKS: LinkItem[] = [
   { id: 'all-inventory', title: 'All Inventory', pathTemplate: '/all-inventory', group: 'Inventory' },
   { id: 'inventory-transactions', title: 'Inventory Transactions', pathTemplate: '/inventory-transactions', group: 'Inventory' },
   { id: 'master-items', title: 'Master Items', pathTemplate: '/master-items', group: 'Inventory' },
+  { id: 'temperature-log', title: 'Temperature Log', pathTemplate: '/temperature-log', group: 'Inventory' },
   { id: 'stores-admin', title: 'Stores Admin', pathTemplate: '/stores-admin', group: 'Inventory' },
   { id: 'store-management', title: 'Store Management', pathTemplate: '/store-management', group: 'Inventory' },
   { id: 'store-detail', title: 'Store Detail', pathTemplate: '/store/:id', group: 'Inventory', note: 'Requires :id' },
@@ -122,6 +123,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'master-items') {
                       navigation.navigate('MasterItems');
+                      return;
+                    }
+                    if (it.id === 'temperature-log') {
+                      navigation.navigate('TemperatureLog');
                       return;
                     }
                     if (it.id === 'stores-admin' || it.id === 'store-management' || it.id === 'store-detail') {

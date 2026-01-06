@@ -7,13 +7,14 @@ import { useCreatePost } from '../features/social/mutations';
 import { useCreateReel, useCreateStory } from '../features/social/create';
 import { uploadAssetToBucket } from '../lib/storageUpload';
 
-export default function CreateScreen(){
+export default function CreateScreen({ route }: { route?: { params?: { mode?: 'post' | 'story' | 'reel' } } }) {
+  const routeParams = route?.params ?? {};
   const { user } = useAuth();
   const createPost = useCreatePost();
   const createStory = useCreateStory();
   const createReel = useCreateReel();
 
-  const [mode, setMode] = useState<'post' | 'story' | 'reel'>('post');
+  const [mode, setMode] = useState<'post' | 'story' | 'reel'>(routeParams.mode ?? 'post');
   const [content, setContent] = useState('');
   const [caption, setCaption] = useState('');
   const [assets, setAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
@@ -44,6 +45,15 @@ export default function CreateScreen(){
     if (result.canceled) return;
     setAssets(result.assets);
   };
+
+  // If some screen navigates to Create with a target mode, apply it.
+  React.useEffect(() => {
+    if (routeParams.mode && routeParams.mode !== mode) {
+      setMode(routeParams.mode);
+      setAssets([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeParams.mode]);
 
   const publish = async () => {
     if (!user?.id || !canPublish) return;
