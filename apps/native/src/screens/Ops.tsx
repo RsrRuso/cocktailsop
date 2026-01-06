@@ -28,6 +28,10 @@ const LINKS: LinkItem[] = [
   { id: 'batch-calculator', title: 'Batch Calculator', pathTemplate: '/batch-calculator', group: 'Batch' },
   { id: 'batch-recipes', title: 'Batch Recipes', pathTemplate: '/batch-recipes', group: 'Batch' },
   { id: 'batch-view', title: 'Batch View', pathTemplate: '/batch-view/:productionId', group: 'Batch', note: 'Requires :productionId' },
+  { id: 'abv-calculator', title: 'ABV Calculator', pathTemplate: '/abv-calculator', group: 'Batch' },
+  { id: 'scaling-tool', title: 'Scaling Tool', pathTemplate: '/scaling-tool', group: 'Batch' },
+  { id: 'cost-calculator', title: 'Cost Calculator', pathTemplate: '/cost-calculator', group: 'Batch' },
+  { id: 'yield-calculator', title: 'Yield Calculator', pathTemplate: '/yield-calculator', group: 'Batch' },
 
   // FIFO
   { id: 'fifo-workspaces', title: 'FIFO Workspace Management', pathTemplate: '/fifo-workspace-management', group: 'FIFO' },
@@ -175,6 +179,22 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'batch-recipes') {
                       navigation.navigate('BatchRecipes');
+                      return;
+                    }
+                    if (it.id === 'abv-calculator') {
+                      navigation.navigate('ABVCalculator');
+                      return;
+                    }
+                    if (it.id === 'scaling-tool') {
+                      navigation.navigate('ScalingTool');
+                      return;
+                    }
+                    if (it.id === 'cost-calculator') {
+                      navigation.navigate('CostCalculator');
+                      return;
+                    }
+                    if (it.id === 'yield-calculator') {
+                      navigation.navigate('YieldCalculator');
                       return;
                     }
                     if (it.id === 'purchase-orders') {

@@ -72,6 +72,10 @@ import SalesReportScreen from './src/screens/SalesReport';
 import TemperatureLogScreen from './src/screens/TemperatureLog';
 import StoryViewerScreen from './src/screens/StoryViewer';
 import StoryOptionsScreen from './src/screens/StoryOptions';
+import ABVCalculatorScreen from './src/screens/ABVCalculator';
+import ScalingToolScreen from './src/screens/ScalingTool';
+import CostCalculatorScreen from './src/screens/CostCalculator';
+import YieldCalculatorScreen from './src/screens/YieldCalculator';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -361,6 +365,26 @@ function AppShell() {
         <Stack.Screen
           name="StoryOptions"
           component={StoryOptionsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ABVCalculator"
+          component={ABVCalculatorScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ScalingTool"
+          component={ScalingToolScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CostCalculator"
+          component={CostCalculatorScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="YieldCalculator"
+          component={YieldCalculatorScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
