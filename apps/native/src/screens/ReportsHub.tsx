@@ -81,6 +81,8 @@ export default function ReportsHubScreen({ navigation }: { navigation: Nav }) {
                               ? navigation.navigate('MenuEngineering')
                             : r.pathTemplate === '/menu-engineering-pro'
                               ? navigation.navigate('MenuEngineeringPro')
+                            : r.pathTemplate === '/stock-audit'
+                              ? navigation.navigate('StockAudit')
                       : navigation.navigate('WebRoute', {
                           title: r.label,
                           pathTemplate: r.pathTemplate,
