@@ -68,6 +68,7 @@ import MenuEngineeringScreen from './src/screens/MenuEngineering';
 import MenuEngineeringProScreen from './src/screens/MenuEngineeringPro';
 import WastageTrackerScreen from './src/screens/WastageTracker';
 import StockAuditScreen from './src/screens/StockAudit';
+import SalesReportScreen from './src/screens/SalesReport';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -337,6 +338,11 @@ function AppShell() {
         <Stack.Screen
           name="StockAudit"
           component={StockAuditScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SalesReport"
+          component={SalesReportScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
