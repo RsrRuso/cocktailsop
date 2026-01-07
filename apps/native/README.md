@@ -13,4 +13,4 @@ This app is wired for Supabase auth. Configure env in `apps/native/.env`:
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
-Note: the current UI still uses some seeded local demo data in `src/state.tsx`; the next migration step is to replace that with Supabase-backed queries to match the existing web app.
+The core social surfaces (Home feed, Explore, Messages, Profiles) use Supabase-backed queries via React Query. Some finance/reporting screens still intentionally mirror the web app’s mock data until those pipelines are connected.

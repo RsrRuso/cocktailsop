@@ -13,7 +13,6 @@ import Create from './src/screens/Create';
 import Reels from './src/screens/Reels';
 import Messages from './src/screens/Messages';
 import Profile from './src/screens/Profile';
-import { AppProvider } from './src/state';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthScreen from './src/screens/Auth';
 import WebRouteScreen from './src/screens/WebRoute';
@@ -460,10 +459,8 @@ export default function App(){
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <AppProvider>
-            <AppShell />
-            <StatusBar style="light" />
-          </AppProvider>
+          <AppShell />
+          <StatusBar style="light" />
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
