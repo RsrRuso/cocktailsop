@@ -77,6 +77,7 @@ import ScalingToolScreen from './src/screens/ScalingTool';
 import CostCalculatorScreen from './src/screens/CostCalculator';
 import YieldCalculatorScreen from './src/screens/YieldCalculator';
 import SubRecipesScreen from './src/screens/SubRecipes';
+import MasterSpiritsScreen from './src/screens/MasterSpirits';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -391,6 +392,11 @@ function AppShell() {
         <Stack.Screen
           name="SubRecipes"
           component={SubRecipesScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MasterSpirits"
+          component={MasterSpiritsScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
