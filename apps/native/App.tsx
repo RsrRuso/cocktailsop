@@ -80,6 +80,7 @@ import SubRecipesScreen from './src/screens/SubRecipes';
 import MasterSpiritsScreen from './src/screens/MasterSpirits';
 import BatchActivityScreen from './src/screens/BatchActivity';
 import BatchQRSubmitScreen from './src/screens/BatchQRSubmit';
+import BatchQrScannerScreen from './src/screens/BatchQrScanner';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -409,6 +410,11 @@ function AppShell() {
         <Stack.Screen
           name="BatchQRSubmit"
           component={BatchQRSubmitScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchQrScanner"
+          component={BatchQrScannerScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

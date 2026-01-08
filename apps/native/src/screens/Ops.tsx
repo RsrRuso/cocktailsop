@@ -35,6 +35,7 @@ const LINKS: LinkItem[] = [
   { id: 'sub-recipes', title: 'Sub-Recipes', pathTemplate: '/sub-recipes', group: 'Batch' },
   { id: 'master-spirits', title: 'Master Spirits', pathTemplate: '/master-spirits', group: 'Batch' },
   { id: 'batch-activity', title: 'Batch Activity', pathTemplate: '/batch-activity', group: 'Batch' },
+  { id: 'batch-qr-scan', title: 'Scan Batch QR', pathTemplate: '/batch-qr-scan', group: 'Batch', note: 'Camera' },
 
   // FIFO
   { id: 'fifo-workspaces', title: 'FIFO Workspace Management', pathTemplate: '/fifo-workspace-management', group: 'FIFO' },
@@ -210,6 +211,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'batch-activity') {
                       navigation.navigate('BatchActivity');
+                      return;
+                    }
+                    if (it.id === 'batch-qr-scan') {
+                      navigation.navigate('BatchQrScanner');
                       return;
                     }
                     if (it.id === 'purchase-orders') {
