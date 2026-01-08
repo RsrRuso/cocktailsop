@@ -79,6 +79,7 @@ import YieldCalculatorScreen from './src/screens/YieldCalculator';
 import SubRecipesScreen from './src/screens/SubRecipes';
 import MasterSpiritsScreen from './src/screens/MasterSpirits';
 import BatchActivityScreen from './src/screens/BatchActivity';
+import BatchQRSubmitScreen from './src/screens/BatchQRSubmit';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -403,6 +404,11 @@ function AppShell() {
         <Stack.Screen
           name="BatchActivity"
           component={BatchActivityScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchQRSubmit"
+          component={BatchQRSubmitScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
