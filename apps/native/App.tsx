@@ -78,6 +78,7 @@ import CostCalculatorScreen from './src/screens/CostCalculator';
 import YieldCalculatorScreen from './src/screens/YieldCalculator';
 import SubRecipesScreen from './src/screens/SubRecipes';
 import MasterSpiritsScreen from './src/screens/MasterSpirits';
+import BatchActivityScreen from './src/screens/BatchActivity';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -397,6 +398,11 @@ function AppShell() {
         <Stack.Screen
           name="MasterSpirits"
           component={MasterSpiritsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BatchActivity"
+          component={BatchActivityScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

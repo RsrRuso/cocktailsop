@@ -34,6 +34,7 @@ const LINKS: LinkItem[] = [
   { id: 'yield-calculator', title: 'Yield Calculator', pathTemplate: '/yield-calculator', group: 'Batch' },
   { id: 'sub-recipes', title: 'Sub-Recipes', pathTemplate: '/sub-recipes', group: 'Batch' },
   { id: 'master-spirits', title: 'Master Spirits', pathTemplate: '/master-spirits', group: 'Batch' },
+  { id: 'batch-activity', title: 'Batch Activity', pathTemplate: '/batch-activity', group: 'Batch' },
 
   // FIFO
   { id: 'fifo-workspaces', title: 'FIFO Workspace Management', pathTemplate: '/fifo-workspace-management', group: 'FIFO' },
@@ -205,6 +206,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                     }
                     if (it.id === 'master-spirits') {
                       navigation.navigate('MasterSpirits');
+                      return;
+                    }
+                    if (it.id === 'batch-activity') {
+                      navigation.navigate('BatchActivity');
                       return;
                     }
                     if (it.id === 'purchase-orders') {
