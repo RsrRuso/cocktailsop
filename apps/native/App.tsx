@@ -76,6 +76,7 @@ import ABVCalculatorScreen from './src/screens/ABVCalculator';
 import ScalingToolScreen from './src/screens/ScalingTool';
 import CostCalculatorScreen from './src/screens/CostCalculator';
 import YieldCalculatorScreen from './src/screens/YieldCalculator';
+import SubRecipesScreen from './src/screens/SubRecipes';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -385,6 +386,11 @@ function AppShell() {
         <Stack.Screen
           name="YieldCalculator"
           component={YieldCalculatorScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SubRecipes"
+          component={SubRecipesScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
