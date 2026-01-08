@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import * as Linking from 'expo-linking';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -85,12 +86,28 @@ import BatchQrScannerScreen from './src/screens/BatchQrScanner';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const linking = {
+  prefixes: [Linking.createURL('/'), 'specverse://'],
+  config: {
+    screens: {
+      BatchQRSubmit: {
+        path: 'batch-qr/:qrId',
+        parse: {
+          qrId: (id: string) => id,
+          d: (v: string) => v,
+        },
+      },
+      BatchQrScanner: 'batch-qr-scan',
+    },
+  },
+};
+
 function AppShell() {
   const { user, isLoading } = useAuth();
   if (isLoading) return null;
   if (!user) return <AuthScreen />;
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking as any}>
       <Stack.Navigator>
         <Stack.Screen
           name="Tabs"

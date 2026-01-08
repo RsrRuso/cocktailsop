@@ -52,12 +52,12 @@ export default function BatchQRSubmitScreen({
   route,
   navigation,
 }: {
-  route: { params?: { qrId?: string; embeddedData?: string } };
+  route: { params?: { qrId?: string; embeddedData?: string; d?: string } };
   navigation: Nav;
 }) {
   const { user } = useAuth();
   const qrId = route.params?.qrId;
-  const embeddedDataParam = route.params?.embeddedData;
+  const embeddedDataParam = route.params?.embeddedData ?? route.params?.d;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
