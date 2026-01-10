@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useBatchProductions, useBatchRecipes, useMixologistGroups } from '../features/ops/batch/queries';
 import { useCreateBatchProduction } from '../features/ops/batch/mutations';
@@ -81,9 +82,42 @@ export default function BatchCalculatorScreen({ navigation, route }: { navigatio
             Scale a recipe and log a production
           </Text>
         </View>
+        <Pressable
+          style={styles.headerIcon}
+          onPress={() => navigation.navigate('BatchQrScanner')}
+          hitSlop={10}
+        >
+          <Ionicons name="qr-code-outline" size={20} color="#fff" />
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 96, gap: 12 }}>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Quick actions</Text>
+          <View style={{ height: 10 }} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable style={[styles.quickBtn, { flex: 1 }]} onPress={() => navigation.navigate('BatchQrScanner')}>
+              <Ionicons name="qr-code-outline" size={16} color="#fbbf24" />
+              <Text style={styles.quickBtnText}>Scan Batch QR</Text>
+            </Pressable>
+            <Pressable style={[styles.quickBtn, { flex: 1 }]} onPress={() => navigation.navigate('BatchActivity')}>
+              <Ionicons name="pulse-outline" size={16} color="#93c5fd" />
+              <Text style={styles.quickBtnText}>Activity</Text>
+            </Pressable>
+          </View>
+          <View style={{ height: 8 }} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable style={[styles.quickBtn, { flex: 1 }]} onPress={() => navigation.navigate('SubRecipes')}>
+              <Ionicons name="layers-outline" size={16} color="#a855f7" />
+              <Text style={styles.quickBtnText}>Sub-Recipes</Text>
+            </Pressable>
+            <Pressable style={[styles.quickBtn, { flex: 1 }]} onPress={() => navigation.navigate('MasterSpirits')}>
+              <Ionicons name="flask-outline" size={16} color="#22c55e" />
+              <Text style={styles.quickBtnText}>Master Spirits</Text>
+            </Pressable>
+          </View>
+        </View>
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Group (optional)</Text>
           <Text style={styles.muted}>Leave blank for personal batches.</Text>
@@ -192,6 +226,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  headerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
   backBtn: {
     width: 36,
     height: 36,
@@ -212,6 +256,18 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
   },
+  quickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  quickBtnText: { color: '#e6e6e6', fontWeight: '900' },
   sectionTitle: { color: '#fff', fontWeight: '900' },
   muted: { color: '#9aa4b2', marginTop: 8, fontSize: 12, lineHeight: 18 },
   label: { color: '#9aa4b2', fontSize: 12, fontWeight: '800' },
