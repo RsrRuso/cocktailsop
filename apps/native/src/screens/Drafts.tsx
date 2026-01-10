@@ -260,11 +260,7 @@ export default function DraftsScreen({ navigation }: { navigation: Nav }) {
                   navigation.navigate('StudioDraft', { draftId: parent.id })
                 }
                 onPublish={() =>
-                  navigation.navigate('WebRoute', {
-                    title: 'Publish Draft',
-                    pathTemplate: '/publish/:draftId',
-                    initialParams: { draftId: parent.id },
-                  })
+                  navigation.navigate('PublishDraft', { draftId: parent.id })
                 }
                 onDuplicate={() => duplicateDraft.mutate({ draft: parent })}
                 onDelete={() =>
@@ -287,11 +283,7 @@ export default function DraftsScreen({ navigation }: { navigation: Nav }) {
                         navigation.navigate('StudioDraft', { draftId: b.id })
                       }
                       onPublish={() =>
-                        navigation.navigate('WebRoute', {
-                          title: 'Publish Draft',
-                          pathTemplate: '/publish/:draftId',
-                          initialParams: { draftId: b.id },
-                        })
+                        navigation.navigate('PublishDraft', { draftId: b.id })
                       }
                       onDuplicate={() => duplicateDraft.mutate({ draft: b })}
                       onDelete={() =>

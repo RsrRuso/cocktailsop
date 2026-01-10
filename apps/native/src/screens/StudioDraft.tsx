@@ -217,13 +217,7 @@ export default function StudioDraftScreen({
         </Pressable>
         <Pressable
           style={[styles.btn, styles.primaryBtn]}
-          onPress={() =>
-            navigation.navigate('WebRoute', {
-              title: 'Publish Draft',
-              pathTemplate: '/publish/:draftId',
-              initialParams: { draftId },
-            })
-          }
+          onPress={() => navigation.navigate('PublishDraft', { draftId })}
         >
           <Text style={styles.btnText}>Publish</Text>
         </Pressable>
