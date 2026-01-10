@@ -16,8 +16,10 @@ function fillTemplate(template: string, params: Record<string, string>) {
 
 export default function WebRouteScreen({
   route,
+  navigation,
 }: {
   route: { params: { pathTemplate: string; title?: string } };
+  navigation: { navigate: (name: string, params?: any) => void };
 }) {
   const template = route.params.pathTemplate;
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
@@ -34,6 +36,12 @@ export default function WebRouteScreen({
     if (hasUnfilledParams) return '';
     return buildWebUrl(filledPath);
   }, [filledPath, hasUnfilledParams]);
+
+  const canOpenNativeBatchQr = useMemo(() => {
+    if (!template.startsWith('/batch-qr/')) return false;
+    const qrId = paramValues.qrId?.trim();
+    return !!qrId;
+  }, [paramValues.qrId, template]);
 
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -59,6 +67,14 @@ export default function WebRouteScreen({
       >
         <Text style={styles.headerBtnText}>Open</Text>
       </Pressable>
+      {canOpenNativeBatchQr ? (
+        <Pressable
+          onPress={() => navigation.navigate('BatchQRSubmit', { qrId: paramValues.qrId?.trim() })}
+          style={styles.headerBtn}
+        >
+          <Text style={styles.headerBtnText}>Open native</Text>
+        </Pressable>
+      ) : null}
       <Pressable onPress={() => setReloadKey((k) => k + 1)} style={styles.headerBtn}>
         <Text style={styles.headerBtnText}>Reload</Text>
       </Pressable>
