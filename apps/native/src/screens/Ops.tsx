@@ -12,6 +12,9 @@ type LinkItem = {
 };
 
 const LINKS: LinkItem[] = [
+  // Ops Tools hub (native)
+  { id: 'ops-tools', title: 'Ops Tools (Hub)', pathTemplate: '/ops-tools', group: 'Ops' },
+
   // Inventory (first migration target)
   { id: 'inventory-manager', title: 'Inventory Manager', pathTemplate: '/inventory-manager', group: 'Inventory' },
   { id: 'all-inventory', title: 'All Inventory', pathTemplate: '/all-inventory', group: 'Inventory' },
@@ -117,6 +120,10 @@ export default function OpsScreen({ navigation }: { navigation: Nav }) {
                   key={it.id}
                   style={styles.item}
                   onPress={() => {
+                    if (it.id === 'ops-tools') {
+                      navigation.navigate('OpsToolsHub');
+                      return;
+                    }
                     if (it.id === 'inventory-manager') {
                       navigation.navigate('InventoryManager');
                       return;

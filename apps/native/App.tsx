@@ -82,6 +82,7 @@ import MasterSpiritsScreen from './src/screens/MasterSpirits';
 import BatchActivityScreen from './src/screens/BatchActivity';
 import BatchQRSubmitScreen from './src/screens/BatchQRSubmit';
 import BatchQrScannerScreen from './src/screens/BatchQrScanner';
+import OpsToolsHubScreen from './src/screens/OpsToolsHub';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -432,6 +433,11 @@ function AppShell() {
         <Stack.Screen
           name="BatchQrScanner"
           component={BatchQrScannerScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OpsToolsHub"
+          component={OpsToolsHubScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
