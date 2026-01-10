@@ -12,27 +12,41 @@ type Nav = { navigate: (name: string, params?: any) => void; goBack: () => void 
 type UploadSessionRow = {
   id: string;
   file_name: string;
-  file_size: number;
+  file_size: number | string;
   file_type: string;
   status: string;
-  total_chunks: number;
-  uploaded_chunks: number;
+  total_chunks: number | string;
+  uploaded_chunks: number | string;
   priority: number;
   error_message: string | null;
   created_at: string;
 };
 
-function formatFileSize(bytes: number) {
-  if (!Number.isFinite(bytes)) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB (matches web)
+
+function toNumber(v: number | string | null | undefined) {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+function formatFileSize(bytes: number | string) {
+  const b = toNumber(bytes);
+  if (!Number.isFinite(b)) return '';
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(b / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 function progressPct(s: UploadSessionRow) {
-  if (!s.total_chunks) return 0;
-  return Math.max(0, Math.min(100, Math.round((s.uploaded_chunks / s.total_chunks) * 100)));
+  const total = toNumber(s.total_chunks);
+  const uploaded = toNumber(s.uploaded_chunks);
+  if (!total) return 0;
+  return Math.max(0, Math.min(100, Math.round((uploaded / total) * 100)));
 }
 
 function safeExtFromMime(mime: string | null | undefined) {
@@ -103,6 +117,9 @@ export default function UploadsScreen({
       if (!user?.id) throw new Error('Not signed in');
       if (!draftId) throw new Error('Open from a draft to attach media');
 
+      let sessionId: string | null = null;
+      let mediaAssetId: string | null = null;
+
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) throw new Error('Photo library permission is required');
 
@@ -118,73 +135,120 @@ export default function UploadsScreen({
       const isVideo = asset.type === 'video';
       const ext = safeExtFromMime(mime) || (isVideo ? 'mp4' : 'jpg');
       const fileName = (asset as any).fileName || `upload.${ext}`;
-      const fileSize = (asset as any).fileSize ?? 0;
       const fileType = mime || (isVideo ? 'video/mp4' : 'image/jpeg');
-
-      // Create a session for UI parity (simple single-chunk upload)
-      const sessionRes = await supabase
-        .from('upload_sessions')
-        .insert({
-          user_id: user.id,
-          status: 'active',
-          file_name: fileName,
-          file_size: fileSize,
-          file_type: fileType,
-          chunk_size: fileSize || 1,
-          total_chunks: 1,
-          uploaded_chunks: 0,
-          priority: 0,
-        })
-        .select('id')
-        .single();
-      if (sessionRes.error) throw sessionRes.error;
-      const sessionId = sessionRes.data.id as string;
 
       try {
         const blob = await (await fetch(asset.uri)).blob();
-        const path = `uploads/${user.id}/${draftId}/${Date.now()}-${fileName}`;
+        const fileSize = blob.size;
 
-        const up = await supabase.storage.from('media').upload(path, blob, { upsert: true, contentType: fileType });
-        if (up.error) throw up.error;
-
-        const { data: pub } = supabase.storage.from('media').getPublicUrl(path);
-        const publicUrl = pub.publicUrl;
-
-        const mediaRes = await supabase
+        // Create media asset first (upload_sessions links to it via media_asset_id)
+        const assetRes = await supabase
           .from('media_assets')
           .insert({
             user_id: user.id,
             draft_id: draftId,
             asset_type: isVideo ? 'video' : 'image',
-            status: 'ready',
-            storage_path: path,
-            public_url: publicUrl,
-            thumbnail_url: null,
-            file_size: blob.size,
+            status: 'uploading',
+            file_size: fileSize,
             mime_type: fileType,
+            storage_path: null,
+            public_url: null,
+            thumbnail_url: null,
           })
           .select('id')
           .single();
-        if (mediaRes.error) throw mediaRes.error;
+        if (assetRes.error) throw assetRes.error;
+        mediaAssetId = assetRes.data.id as string;
+
+        const totalChunks = Math.max(1, Math.ceil(fileSize / CHUNK_SIZE));
+        const sessionRes = await supabase
+          .from('upload_sessions')
+          .insert({
+            user_id: user.id,
+            media_asset_id: mediaAssetId,
+            status: 'active',
+            file_name: fileName,
+            file_size: fileSize,
+            file_type: fileType,
+            chunk_size: CHUNK_SIZE,
+            total_chunks: totalChunks,
+            uploaded_chunks: 0,
+            priority: 0,
+          })
+          .select('id')
+          .single();
+        if (sessionRes.error) throw sessionRes.error;
+        sessionId = sessionRes.data.id as string;
+
+        // Upload chunk objects (for parity/observability), then upload final object.
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, fileSize);
+          const chunk = blob.slice(start, end);
+          const chunkPath = `uploads/${user.id}/${sessionId}/chunk_${i}`;
+
+          const upChunk = await supabase.storage.from('media').upload(chunkPath, chunk, { upsert: true, contentType: fileType });
+          if (upChunk.error) throw upChunk.error;
+
+          const insChunk = await supabase.from('upload_chunks').insert({
+            session_id: sessionId,
+            chunk_index: i,
+            chunk_size: chunk.size,
+            uploaded: true,
+            verified: false,
+            storage_path: chunkPath,
+          });
+          if (insChunk.error) throw insChunk.error;
+
+          const upd = await supabase.from('upload_sessions').update({ uploaded_chunks: i + 1 }).eq('id', sessionId);
+          if (upd.error) throw upd.error;
+        }
+
+        const finalPath = `uploads/${user.id}/${sessionId}/${fileName}`;
+        const upFinal = await supabase.storage.from('media').upload(finalPath, blob, { upsert: true, contentType: fileType });
+        if (upFinal.error) throw upFinal.error;
+
+        const { data: pub } = supabase.storage.from('media').getPublicUrl(finalPath);
+        const publicUrl = pub.publicUrl;
+
+        const updAsset = await supabase
+          .from('media_assets')
+          .update({ status: 'ready', storage_path: finalPath, public_url: publicUrl })
+          .eq('id', mediaAssetId);
+        if (updAsset.error) throw updAsset.error;
 
         await supabase.from('history_events').insert({
           draft_id: draftId,
           user_id: user.id,
           event_type: 'UPLOAD_COMPLETED',
-          event_data: { file_name: fileName, storage_path: path },
+          event_data: { file_name: fileName, storage_path: finalPath, media_asset_id: mediaAssetId },
         });
 
-        const done = await supabase.from('upload_sessions').update({ status: 'completed', uploaded_chunks: 1 }).eq('id', sessionId);
+        const done = await supabase
+          .from('upload_sessions')
+          .update({ status: 'completed', uploaded_chunks: totalChunks, error_message: null })
+          .eq('id', sessionId);
         if (done.error) throw done.error;
 
         await queryClient.invalidateQueries({ queryKey: ['studio', 'draft', draftId] });
         await queryClient.invalidateQueries({ queryKey: ['studio', 'drafts'] });
         await queryClient.invalidateQueries({ queryKey: ['studio', 'uploads'] });
       } catch (e: any) {
-        await supabase
-          .from('upload_sessions')
-          .update({ status: 'failed', error_message: e?.message ?? 'Upload failed' })
-          .eq('id', sessionId);
+        const msg = e?.message ?? 'Upload failed';
+        if (sessionId) {
+          try {
+            await supabase.from('upload_sessions').update({ status: 'failed', error_message: msg }).eq('id', sessionId);
+          } catch {
+            // ignore
+          }
+        }
+        if (mediaAssetId) {
+          try {
+            await supabase.from('media_assets').update({ status: 'failed', processing_error: msg }).eq('id', mediaAssetId);
+          } catch {
+            // ignore
+          }
+        }
         throw e;
       }
     },
