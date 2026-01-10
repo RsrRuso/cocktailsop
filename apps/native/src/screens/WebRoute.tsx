@@ -18,11 +18,11 @@ export default function WebRouteScreen({
   route,
   navigation,
 }: {
-  route: { params: { pathTemplate: string; title?: string } };
+  route: { params: { pathTemplate: string; title?: string; initialParams?: Record<string, string> } };
   navigation: { navigate: (name: string, params?: any) => void };
 }) {
   const template = route.params.pathTemplate;
-  const [paramValues, setParamValues] = useState<Record<string, string>>({});
+  const [paramValues, setParamValues] = useState<Record<string, string>>(route.params.initialParams ?? {});
 
   const paramNames = useMemo(() => extractParamNames(template), [template]);
   const filledPath = useMemo(() => fillTemplate(template, paramValues), [template, paramValues]);

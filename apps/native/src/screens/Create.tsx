@@ -7,7 +7,15 @@ import { useCreatePost } from '../features/social/mutations';
 import { useCreateReel, useCreateStory } from '../features/social/create';
 import { uploadAssetToBucket } from '../lib/storageUpload';
 
-export default function CreateScreen({ route }: { route?: { params?: { mode?: 'post' | 'story' | 'reel' } } }) {
+type Nav = { navigate: (name: string, params?: any) => void };
+
+export default function CreateScreen({
+  navigation,
+  route,
+}: {
+  navigation?: Nav;
+  route?: { params?: { mode?: 'post' | 'story' | 'reel' } };
+}) {
   const routeParams = route?.params ?? {};
   const { user } = useAuth();
   const createPost = useCreatePost();
@@ -95,7 +103,22 @@ export default function CreateScreen({ route }: { route?: { params?: { mode?: 'p
 
   return (
     <ScrollView style={{ flex:1, backgroundColor:'#020617' }} contentContainerStyle={{ padding:12, paddingBottom:96 }}>
-      <Text style={{ color:'#fff', fontWeight:'900', marginBottom:8, fontSize: 18 }}>Create</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={{ color:'#fff', fontWeight:'900', fontSize: 18 }}>Create</Text>
+        <Pressable
+          onPress={() => navigation?.navigate('Drafts')}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.14)',
+            backgroundColor: 'rgba(255,255,255,0.06)',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '900' }}>Drafts</Text>
+        </Pressable>
+      </View>
 
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
         {(['post','story','reel'] as const).map((m) => (
