@@ -112,11 +112,7 @@ export default function DraftsScreen({ navigation }: { navigation: Nav }) {
     },
     onSuccess: async (draftId) => {
       await queryClient.invalidateQueries({ queryKey: ['studio', 'drafts'] });
-      navigation.navigate('WebRoute', {
-        title: 'Studio Draft',
-        pathTemplate: '/studio/:draftId',
-        initialParams: { draftId },
-      });
+      navigation.navigate('StudioDraft', { draftId });
     },
   });
 
@@ -261,11 +257,7 @@ export default function DraftsScreen({ navigation }: { navigation: Nav }) {
               <DraftCard
                 draft={parent}
                 onOpen={() =>
-                  navigation.navigate('WebRoute', {
-                    title: 'Studio Draft',
-                    pathTemplate: '/studio/:draftId',
-                    initialParams: { draftId: parent.id },
-                  })
+                  navigation.navigate('StudioDraft', { draftId: parent.id })
                 }
                 onPublish={() =>
                   navigation.navigate('WebRoute', {
@@ -292,11 +284,7 @@ export default function DraftsScreen({ navigation }: { navigation: Nav }) {
                       draft={b}
                       isBranch
                       onOpen={() =>
-                        navigation.navigate('WebRoute', {
-                          title: 'Studio Draft',
-                          pathTemplate: '/studio/:draftId',
-                          initialParams: { draftId: b.id },
-                        })
+                        navigation.navigate('StudioDraft', { draftId: b.id })
                       }
                       onPublish={() =>
                         navigation.navigate('WebRoute', {

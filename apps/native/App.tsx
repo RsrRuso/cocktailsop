@@ -84,6 +84,7 @@ import BatchQRSubmitScreen from './src/screens/BatchQRSubmit';
 import BatchQrScannerScreen from './src/screens/BatchQrScanner';
 import OpsToolsHubScreen from './src/screens/OpsToolsHub';
 import DraftsScreen from './src/screens/Drafts';
+import StudioDraftScreen from './src/screens/StudioDraft';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -444,6 +445,11 @@ function AppShell() {
         <Stack.Screen
           name="Drafts"
           component={DraftsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StudioDraft"
+          component={StudioDraftScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
