@@ -256,11 +256,6 @@ const StoreDetail = () => {
                             Avg across stores: {avgQuantity.toFixed(1)}
                           </p>
                         )}
-                        {inv.expiration_date && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Expires: {new Date(inv.expiration_date).toLocaleDateString()}
-                          </p>
-                        )}
                       </CardContent>
                     </Card>
                   );
