@@ -249,15 +249,10 @@ export default function StudioDraftScreen({
                 <Text style={{ color: '#9aa4b2', marginTop: 8, fontWeight: '800' }}>No media attached yet</Text>
                 <Text style={{ color: '#6b7280', marginTop: 4, fontSize: 12 }}>Uploads are still web-only for now.</Text>
                 <Pressable
-                  onPress={() =>
-                    navigation.navigate('WebRoute', {
-                      title: 'Uploads',
-                      pathTemplate: '/uploads',
-                    })
-                  }
+                  onPress={() => navigation.navigate('Uploads', { draftId })}
                   style={[styles.smallBtn, { marginTop: 10 }]}
                 >
-                  <Text style={styles.smallBtnText}>Open uploads (web)</Text>
+                  <Text style={styles.smallBtnText}>Open uploads</Text>
                 </Pressable>
               </View>
             )}

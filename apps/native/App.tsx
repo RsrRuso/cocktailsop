@@ -86,6 +86,7 @@ import OpsToolsHubScreen from './src/screens/OpsToolsHub';
 import DraftsScreen from './src/screens/Drafts';
 import StudioDraftScreen from './src/screens/StudioDraft';
 import PublishDraftScreen from './src/screens/PublishDraft';
+import UploadsScreen from './src/screens/Uploads';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -456,6 +457,11 @@ function AppShell() {
         <Stack.Screen
           name="PublishDraft"
           component={PublishDraftScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Uploads"
+          component={UploadsScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

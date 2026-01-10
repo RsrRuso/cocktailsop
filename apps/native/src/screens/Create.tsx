@@ -105,19 +105,34 @@ export default function CreateScreen({
     <ScrollView style={{ flex:1, backgroundColor:'#020617' }} contentContainerStyle={{ padding:12, paddingBottom:96 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <Text style={{ color:'#fff', fontWeight:'900', fontSize: 18 }}>Create</Text>
-        <Pressable
-          onPress={() => navigation?.navigate('Drafts')}
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.14)',
-            backgroundColor: 'rgba(255,255,255,0.06)',
-          }}
-        >
-          <Text style={{ color: '#fff', fontWeight: '900' }}>Drafts</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Pressable
+            onPress={() => navigation?.navigate('Drafts')}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.14)',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900' }}>Drafts</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => navigation?.navigate('Uploads')}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.14)',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900' }}>Uploads</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
