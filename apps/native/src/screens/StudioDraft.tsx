@@ -21,10 +21,13 @@ type DraftRow = {
   trim_start: number | null;
   trim_end: number | null;
   aspect_ratio: string | null;
+  cover_asset_id: string | null;
+  crop_data: any | null;
   updated_at: string;
 };
 
 type MediaAssetRow = {
+  id?: string;
   status: string | null;
   public_url: string | null;
   thumbnail_url: string | null;
@@ -62,7 +65,7 @@ export default function StudioDraftScreen({
 
       const assetRes = await supabase
         .from('media_assets')
-        .select('status, public_url, thumbnail_url, asset_type')
+        .select('id, status, public_url, thumbnail_url, asset_type')
         .eq('draft_id', draftId)
         .eq('status', 'ready')
         .order('updated_at', { ascending: false })
@@ -86,6 +89,7 @@ export default function StudioDraftScreen({
   const [needsApproval, setNeedsApproval] = useState(false);
   const [trimStart, setTrimStart] = useState('0');
   const [trimEnd, setTrimEnd] = useState('');
+  const [aspectRatio, setAspectRatio] = useState<'9:16' | '1:1' | '4:5' | '16:9'>('9:16');
 
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -108,6 +112,8 @@ export default function StudioDraftScreen({
       needs_approval: !!d.needs_approval,
       trim_start: d.trim_start ?? 0,
       trim_end: d.trim_end ?? null,
+      aspect_ratio: d.aspect_ratio ?? '9:16',
+      cover_asset_id: d.cover_asset_id ?? null,
     });
     if (key === lastLoadedRef.current) return;
     lastLoadedRef.current = key;
@@ -119,6 +125,8 @@ export default function StudioDraftScreen({
     setNeedsApproval(!!d.needs_approval);
     setTrimStart(String(d.trim_start ?? 0));
     setTrimEnd(d.trim_end == null ? '' : String(d.trim_end));
+    const ar = (d.aspect_ratio ?? '9:16') as any;
+    setAspectRatio(ar === '1:1' || ar === '4:5' || ar === '16:9' ? ar : '9:16');
   }, [draftQuery.data?.draft]);
 
   const doSave = useMutation({
@@ -177,6 +185,13 @@ export default function StudioDraftScreen({
 
   const draftType = (draftQuery.data?.draft.draft_type ?? 'reel').toLowerCase();
   const media = draftQuery.data?.media ?? null;
+
+  const coverPreviewUrl = useMemo(() => {
+    const coverId = draftQuery.data?.draft.cover_asset_id ?? null;
+    if (!coverId) return '';
+    if (media?.id && media.id === coverId) return media.thumbnail_url || media.public_url || '';
+    return '';
+  }, [draftQuery.data?.draft.cover_asset_id, media?.id, media?.public_url, media?.thumbnail_url]);
 
   const previewUrl = useMemo(() => {
     return media?.public_url || media?.thumbnail_url || '';
@@ -257,6 +272,48 @@ export default function StudioDraftScreen({
               </View>
             )}
           </View>
+        </View>
+
+        <View style={{ height: 12 }} />
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Cover & Aspect</Text>
+          <Text style={styles.muted}>Pick a cover image and set aspect ratio (full crop editor is still web-only).</Text>
+
+          <View style={{ height: 10 }} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {(['9:16', '1:1', '4:5', '16:9'] as const).map((v) => (
+              <Pressable
+                key={v}
+                onPress={() => {
+                  setAspectRatio(v);
+                  scheduleSave({ aspect_ratio: v as any });
+                  scheduleSave({ crop_data: { mode: 'center', aspect_ratio: v } as any });
+                }}
+                style={[styles.chip, aspectRatio === v ? styles.chipActive : null]}
+              >
+                <Text style={[styles.chipText, aspectRatio === v ? styles.chipTextActive : null]}>{v}</Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => scheduleSave({ crop_data: null as any })} style={styles.chip}>
+              <Text style={styles.chipText}>Reset crop</Text>
+            </Pressable>
+          </View>
+
+          <View style={{ height: 10 }} />
+          <Text style={styles.muted}>
+            Cover: {draftQuery.data?.draft.cover_asset_id ? draftQuery.data.draft.cover_asset_id.slice(0, 8) : '(not set)'}
+          </Text>
+          {coverPreviewUrl ? (
+            <View style={{ marginTop: 10, height: 140, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }}>
+              <Image source={{ uri: coverPreviewUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            </View>
+          ) : null}
+
+          <View style={{ height: 10 }} />
+          <Pressable onPress={() => navigation.navigate('CoverPicker', { draftId })} style={[styles.btn, { alignSelf: 'flex-start' }]}>
+            <Text style={styles.btnText}>Choose cover</Text>
+          </Pressable>
         </View>
 
         <View style={{ height: 12 }} />

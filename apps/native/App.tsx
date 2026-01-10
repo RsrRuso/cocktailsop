@@ -88,6 +88,7 @@ import StudioDraftScreen from './src/screens/StudioDraft';
 import PublishDraftScreen from './src/screens/PublishDraft';
 import UploadsScreen from './src/screens/Uploads';
 import ApprovalsScreen from './src/screens/Approvals';
+import CoverPickerScreen from './src/screens/CoverPicker';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -468,6 +469,11 @@ function AppShell() {
         <Stack.Screen
           name="Approvals"
           component={ApprovalsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CoverPicker"
+          component={CoverPickerScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
