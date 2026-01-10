@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { queryClient } from '../lib/queryClient';
@@ -11,6 +12,7 @@ type Nav = { navigate: (name: string, params?: any) => void; goBack: () => void 
 
 type UploadSessionRow = {
   id: string;
+  media_asset_id?: string | null;
   file_name: string;
   file_size: number | string;
   file_type: string;
@@ -22,7 +24,10 @@ type UploadSessionRow = {
   created_at: string;
 };
 
+type LocalUploadRef = { localUri: string; mimeType: string; fileName: string; updatedAt: number };
+
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB (matches web)
+const LOCAL_REFS_KEY = 'specverse.upload_session_local_refs.v1';
 
 function toNumber(v: number | string | null | undefined) {
   if (typeof v === 'number') return v;
@@ -60,6 +65,31 @@ function safeExtFromMime(mime: string | null | undefined) {
   return 'bin';
 }
 
+async function getLocalRefs(): Promise<Record<string, LocalUploadRef>> {
+  try {
+    const raw = await AsyncStorage.getItem(LOCAL_REFS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, LocalUploadRef>;
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+async function setLocalRef(sessionId: string, ref: LocalUploadRef) {
+  const refs = await getLocalRefs();
+  refs[sessionId] = ref;
+  await AsyncStorage.setItem(LOCAL_REFS_KEY, JSON.stringify(refs));
+}
+
+async function removeLocalRef(sessionId: string) {
+  const refs = await getLocalRefs();
+  if (!refs[sessionId]) return;
+  delete refs[sessionId];
+  await AsyncStorage.setItem(LOCAL_REFS_KEY, JSON.stringify(refs));
+}
+
 export default function UploadsScreen({
   navigation,
   route,
@@ -76,7 +106,7 @@ export default function UploadsScreen({
       if (!user?.id) return [];
       const res = await supabase
         .from('upload_sessions')
-        .select('id, file_name, file_size, file_type, status, total_chunks, uploaded_chunks, priority, error_message, created_at')
+        .select('id, media_asset_id, file_name, file_size, file_type, status, total_chunks, uploaded_chunks, priority, error_message, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -109,6 +139,136 @@ export default function UploadsScreen({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['studio', 'uploads'] });
+    },
+  });
+
+  const resumeSession = useMutation({
+    mutationFn: async ({ sessionId }: { sessionId: string }) => {
+      if (!user?.id) throw new Error('Not signed in');
+
+      const sRes = await supabase
+        .from('upload_sessions')
+        .select('id, media_asset_id, file_name, file_size, file_type, status, total_chunks, uploaded_chunks, error_message')
+        .eq('id', sessionId)
+        .single();
+      if (sRes.error) throw sRes.error;
+      const s = sRes.data as unknown as UploadSessionRow;
+
+      if (s.status === 'cancelled' || s.status === 'completed') return;
+      if (!s.media_asset_id) throw new Error('This session is missing media_asset_id');
+
+      const aRes = await supabase
+        .from('media_assets')
+        .select('id, draft_id, mime_type')
+        .eq('id', s.media_asset_id)
+        .single();
+      if (aRes.error) throw aRes.error;
+      const linkedDraftId = (aRes.data as any)?.draft_id as string | null;
+      const mimeType = ((aRes.data as any)?.mime_type as string | null) ?? s.file_type;
+
+      if (!linkedDraftId) throw new Error('Media asset is not linked to a draft');
+
+      const refs = await getLocalRefs();
+      let localUri = refs[sessionId]?.localUri ?? '';
+
+      if (!localUri) {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) throw new Error('Photo library permission is required');
+
+        const picked = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsMultipleSelection: false,
+          quality: 1,
+        });
+        if (picked.canceled) return;
+        localUri = picked.assets[0].uri;
+        await setLocalRef(sessionId, {
+          localUri,
+          mimeType: (picked.assets[0] as any)?.mimeType ?? mimeType,
+          fileName: s.file_name,
+          updatedAt: Date.now(),
+        });
+      }
+
+      const blob = await (await fetch(localUri)).blob();
+      const expectedSize = toNumber(s.file_size);
+      if (expectedSize && blob.size !== expectedSize) {
+        throw new Error('Selected file does not match original file size');
+      }
+
+      const totalChunks = Math.max(1, toNumber(s.total_chunks) || Math.ceil(blob.size / CHUNK_SIZE));
+      const already = Math.max(0, Math.min(totalChunks, toNumber(s.uploaded_chunks)));
+
+      // Mark active before continuing
+      const startUpd = await supabase.from('upload_sessions').update({ status: 'active', error_message: null }).eq('id', sessionId);
+      if (startUpd.error) throw startUpd.error;
+
+      for (let i = already; i < totalChunks; i++) {
+        // If paused/cancelled in DB, stop cleanly.
+        const check = await supabase.from('upload_sessions').select('status').eq('id', sessionId).single();
+        if (!check.error && (check.data as any)?.status === 'paused') return;
+        if (!check.error && (check.data as any)?.status === 'cancelled') return;
+
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, blob.size);
+        const chunk = blob.slice(start, end);
+        const chunkPath = `uploads/${user.id}/${sessionId}/chunk_${i}`;
+
+        const upChunk = await supabase.storage.from('media').upload(chunkPath, chunk, { upsert: true, contentType: mimeType ?? s.file_type });
+        if (upChunk.error) throw upChunk.error;
+
+        const upsertChunk = await supabase
+          .from('upload_chunks')
+          .upsert(
+            {
+              session_id: sessionId,
+              chunk_index: i,
+              chunk_size: chunk.size,
+              uploaded: true,
+              verified: false,
+              storage_path: chunkPath,
+            },
+            { onConflict: 'session_id,chunk_index' },
+          );
+        if (upsertChunk.error) throw upsertChunk.error;
+
+        const upd = await supabase.from('upload_sessions').update({ uploaded_chunks: i + 1 }).eq('id', sessionId);
+        if (upd.error) throw upd.error;
+      }
+
+      const finalPath = `uploads/${user.id}/${sessionId}/${s.file_name}`;
+      const upFinal = await supabase.storage.from('media').upload(finalPath, blob, { upsert: true, contentType: mimeType ?? s.file_type });
+      if (upFinal.error) throw upFinal.error;
+
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(finalPath);
+      const publicUrl = pub.publicUrl;
+
+      const updAsset = await supabase
+        .from('media_assets')
+        .update({ status: 'ready', storage_path: finalPath, public_url: publicUrl })
+        .eq('id', s.media_asset_id);
+      if (updAsset.error) throw updAsset.error;
+
+      const done = await supabase
+        .from('upload_sessions')
+        .update({ status: 'completed', uploaded_chunks: totalChunks, error_message: null })
+        .eq('id', sessionId);
+      if (done.error) throw done.error;
+
+      await supabase.from('history_events').insert({
+        draft_id: linkedDraftId,
+        user_id: user.id,
+        event_type: 'UPLOAD_COMPLETED',
+        event_data: { file_name: s.file_name, storage_path: finalPath, media_asset_id: s.media_asset_id },
+      });
+
+      await removeLocalRef(sessionId);
+      await queryClient.invalidateQueries({ queryKey: ['studio', 'draft', linkedDraftId] });
+      await queryClient.invalidateQueries({ queryKey: ['studio', 'drafts'] });
+      await queryClient.invalidateQueries({ queryKey: ['studio', 'uploads'] });
+    },
+    onError: (e: any) => {
+      Alert.alert('Resume failed', e?.message ?? 'Unknown error');
     },
   });
 
@@ -180,6 +340,8 @@ export default function UploadsScreen({
         if (sessionRes.error) throw sessionRes.error;
         sessionId = sessionRes.data.id as string;
 
+        await setLocalRef(sessionId, { localUri: asset.uri, mimeType: fileType, fileName, updatedAt: Date.now() });
+
         // Upload chunk objects (for parity/observability), then upload final object.
         for (let i = 0; i < totalChunks; i++) {
           const start = i * CHUNK_SIZE;
@@ -190,15 +352,20 @@ export default function UploadsScreen({
           const upChunk = await supabase.storage.from('media').upload(chunkPath, chunk, { upsert: true, contentType: fileType });
           if (upChunk.error) throw upChunk.error;
 
-          const insChunk = await supabase.from('upload_chunks').insert({
-            session_id: sessionId,
-            chunk_index: i,
-            chunk_size: chunk.size,
-            uploaded: true,
-            verified: false,
-            storage_path: chunkPath,
-          });
-          if (insChunk.error) throw insChunk.error;
+          const upsertChunk = await supabase
+            .from('upload_chunks')
+            .upsert(
+              {
+                session_id: sessionId,
+                chunk_index: i,
+                chunk_size: chunk.size,
+                uploaded: true,
+                verified: false,
+                storage_path: chunkPath,
+              },
+              { onConflict: 'session_id,chunk_index' },
+            );
+          if (upsertChunk.error) throw upsertChunk.error;
 
           const upd = await supabase.from('upload_sessions').update({ uploaded_chunks: i + 1 }).eq('id', sessionId);
           if (upd.error) throw upd.error;
@@ -230,6 +397,7 @@ export default function UploadsScreen({
           .eq('id', sessionId);
         if (done.error) throw done.error;
 
+        await removeLocalRef(sessionId);
         await queryClient.invalidateQueries({ queryKey: ['studio', 'draft', draftId] });
         await queryClient.invalidateQueries({ queryKey: ['studio', 'drafts'] });
         await queryClient.invalidateQueries({ queryKey: ['studio', 'uploads'] });
@@ -245,6 +413,13 @@ export default function UploadsScreen({
         if (mediaAssetId) {
           try {
             await supabase.from('media_assets').update({ status: 'failed', processing_error: msg }).eq('id', mediaAssetId);
+          } catch {
+            // ignore
+          }
+        }
+        if (sessionId) {
+          try {
+            await removeLocalRef(sessionId);
           } catch {
             // ignore
           }
@@ -347,8 +522,8 @@ export default function UploadsScreen({
                     {s.status === 'paused' ? (
                       <Pressable
                         style={styles.smallBtn}
-                        onPress={() => updateSession.mutate({ id: s.id, updates: { status: 'active' } as any })}
-                        disabled={updateSession.isPending}
+                        onPress={() => resumeSession.mutate({ sessionId: s.id })}
+                        disabled={resumeSession.isPending}
                       >
                         <Text style={styles.smallBtnText}>Resume</Text>
                       </Pressable>
@@ -356,8 +531,8 @@ export default function UploadsScreen({
                     {s.status === 'failed' ? (
                       <Pressable
                         style={styles.smallBtn}
-                        onPress={() => updateSession.mutate({ id: s.id, updates: { status: 'active', error_message: null } as any })}
-                        disabled={updateSession.isPending}
+                        onPress={() => resumeSession.mutate({ sessionId: s.id })}
+                        disabled={resumeSession.isPending}
                       >
                         <Text style={styles.smallBtnText}>Retry</Text>
                       </Pressable>
@@ -375,7 +550,7 @@ export default function UploadsScreen({
                             },
                           ])
                         }
-                        disabled={updateSession.isPending}
+                        disabled={updateSession.isPending || resumeSession.isPending}
                       >
                         <Text style={[styles.smallBtnText, { color: '#fecaca' }]}>Cancel</Text>
                       </Pressable>
