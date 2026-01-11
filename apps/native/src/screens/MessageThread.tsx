@@ -1,12 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { ResizeMode, Video } from 'expo-av';
 import { useAuth } from '../contexts/AuthContext';
 import { useSendMessage, useThread } from '../features/messaging/thread';
 import { uploadAssetToBucket } from '../lib/storageUpload';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
+
+function rand() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 export default function MessageThreadScreen({ route }: { route: { params: { conversationId: string } } }) {
   const { user } = useAuth();
@@ -179,6 +184,40 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
     }
   }
 
+  async function pickAndSendDocument() {
+    if (!user?.id) return;
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const doc = result.assets[0];
+
+    try {
+      const blob = await (await fetch(doc.uri)).blob();
+      const name = doc.name || `document-${Date.now()}`;
+      const ext = name.includes('.') ? name.split('.').pop() : 'bin';
+      const contentType = doc.mimeType ?? 'application/octet-stream';
+      const path = `${user.id}/${Date.now()}-${rand()}.${ext}`;
+
+      // Keep parity with web: messages/doc uploads currently use the `stories` bucket.
+      const up = await supabase.storage.from('stories').upload(path, blob, { contentType, upsert: false });
+      if (up.error) throw up.error;
+      const { data } = supabase.storage.from('stories').getPublicUrl(path);
+
+      await send.mutateAsync({
+        conversationId,
+        senderId: user.id,
+        content: '📎 Document',
+        mediaUrl: data.publicUrl,
+        mediaType: 'document',
+      });
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    } catch {
+      // Minimal handling for now
+    }
+  }
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#020617' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)' }}>
@@ -232,6 +271,22 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
                       />
                     </View>
                   ) : null}
+                  {item.media_url && item.media_type === 'document' ? (
+                    <Pressable
+                      onPress={() => (item.media_url ? Linking.openURL(item.media_url).catch(() => {}) : undefined)}
+                      style={{
+                        marginTop: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.14)',
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '900' }}>Open document</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
                 <Text style={{ color: '#64748b', fontSize: 10, marginTop: 4, alignSelf: mine ? 'flex-end' : 'flex-start' }}>
                   {new Date(item.created_at).toLocaleTimeString()}
@@ -257,6 +312,19 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
             }}
           >
             <Text style={{ color: '#fff', fontWeight: '900' }}>📷</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => pickAndSendDocument().catch(() => {})}
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+              borderRadius: 14,
+              backgroundColor: 'rgba(255,255,255,0.06)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.12)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900' }}>📎</Text>
           </Pressable>
           <Pressable
             onPress={() => pickAndSend('video').catch(() => {})}
