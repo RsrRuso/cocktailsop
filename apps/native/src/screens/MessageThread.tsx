@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Audio, ResizeMode, Video } from 'expo-av';
@@ -11,6 +11,29 @@ import { queryClient } from '../lib/queryClient';
 
 function rand() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+type Reaction = { emoji: string; user_ids: string[] };
+
+const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🔥'] as const;
+
+function normalizeReactions(raw: any): Reaction[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .map((r) => ({
+        emoji: String(r?.emoji ?? ''),
+        user_ids: Array.isArray(r?.user_ids) ? r.user_ids.map((x: any) => String(x)) : [],
+      }))
+      .filter((r) => r.emoji && r.user_ids.length > 0);
+  }
+  // If stored as object map: {emoji: [userIds]}
+  if (raw && typeof raw === 'object') {
+    return Object.entries(raw)
+      .map(([emoji, users]) => ({ emoji, user_ids: Array.isArray(users) ? users.map((x: any) => String(x)) : [] }))
+      .filter((r) => r.emoji && r.user_ids.length > 0);
+  }
+  return [];
 }
 
 export default function MessageThreadScreen({ route }: { route: { params: { conversationId: string } } }) {
@@ -34,6 +57,10 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
 
   const messages = data ?? [];
   const canSend = useMemo(() => !!user?.id && text.trim().length > 0 && !send.isPending, [user?.id, text, send.isPending]);
+  const [actionMsg, setActionMsg] = useState<any | null>(null);
+  const [editMsg, setEditMsg] = useState<any | null>(null);
+  const [editText, setEditText] = useState('');
+  const [showEdit, setShowEdit] = useState(false);
 
   // Presence + typing using Supabase Realtime presence
   useEffect(() => {
@@ -115,12 +142,143 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
           setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 30);
         },
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const next = payload.new as any;
+          queryClient.setQueryData(['thread', conversationId], (old: any) => {
+            const arr = Array.isArray(old) ? old : [];
+            return arr.map((m: any) => (m.id === next.id ? { ...m, ...next } : m));
+          });
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const deletedId = (payload.old as any)?.id;
+          if (!deletedId) return;
+          queryClient.setQueryData(['thread', conversationId], (old: any) => {
+            const arr = Array.isArray(old) ? old : [];
+            return arr.filter((m: any) => m.id !== deletedId);
+          });
+        },
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [conversationId, user?.id]);
+
+  async function toggleReaction(message: any, emoji: string) {
+    if (!user?.id) return;
+    const current = normalizeReactions(message.reactions);
+    const userExisting = current.find((r) => r.user_ids.includes(user.id));
+
+    let cleaned = current;
+    if (userExisting) {
+      cleaned = current
+        .map((r) => ({ ...r, user_ids: r.user_ids.filter((id) => id !== user.id) }))
+        .filter((r) => r.user_ids.length > 0);
+    }
+
+    const existing = cleaned.find((r) => r.emoji === emoji);
+    let updated: Reaction[];
+    if (existing) {
+      if (userExisting && userExisting.emoji === emoji) {
+        updated = cleaned;
+      } else {
+        existing.user_ids.push(user.id);
+        updated = cleaned;
+      }
+    } else {
+      updated = [...cleaned, { emoji, user_ids: [user.id] }];
+    }
+
+    queryClient.setQueryData(['thread', conversationId], (old: any) => {
+      const arr = Array.isArray(old) ? old : [];
+      return arr.map((m: any) => (m.id === message.id ? { ...m, reactions: updated } : m));
+    });
+
+    const { error } = await supabase.from('messages').update({ reactions: updated }).eq('id', message.id);
+    if (error) {
+      // revert
+      queryClient.setQueryData(['thread', conversationId], (old: any) => {
+        const arr = Array.isArray(old) ? old : [];
+        return arr.map((m: any) => (m.id === message.id ? message : m));
+      });
+    }
+  }
+
+  async function deleteMessage(message: any) {
+    if (!user?.id) return;
+    if (message.sender_id !== user.id) return;
+
+    // Optimistic
+    queryClient.setQueryData(['thread', conversationId], (old: any) => {
+      const arr = Array.isArray(old) ? old : [];
+      return arr.filter((m: any) => m.id !== message.id);
+    });
+
+    try {
+      if (message.media_url) {
+        try {
+          const urlParts = String(message.media_url).split('/');
+          const filePath = urlParts.slice(-2).join('/');
+          await supabase.storage.from('stories').remove([filePath]);
+        } catch {
+          // ignore
+        }
+      }
+      const res = await supabase.from('messages').delete().eq('id', message.id);
+      if (res.error) throw res.error;
+    } catch {
+      // revert
+      queryClient.setQueryData(['thread', conversationId], (old: any) => {
+        const arr = Array.isArray(old) ? old : [];
+        if (arr.some((m: any) => m.id === message.id)) return arr;
+        return [...arr, message].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      });
+    }
+  }
+
+  async function saveEditMessage(message: any) {
+    if (!user?.id) return;
+    if (message.sender_id !== user.id) return;
+    const next = editText.trim();
+    if (!next) return;
+    setShowEdit(false);
+    setEditMsg(null);
+
+    const patched = { ...message, content: next, edited: true, edited_at: new Date().toISOString() };
+    queryClient.setQueryData(['thread', conversationId], (old: any) => {
+      const arr = Array.isArray(old) ? old : [];
+      return arr.map((m: any) => (m.id === message.id ? patched : m));
+    });
+
+    const res = await supabase
+      .from('messages')
+      .update({ content: next, edited: true, edited_at: patched.edited_at })
+      .eq('id', message.id);
+    if (res.error) {
+      queryClient.setQueryData(['thread', conversationId], (old: any) => {
+        const arr = Array.isArray(old) ? old : [];
+        return arr.map((m: any) => (m.id === message.id ? message : m));
+      });
+    }
+  }
 
   // Track typing state (updates presence payload)
   useEffect(() => {
@@ -372,6 +530,183 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
         </Text>
       </View>
 
+      <Modal transparent visible={!!actionMsg} animationType="fade" onRequestClose={() => setActionMsg(null)}>
+        <Pressable
+          onPress={() => setActionMsg(null)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }}
+        >
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: '#0b1220',
+              borderTopLeftRadius: 18,
+              borderTopRightRadius: 18,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.10)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>React</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+              {QUICK_REACTIONS.map((e) => (
+                <Pressable
+                  key={e}
+                  onPress={() => {
+                    const msg = actionMsg;
+                    setActionMsg(null);
+                    if (msg) toggleReaction(msg, e).catch(() => {});
+                  }}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>{e}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={{ height: 12 }} />
+
+            {actionMsg?.sender_id === user?.id ? (
+              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+                <Pressable
+                  onPress={() => {
+                    setShowEdit(true);
+                    setEditMsg(actionMsg);
+                    setActionMsg(null);
+                  }}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '900' }}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    const msg = actionMsg;
+                    setActionMsg(null);
+                    if (!msg) return;
+                    Alert.alert('Delete message?', 'This cannot be undone.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteMessage(msg).catch(() => {}) },
+                    ]);
+                  }}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(239,68,68,0.40)',
+                    backgroundColor: 'rgba(239,68,68,0.10)',
+                  }}
+                >
+                  <Text style={{ color: '#fecaca', fontWeight: '900' }}>Delete</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            <View style={{ height: 10 }} />
+            <Pressable
+              onPress={() => setActionMsg(null)}
+              style={{
+                paddingVertical: 12,
+                borderRadius: 14,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.14)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '900' }}>Close</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={showEdit} animationType="fade" onRequestClose={() => setShowEdit(false)}>
+        <Pressable
+          onPress={() => setShowEdit(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 16 }}
+        >
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: '#0b1220',
+              borderRadius: 18,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.10)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>Edit message</Text>
+            <TextInput
+              value={editText}
+              onChangeText={setEditText}
+              placeholder="Message…"
+              placeholderTextColor="#6b7280"
+              style={{
+                marginTop: 10,
+                minHeight: 44,
+                maxHeight: 160,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                color: '#fff',
+              }}
+              multiline
+            />
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+              <Pressable
+                onPress={() => setShowEdit(false)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.14)',
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '900' }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  const msg = editMsg;
+                  if (!msg) return;
+                  saveEditMessage(msg).catch(() => {});
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(37,99,235,0.55)',
+                  backgroundColor: 'rgba(37,99,235,0.18)',
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '900' }}>Save</Text>
+              </Pressable>
+            </View>
+            <Text style={{ color: '#9aa4b2', fontSize: 12, marginTop: 8 }}>Edits sync in realtime.</Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {isLoading ? (
         <View style={{ padding: 12 }}>
           <Text style={{ color: '#9aa4b2' }}>Loading…</Text>
@@ -384,9 +719,14 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
           contentContainerStyle={{ padding: 12, paddingBottom: 96, gap: 8 }}
           renderItem={({ item }) => {
             const mine = item.sender_id === user?.id;
+            const reactions = normalizeReactions(item.reactions);
             return (
               <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                <View
+                <Pressable
+                  onLongPress={() => {
+                    setActionMsg(item);
+                    setEditText(item.content ?? '');
+                  }}
                   style={{
                     paddingHorizontal: 12,
                     paddingVertical: 10,
@@ -451,7 +791,32 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
                       <Text style={{ color: '#e2e8f0', fontWeight: '800' }}>Voice message</Text>
                     </Pressable>
                   ) : null}
-                </View>
+                </Pressable>
+                {reactions.length > 0 ? (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, alignSelf: mine ? 'flex-end' : 'flex-start' }}>
+                    {reactions.map((r) => {
+                      const mineReacted = !!user?.id && r.user_ids.includes(user.id);
+                      return (
+                        <Pressable
+                          key={`${item.id}-${r.emoji}`}
+                          onPress={() => toggleReaction(item, r.emoji).catch(() => {})}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: mineReacted ? 'rgba(34,197,94,0.40)' : 'rgba(255,255,255,0.14)',
+                            backgroundColor: mineReacted ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)',
+                          }}
+                        >
+                          <Text style={{ color: '#fff', fontWeight: '900' }}>
+                            {r.emoji} {r.user_ids.length}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
                 <Text style={{ color: '#64748b', fontSize: 10, marginTop: 4, alignSelf: mine ? 'flex-end' : 'flex-start' }}>
                   {new Date(item.created_at).toLocaleTimeString()}
                 </Text>
