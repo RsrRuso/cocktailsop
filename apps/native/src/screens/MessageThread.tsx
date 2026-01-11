@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { ResizeMode, Video } from 'expo-av';
+import { Audio, ResizeMode, Video } from 'expo-av';
 import { useAuth } from '../contexts/AuthContext';
 import { useSendMessage, useThread } from '../features/messaging/thread';
 import { uploadAssetToBucket } from '../lib/storageUpload';
@@ -25,6 +25,12 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
   const lastTypingSentAtRef = useRef(0);
   const [otherOnline, setOtherOnline] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
+
+  // Voice recording + playback
+  const [isRecording, setIsRecording] = useState(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   const messages = data ?? [];
   const canSend = useMemo(() => !!user?.id && text.trim().length > 0 && !send.isPending, [user?.id, text, send.isPending]);
@@ -218,6 +224,144 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
     }
   }
 
+  async function stopAndUnloadSound() {
+    const s = soundRef.current;
+    soundRef.current = null;
+    if (!s) return;
+    try {
+      await s.stopAsync();
+    } catch {
+      // ignore
+    }
+    try {
+      await s.unloadAsync();
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      void stopAndUnloadSound();
+      const rec = recordingRef.current;
+      recordingRef.current = null;
+      if (rec) {
+        try {
+          rec.stopAndUnloadAsync().catch(() => {});
+        } catch {
+          // ignore
+        }
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function startVoiceRecording() {
+    if (!user?.id) return;
+    if (isRecording) return;
+    const perm = await Audio.requestPermissionsAsync();
+    if (!perm.granted) return;
+
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+      staysActiveInBackground: false,
+    });
+
+    const rec = new Audio.Recording();
+    recordingRef.current = rec;
+    await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+    await rec.startAsync();
+    setIsRecording(true);
+  }
+
+  async function stopVoiceRecordingAndSend() {
+    if (!user?.id) return;
+    const rec = recordingRef.current;
+    if (!rec) return;
+    recordingRef.current = null;
+    setIsRecording(false);
+
+    try {
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
+      if (!uri) return;
+
+      const blob = await (await fetch(uri)).blob();
+      if (!blob.size) return;
+
+      const ext = uri.split('?')[0]?.split('.').pop() || 'm4a';
+      const fileName = `voice_${Date.now()}.${ext}`;
+      const contentType = blob.type || 'audio/m4a';
+      const path = `${user.id}/${fileName}`;
+
+      // Keep parity with web: message media uploads use `stories` bucket today.
+      const up = await supabase.storage.from('stories').upload(path, blob, { contentType, upsert: false });
+      if (up.error) throw up.error;
+      const { data } = supabase.storage.from('stories').getPublicUrl(path);
+
+      await send.mutateAsync({
+        conversationId,
+        senderId: user.id,
+        content: '🎙️ Voice message',
+        mediaUrl: data.publicUrl,
+        mediaType: 'voice',
+      });
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    } catch {
+      // minimal handling
+    } finally {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+      });
+    }
+  }
+
+  async function toggleVoice() {
+    if (isRecording) return stopVoiceRecordingAndSend();
+    return startVoiceRecording();
+  }
+
+  async function togglePlayVoice(messageId: string, url: string) {
+    if (!url) return;
+    // If tapping same message, stop.
+    if (playingId === messageId) {
+      setPlayingId(null);
+      await stopAndUnloadSound();
+      return;
+    }
+
+    setPlayingId(messageId);
+    await stopAndUnloadSound();
+
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+      staysActiveInBackground: false,
+    });
+
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: url },
+      { shouldPlay: true },
+      (status) => {
+        const st: any = status;
+        if (st?.didJustFinish) {
+          setPlayingId(null);
+          void stopAndUnloadSound();
+        }
+      },
+    );
+    soundRef.current = sound;
+  }
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#020617' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)' }}>
@@ -287,6 +431,26 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
                       <Text style={{ color: '#fff', fontWeight: '900' }}>Open document</Text>
                     </Pressable>
                   ) : null}
+                  {item.media_url && item.media_type === 'voice' ? (
+                    <Pressable
+                      onPress={() => (item.media_url ? togglePlayVoice(item.id, item.media_url).catch(() => {}) : undefined)}
+                      style={{
+                        marginTop: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.14)',
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '900' }}>{playingId === item.id ? '⏸' : '▶︎'}</Text>
+                      <Text style={{ color: '#e2e8f0', fontWeight: '800' }}>Voice message</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
                 <Text style={{ color: '#64748b', fontSize: 10, marginTop: 4, alignSelf: mine ? 'flex-end' : 'flex-start' }}>
                   {new Date(item.created_at).toLocaleTimeString()}
@@ -312,6 +476,19 @@ export default function MessageThreadScreen({ route }: { route: { params: { conv
             }}
           >
             <Text style={{ color: '#fff', fontWeight: '900' }}>📷</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => toggleVoice().catch(() => {})}
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+              borderRadius: 14,
+              backgroundColor: isRecording ? 'rgba(239,68,68,0.20)' : 'rgba(255,255,255,0.06)',
+              borderWidth: 1,
+              borderColor: isRecording ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.12)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900' }}>{isRecording ? '⏹' : '🎙️'}</Text>
           </Pressable>
           <Pressable
             onPress={() => pickAndSendDocument().catch(() => {})}
