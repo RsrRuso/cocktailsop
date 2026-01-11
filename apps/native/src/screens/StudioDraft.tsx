@@ -34,6 +34,17 @@ type MediaAssetRow = {
   asset_type: string | null;
 };
 
+type PostAudioRow = {
+  id: string;
+  track_title: string | null;
+  track_artist: string | null;
+  track_url: string | null;
+  start_time: number | null;
+  volume: number | null;
+  mute_original: boolean | null;
+  created_at: string;
+};
+
 function normalizeHashtags(input: string) {
   return input
     .split(/\s+/g)
@@ -75,9 +86,30 @@ export default function StudioDraftScreen({
       // assetRes.error is ok if none found; but surface real errors
       if (assetRes.error) throw assetRes.error;
 
+      const coverId = (res.data as any)?.cover_asset_id as string | null | undefined;
+      const coverRes = coverId
+        ? await supabase
+            .from('media_assets')
+            .select('id, status, public_url, thumbnail_url, asset_type')
+            .eq('id', coverId)
+            .maybeSingle()
+        : null;
+      if (coverRes && coverRes.error) throw coverRes.error;
+
+      const audioRes = await supabase
+        .from('post_audio')
+        .select('id, track_title, track_artist, track_url, start_time, volume, mute_original, created_at')
+        .eq('draft_id', draftId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (audioRes.error) throw audioRes.error;
+
       return {
         draft: res.data as unknown as DraftRow,
         media: (assetRes.data ?? null) as unknown as MediaAssetRow | null,
+        cover: ((coverRes?.data ?? null) as unknown as MediaAssetRow | null) ?? null,
+        audio: (audioRes.data ?? null) as unknown as PostAudioRow | null,
       };
     },
   });
@@ -185,13 +217,16 @@ export default function StudioDraftScreen({
 
   const draftType = (draftQuery.data?.draft.draft_type ?? 'reel').toLowerCase();
   const media = draftQuery.data?.media ?? null;
+  const cover = draftQuery.data?.cover ?? null;
+  const audio = draftQuery.data?.audio ?? null;
 
   const coverPreviewUrl = useMemo(() => {
     const coverId = draftQuery.data?.draft.cover_asset_id ?? null;
     if (!coverId) return '';
+    if (cover?.id && cover.id === coverId) return cover.thumbnail_url || cover.public_url || '';
     if (media?.id && media.id === coverId) return media.thumbnail_url || media.public_url || '';
-    return '';
-  }, [draftQuery.data?.draft.cover_asset_id, media?.id, media?.public_url, media?.thumbnail_url]);
+    return cover?.thumbnail_url || cover?.public_url || '';
+  }, [cover?.id, cover?.public_url, cover?.thumbnail_url, draftQuery.data?.draft.cover_asset_id, media?.id, media?.public_url, media?.thumbnail_url]);
 
   const previewUrl = useMemo(() => {
     return media?.public_url || media?.thumbnail_url || '';
@@ -203,6 +238,67 @@ export default function StudioDraftScreen({
     // naive check; web relies on actual URL type
     return true;
   }, [draftType, previewUrl]);
+
+  const [trackTitle, setTrackTitle] = useState('');
+  const [trackArtist, setTrackArtist] = useState('');
+  const [trackUrl, setTrackUrl] = useState('');
+  const [startTime, setStartTime] = useState('0');
+  const [volume, setVolume] = useState('1');
+  const [muteOriginal, setMuteOriginal] = useState(false);
+
+  // initialize music form when audio changes
+  useEffect(() => {
+    setTrackTitle(audio?.track_title ?? '');
+    setTrackArtist(audio?.track_artist ?? '');
+    setTrackUrl(audio?.track_url ?? '');
+    setStartTime(String(audio?.start_time ?? 0));
+    setVolume(String(audio?.volume ?? 1));
+    setMuteOriginal(!!audio?.mute_original);
+  }, [audio?.id]);
+
+  const saveAudio = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('Not signed in');
+      const payload = {
+        draft_id: draftId,
+        track_title: trackTitle.trim() ? trackTitle.trim() : null,
+        track_artist: trackArtist.trim() ? trackArtist.trim() : null,
+        track_url: trackUrl.trim() ? trackUrl.trim() : null,
+        start_time: Number.isFinite(Number.parseFloat(startTime)) ? Number.parseFloat(startTime) : 0,
+        volume: Number.isFinite(Number.parseFloat(volume)) ? Number.parseFloat(volume) : 1,
+        mute_original: !!muteOriginal,
+      };
+      if (audio?.id) {
+        const res = await supabase.from('post_audio').update(payload).eq('id', audio.id);
+        if (res.error) throw res.error;
+      } else {
+        const res = await supabase.from('post_audio').insert(payload);
+        if (res.error) throw res.error;
+      }
+      await supabase.from('history_events').insert({
+        draft_id: draftId,
+        user_id: user.id,
+        event_type: 'AUDIO_ATTACHED',
+        event_data: { track_title: payload.track_title, track_artist: payload.track_artist },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['studio', 'draft', draftId] });
+    },
+    onError: (e: any) => Alert.alert('Failed', e?.message ?? 'Unable to save music'),
+  });
+
+  const clearAudio = useMutation({
+    mutationFn: async () => {
+      if (!audio?.id) return;
+      const res = await supabase.from('post_audio').delete().eq('id', audio.id);
+      if (res.error) throw res.error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['studio', 'draft', draftId] });
+    },
+    onError: (e: any) => Alert.alert('Failed', e?.message ?? 'Unable to clear music'),
+  });
 
   return (
     <View style={styles.root}>
@@ -314,6 +410,88 @@ export default function StudioDraftScreen({
           <Pressable onPress={() => navigation.navigate('CoverPicker', { draftId })} style={[styles.btn, { alignSelf: 'flex-start' }]}>
             <Text style={styles.btnText}>Choose cover</Text>
           </Pressable>
+        </View>
+
+        <View style={{ height: 12 }} />
+
+        <View style={styles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Music</Text>
+              <Text style={styles.muted}>Attach a track to this draft (advanced music tools remain web-only).</Text>
+            </View>
+            <Pressable
+              style={[styles.btn, styles.secondaryBtn]}
+              onPress={() => navigation.navigate('WebRoute', { title: 'Music', pathTemplate: '/music' })}
+            >
+              <Text style={styles.btnText}>Open web</Text>
+            </Pressable>
+          </View>
+
+          <View style={{ height: 10 }} />
+          {audio?.id ? (
+            <Text style={styles.muted}>Current: {(audio.track_title ?? 'Untitled')} {audio.track_artist ? `— ${audio.track_artist}` : ''}</Text>
+          ) : (
+            <Text style={styles.muted}>No music attached.</Text>
+          )}
+
+          <View style={{ height: 10 }} />
+          <Text style={styles.label}>Track title</Text>
+          <TextInput value={trackTitle} onChangeText={setTrackTitle} placeholder="Title" placeholderTextColor="#6b7280" style={styles.input} />
+          <Text style={styles.label}>Artist</Text>
+          <TextInput value={trackArtist} onChangeText={setTrackArtist} placeholder="Artist" placeholderTextColor="#6b7280" style={styles.input} />
+          <Text style={styles.label}>Track URL (optional)</Text>
+          <TextInput
+            value={trackUrl}
+            onChangeText={setTrackUrl}
+            placeholder="https://..."
+            placeholderTextColor="#6b7280"
+            autoCapitalize="none"
+            style={styles.input}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Start time (sec)</Text>
+              <TextInput value={startTime} onChangeText={setStartTime} keyboardType="decimal-pad" placeholder="0" placeholderTextColor="#6b7280" style={styles.input} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Volume (0-1)</Text>
+              <TextInput value={volume} onChangeText={setVolume} keyboardType="decimal-pad" placeholder="1" placeholderTextColor="#6b7280" style={styles.input} />
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Mute original</Text>
+              <Text style={styles.muted}>Mute original audio for reels when mixing with music.</Text>
+            </View>
+            <Switch value={muteOriginal} onValueChange={setMuteOriginal} />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <Pressable
+              onPress={() => saveAudio.mutate()}
+              disabled={saveAudio.isPending}
+              style={[styles.btn, styles.primaryBtn, saveAudio.isPending && { opacity: 0.6 }]}
+            >
+              <Text style={styles.btnText}>{saveAudio.isPending ? 'Saving…' : 'Save music'}</Text>
+            </Pressable>
+            {audio?.id ? (
+              <Pressable
+                onPress={() =>
+                  Alert.alert('Remove music?', 'This will delete the attached music record.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => clearAudio.mutate() },
+                  ])
+                }
+                disabled={clearAudio.isPending}
+                style={[styles.btn, { borderColor: 'rgba(239,68,68,0.40)', backgroundColor: 'rgba(239,68,68,0.10)' }, clearAudio.isPending && { opacity: 0.6 }]}
+              >
+                <Text style={[styles.btnText, { color: '#fecaca' }]}>{clearAudio.isPending ? 'Removing…' : 'Remove music'}</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
         <View style={{ height: 12 }} />
