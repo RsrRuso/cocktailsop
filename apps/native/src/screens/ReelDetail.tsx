@@ -64,19 +64,34 @@ export default function ReelDetailScreen({
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Reel</Text>
               {data?.user_id && user?.id && data.user_id === user.id ? (
-                <Pressable
-                  onPress={() => navigation.navigate('ReelAnalytics', { reelId })}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.14)',
-                    backgroundColor: 'rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '900' }}>Analytics</Text>
-                </Pressable>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable
+                    onPress={() => navigation.navigate('EditReel', { reelId })}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.14)',
+                      backgroundColor: 'rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '900' }}>Edit</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => navigation.navigate('ReelAnalytics', { reelId })}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.14)',
+                      backgroundColor: 'rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '900' }}>Analytics</Text>
+                  </Pressable>
+                </View>
               ) : null}
             </View>
             <Pressable
