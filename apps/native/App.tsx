@@ -94,6 +94,7 @@ import PostAnalyticsScreen from './src/screens/PostAnalytics';
 import ReelAnalyticsScreen from './src/screens/ReelAnalytics';
 import ProfileGrowthScreen from './src/screens/ProfileGrowth';
 import RepostedScreen from './src/screens/Reposted';
+import EditProfileScreen from './src/screens/EditProfile';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -504,6 +505,11 @@ function AppShell() {
         <Stack.Screen
           name="Reposted"
           component={RepostedScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen
