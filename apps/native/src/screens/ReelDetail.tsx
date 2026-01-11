@@ -61,7 +61,24 @@ export default function ReelDetailScreen({
           </View>
 
           <ScrollView style={{ flex: 1, backgroundColor: '#020617' }} contentContainerStyle={{ padding: 12, paddingBottom: 110, gap: 10 }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Reel</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Reel</Text>
+              {data?.user_id && user?.id && data.user_id === user.id ? (
+                <Pressable
+                  onPress={() => navigation.navigate('ReelAnalytics', { reelId })}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '900' }}>Analytics</Text>
+                </Pressable>
+              ) : null}
+            </View>
             <Pressable
               onPress={() => navigation.navigate('UserProfile', { userId: data.user_id })}
               style={{ alignSelf: 'flex-start' }}

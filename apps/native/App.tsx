@@ -90,6 +90,8 @@ import UploadsScreen from './src/screens/Uploads';
 import ApprovalsScreen from './src/screens/Approvals';
 import CoverPickerScreen from './src/screens/CoverPicker';
 import ModerationScreen from './src/screens/Moderation';
+import PostAnalyticsScreen from './src/screens/PostAnalytics';
+import ReelAnalyticsScreen from './src/screens/ReelAnalytics';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -480,6 +482,16 @@ function AppShell() {
         <Stack.Screen
           name="Moderation"
           component={ModerationScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PostAnalytics"
+          component={PostAnalyticsScreen as any}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReelAnalytics"
+          component={ReelAnalyticsScreen as any}
           options={{ headerShown: false }}
         />
         <Stack.Screen

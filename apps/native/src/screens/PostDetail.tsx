@@ -6,7 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLikeIds, useTogglePostLike } from '../features/engagement/likes';
 import { useAddPostComment, usePostComments } from '../features/engagement/comments';
 
-export default function PostDetailScreen({ route }: { route: { params: { postId: string } } }) {
+export default function PostDetailScreen({
+  route,
+  navigation,
+}: {
+  route: { params: { postId: string } };
+  navigation?: { navigate: (name: string, params?: any) => void };
+}) {
   const { user } = useAuth();
   const postId = route.params.postId;
   const { data, isLoading, error } = useQuery({
@@ -37,7 +43,24 @@ export default function PostDetailScreen({ route }: { route: { params: { postId:
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#020617' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12, paddingBottom: 110 }}>
-        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Post</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Post</Text>
+          {data?.user_id && user?.id && data.user_id === user.id ? (
+            <Pressable
+              onPress={() => navigation?.navigate('PostAnalytics', { postId })}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.14)',
+                backgroundColor: 'rgba(255,255,255,0.06)',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '900' }}>Analytics</Text>
+            </Pressable>
+          ) : null}
+        </View>
         {isLoading ? <Text style={{ color: '#9aa4b2', marginTop: 8 }}>Loading…</Text> : null}
         {error ? <Text style={{ color: '#fca5a5', marginTop: 8 }}>Failed to load.</Text> : null}
         {data ? (
