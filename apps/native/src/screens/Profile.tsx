@@ -59,6 +59,20 @@ export default function ProfileScreen({ navigation }: { navigation: { navigate: 
         >
           <Text style={{ color: '#fff', fontWeight: '900' }}>Professional Growth</Text>
         </Pressable>
+        <Pressable
+          onPress={() => navigation.navigate('Reposted')}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 12,
+            alignItems: 'center',
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.12)',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '900' }}>Reposted</Text>
+        </Pressable>
       </View>
 
       <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
