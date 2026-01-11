@@ -145,6 +145,19 @@ export default function CreateScreen({
           >
             <Text style={{ color: '#fff', fontWeight: '900' }}>Approvals</Text>
           </Pressable>
+          <Pressable
+            onPress={() => navigation?.navigate('Moderation')}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.14)',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900' }}>Moderation</Text>
+          </Pressable>
         </View>
       </View>
 
