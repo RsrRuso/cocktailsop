@@ -61,8 +61,9 @@ const BottomNav = () => {
       className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`}
+      style={{ background: 'linear-gradient(to top, hsl(0 0% 0%) 60%, transparent)' }}
     >
-      {/* Transparent nav with bright elements */}
+      {/* Pure black nav background */}
       <div className="flex items-center justify-around px-4 py-4 max-w-sm mx-auto">
           <button
             onClick={() => {

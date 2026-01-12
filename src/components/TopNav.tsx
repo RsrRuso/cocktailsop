@@ -276,8 +276,11 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
 
   return (
     <>
-      <div className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-transparent">
+      <div 
+        className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}
+        style={{ background: 'linear-gradient(to bottom, hsl(0 0% 0%) 60%, transparent)' }}
+      >
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
           {/* Left section - Notifications */}
           <button
             onClick={() => {
