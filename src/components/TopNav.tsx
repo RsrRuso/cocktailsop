@@ -302,7 +302,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             <DropdownMenuTrigger asChild>
               <button
                 onClick={lightTap}
-                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity focus:outline-none focus-visible:outline-none"
               >
                 <span 
                   className="text-4xl sm:text-5xl font-instagram text-foreground tracking-tight"
