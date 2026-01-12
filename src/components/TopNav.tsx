@@ -39,6 +39,7 @@ import { MatrixAIButton } from "@/components/MatrixAIButton";
 import ShareSpecVerseDialog from "@/components/ShareSpecVerseDialog";
 import SVLogo from "@/components/SVLogo";
 import { useAICredits } from "@/components/ai";
+import { HeaderTicker } from "@/components/HeaderTicker";
 
 interface TopNavProps {
   isVisible?: boolean;
@@ -301,7 +302,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
               >
                 <span 
-                  className="text-3xl sm:text-4xl font-instagram text-foreground tracking-tight"
+                  className="text-4xl sm:text-5xl font-instagram text-foreground tracking-tight"
                   style={{ fontWeight: 500, textShadow: '0.5px 0 0 currentColor' }}
                 >
                   SpecVerse
@@ -486,6 +487,13 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             )}
           </button>
         </div>
+        
+        {/* Events Ticker - Right below header */}
+        {selectedRegion && (
+          <div className="px-3 pb-2">
+            <HeaderTicker region={selectedRegion} />
+          </div>
+        )}
       </div>
 
       {user && (
