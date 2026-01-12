@@ -293,16 +293,15 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             )}
           </button>
 
-          {/* Center section - SpecVerse Brand with Logo and Dropdown */}
+          {/* Center section - SpecVerse Brand with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 onClick={lightTap}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
               >
-                <SVLogo size="sm" clickable={false} />
                 <span 
-                  className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight"
+                  className="text-3xl sm:text-4xl font-instagram text-foreground tracking-tight"
                   style={{ fontWeight: 500, textShadow: '0.5px 0 0 currentColor' }}
                 >
                   SpecVerse
