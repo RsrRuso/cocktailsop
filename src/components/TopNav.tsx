@@ -277,7 +277,23 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-transparent">
-          {/* Left section - SpecVerse Brand with Logo and Dropdown */}
+          {/* Left section - Notifications */}
+          <button
+            onClick={() => {
+              lightTap();
+              navigate("/notifications");
+            }}
+            className="flex items-center justify-center w-10 h-10 transition-all text-white/80 relative"
+          >
+            <Bell className="w-6 h-6" />
+            {unreadNotificationsCount > 0 && (
+              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-medium text-white">
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+              </div>
+            )}
+          </button>
+
+          {/* Center section - SpecVerse Brand with Logo and Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -285,7 +301,10 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
                 <SVLogo size="sm" clickable={false} />
-                <span className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight">
+                <span 
+                  className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight"
+                  style={{ fontWeight: 500, textShadow: '0.5px 0 0 currentColor' }}
+                >
                   SpecVerse
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -452,40 +471,21 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right section - Only Notifications and Messages */}
-          <div className="flex items-center gap-1">
-            {/* Notifications */}
-            <button
-              onClick={() => {
-                lightTap();
-                navigate("/notifications");
-              }}
-              className="flex items-center justify-center w-10 h-10 transition-all text-white/80 relative"
-            >
-              <Bell className="w-6 h-6" />
-              {unreadNotificationsCount > 0 && (
-                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-medium text-white">
-                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                </div>
-              )}
-            </button>
-
-            {/* Messages */}
-            <button
-              onClick={() => {
-                lightTap();
-                navigate("/messages");
-              }}
-              className="flex items-center justify-center w-10 h-10 transition-all text-white/80 relative"
-            >
-              <Send className="w-6 h-6" />
-              {unreadMessagesCount > 0 && (
-                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-medium text-white">
-                  {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
-                </div>
-              )}
-            </button>
-          </div>
+          {/* Right section - Messages only */}
+          <button
+            onClick={() => {
+              lightTap();
+              navigate("/messages");
+            }}
+            className="flex items-center justify-center w-10 h-10 transition-all text-white/80 relative"
+          >
+            <Send className="w-6 h-6" />
+            {unreadMessagesCount > 0 && (
+              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-medium text-white">
+                {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+              </div>
+            )}
+          </button>
         </div>
       </div>
 
