@@ -57,7 +57,10 @@ export const SVLogo = ({
         }}
       />
       {showText && (
-        <span className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight">
+        <span 
+          className="text-2xl sm:text-3xl font-instagram text-foreground tracking-tight"
+          style={{ fontWeight: 500, textShadow: '0.5px 0 0 currentColor' }}
+        >
           SpecVerse
         </span>
       )}
