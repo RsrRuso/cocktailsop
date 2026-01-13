@@ -71,5 +71,18 @@ export default defineConfig(({ mode }) => ({
   build: {
     minify: 'esbuild',
     target: 'esnext',
+    // Reduce chunk explosion (thousands of tiny icon chunks) which can cause slow builds
+    // and preview generation timeouts.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('lucide-react')) return 'icons';
+          if (id.includes('@radix-ui')) return 'radix';
+          if (id.includes('@tanstack')) return 'tanstack';
+          return 'vendor';
+        },
+      },
+    },
   },
 }));
