@@ -18,8 +18,10 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import svLogo from "@/assets/sv-logo.png";
 import ToolsPromoVideoReel from "@/components/promo/ToolsPromoVideoReel";
+
+// Use public folder version to avoid Vite processing large assets
+const svLogo = "/sv-logo.png";
 
 interface PromoReel {
   id: string;
