@@ -37,6 +37,9 @@ export const RoutePreloader = () => {
     const region = localStorage.getItem('selectedRegion');
 
     const run = () => {
+      // If offline, skip background prefetching to avoid hanging requests + UI jank.
+      if (!navigator.onLine) return;
+
       Promise.all([
         prefetchHomeFeed(region),
         prefetchStoriesData(),
@@ -57,11 +60,13 @@ export const RoutePreloader = () => {
   }, [user?.id]);
 
   const prefetchRoute = useCallback(async (path: string) => {
+    // If offline, don't mark as prefetched—try again when online.
+    if (!navigator.onLine) return;
     if (prefetchedRoutes.current.has(path)) return;
-    
+
     prefetchedRoutes.current.add(path);
     const region = localStorage.getItem('selectedRegion');
-    
+
     if (path === '/home' || path === '/') {
       await Promise.all([prefetchHomeFeed(region), prefetchStoriesData()]);
     } else if (path === '/profile' && user?.id) {
@@ -83,6 +88,7 @@ export const RoutePreloader = () => {
 
   useEffect(() => {
     const handleMouseEnter = (e: MouseEvent) => {
+      if (!navigator.onLine) return;
       if (!(e.target instanceof Element)) return;
       const link = e.target.closest('a[href]') as HTMLAnchorElement;
       if (link) prefetchRoute(link.getAttribute('href') || '');
