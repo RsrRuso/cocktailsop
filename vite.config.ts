@@ -52,12 +52,17 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Only cache essential small assets, exclude large images
+        globPatterns: ['**/*.{js,css,html,woff,woff2}'],
+        // Exclude large logo files from precaching
+        globIgnores: ['**/sv-logo*.png', '**/assets/*.png'],
         // Critical: ensure iOS Home Screen launches on deep links (prevents black screen)
         navigateFallback: '/index.html',
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        // Limit precache size to prevent timeouts
+        maximumFileSizeToCacheInBytes: 500000,
         // IMPORTANT: never cache authenticated API responses (can cause "Load failed" and blank screens)
         runtimeCaching: [],
       },
