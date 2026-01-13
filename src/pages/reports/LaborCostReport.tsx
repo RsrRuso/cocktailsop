@@ -4,8 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import ReportLayout from '@/components/reports/ReportLayout';
 import MetricCard from '@/components/reports/MetricCard';
 import { Users, DollarSign, Percent, Clock, TrendingUp } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadJsPDFWithAutoTable } from '@/lib/cdnLoaders';
 import { toast } from 'sonner';
 
 const LaborCostReport = () => {
@@ -40,7 +39,11 @@ const LaborCostReport = () => {
     ],
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
+    toast.loading('Loading PDF generator...');
+    const { jsPDF, autoTable } = await loadJsPDFWithAutoTable();
+    toast.dismiss();
+    
     const doc = new jsPDF();
     
     doc.setFontSize(20);

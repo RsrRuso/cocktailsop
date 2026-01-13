@@ -10,9 +10,7 @@ import {
   FileText, FileSpreadsheet, Presentation, Download, 
   Loader2, Calendar, BarChart3, Wine, Users, DollarSign
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { loadJsPDFWithAutoTable, loadXLSX } from '@/lib/cdnLoaders';
 
 interface ReportExportEngineProps {
   outletId: string;
@@ -185,6 +183,11 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
   const exportToPDF = async () => {
     setProgress(10);
     const data = await fetchReportData();
+    setProgress(30);
+    
+    toast.loading('Loading PDF generator...');
+    const { jsPDF, autoTable } = await loadJsPDFWithAutoTable();
+    toast.dismiss();
     setProgress(40);
 
     const doc = new jsPDF();
@@ -288,6 +291,11 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
   const exportToExcel = async () => {
     setProgress(10);
     const data = await fetchReportData();
+    setProgress(30);
+    
+    toast.loading('Loading Excel generator...');
+    const XLSX = await loadXLSX();
+    toast.dismiss();
     setProgress(50);
 
     const workbook = XLSX.utils.book_new();
@@ -348,15 +356,12 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
   };
 
   const exportToPPT = async () => {
-    // For PPT, we'll create a downloadable HTML that can be imported to PowerPoint
-    // Full PPTX generation would require pptxgenjs library
     setProgress(10);
     const data = await fetchReportData();
     setProgress(50);
 
     const reportTitle = reportTypes.find(r => r.id === selectedReport)?.label || 'Report';
     
-    // Create HTML content that can be copy-pasted into PowerPoint
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -403,7 +408,6 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
 
     setProgress(80);
 
-    // Download as HTML
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -446,13 +450,11 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center gap-2">
         <Download className="w-5 h-5 text-primary" />
         <h2 className="font-semibold">Export Reports</h2>
       </div>
 
-      {/* Report Selection */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Select Report Type</CardTitle>
@@ -481,7 +483,6 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
             })}
           </div>
 
-          {/* Date Range */}
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Period:</span>
@@ -504,51 +505,64 @@ export function ReportExportEngine({ outletId, outletName }: ReportExportEngineP
         </CardContent>
       </Card>
 
-      {/* Export Buttons */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Export Format</CardTitle>
-          <CardDescription>
-            Download the {reportTypes.find(r => r.id === selectedReport)?.label} report
-          </CardDescription>
+          <CardDescription>Choose your preferred format</CardDescription>
         </CardHeader>
         <CardContent>
-          {isExporting ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Generating report...</span>
-              </div>
+          {isExporting && (
+            <div className="mb-4 space-y-2">
               <Progress value={progress} className="h-2" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-3">
-              <Button
-                variant="outline"
-                className="flex flex-col h-auto py-4 gap-2"
-                onClick={() => handleExport('pdf')}
-              >
-                <FileText className="w-8 h-8 text-red-500" />
-                <span>PDF Report</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex flex-col h-auto py-4 gap-2"
-                onClick={() => handleExport('excel')}
-              >
-                <FileSpreadsheet className="w-8 h-8 text-green-500" />
-                <span>Excel</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex flex-col h-auto py-4 gap-2"
-                onClick={() => handleExport('pptx')}
-              >
-                <Presentation className="w-8 h-8 text-orange-500" />
-                <span>Presentation</span>
-              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Generating report... {progress}%
+              </p>
             </div>
           )}
+
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleExport('pdf')}
+              disabled={isExporting}
+              className="flex flex-col items-center gap-1 h-auto py-4"
+            >
+              {isExporting ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <FileText className="w-6 h-6 text-red-500" />
+              )}
+              <span className="text-xs">PDF</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => handleExport('excel')}
+              disabled={isExporting}
+              className="flex flex-col items-center gap-1 h-auto py-4"
+            >
+              {isExporting ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-6 h-6 text-green-500" />
+              )}
+              <span className="text-xs">Excel</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => handleExport('pptx')}
+              disabled={isExporting}
+              className="flex flex-col items-center gap-1 h-auto py-4"
+            >
+              {isExporting ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <Presentation className="w-6 h-6 text-orange-500" />
+              )}
+              <span className="text-xs">PPT</span>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
