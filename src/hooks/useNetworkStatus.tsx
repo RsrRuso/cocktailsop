@@ -47,15 +47,26 @@ export const useNetworkStatus = () => {
   const checkConnectionSpeed = useCallback(async (): Promise<boolean> => {
     if (checkingRef.current) return false;
     checkingRef.current = true;
-    
+
     try {
       const start = Date.now();
-      // Use a tiny request to test connection speed
-      await fetch('/favicon.ico', { 
-        method: 'HEAD',
-        cache: 'no-store',
-        signal: AbortSignal.timeout(5000)
-      });
+
+      // Use a tiny request to test connection speed.
+      // NOTE: AbortSignal.timeout is not supported in some browsers (notably older iOS Safari),
+      // so we implement a safe timeout via AbortController.
+      const controller = new AbortController();
+      const t = window.setTimeout(() => controller.abort(), 5000);
+
+      try {
+        await fetch('/favicon.ico', {
+          method: 'HEAD',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+      } finally {
+        window.clearTimeout(t);
+      }
+
       const duration = Date.now() - start;
       return duration > SLOW_CONNECTION_THRESHOLD;
     } catch {
@@ -182,28 +193,40 @@ let globalNetworkStatus = { isOnline: true, isSlowConnection: false };
 export const getNetworkStatus = () => globalNetworkStatus;
 
 export const initNetworkMonitor = () => {
+  // Make this initializer safe to call multiple times (HMR / re-imports)
+  const FLAG = '__sv_network_monitor_installed__';
+  if ((window as any)[FLAG]) return;
+  (window as any)[FLAG] = true;
+
   const updateStatus = () => {
     globalNetworkStatus.isOnline = navigator.onLine;
   };
-  
+
   window.addEventListener('online', updateStatus);
   window.addEventListener('offline', updateStatus);
   updateStatus();
-  
-  // Prevent app freeze on network issues - set up fetch timeout defaults
-  const originalFetch = window.fetch;
-  window.fetch = function(input, init) {
-    // Add default timeout to all fetch requests to prevent hanging
+
+  // Prevent app freeze on network issues - set up fetch timeout defaults.
+  // Key goals:
+  // 1) If offline, fail fast (don't let requests hang/retry forever)
+  // 2) Only add a timeout when the caller didn't provide a signal
+  const originalFetch = window.fetch.bind(window);
+
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return Promise.reject(new TypeError('Network offline'));
+    }
+
+    // If the caller already handles aborts/timeouts, don't wrap.
+    if (init?.signal) {
+      return originalFetch(input, init);
+    }
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-    
-    const newInit = {
-      ...init,
-      signal: init?.signal || controller.signal,
-    };
-    
-    return originalFetch(input, newInit).finally(() => {
-      clearTimeout(timeoutId);
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+
+    return originalFetch(input, { ...init, signal: controller.signal }).finally(() => {
+      window.clearTimeout(timeoutId);
     });
   };
 };
