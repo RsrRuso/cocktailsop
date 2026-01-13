@@ -58,7 +58,7 @@ export const useNetworkStatus = () => {
       const t = window.setTimeout(() => controller.abort(), 5000);
 
       try {
-        await fetch('/favicon.ico', {
+        await fetch('/favicon.png', {
           method: 'HEAD',
           cache: 'no-store',
           signal: controller.signal,

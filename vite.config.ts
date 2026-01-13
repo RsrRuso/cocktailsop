@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
       VitePWA({
         registerType: 'prompt',
-        includeAssets: ['favicon.ico', 'robots.txt', 'notification.wav'],
+        includeAssets: ['favicon.png', 'robots.txt', 'notification.wav'],
         // In dev/preview, a Service Worker can cache Vite's module chunks and cause
         // "Importing a module script failed" + blank screens.
         devOptions: {
