@@ -1,6 +1,37 @@
 import { useState, useRef, useCallback } from 'react';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+
+type FFmpegInstance = {
+  on: (event: 'log' | 'progress', cb: (payload: any) => void) => void;
+  load: (config: { coreURL: string; wasmURL: string }) => Promise<void>;
+  writeFile: (path: string, data: Uint8Array) => Promise<void>;
+  readFile: (path: string) => Promise<Uint8Array | string>;
+  exec: (args: string[]) => Promise<void>;
+};
+
+const FFMPEG_ESM_URL =
+  'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js';
+
+async function loadFFmpegClass(): Promise<{ new (): FFmpegInstance }> {
+  const mod: any = await import(/* @vite-ignore */ FFMPEG_ESM_URL);
+  const FFmpeg = mod?.FFmpeg ?? mod?.default?.FFmpeg ?? mod?.default;
+  if (!FFmpeg) throw new Error('Failed to load FFmpeg class from CDN.');
+  return FFmpeg;
+}
+
+async function toBlobURL(url: string, mimeType: string): Promise<string> {
+  const res = await fetch(url, { cache: 'force-cache' });
+  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
+  const ab = await res.arrayBuffer();
+  const blob = new Blob([ab], { type: mimeType });
+  return URL.createObjectURL(blob);
+}
+
+async function fetchFile(url: string): Promise<Uint8Array> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
+  const ab = await res.arrayBuffer();
+  return new Uint8Array(ab);
+}
 
 export interface FFmpegProgress {
   progress: number;
@@ -19,7 +50,7 @@ function createBlobFromData(data: Uint8Array | string, type: string): Blob {
 }
 
 export function useFFmpeg() {
-  const ffmpegRef = useRef<FFmpeg | null>(null);
+  const ffmpegRef = useRef<FFmpegInstance | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<FFmpegProgress>({ progress: 0, time: 0, message: '' });
@@ -29,6 +60,7 @@ export function useFFmpeg() {
     
     setLoading(true);
     try {
+      const FFmpeg = await loadFFmpegClass();
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
 
