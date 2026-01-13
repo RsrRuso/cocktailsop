@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from "xlsx";
+import { loadXLSX } from "@/lib/cdnLoaders";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import EditableRecipeIngredients, { EditableIngredient } from "@/components/menu-engineering/EditableRecipeIngredients";

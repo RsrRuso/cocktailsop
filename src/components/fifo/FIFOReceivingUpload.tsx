@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Upload, FileText, X, Check, Loader2, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from "xlsx";
+import { loadXLSX } from "@/lib/cdnLoaders";
 
 interface ParsedItem {
   name: string;
@@ -40,6 +40,7 @@ export const FIFOReceivingUpload = ({ userId, workspaceId, stores, items, onSucc
   const receivableStores = stores.filter(s => s.store_type === 'receive' || s.store_type === 'both');
 
   const parseExcelFile = async (file: File) => {
+    const XLSX = await loadXLSX();
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data);
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];

@@ -71,6 +71,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Local CDN-backed shims to avoid bundling heavy deps in install step
+      "jspdf": path.resolve(__dirname, "./src/vendor/jspdf"),
+      "jspdf-autotable": path.resolve(__dirname, "./src/vendor/jspdf-autotable"),
     },
   },
   build: {
