@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { jsPDF } from "jspdf";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 
