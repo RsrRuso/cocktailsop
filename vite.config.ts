@@ -74,6 +74,9 @@ export default defineConfig(({ mode }) => ({
       // Local CDN-backed shims to avoid bundling heavy deps in install step
       "jspdf": path.resolve(__dirname, "./src/vendor/jspdf"),
       "jspdf-autotable": path.resolve(__dirname, "./src/vendor/jspdf-autotable"),
+      "xlsx": path.resolve(__dirname, "./src/vendor/xlsx"),
+      "leaflet": path.resolve(__dirname, "./src/vendor/leaflet"),
+      "fabric": path.resolve(__dirname, "./src/vendor/fabric"),
     },
   },
   build: {

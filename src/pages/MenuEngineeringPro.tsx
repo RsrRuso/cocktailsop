@@ -358,6 +358,7 @@ export default function MenuEngineeringPro() {
     if (!file) return;
 
     try {
+      const XLSX = await loadXLSX();
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const sheetName = workbook.SheetNames[0];
