@@ -5,7 +5,7 @@ import autoTable from "jspdf-autotable";
 // Color palette constants
 const blackFrame: [number, number, number] = [0, 0, 0];
 
-export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number) => {
+export const exportToPDF = (recipe: CocktailRecipe, doc?: any, startY?: number) => {
   const isNewDoc = !doc;
   if (!doc) {
     doc = new jsPDF();
@@ -400,7 +400,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
 
 // Modern minimalist radar chart
 const drawRadarChart = (
-  doc: jsPDF,
+  doc: any,
   centerX: number,
   centerY: number,
   radius: number,

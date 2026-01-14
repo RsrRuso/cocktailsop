@@ -15,7 +15,6 @@ import {
   Music, Clock, Star, Eye, Heart, MessageCircle
 } from 'lucide-react';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { useNavigate } from 'react-router-dom';
 
 interface VenueData {
@@ -49,9 +48,9 @@ const BarIntelligenceMap = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const heatLayerRef = useRef<L.LayerGroup | null>(null);
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const heatLayerRef = useRef<any>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
