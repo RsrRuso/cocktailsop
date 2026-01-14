@@ -13,9 +13,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
       VitePWA({
-        registerType: 'prompt',
+        // Auto-update ensures published changes are picked up without relying on users accepting a prompt.
+        registerType: 'autoUpdate',
         includeAssets: ['favicon.png', 'robots.txt', 'notification.wav'],
-        // In dev/preview, a Service Worker can cache Vite's module chunks and cause
         // "Importing a module script failed" + blank screens.
         devOptions: {
           enabled: false,
@@ -52,17 +52,18 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        // Only cache essential small assets, exclude large images
-        globPatterns: ['**/*.{js,css,html,woff,woff2}'],
-        // Exclude large logo files from precaching
-        globIgnores: ['**/sv-logo*.png', '**/assets/*.png'],
+        // Cache only small, essential assets.
+        // Do NOT precache large JS chunks (they can exceed Workbox limits and break builds/PWA installs).
+        globPatterns: ['**/*.{html,css,woff,woff2,webmanifest}'],
+        // Exclude large logo files and bulky generated assets from precaching
+        globIgnores: ['**/sv-logo*.png', '**/assets/*.png', '**/*.map'],
         // Critical: ensure iOS Home Screen launches on deep links (prevents black screen)
         navigateFallback: '/index.html',
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        // Limit precache size to prevent timeouts
-        maximumFileSizeToCacheInBytes: 500000,
+        // Keep the precache size small to prevent timeouts
+        maximumFileSizeToCacheInBytes: 2097152,
         // IMPORTANT: never cache authenticated API responses (can cause "Load failed" and blank screens)
         runtimeCaching: [],
       },
