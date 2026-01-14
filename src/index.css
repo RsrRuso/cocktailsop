@@ -1268,7 +1268,7 @@ All colors MUST be HSL.
   }
   
   .text-gradient-primary {
-    @apply bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
   }
   
   .text-gradient-gold {

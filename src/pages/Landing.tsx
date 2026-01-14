@@ -24,7 +24,7 @@ const Landing = () => {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-blue-950/20 to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/10 to-background pointer-events-none" />
       
       {/* Glow effects */}
       <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
@@ -35,7 +35,7 @@ const Landing = () => {
         {/* Header */}
         <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 glow-primary" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-accent glow-primary" />
             <span className="text-xl sm:text-2xl font-bold text-gradient-primary">SpecVerse</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -129,7 +129,7 @@ const Landing = () => {
                   <div className="space-y-3">
                     {[
                       { icon: Shield, text: "Get verified and stand out to employers", color: "text-primary" },
-                      { icon: Users, text: "Connect with 2,400+ verified professionals", color: "text-blue-400" },
+                      { icon: Users, text: "Connect with 2,400+ verified professionals", color: "text-accent" },
                       { icon: Briefcase, text: "Access 850+ job opportunities", color: "text-green-400" },
                       { icon: TrendingUp, text: "20+ free professional tools", color: "text-purple-400" },
                       { icon: Gift, text: "Everything is FREE. No tricks.", color: "text-emerald-400" },
@@ -172,7 +172,7 @@ const Landing = () => {
                   <Button
                     size="lg"
                     onClick={() => navigate("/auth")}
-                    className="w-full py-6 bg-gradient-to-r from-primary to-blue-600 text-white font-bold text-lg rounded-xl hover:opacity-90 transition-all shadow-xl glow-primary"
+                    className="w-full py-6 bg-gradient-to-r from-primary to-accent text-white font-bold text-lg rounded-xl hover:opacity-90 transition-all shadow-xl glow-primary"
                   >
                     Join Free Now
                   </Button>
