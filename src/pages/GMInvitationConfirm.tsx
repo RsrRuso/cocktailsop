@@ -39,17 +39,10 @@ interface GMInvitation {
   probation_period_days: number;
   status: string;
   expires_at: string;
-  terms_version: string;
-  venues?: {
-    name: string;
-    brand_name: string;
-    logo_url: string | null;
-    city: string;
-    region: string;
-  };
-  venue_outlets?: {
-    name: string;
-  } | null;
+  terms_version?: string;
+  venue_name?: string;
+  venue_city?: string;
+  outlet_name?: string | null;
 }
 
 const GMInvitationConfirm = () => {
@@ -64,65 +57,118 @@ const GMInvitationConfirm = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requiresAuth, setRequiresAuth] = useState(false);
 
   useEffect(() => {
     if (token) {
       fetchInvitation();
     }
-  }, [token]);
+  }, [token, user]);
 
   const fetchInvitation = async () => {
     try {
-      const { data, error } = await supabase
-        .from("gm_invitations")
-        .select(`
-          *,
-          venues (name, brand_name, logo_url, city, region),
-          venue_outlets (name)
-        `)
-        .eq("invitation_token", token)
-        .single();
+      // Use secure RPC function that validates access permissions
+      const { data, error } = await supabase.rpc("get_gm_invitation_by_token", {
+        p_token: token
+      });
 
       if (error) throw error;
 
-      if (!data) {
-        setError("Invitation not found");
+      const result = data as { 
+        success: boolean; 
+        error?: string;
+        requires_auth?: boolean;
+        id?: string;
+        recipient_email?: string;
+        recipient_name?: string;
+        venue_id?: string;
+        outlet_id?: string | null;
+        position_title?: string;
+        contract_terms?: any;
+        salary_details?: any;
+        benefits_package?: any;
+        start_date?: string | null;
+        probation_period_days?: number;
+        status?: string;
+        expires_at?: string;
+        venue_name?: string;
+        venue_city?: string;
+        outlet_name?: string | null;
+      };
+
+      if (!result.success) {
+        if (result.error === "Access denied") {
+          setError("You don't have permission to view this invitation");
+        } else {
+          setError(result.error || "Invitation not found");
+        }
+        return;
+      }
+
+      // If requires auth, show limited info and prompt login
+      if (result.requires_auth) {
+        setRequiresAuth(true);
+        // Set partial invitation data for display
+        setInvitation({
+          id: result.id || '',
+          recipient_email: '',
+          recipient_name: result.recipient_name || '',
+          venue_id: '',
+          outlet_id: null,
+          position_title: result.position_title || '',
+          contract_terms: {},
+          salary_details: null,
+          benefits_package: null,
+          start_date: null,
+          probation_period_days: 0,
+          status: result.status || '',
+          expires_at: result.expires_at || '',
+          venue_name: result.venue_name,
+        });
+        setLoading(false);
         return;
       }
 
       // Check expiration
-      if (new Date(data.expires_at) < new Date()) {
+      if (result.expires_at && new Date(result.expires_at) < new Date()) {
         setError("This invitation has expired");
         return;
       }
 
       // Check if already responded
-      if (data.status !== "pending") {
-        setError(`This invitation has already been ${data.status}`);
+      if (result.status !== "pending") {
+        setError(`This invitation has already been ${result.status}`);
         return;
       }
 
       // Parse JSON fields properly
       const parsedInvitation: GMInvitation = {
-        ...data,
-        contract_terms: typeof data.contract_terms === 'string' 
-          ? JSON.parse(data.contract_terms) 
-          : data.contract_terms || {},
-        salary_details: typeof data.salary_details === 'string'
-          ? JSON.parse(data.salary_details as string)
-          : data.salary_details as any,
-        benefits_package: Array.isArray(data.benefits_package) 
-          ? (data.benefits_package as string[])
-          : null
+        id: result.id || '',
+        recipient_email: result.recipient_email || '',
+        recipient_name: result.recipient_name || '',
+        venue_id: result.venue_id || '',
+        outlet_id: result.outlet_id || null,
+        position_title: result.position_title || '',
+        contract_terms: typeof result.contract_terms === 'string' 
+          ? JSON.parse(result.contract_terms) 
+          : result.contract_terms || {},
+        salary_details: typeof result.salary_details === 'string'
+          ? JSON.parse(result.salary_details)
+          : result.salary_details,
+        benefits_package: Array.isArray(result.benefits_package) 
+          ? result.benefits_package
+          : null,
+        start_date: result.start_date || null,
+        probation_period_days: result.probation_period_days || 90,
+        status: result.status || '',
+        expires_at: result.expires_at || '',
+        venue_name: result.venue_name,
+        venue_city: result.venue_city,
+        outlet_name: result.outlet_name,
       };
 
       setInvitation(parsedInvitation);
-
-      // Mark as viewed
-      await supabase
-        .from("gm_invitations")
-        .update({ viewed_at: new Date().toISOString() })
-        .eq("id", data.id);
+      setRequiresAuth(false);
 
     } catch (err: any) {
       console.error("Error fetching invitation:", err);
@@ -226,8 +272,9 @@ const GMInvitationConfirm = () => {
 
   if (!invitation) return null;
 
-  const venue = invitation.venues;
-  const outlet = invitation.venue_outlets;
+  const venueName = invitation.venue_name;
+  const venueCity = invitation.venue_city;
+  const outletName = invitation.outlet_name;
   const daysUntilExpiry = Math.ceil((new Date(invitation.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
   const responsibilities = invitation.contract_terms?.responsibilities || [
@@ -244,6 +291,55 @@ const GMInvitationConfirm = () => {
     "Professional development",
     "Health insurance"
   ];
+
+  // Show limited view for unauthenticated users
+  if (requiresAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
+        <div className="max-w-lg mx-auto space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-2"
+          >
+            <Badge className="bg-gradient-to-r from-violet-600 to-purple-600 text-white gap-1">
+              <Sparkles className="w-3 h-3" />
+              GM Position Offer
+            </Badge>
+            <h1 className="text-3xl font-bold">You're Invited!</h1>
+          </motion.div>
+
+          <Card className="border-primary/20">
+            <CardContent className="pt-6 space-y-4">
+              <div className="text-center space-y-2">
+                <Building2 className="w-16 h-16 text-primary mx-auto" />
+                <h2 className="text-xl font-bold">{venueName}</h2>
+                <p className="text-muted-foreground">{invitation.position_title}</p>
+              </div>
+              
+              <Separator />
+              
+              <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center space-y-3">
+                <User className="w-8 h-8 text-blue-500 mx-auto" />
+                <div>
+                  <p className="font-medium">Sign in to view full details</p>
+                  <p className="text-sm text-muted-foreground">
+                    Please sign in with the email address this invitation was sent to
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => navigate(`/auth?redirect=/gm-invitation/${token}`)}
+                  className="gap-2"
+                >
+                  Sign In <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
@@ -271,16 +367,12 @@ const GMInvitationConfirm = () => {
             <div className="bg-gradient-to-r from-violet-600/10 to-purple-600/10 p-6">
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 rounded-xl bg-background flex items-center justify-center shrink-0 border">
-                  {venue?.logo_url ? (
-                    <img src={venue.logo_url} alt={venue.name} className="w-full h-full object-cover rounded-xl" />
-                  ) : (
-                    <Building2 className="w-10 h-10 text-primary" />
-                  )}
+                  <Building2 className="w-10 h-10 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold">{venue?.brand_name || venue?.name}</h2>
-                  {outlet && <p className="text-muted-foreground">{outlet.name}</p>}
-                  <p className="text-sm text-muted-foreground">{venue?.city}, {venue?.region}</p>
+                  <h2 className="text-2xl font-bold">{venueName}</h2>
+                  {outletName && <p className="text-muted-foreground">{outletName}</p>}
+                  {venueCity && <p className="text-sm text-muted-foreground">{venueCity}</p>}
                 </div>
                 <Badge variant="outline" className="gap-1 border-amber-500 text-amber-500">
                   <Crown className="w-3 h-3" />

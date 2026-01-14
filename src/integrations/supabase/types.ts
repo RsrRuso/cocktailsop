@@ -17412,6 +17412,7 @@ export type Database = {
       generate_certificate_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_verification_code: { Args: never; Returns: string }
+      get_gm_invitation_by_token: { Args: { p_token: string }; Returns: Json }
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
         Returns: number
