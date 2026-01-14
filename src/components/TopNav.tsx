@@ -305,8 +305,8 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 className="flex items-center gap-1.5 hover:opacity-80 transition-opacity focus:outline-none focus-visible:outline-none"
               >
                 <span 
-                  className="text-4xl sm:text-5xl font-instagram text-foreground tracking-tight select-none"
-                  style={{ fontWeight: 500, textShadow: '0.5px 0 0 currentColor', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                  className="text-4xl sm:text-5xl font-instagram text-foreground tracking-tight"
+                  style={{ fontWeight: 500, textShadow: '0.5px 0 0 currentColor' }}
                 >
                   SpecVerse
                 </span>
