@@ -7,9 +7,7 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Apple } from "lucide-react";
-
-// Use public folder version to avoid Vite processing large assets
-const svLogo = "/sv-logo.png";
+import svLogo from "@/assets/sv-logo-transparent.png";
 
 // Validation schemas
 const signUpSchema = z.object({

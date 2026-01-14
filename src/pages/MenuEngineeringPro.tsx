@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { loadXLSX } from "@/lib/cdnLoaders";
+import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import EditableRecipeIngredients, { EditableIngredient } from "@/components/menu-engineering/EditableRecipeIngredients";
@@ -358,7 +358,6 @@ export default function MenuEngineeringPro() {
     if (!file) return;
 
     try {
-      const XLSX = await loadXLSX();
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const sheetName = workbook.SheetNames[0];

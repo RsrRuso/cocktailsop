@@ -5,27 +5,19 @@
 
 import { prefetchImmediate, prefetchAllCritical } from '@/lib/routePrefetch';
 
-// Prevent running twice (HMR / re-imports)
-let fastLoadInitialized = false;
-
 // Preload critical routes on app start
 const criticalRoutes = ['/home', '/profile', '/explore', '/messages'];
 
 export const preloadCriticalRoutes = () => {
-  const w = window as any;
-  const run = () => {
-    criticalRoutes.forEach(route => {
-      const link = document.createElement('link');
-      link.rel = 'prefetch';
-      link.href = route;
-      document.head.appendChild(link);
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      criticalRoutes.forEach(route => {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = route;
+        document.head.appendChild(link);
+      });
     });
-  };
-
-  if (typeof w.requestIdleCallback === 'function') {
-    w.requestIdleCallback(run);
-  } else {
-    setTimeout(run, 0);
   }
 };
 
@@ -180,16 +172,13 @@ export const observeForPrefetch = (element: Element, callback: () => void) => {
 
 // Initialize performance optimizations
 export const initFastLoad = () => {
-  if (fastLoadInitialized) return;
-  fastLoadInitialized = true;
-
   // Add resource hints immediately
   const hints = [
     { rel: 'preconnect', href: 'https://cbfqwaqwliehgxsdueem.supabase.co' },
     { rel: 'dns-prefetch', href: 'https://fonts.googleapis.com' },
     { rel: 'dns-prefetch', href: 'https://fonts.gstatic.com' },
   ];
-
+  
   hints.forEach(({ rel, href }) => {
     if (!document.querySelector(`link[rel="${rel}"][href="${href}"]`)) {
       const link = document.createElement('link');
@@ -199,42 +188,23 @@ export const initFastLoad = () => {
       document.head.appendChild(link);
     }
   });
-
-  const isStandalone =
-    (typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(display-mode: standalone)').matches) ||
-    // iOS Safari
-    (navigator as any).standalone === true;
-
-  const quality = getConnectionQuality();
-  const shouldPrefetch = quality === 'fast';
-
-  // In standalone (Add to Home Screen), defer heavy network prefetching slightly
-  // to avoid “freeze on launch” caused by immediate burst requests.
-  const defer = (fn: () => void) => {
-    const w = window as any;
-    if (typeof w.requestIdleCallback === 'function') {
-      w.requestIdleCallback(fn, { timeout: isStandalone ? 2500 : 1500 });
-      return;
-    }
-    setTimeout(fn, isStandalone ? 800 : 200);
-  };
-
-  defer(() => {
-    if (!navigator.onLine) return;
-    if (!shouldPrefetch) return;
-    prefetchImmediate();
-  });
-
-  defer(() => {
-    if (!navigator.onLine) return;
-    if (!shouldPrefetch) return;
-    void prefetchAllCritical();
-  });
-
-  // Preload critical routes (cheap)
+  
+  // IMMEDIATE prefetch - don't wait for idle
+  prefetchImmediate();
+  
+  // Full prefetch after page loads
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      prefetchAllCritical();
+    });
+  } else {
+    setTimeout(() => {
+      prefetchAllCritical();
+    }, 500); // Reduced from 1000ms
+  }
+  
+  // Preload critical routes
   preloadCriticalRoutes();
-
+  
   console.log('⚡ Fast load optimizations initialized');
 };

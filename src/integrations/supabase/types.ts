@@ -572,13 +572,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "batch_calculations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       batch_calculator_activity: {
@@ -2691,13 +2684,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_comment_reactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       event_comments: {
@@ -2754,13 +2740,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3709,24 +3688,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "follows_follower_id_fkey"
-            columns: ["follower_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "follows_following_id_fkey"
             columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "follows_following_id_fkey"
-            columns: ["following_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -9706,13 +9671,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       mixologist_group_members: {
@@ -9927,13 +9885,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "music_shares_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       music_tracks: {
@@ -9999,13 +9950,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "music_tracks_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       music_usage: {
@@ -10055,13 +9999,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "music_usage_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -10115,13 +10052,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -11031,13 +10961,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "post_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       post_reposts: {
@@ -11074,13 +10997,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "post_reposts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       post_saves: {
@@ -11115,13 +11031,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "post_saves_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -11261,13 +11170,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -12242,13 +12144,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "recipes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       recognitions: {
@@ -12464,13 +12359,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "reel_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       reel_likes: {
@@ -12505,13 +12393,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reel_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -12550,13 +12431,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "reel_reposts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       reel_saves: {
@@ -12591,13 +12465,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reel_saves_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -12733,13 +12600,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "reels_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       reports: {
@@ -12770,13 +12630,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -14310,13 +14163,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "status_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       status_likes: {
@@ -14569,13 +14415,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "stories_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       story_comments: {
@@ -14626,13 +14465,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "story_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -14698,13 +14530,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "story_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       story_views: {
@@ -14739,13 +14564,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "story_views_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -15054,13 +14872,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -17489,93 +17300,6 @@ export type Database = {
       }
     }
     Views: {
-      profiles_public: {
-        Row: {
-          avatar_url: string | null
-          badge_level: Database["public"]["Enums"]["badge_level"] | null
-          bio: string | null
-          career_score: number | null
-          cover_url: string | null
-          created_at: string | null
-          follower_count: number | null
-          following_count: number | null
-          full_name: string | null
-          id: string | null
-          interests: string[] | null
-          is_bot: boolean | null
-          phone: string | null
-          post_count: number | null
-          professional_title:
-            | Database["public"]["Enums"]["professional_title"]
-            | null
-          region: string | null
-          show_phone: boolean | null
-          show_website: boolean | null
-          show_whatsapp: boolean | null
-          user_type: string | null
-          username: string | null
-          website: string | null
-          website_icon_url: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          badge_level?: Database["public"]["Enums"]["badge_level"] | null
-          bio?: string | null
-          career_score?: number | null
-          cover_url?: string | null
-          created_at?: string | null
-          follower_count?: number | null
-          following_count?: number | null
-          full_name?: string | null
-          id?: string | null
-          interests?: string[] | null
-          is_bot?: boolean | null
-          phone?: never
-          post_count?: number | null
-          professional_title?:
-            | Database["public"]["Enums"]["professional_title"]
-            | null
-          region?: string | null
-          show_phone?: boolean | null
-          show_website?: boolean | null
-          show_whatsapp?: boolean | null
-          user_type?: string | null
-          username?: string | null
-          website?: never
-          website_icon_url?: never
-          whatsapp?: never
-        }
-        Update: {
-          avatar_url?: string | null
-          badge_level?: Database["public"]["Enums"]["badge_level"] | null
-          bio?: string | null
-          career_score?: number | null
-          cover_url?: string | null
-          created_at?: string | null
-          follower_count?: number | null
-          following_count?: number | null
-          full_name?: string | null
-          id?: string | null
-          interests?: string[] | null
-          is_bot?: boolean | null
-          phone?: never
-          post_count?: number | null
-          professional_title?:
-            | Database["public"]["Enums"]["professional_title"]
-            | null
-          region?: string | null
-          show_phone?: boolean | null
-          show_website?: boolean | null
-          show_whatsapp?: boolean | null
-          user_type?: string | null
-          username?: string | null
-          website?: never
-          website_icon_url?: never
-          whatsapp?: never
-        }
-        Relationships: []
-      }
       workspace_members_with_owner: {
         Row: {
           id: string | null
@@ -17688,7 +17412,6 @@ export type Database = {
       generate_certificate_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_verification_code: { Args: never; Returns: string }
-      get_gm_invitation_by_token: { Args: { p_token: string }; Returns: Json }
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
         Returns: number
@@ -17729,7 +17452,34 @@ export type Database = {
           whatsapp: string
         }[]
       }
-      get_public_profile: { Args: { profile_id: string }; Returns: Json }
+      get_public_profile: {
+        Args: { profile_id: string }
+        Returns: {
+          avatar_url: string
+          badge_level: string
+          bio: string
+          career_score: number
+          cover_url: string
+          created_at: string
+          follower_count: number
+          following_count: number
+          full_name: string
+          id: string
+          interests: string[]
+          is_bot: boolean
+          phone: string
+          post_count: number
+          professional_title: string
+          region: string
+          show_phone: boolean
+          show_website: boolean
+          show_whatsapp: boolean
+          user_type: string
+          username: string
+          website: string
+          whatsapp: string
+        }[]
+      }
       get_task_hierarchy: {
         Args: { task_id: string }
         Returns: {

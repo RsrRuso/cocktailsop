@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import svLogo from "@/assets/sv-logo.png";
 import { cn } from "@/lib/utils";
-
-// Use public folder version to avoid Vite processing large assets
-const svLogo = "/sv-logo.png";
 
 interface SVLogoProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";

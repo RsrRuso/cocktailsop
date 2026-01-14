@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import ReportLayout from '@/components/reports/ReportLayout';
 import MetricCard from '@/components/reports/MetricCard';
 import { Package, DollarSign, Percent, TrendingDown } from 'lucide-react';
-import { loadJsPDFWithAutoTable } from '@/lib/cdnLoaders';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 
 const COGSReport = () => {
@@ -32,11 +33,7 @@ const COGSReport = () => {
     ],
   };
 
-  const exportPDF = async () => {
-    toast.loading('Loading PDF generator...');
-    const { jsPDF, autoTable } = await loadJsPDFWithAutoTable();
-    toast.dismiss();
-    
+  const exportPDF = () => {
     const doc = new jsPDF();
     
     doc.setFontSize(20);

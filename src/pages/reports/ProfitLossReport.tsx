@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import ReportLayout from '@/components/reports/ReportLayout';
 import MetricCard from '@/components/reports/MetricCard';
 import { TrendingUp, DollarSign, Percent, MinusCircle } from 'lucide-react';
-import { loadJsPDFWithAutoTable } from '@/lib/cdnLoaders';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 
 const ProfitLossReport = () => {
@@ -40,11 +41,7 @@ const ProfitLossReport = () => {
     netMargin: 23.1,
   };
 
-  const exportPDF = async () => {
-    toast.loading('Loading PDF generator...');
-    const { jsPDF, autoTable } = await loadJsPDFWithAutoTable();
-    toast.dismiss();
-    
+  const exportPDF = () => {
     const doc = new jsPDF();
     
     doc.setFontSize(20);
@@ -55,6 +52,7 @@ const ProfitLossReport = () => {
 
     let yPos = 45;
 
+    // Revenue Section
     doc.setFontSize(14);
     doc.text('Revenue', 14, yPos);
     yPos += 8;
@@ -73,6 +71,7 @@ const ProfitLossReport = () => {
 
     yPos = (doc as any).lastAutoTable.finalY + 15;
 
+    // COGS Section
     doc.setFontSize(14);
     doc.text('Cost of Goods Sold', 14, yPos);
     yPos += 8;
@@ -90,6 +89,7 @@ const ProfitLossReport = () => {
 
     yPos = (doc as any).lastAutoTable.finalY + 15;
 
+    // Summary
     doc.setFontSize(14);
     doc.text('Summary', 14, yPos);
     yPos += 8;

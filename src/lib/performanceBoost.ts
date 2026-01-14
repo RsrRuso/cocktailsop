@@ -9,15 +9,15 @@ import { prefetchImmediate } from './routePrefetch';
 // Preload critical resources IMMEDIATELY on app start
 export const initPerformanceBoost = () => {
   try {
-    // NOTE: Heavy network prefetching is handled by initFastLoad after first paint
-    // to prevent iOS Add-to-Home-Screen launch freezes.
-
+    // INSTANT: Start prefetching data before anything else renders
+    prefetchImmediate();
+    
     // INSTANT: Preload cached avatars from localStorage/sessionStorage
     preloadCachedMedia();
-
+    
     // CRITICAL: Clear stale caches immediately for dev/preview
     clearStaleCachesImmediately();
-
+    
     // Prefetch DNS for external services
     prefetchDNS();
 

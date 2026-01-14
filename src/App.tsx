@@ -23,7 +23,9 @@ import { initFastLoad } from "@/lib/fastLoad";
 import { initNetworkMonitor } from "@/hooks/useNetworkStatus";
 import { AICreditsProvider, AIUpgradeModal } from "@/components/ai";
 
-// Note: initFastLoad / initNetworkMonitor are started after first paint inside AppContent
+// Initialize fast loading optimizations and network monitor
+initFastLoad();
+initNetworkMonitor();
 
 // Eager load critical routes for instant display
 import Index from "./pages/Index";
