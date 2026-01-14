@@ -17453,34 +17453,7 @@ export type Database = {
           whatsapp: string
         }[]
       }
-      get_public_profile: {
-        Args: { profile_id: string }
-        Returns: {
-          avatar_url: string
-          badge_level: string
-          bio: string
-          career_score: number
-          cover_url: string
-          created_at: string
-          follower_count: number
-          following_count: number
-          full_name: string
-          id: string
-          interests: string[]
-          is_bot: boolean
-          phone: string
-          post_count: number
-          professional_title: string
-          region: string
-          show_phone: boolean
-          show_website: boolean
-          show_whatsapp: boolean
-          user_type: string
-          username: string
-          website: string
-          whatsapp: string
-        }[]
-      }
+      get_public_profile: { Args: { profile_id: string }; Returns: Json }
       get_task_hierarchy: {
         Args: { task_id: string }
         Returns: {
