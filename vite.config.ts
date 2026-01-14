@@ -82,11 +82,23 @@ export default defineConfig(({ mode }) => ({
   build: {
     minify: 'esbuild',
     target: 'esnext',
-    // Reduce chunk explosion (thousands of tiny icon chunks) which can cause slow builds
-    // and preview generation timeouts.
+    // Huge builds can print thousands of lines (one per chunk) and occasionally time out
+    // in CI-like environments. This keeps builds fast and logs small.
+    reportCompressedSize: false,
+    // Reduce chunk explosion (thousands of tiny route chunks) which can cause slow builds
+    // and preview/publish generation timeouts.
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Group app code to avoid generating hundreds/thousands of tiny chunks.
+          // (React.lazy will still work; multiple lazies can share a single chunk.)
+          if (id.includes('src/pages/')) return 'pages';
+          if (id.includes('src/modules/')) return 'modules';
+          if (id.includes('src/components/') && /Dialog|Drawer|Sheet|Popover|Modal/i.test(id)) {
+            return 'overlays';
+          }
+
+          // Vendor splitting
           if (!id.includes('node_modules')) return;
           if (id.includes('lucide-react')) return 'icons';
           if (id.includes('@radix-ui')) return 'radix';
