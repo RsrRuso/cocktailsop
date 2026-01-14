@@ -8,7 +8,6 @@ import { Eye, EyeOff, MapPin, Settings2, Navigation, Users, ArrowLeft, UtensilsC
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sheet,
@@ -232,9 +231,9 @@ interface Place {
 const LiveMap = () => {
   const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<Record<string, L.Marker>>({});
-  const placeMarkersRef = useRef<L.Marker[]>([]);
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<Record<string, any>>({});
+  const placeMarkersRef = useRef<any[]>([]);
 
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);

@@ -10,8 +10,7 @@ const JSPDF_ESM_URL = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm';
 const mod: any = await dynamicImport(JSPDF_ESM_URL);
 
 // jsPDF is usually either `mod.jsPDF` or default.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const jsPDF: any = mod?.jsPDF ?? mod?.default ?? mod;
+const _jsPDF = mod?.jsPDF ?? mod?.default ?? mod;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default jsPDF as any;
+export const jsPDF = _jsPDF as any;
+export default _jsPDF as any;

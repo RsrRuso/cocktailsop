@@ -65,7 +65,7 @@ export default function MapPlanner() {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [drawingMode, setDrawingMode] = useState<DrawingMode>("select");
-  const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
+  const [fabricCanvas, setFabricCanvas] = useState<any>(null);
   const [drawingColor, setDrawingColor] = useState('#3b82f6');
   const [equipmentPhotos, setEquipmentPhotos] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -192,7 +192,7 @@ export default function MapPlanner() {
       if (drawingMode === 'select' || !e.pointer) return;
 
       const pointer = e.pointer;
-      let shape: FabricObject | null = null;
+      let shape: any = null;
 
       switch (drawingMode) {
         case 'rectangle':
