@@ -1,5 +1,5 @@
 // Cache bust: v2025.12.22.1
-import React, { lazy, Suspense, useEffect } from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -23,9 +23,15 @@ import { initFastLoad } from "@/lib/fastLoad";
 import { initNetworkMonitor } from "@/hooks/useNetworkStatus";
 import { AICreditsProvider, AIUpgradeModal } from "@/components/ai";
 
-// Initialize fast loading optimizations and network monitor
-initFastLoad();
-initNetworkMonitor();
+// Defer heavy initialization to avoid blocking first paint
+// These run after the initial render cycle completes
+if (typeof window !== 'undefined') {
+  // Use setTimeout(0) to push to next event loop tick
+  setTimeout(() => {
+    initFastLoad();
+    initNetworkMonitor();
+  }, 0);
+}
 
 // Eager load critical routes for instant display
 import Index from "./pages/Index";

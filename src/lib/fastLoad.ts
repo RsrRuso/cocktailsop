@@ -170,9 +170,22 @@ export const observeForPrefetch = (element: Element, callback: () => void) => {
   };
 };
 
+// Track initialization to prevent double-init
+let fastLoadInitialized = false;
+
 // Initialize performance optimizations
 export const initFastLoad = () => {
-  // Add resource hints immediately
+  // Prevent double initialization
+  if (fastLoadInitialized) return;
+  fastLoadInitialized = true;
+  
+  // Skip if offline to prevent freeze
+  if (!navigator.onLine) {
+    console.log('⚡ Fast load skipped (offline)');
+    return;
+  }
+  
+  // Add resource hints immediately (lightweight)
   const hints = [
     { rel: 'preconnect', href: 'https://cbfqwaqwliehgxsdueem.supabase.co' },
     { rel: 'dns-prefetch', href: 'https://fonts.googleapis.com' },
@@ -189,22 +202,24 @@ export const initFastLoad = () => {
     }
   });
   
-  // IMMEDIATE prefetch - don't wait for idle
-  prefetchImmediate();
-  
-  // Full prefetch after page loads
+  // Defer heavy operations to avoid blocking first paint
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
-      prefetchAllCritical();
-    });
+      if (navigator.onLine) {
+        prefetchImmediate();
+        prefetchAllCritical();
+        preloadCriticalRoutes();
+      }
+    }, { timeout: 2000 });
   } else {
     setTimeout(() => {
-      prefetchAllCritical();
-    }, 500); // Reduced from 1000ms
+      if (navigator.onLine) {
+        prefetchImmediate();
+        prefetchAllCritical();
+        preloadCriticalRoutes();
+      }
+    }, 500);
   }
-  
-  // Preload critical routes
-  preloadCriticalRoutes();
   
   console.log('⚡ Fast load optimizations initialized');
 };
