@@ -32,6 +32,8 @@ export const useMasterSpirits = () => {
       if (error) throw error;
       return (data || []) as MasterSpirit[];
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to prevent refetching
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const createSpirit = useMutation({

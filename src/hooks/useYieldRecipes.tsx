@@ -47,7 +47,8 @@ export const useYieldRecipes = () => {
         .from('yield_recipes')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Limit to prevent loading too much data
 
       if (error) throw error;
       return (data || []).map((r: any) => ({
@@ -57,6 +58,8 @@ export const useYieldRecipes = () => {
         prep_steps: (r.prep_steps || []) as YieldRecipePrepStep[]
       }));
     },
+    staleTime: 3 * 60 * 1000, // Cache for 3 minutes
+    gcTime: 10 * 60 * 1000,
   });
 
   const saveRecipe = useMutation({
