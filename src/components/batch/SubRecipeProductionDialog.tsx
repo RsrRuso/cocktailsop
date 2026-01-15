@@ -49,24 +49,25 @@ export const SubRecipeProductionDialog = ({
     }, 0);
   }, [subRecipe]);
 
-  // Expected yield from recipe definition
-  const expectedYield = subRecipe?.total_yield_ml || 0;
+  // Expected yield = total ingredients (what goes in should come out)
+  const expectedYield = totalIngredientsMl;
 
-  // Calculate loss/gain based on actual yield vs expected
+  // Calculate loss/gain based on actual yield vs total ingredients
   const lossAmount = useMemo(() => {
     const actualYield = parseFloat(quantityMl) || 0;
-    if (actualYield <= 0) return 0;
-    // Loss = Expected Yield - Actual Yield
+    if (actualYield <= 0 || totalIngredientsMl <= 0) return 0;
+    // Loss = Total Ingredients - Actual Yield
     // If positive = loss, if negative = gain (over-produced)
-    return expectedYield - actualYield;
-  }, [quantityMl, expectedYield]);
+    return totalIngredientsMl - actualYield;
+  }, [quantityMl, totalIngredientsMl]);
 
   const hasLoss = lossAmount > 0;
   const hasGain = lossAmount < 0;
 
   useEffect(() => {
     if (open && subRecipe) {
-      setQuantityMl(subRecipe.total_yield_ml.toString());
+      // Clear quantity so user must enter actual yield
+      setQuantityMl("");
       setExpirationDays(7);
       setNotes("");
     }
