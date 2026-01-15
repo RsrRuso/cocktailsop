@@ -247,7 +247,7 @@ const Landing = () => {
         {/* Footer with Founder Credit */}
         <footer className="px-6 py-8 text-center space-y-2">
           <p className="text-[10px] text-muted-foreground/40">CEO & Founder: Ruslani Melkoniani</p>
-          <p className="text-sm text-muted-foreground">© 2024 SpecVerse. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2025 SpecVerse. All rights reserved.</p>
         </footer>
       </div>
     </div>
