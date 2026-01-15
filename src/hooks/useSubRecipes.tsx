@@ -71,6 +71,8 @@ export const useSubRecipes = (groupId?: string | null) => {
         prep_steps: (recipe.prep_steps || []) as unknown as SubRecipePrepStep[]
       })) as SubRecipe[];
     },
+    staleTime: 3 * 60 * 1000, // Cache for 3 minutes
+    gcTime: 10 * 60 * 1000,
   });
 
   // Fetch depletions for sub-recipes
@@ -80,7 +82,8 @@ export const useSubRecipes = (groupId?: string | null) => {
       const { data, error } = await supabase
         .from('sub_recipe_depletions')
         .select('*')
-        .order('depleted_at', { ascending: false });
+        .order('depleted_at', { ascending: false })
+        .limit(100); // Limit to prevent loading too much data
       
       if (error) throw error;
       return (data || []).map((d: any) => ({
@@ -88,6 +91,8 @@ export const useSubRecipes = (groupId?: string | null) => {
         ingredient_breakdown: d.ingredient_breakdown as SubRecipeIngredient[]
       }));
     },
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const createSubRecipe = useMutation({
