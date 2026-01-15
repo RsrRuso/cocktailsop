@@ -474,99 +474,112 @@ const SubRecipes = () => {
         )}
       </div>
 
-      {/* Create/Edit Dialog */}
+      {/* Create/Edit Dialog - Mobile Optimized */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] p-4 sm:p-6 overflow-hidden flex flex-col">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg">
               {editingId ? "Edit Sub-Recipe" : "Create Sub-Recipe"}
             </DialogTitle>
-            <DialogDescription>
-              Create a pre-made mix that can be used as an ingredient in cocktails
+            <DialogDescription className="text-sm">
+              Create a pre-made mix for cocktails
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Recipe Name *</Label>
+          <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
+            {/* Recipe Name */}
+            <div className="space-y-1">
+              <Label className="text-sm">Recipe Name *</Label>
               <Input
                 placeholder="e.g., Bloody Mary Mix"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="h-10"
               />
             </div>
 
-            <div>
-              <Label>Description</Label>
+            {/* Description */}
+            <div className="space-y-1">
+              <Label className="text-sm">Description</Label>
               <Textarea
                 placeholder="Optional description..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={2}
+                className="resize-none"
               />
             </div>
 
-            <div>
-              <Label>Total Yield (ml)</Label>
+            {/* Total Yield */}
+            <div className="space-y-1">
+              <Label className="text-sm">Total Yield (ml)</Label>
               <Input
                 type="number"
                 placeholder="1000"
                 value={formData.total_yield_ml}
                 onChange={(e) => setFormData({ ...formData, total_yield_ml: parseFloat(e.target.value) || 0 })}
+                className="h-10"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground">
                 The total volume this recipe produces
               </p>
             </div>
 
+            {/* Ingredients Section */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label>Ingredients</Label>
-                <Button variant="outline" size="sm" onClick={addIngredient}>
+                <Label className="text-sm font-medium">Ingredients</Label>
+                <Button variant="outline" size="sm" onClick={addIngredient} className="h-8 px-3">
                   <Plus className="h-3 w-3 mr-1" />
                   Add
                 </Button>
               </div>
 
-              {ingredients.map((ing, index) => (
-                <div key={ing.id} className="flex gap-2 items-start">
-                  <div className="flex-1">
+              {ingredients.map((ing) => (
+                <div key={ing.id} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                  {/* Ingredient Name - Full Width */}
+                  <div className="w-full">
                     <IngredientCombobox
                       spirits={spirits}
                       value={ing.name}
                       onValueChange={(value) => updateIngredient(ing.id, "name", value)}
                     />
                   </div>
-                  <div className="w-20">
-                    <Input
-                      type="number"
-                      placeholder="Amt"
-                      value={ing.amount || ""}
-                      onChange={(e) => updateIngredient(ing.id, "amount", parseFloat(e.target.value) || 0)}
-                    />
+                  {/* Amount & Unit Row */}
+                  <div className="flex gap-2 items-center">
+                    <div className="flex-1">
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        value={ing.amount || ""}
+                        onChange={(e) => updateIngredient(ing.id, "amount", parseFloat(e.target.value) || 0)}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="w-20">
+                      <Select value={ing.unit} onValueChange={(v) => updateIngredient(ing.id, "unit", v)}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ml">ml</SelectItem>
+                          <SelectItem value="oz">oz</SelectItem>
+                          <SelectItem value="g">g</SelectItem>
+                          <SelectItem value="dash">dash</SelectItem>
+                          <SelectItem value="drops">drops</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() => removeIngredient(ing.id)}
+                      disabled={ingredients.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
-                  <div className="w-20">
-                    <Select value={ing.unit} onValueChange={(v) => updateIngredient(ing.id, "unit", v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ml">ml</SelectItem>
-                        <SelectItem value="oz">oz</SelectItem>
-                        <SelectItem value="g">g</SelectItem>
-                        <SelectItem value="dash">dash</SelectItem>
-                        <SelectItem value="drops">drops</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeIngredient(ing.id)}
-                    disabled={ingredients.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               ))}
             </div>
@@ -578,12 +591,19 @@ const SubRecipes = () => {
             />
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={resetForm}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4 border-t mt-2">
+            <Button 
+              onClick={handleSave} 
+              className="w-full sm:w-auto order-1 sm:order-2 bg-primary hover:bg-primary/90"
+            >
               {editingId ? "Update" : "Create"} Sub-Recipe
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={resetForm}
+              className="w-full sm:w-auto order-2 sm:order-1"
+            >
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
