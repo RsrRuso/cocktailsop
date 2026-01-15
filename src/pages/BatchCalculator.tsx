@@ -32,8 +32,7 @@ import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProductionCard } from "@/components/batch/ProductionCard";
-import { BatchLossInput } from "@/components/batch/BatchLossInput";
-import { useBatchProductionLosses } from "@/hooks/useBatchProductionLosses";
+// Loss tracking removed from batch submissions - now only in sub-recipes
 import {
   Select,
   SelectContent,
@@ -126,14 +125,7 @@ const BatchCalculator = () => {
   const [showDeleteGroupDialog, setShowDeleteGroupDialog] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   
-  // Loss tracking state
-  const [lossEntries, setLossEntries] = useState<{
-    id: string;
-    ingredient_name: string;
-    loss_amount_ml: string;
-    loss_reason: string;
-    notes: string;
-  }[]>([]);
+  // Loss tracking moved to sub-recipe production only
   
   // Online team presence state
   const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; username?: string; email?: string; role: string }[]>([]);
@@ -160,7 +152,7 @@ const BatchCalculator = () => {
   const { subRecipes, calculateBreakdown: calculateSubRecipeBreakdown, getTotalDepletion } = useSubRecipes(selectedGroupId);
   const { getTotalProduced } = useSubRecipeProductions();
   const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
-  const { recordLoss } = useBatchProductionLosses();
+  // Loss recording now only in sub-recipe production
   const queryClient = useQueryClient();
   
   // Activity tracking
@@ -723,12 +715,7 @@ const BatchCalculator = () => {
           })),
           subRecipeDepletions: subRecipeDepletions.length > 0 ? subRecipeDepletions : undefined,
           yieldDepletions: yieldDepletions.length > 0 ? yieldDepletions : undefined,
-          lossEntries: lossEntries.filter(e => e.loss_amount_ml && parseFloat(e.loss_amount_ml) > 0).map(e => ({
-            ingredient_name: e.ingredient_name,
-            loss_amount_ml: parseFloat(e.loss_amount_ml),
-            loss_reason: e.loss_reason,
-            notes: e.notes,
-          })),
+          // Loss tracking now only in sub-recipe production
         }
       );
     }
@@ -741,7 +728,7 @@ const BatchCalculator = () => {
     setTargetLiters("");
     setTargetServings("");
     setEditingProductionId(null);
-    setLossEntries([]);
+    
     
     // Clear ingredients after submission to prevent duplication on next edit
     setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
@@ -4300,14 +4287,7 @@ const BatchCalculator = () => {
                       </div>
                     )}
 
-                    {/* Loss/Spillage Recording */}
-                    {batchResults && batchResults.scaledIngredients.some(ing => ing.name.trim()) && (
-                      <BatchLossInput
-                        ingredients={batchResults.scaledIngredients}
-                        lossEntries={lossEntries}
-                        onLossEntriesChange={setLossEntries}
-                      />
-                    )}
+                    {/* Loss tracking now only in sub-recipe production */}
 
                     <div className="space-y-2">
                       <Label>Notes (Optional)</Label>
