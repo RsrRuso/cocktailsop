@@ -116,7 +116,7 @@ export function IngredientCombobox({ spirits, value, onValueChange }: Ingredient
                       {spirit.source_type === 'yield_calculator' && 'Yield • '}
                       {spirit.source_type === 'sub_recipe' && 'Sub-Recipe • '}
                       {spirit.source_type === 'batch_recipe' && 'Batch • '}
-                      {spirit.bottle_size_ml}ml
+                      {spirit.bottle_size_ml}{spirit.unit || 'ml'}
                     </span>
                   </div>
                 </CommandItem>
