@@ -165,7 +165,14 @@ export const useSubRecipeProductions = (subRecipeId?: string) => {
   return {
     productions,
     isLoading,
-    createProduction: createProduction.mutate,
+    createProduction: createProduction.mutateAsync ? 
+      (data: Omit<SubRecipeProduction, 'id' | 'created_at'>, options?: { onSuccess?: (data: any) => void }) => {
+        if (options?.onSuccess) {
+          createProduction.mutateAsync(data).then(options.onSuccess);
+        } else {
+          createProduction.mutate(data);
+        }
+      } : createProduction.mutate,
     deleteProduction: deleteProduction.mutate,
     getTotalProduced,
     getProductionsByRecipe,

@@ -717,7 +717,9 @@ export type Database = {
       }
       batch_production_losses: {
         Row: {
+          actual_yield_ml: number | null
           created_at: string
+          expected_yield_ml: number | null
           id: string
           ingredient_name: string
           loss_amount_ml: number
@@ -726,9 +728,13 @@ export type Database = {
           production_id: string | null
           recorded_by_name: string | null
           recorded_by_user_id: string | null
+          sub_recipe_name: string | null
+          sub_recipe_production_id: string | null
         }
         Insert: {
+          actual_yield_ml?: number | null
           created_at?: string
+          expected_yield_ml?: number | null
           id?: string
           ingredient_name: string
           loss_amount_ml?: number
@@ -737,9 +743,13 @@ export type Database = {
           production_id?: string | null
           recorded_by_name?: string | null
           recorded_by_user_id?: string | null
+          sub_recipe_name?: string | null
+          sub_recipe_production_id?: string | null
         }
         Update: {
+          actual_yield_ml?: number | null
           created_at?: string
+          expected_yield_ml?: number | null
           id?: string
           ingredient_name?: string
           loss_amount_ml?: number
@@ -748,6 +758,8 @@ export type Database = {
           production_id?: string | null
           recorded_by_name?: string | null
           recorded_by_user_id?: string | null
+          sub_recipe_name?: string | null
+          sub_recipe_production_id?: string | null
         }
         Relationships: [
           {
@@ -755,6 +767,13 @@ export type Database = {
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "batch_productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_production_losses_sub_recipe_production_id_fkey"
+            columns: ["sub_recipe_production_id"]
+            isOneToOne: false
+            referencedRelation: "sub_recipe_productions"
             referencedColumns: ["id"]
           },
         ]
