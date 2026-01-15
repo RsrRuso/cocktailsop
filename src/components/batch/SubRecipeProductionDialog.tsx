@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { Plus, Calendar, FlaskConical, Clock, AlertTriangle, Beaker, TrendingDown } from "lucide-react";
+import { Plus, Calendar, FlaskConical, Clock, AlertTriangle, Beaker, TrendingDown, ExternalLink } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { SubRecipe } from "@/hooks/useSubRecipes";
 import { useSubRecipeProductions } from "@/hooks/useSubRecipeProductions";
@@ -191,20 +192,23 @@ export const SubRecipeProductionDialog = ({
             )}>
               {hasLoss ? (
                 <>
-                  <TrendingDown className="h-5 w-5 text-destructive" />
-                  <div>
+                  <TrendingDown className="h-5 w-5 text-destructive shrink-0" />
+                  <div className="flex-1">
                     <div className="font-medium text-destructive">
                       {lossAmount.toFixed(1)} ml Loss
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Will be auto-recorded in Loss Discrepancies
-                    </p>
+                    <Link 
+                      to="/loss-discrepancies" 
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                    >
+                      View Loss Tracking <ExternalLink className="h-3 w-3" />
+                    </Link>
                   </div>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-green-500" />
-                  <div>
+                  <AlertTriangle className="h-5 w-5 text-green-500 shrink-0" />
+                  <div className="flex-1">
                     <div className="font-medium text-green-500">
                       {Math.abs(lossAmount).toFixed(1)} ml Over-produced
                     </div>

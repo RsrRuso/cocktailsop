@@ -43,7 +43,9 @@ import {
   FlaskConical,
   Clock,
   AlertTriangle,
-  Package
+  Package,
+  TrendingDown,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSubRecipes, SubRecipeIngredient, SubRecipe, SubRecipePrepStep } from "@/hooks/useSubRecipes";
@@ -203,11 +205,23 @@ const SubRecipes = () => {
               </p>
             </div>
           </div>
-          <Button onClick={() => handleOpenDialog()} className="gap-1.5 shrink-0 text-xs sm:text-sm">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Sub-Recipe</span>
-            <span className="sm:hidden">New</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/loss-discrepancies")}
+              className="gap-1.5 shrink-0 text-xs sm:text-sm"
+            >
+              <TrendingDown className="h-4 w-4" />
+              <span className="hidden sm:inline">Loss Tracking</span>
+              <span className="sm:hidden">Losses</span>
+            </Button>
+            <Button onClick={() => handleOpenDialog()} className="gap-1.5 shrink-0 text-xs sm:text-sm">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">New Sub-Recipe</span>
+              <span className="sm:hidden">New</span>
+            </Button>
+          </div>
         </div>
 
         {/* Group Selector */}
