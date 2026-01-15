@@ -23,6 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { 
   ArrowLeft, 
   Plus, 
@@ -34,21 +39,29 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  ListOrdered
+  ListOrdered,
+  FlaskConical,
+  Clock,
+  AlertTriangle,
+  Package
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSubRecipes, SubRecipeIngredient, SubRecipe, SubRecipePrepStep } from "@/hooks/useSubRecipes";
+import { useSubRecipeProductions } from "@/hooks/useSubRecipeProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { motion, AnimatePresence } from "framer-motion";
 import { PrepStepsEditor, PrepStepsDisplay, PrepStep } from "@/components/batch/PrepStepsEditor";
 import { IngredientCombobox } from "@/components/yield/IngredientCombobox";
+import { SubRecipeProductionDialog } from "@/components/batch/SubRecipeProductionDialog";
+import { SubRecipeProductionHistory } from "@/components/batch/SubRecipeProductionHistory";
 
 const SubRecipes = () => {
   const navigate = useNavigate();
   const { groups } = useMixologistGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { subRecipes, depletions, isLoading, createSubRecipe, updateSubRecipe, deleteSubRecipe, calculateBreakdown, getTotalDepletion } = useSubRecipes(selectedGroupId);
+  const { productions, getTotalProduced, getExpirationStatus, deleteProduction } = useSubRecipeProductions();
   const { spirits } = useMasterSpirits();
   
   const [showDialog, setShowDialog] = useState(false);
@@ -57,6 +70,10 @@ const SubRecipes = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [calculatorRecipeId, setCalculatorRecipeId] = useState<string | null>(null);
   const [calculatorAmount, setCalculatorAmount] = useState("");
+  
+  // Production dialog state
+  const [productionRecipe, setProductionRecipe] = useState<SubRecipe | null>(null);
+  const [showProductionDialog, setShowProductionDialog] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -150,6 +167,11 @@ const SubRecipes = () => {
     }
   };
 
+  const handleOpenProductionDialog = (recipe: SubRecipe) => {
+    setProductionRecipe(recipe);
+    setShowProductionDialog(true);
+  };
+
   const getCalculatorResult = () => {
     if (!calculatorRecipeId || !calculatorAmount) return null;
     const recipe = subRecipes?.find(r => r.id === calculatorRecipeId);
@@ -177,7 +199,7 @@ const SubRecipes = () => {
                 Sub-Recipes
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                Create pre-made mixes to use as ingredients
+                Create pre-made mixes with production tracking
               </p>
             </div>
           </div>
@@ -328,17 +350,23 @@ const SubRecipes = () => {
         ) : (
           <div className="space-y-3">
             {filteredRecipes.map((recipe) => {
+              const totalProduced = getTotalProduced(recipe.id);
               const totalUsed = getTotalDepletion(recipe.id);
-              const usagePercent = totalUsed > 0 ? Math.min((totalUsed / recipe.total_yield_ml) * 100, 100) : 0;
-              const getUsageStatus = () => {
-                if (usagePercent >= 75) return { color: 'text-red-500', label: 'High Usage', bg: 'bg-red-500/10', border: 'border-red-500/20' };
-                if (usagePercent >= 40) return { color: 'text-yellow-500', label: 'Medium', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' };
-                return { color: 'text-green-500', label: 'Available', bg: 'bg-green-500/10', border: 'border-green-500/20' };
+              const availableStock = totalProduced - totalUsed;
+              const expirationStatus = getExpirationStatus(recipe.id);
+              
+              // Get productions for this recipe
+              const recipeProductions = (productions || []).filter(p => p.sub_recipe_id === recipe.id);
+              
+              const getStockStatus = () => {
+                if (availableStock <= 0) return { color: 'text-destructive', label: 'Out of Stock', bg: 'bg-destructive/10', border: 'border-destructive/20' };
+                if (availableStock < recipe.total_yield_ml * 0.5) return { color: 'text-orange-500', label: 'Low Stock', bg: 'bg-orange-500/10', border: 'border-orange-500/20' };
+                return { color: 'text-green-500', label: 'In Stock', bg: 'bg-green-500/10', border: 'border-green-500/20' };
               };
-              const status = getUsageStatus();
+              const stockStatus = getStockStatus();
               
               return (
-                <Card key={recipe.id} className={`glass border ${status.border}`}>
+                <Card key={recipe.id} className={`glass border ${stockStatus.border}`}>
                   <CardContent className="pt-4 sm:pt-6">
                     {/* Header */}
                     <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
@@ -351,6 +379,18 @@ const SubRecipes = () => {
                           <Badge variant="outline" className="text-xs shrink-0">
                             Sub-Recipe
                           </Badge>
+                          {expirationStatus.status === 'expired' && (
+                            <Badge variant="destructive" className="text-xs gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Expired Stock
+                            </Badge>
+                          )}
+                          {expirationStatus.status === 'expiring-soon' && (
+                            <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-xs gap-1">
+                              <Clock className="h-3 w-3" />
+                              Expiring Soon
+                            </Badge>
+                          )}
                         </div>
                         {recipe.description && (
                           <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -359,27 +399,94 @@ const SubRecipes = () => {
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <div className={`text-xl sm:text-2xl font-bold ${status.color}`}>
-                          {recipe.total_yield_ml}ml
+                        <div className={`text-xl sm:text-2xl font-bold ${stockStatus.color}`}>
+                          {availableStock > 0 ? availableStock.toFixed(0) : 0}ml
                         </div>
-                        <span className="text-xs text-muted-foreground">Total Yield</span>
+                        <span className="text-xs text-muted-foreground">Available</span>
                       </div>
                     </div>
 
-                    {/* Ingredients List */}
-                    <div className="bg-muted/30 rounded-lg p-2 sm:p-3 space-y-1 mb-3">
-                      <span className="text-xs font-medium text-muted-foreground">Ingredients ({recipe.ingredients.length}):</span>
-                      {recipe.ingredients.map((ing, idx) => (
-                        <div key={idx} className="flex justify-between text-xs sm:text-sm py-0.5">
-                          <span className="truncate">{ing.name}</span>
-                          <span className="font-medium shrink-0 ml-2">{ing.amount} {ing.unit}</span>
-                        </div>
-                      ))}
+                    {/* Stock Summary */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm mb-3 p-2 bg-muted/30 rounded-lg">
+                      <div className="text-center">
+                        <div className="font-bold text-green-500">{totalProduced.toFixed(0)}ml</div>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs">Produced</span>
+                      </div>
+                      <div className="text-center border-x border-border/50">
+                        <div className="font-bold text-orange-500">{totalUsed.toFixed(0)}ml</div>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs">Used</span>
+                      </div>
+                      <div className="text-center">
+                        <div className={`font-bold ${stockStatus.color}`}>{availableStock > 0 ? availableStock.toFixed(0) : 0}ml</div>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs">Available</span>
+                      </div>
                     </div>
+
+                    {/* Usage Progress Bar */}
+                    {totalProduced > 0 && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">Usage</span>
+                          <span className="font-medium">{((totalUsed / totalProduced) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-orange-500 h-2 rounded-full transition-all" 
+                            style={{ width: `${Math.min((totalUsed / totalProduced) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Production History Collapsible */}
+                    <Collapsible 
+                      open={expandedId === recipe.id}
+                      onOpenChange={(open) => setExpandedId(open ? recipe.id : null)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between h-9 px-2 mb-2">
+                          <span className="flex items-center gap-2 text-xs sm:text-sm">
+                            <Package className="h-4 w-4" />
+                            Production History ({recipeProductions.length})
+                          </span>
+                          {expandedId === recipe.id ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-2 mb-3">
+                        <SubRecipeProductionHistory
+                          productions={recipeProductions}
+                          onDelete={deleteProduction}
+                        />
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Ingredients List */}
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between h-8 px-2 text-xs text-muted-foreground">
+                          <span>Recipe: {recipe.ingredients.length} ingredients → {recipe.total_yield_ml}ml</span>
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="bg-muted/30 rounded-lg p-2 sm:p-3 space-y-1 mt-1">
+                          {recipe.ingredients.map((ing, idx) => (
+                            <div key={idx} className="flex justify-between text-xs sm:text-sm py-0.5">
+                              <span className="truncate">{ing.name}</span>
+                              <span className="font-medium shrink-0 ml-2">{ing.amount} {ing.unit}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
 
                     {/* Prep Steps Preview */}
                     {recipe.prep_steps && recipe.prep_steps.length > 0 && (
-                      <div className="bg-primary/5 rounded-lg p-2 sm:p-3 mb-3">
+                      <div className="bg-primary/5 rounded-lg p-2 sm:p-3 mt-2">
                         <div className="flex items-center gap-1.5 mb-1">
                           <ListOrdered className="h-3.5 w-3.5 text-primary" />
                           <span className="text-xs font-medium text-muted-foreground">
@@ -393,52 +500,27 @@ const SubRecipes = () => {
                       </div>
                     )}
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Ingredients:</span>
-                        <div className="font-medium">{recipe.ingredients.length} items</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Per Ingredient:</span>
-                        <div className="font-medium">
-                          ~{(recipe.total_yield_ml / Math.max(recipe.ingredients.length, 1)).toFixed(0)}ml avg
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Usage Tracking */}
-                    {totalUsed > 0 && (
-                      <div className="pt-2 sm:pt-3 border-t border-border/50 mt-2 sm:mt-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs sm:text-sm font-medium">Usage Tracking:</span>
-                          <span className="text-xs sm:text-sm font-bold text-orange-500">
-                            {totalUsed.toFixed(0)}ml used
-                          </span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-1.5 mt-1">
-                          <div 
-                            className="bg-orange-500 h-1.5 rounded-full transition-all" 
-                            style={{ width: `${usagePercent}%` }}
-                          />
-                        </div>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                          {usagePercent.toFixed(0)}% of total yield used in batch productions
-                        </p>
-                      </div>
-                    )}
-
                     {/* Status Badge */}
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${status.bg} mt-2`}>
-                      <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${stockStatus.bg} mt-3`}>
+                      <span className={`text-xs font-medium ${stockStatus.color}`}>{stockStatus.label}</span>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2 pt-2 sm:pt-3 mt-2 border-t border-border/50">
                       <Button 
-                        variant="outline" 
+                        variant="default" 
                         size="sm" 
                         className="flex-1 gap-1.5 text-xs sm:text-sm"
+                        onClick={() => handleOpenProductionDialog(recipe)}
+                      >
+                        <FlaskConical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Add Production</span>
+                        <span className="sm:hidden">Produce</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-1.5 text-xs sm:text-sm"
                         onClick={() => {
                           setCalculatorRecipeId(recipe.id);
                           setCalculatorAmount(recipe.total_yield_ml.toString());
@@ -446,7 +528,6 @@ const SubRecipes = () => {
                       >
                         <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         <span className="hidden sm:inline">Calculate</span>
-                        <span className="sm:hidden">Calc</span>
                       </Button>
                       <Button 
                         variant="outline" 
@@ -608,6 +689,14 @@ const SubRecipes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Production Dialog */}
+      <SubRecipeProductionDialog
+        open={showProductionDialog}
+        onOpenChange={setShowProductionDialog}
+        subRecipe={productionRecipe}
+        groupId={selectedGroupId}
+      />
 
       <BottomNav />
     </div>

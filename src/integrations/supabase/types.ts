@@ -14973,6 +14973,60 @@ export type Database = {
           },
         ]
       }
+      sub_recipe_productions: {
+        Row: {
+          created_at: string
+          expiration_date: string | null
+          group_id: string | null
+          id: string
+          notes: string | null
+          produced_by_name: string | null
+          produced_by_user_id: string | null
+          production_date: string
+          quantity_produced_ml: number
+          sub_recipe_id: string
+        }
+        Insert: {
+          created_at?: string
+          expiration_date?: string | null
+          group_id?: string | null
+          id?: string
+          notes?: string | null
+          produced_by_name?: string | null
+          produced_by_user_id?: string | null
+          production_date?: string
+          quantity_produced_ml: number
+          sub_recipe_id: string
+        }
+        Update: {
+          created_at?: string
+          expiration_date?: string | null
+          group_id?: string | null
+          id?: string
+          notes?: string | null
+          produced_by_name?: string | null
+          produced_by_user_id?: string | null
+          production_date?: string
+          quantity_produced_ml?: number
+          sub_recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_recipe_productions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_recipe_productions_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "sub_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sub_recipes: {
         Row: {
           created_at: string
