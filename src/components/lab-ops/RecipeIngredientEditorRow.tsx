@@ -22,6 +22,7 @@ type InventoryItem = {
   totalStock?: number | null;
   unit_cost?: number | null;
   bottle_size_ml?: number | null;
+  unit?: string | null;
 };
 
 export function RecipeIngredientEditorRow({
@@ -46,6 +47,9 @@ export function RecipeIngredientEditorRow({
     const detected = detectBottleSizeMl(invItem.name);
     return Number(invItem.bottle_size_ml || detected || 750);
   }, [invItem]);
+  
+  // Unit for display
+  const displayUnit = invItem?.unit || 'ml';
 
   const unitCostPerUnit = Number(invItem?.unit_cost || 0);
 
@@ -112,7 +116,7 @@ export function RecipeIngredientEditorRow({
 
         {/* Auto-detected bottle size (read-only display) */}
         {ing.unit !== "piece" && ing.itemId && (
-          <span className="text-xs text-muted-foreground shrink-0">{bottleSize}ml</span>
+          <span className="text-xs text-muted-foreground shrink-0">{bottleSize}{displayUnit}</span>
         )}
 
         <Button size="icon" variant="ghost" onClick={() => onRemove(idx)} aria-label="Remove ingredient">

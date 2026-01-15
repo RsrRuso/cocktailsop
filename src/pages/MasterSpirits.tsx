@@ -15,6 +15,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Available units for spirits/ingredients
+const AVAILABLE_UNITS = [
+  { value: "ml", label: "ml (milliliters)" },
+  { value: "L", label: "L (liters)" },
+  { value: "cl", label: "cl (centiliters)" },
+  { value: "oz", label: "oz (fluid ounces)" },
+  { value: "g", label: "g (grams)" },
+  { value: "kg", label: "kg (kilograms)" },
+  { value: "piece", label: "piece" },
+  { value: "each", label: "each" },
+] as const;
 
 const MasterSpirits = () => {
   const navigate = useNavigate();
@@ -26,7 +45,8 @@ const MasterSpirits = () => {
     name: "",
     brand: "",
     category: "",
-    bottle_size_ml: ""
+    bottle_size_ml: "",
+    unit: "ml"
   });
 
   // Filter spirits based on search query
@@ -43,7 +63,8 @@ const MasterSpirits = () => {
         name: spirit.name,
         brand: spirit.brand || "",
         category: spirit.category || "",
-        bottle_size_ml: String(spirit.bottle_size_ml)
+        bottle_size_ml: String(spirit.bottle_size_ml),
+        unit: spirit.unit || "ml"
       });
     } else {
       setEditingId(null);
@@ -51,7 +72,8 @@ const MasterSpirits = () => {
         name: "",
         brand: "",
         category: "",
-        bottle_size_ml: ""
+        bottle_size_ml: "",
+        unit: "ml"
       });
     }
     setShowDialog(true);
@@ -59,7 +81,7 @@ const MasterSpirits = () => {
 
   const handleSave = () => {
     if (!formData.name || !formData.bottle_size_ml) {
-      toast.error("Please fill in spirit name and bottle size");
+      toast.error("Please fill in spirit name and size");
       return;
     }
 
@@ -70,7 +92,8 @@ const MasterSpirits = () => {
           name: formData.name,
           brand: formData.brand,
           category: formData.category,
-          bottle_size_ml: parseFloat(formData.bottle_size_ml)
+          bottle_size_ml: parseFloat(formData.bottle_size_ml),
+          unit: formData.unit
         }
       });
     } else {
@@ -78,7 +101,8 @@ const MasterSpirits = () => {
         name: formData.name,
         brand: formData.brand,
         category: formData.category,
-        bottle_size_ml: parseFloat(formData.bottle_size_ml)
+        bottle_size_ml: parseFloat(formData.bottle_size_ml),
+        unit: formData.unit
       });
     }
 
@@ -203,7 +227,7 @@ const MasterSpirits = () => {
                         {spirit.brand && <span>Brand: {spirit.brand}</span>}
                         {spirit.category && <span>Category: {spirit.category}</span>}
                         <span className="text-primary font-semibold">
-                          {spirit.source_type === 'sub_recipe' ? 'Yield' : 'Bottle'}: {spirit.bottle_size_ml}ml
+                          {spirit.source_type === 'sub_recipe' ? 'Yield' : 'Size'}: {spirit.bottle_size_ml}{spirit.unit || 'ml'}
                         </span>
                       </div>
                     </div>
@@ -269,16 +293,33 @@ const MasterSpirits = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Bottle Size (ml) *</Label>
-              <Input
-                type="number"
-                value={formData.bottle_size_ml}
-                onChange={(e) => setFormData({ ...formData, bottle_size_ml: e.target.value })}
-                placeholder="e.g., 750"
-                className="glass"
-              />
+              <Label>Size *</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={formData.bottle_size_ml}
+                  onChange={(e) => setFormData({ ...formData, bottle_size_ml: e.target.value })}
+                  placeholder="e.g., 750"
+                  className="glass flex-1"
+                />
+                <Select
+                  value={formData.unit}
+                  onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                >
+                  <SelectTrigger className="w-32 glass">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVAILABLE_UNITS.map((unit) => (
+                      <SelectItem key={unit.value} value={unit.value}>
+                        {unit.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Standard sizes: 50ml, 200ml, 375ml, 500ml, 750ml, 1000ml
+                Common: 50ml, 200ml, 375ml, 500ml, 750ml, 1L, 1kg
               </p>
             </div>
             <div className="flex gap-2 pt-2">
