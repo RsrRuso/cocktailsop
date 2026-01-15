@@ -41,6 +41,17 @@ import SVLogo from "@/components/SVLogo";
 import { useAICredits } from "@/components/ai";
 import { HeaderTicker } from "@/components/HeaderTicker";
 
+// Static data moved outside component to prevent recreation on every render
+const REGIONS = [
+  { name: "All", flag: "🌐" },
+  { name: "USA", flag: "🗽" },
+  { name: "UK", flag: "👑" },
+  { name: "Europe", flag: "🏰" },
+  { name: "Asia", flag: "🏯" },
+  { name: "Middle East", flag: "🌙" },
+  { name: "Africa", flag: "🦁" },
+] as const;
+
 interface TopNavProps {
   isVisible?: boolean;
 }
@@ -88,8 +99,6 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
   });
   const [eventLoading, setEventLoading] = useState(false);
 
-  const REGIONS = ['USA', 'UK', 'Europe', 'Asia', 'Middle East', 'Africa', 'All'];
-
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -127,16 +136,6 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
 
   // Determine which badge to show
   const displayBadgeProfile = viewedUserProfile || currentUser;
-
-  const regions = [
-    { name: "All", flag: "🌐" },
-    { name: "USA", flag: "🗽" },
-    { name: "UK", flag: "👑" },
-    { name: "Europe", flag: "🏰" },
-    { name: "Asia", flag: "🏯" },
-    { name: "Middle East", flag: "🌙" },
-    { name: "Africa", flag: "🦁" },
-  ];
 
   const handleRegionChange = (region: string) => {
     const newRegion = region === 'All' ? null : region;
@@ -349,13 +348,13 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               <Collapsible>
                 <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-white/10 rounded flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <span>{regions.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
+                    <span>{REGIONS.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
                     {selectedRegion || 'All'} Region
                   </span>
                   <ChevronDown className="w-3 h-3 opacity-50" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  {regions.map((region) => (
+                  {REGIONS.map((region) => (
                     <DropdownMenuItem
                       key={region.name}
                       onClick={() => { lightTap(); handleRegionChange(region.name); }}
@@ -577,8 +576,8 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                     </SelectTrigger>
                     <SelectContent>
                       {REGIONS.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
+                        <SelectItem key={region.name} value={region.name}>
+                          {region.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

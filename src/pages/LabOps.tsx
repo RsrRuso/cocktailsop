@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -3024,12 +3024,20 @@ function InventoryModule({ outletId: initialOutletId }: { outletId: string }) {
     }
   };
 
-  const getTotalStock = (item: any) => {
+  const getTotalStock = useCallback((item: any) => {
     const levels = item.lab_ops_stock_levels as any[] | undefined;
     return levels?.reduce((sum: number, sl: any) => sum + (Number(sl.quantity) || 0), 0) || 0;
-  };
+  }, []);
 
-  const lowStockItems = items.filter(item => getTotalStock(item) < (item.par_level || 0));
+  // Memoize lowStockItems to prevent recalculation on every render
+  const lowStockItems = useMemo(() => 
+    items.filter(item => {
+      const levels = item.lab_ops_stock_levels as any[] | undefined;
+      const totalStock = levels?.reduce((sum: number, sl: any) => sum + (Number(sl.quantity) || 0), 0) || 0;
+      return totalStock < (item.par_level || 0);
+    }),
+    [items]
+  );
 
   return (
     <div className="space-y-6">
