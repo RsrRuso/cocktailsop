@@ -715,6 +715,50 @@ export type Database = {
           },
         ]
       }
+      batch_production_losses: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_name: string
+          loss_amount_ml: number
+          loss_reason: string | null
+          notes: string | null
+          production_id: string | null
+          recorded_by_name: string | null
+          recorded_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_name: string
+          loss_amount_ml?: number
+          loss_reason?: string | null
+          notes?: string | null
+          production_id?: string | null
+          recorded_by_name?: string | null
+          recorded_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_name?: string
+          loss_amount_ml?: number
+          loss_reason?: string | null
+          notes?: string | null
+          production_id?: string | null
+          recorded_by_name?: string | null
+          recorded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_production_losses_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "batch_productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_productions: {
         Row: {
           batch_name: string

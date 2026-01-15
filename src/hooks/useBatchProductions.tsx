@@ -52,6 +52,13 @@ export interface YieldDepletionData {
   }>;
 }
 
+export interface LossEntryData {
+  ingredient_name: string;
+  loss_amount_ml: number;
+  loss_reason: string;
+  notes?: string;
+}
+
 // Module-level cache for instant loading
 let productionsCache: Map<string, { data: BatchProduction[]; timestamp: number }> = new Map();
 const CACHE_TIME = 2 * 60 * 1000; // 2 minutes
@@ -117,13 +124,15 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
       ingredients,
       outletId,
       subRecipeDepletions,
-      yieldDepletions
+      yieldDepletions,
+      lossEntries
     }: {
       production: Omit<BatchProduction, 'id' | 'created_at' | 'user_id'>;
       ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
       outletId?: string; // LAB Ops outlet to sync inventory with
       subRecipeDepletions?: SubRecipeDepletionData[]; // Sub-recipes used in this batch
       yieldDepletions?: YieldDepletionData[]; // Yield products used in this batch
+      lossEntries?: LossEntryData[]; // Losses during production
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -238,6 +247,37 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null, 
           console.log('Yield depletions recorded:', yieldDepletions.length);
         } catch (depletionError) {
           console.warn('Yield depletion recording failed (non-blocking):', depletionError);
+        }
+      }
+
+      // Record production losses if any were recorded
+      if (lossEntries && lossEntries.length > 0) {
+        try {
+          for (const loss of lossEntries) {
+            if (loss.loss_amount_ml > 0) {
+              // Get user name for recording
+              let recordedByName = '';
+              if (profile) {
+                recordedByName = profile.full_name || profile.username || '';
+              }
+              if (!recordedByName && producedByEmail) {
+                recordedByName = producedByEmail.split('@')[0];
+              }
+
+              await supabase.from('batch_production_losses').insert({
+                production_id: productionData.id,
+                ingredient_name: loss.ingredient_name,
+                loss_amount_ml: loss.loss_amount_ml,
+                loss_reason: loss.loss_reason || null,
+                notes: loss.notes || null,
+                recorded_by_user_id: user.id,
+                recorded_by_name: recordedByName,
+              });
+            }
+          }
+          console.log('Production losses recorded:', lossEntries.length);
+        } catch (lossError) {
+          console.warn('Loss recording failed (non-blocking):', lossError);
         }
       }
 

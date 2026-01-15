@@ -206,6 +206,7 @@ const StoreManagementTrainingGuide = lazy(() => import("@/pages/StoreManagementT
 const CampaignPayment = lazy(() => import("@/pages/CampaignPayment"));
 const HRDashboard = lazy(() => import("@/pages/HRDashboard"));
 const AICreditsPage = lazy(() => import("@/pages/AICredits"));
+const LossDiscrepancies = lazy(() => import("@/pages/LossDiscrepancies"));
 
 // Pre-Opening Package
 const PreOpeningPackage = lazy(() => import("@/pages/PreOpeningPackage"));
@@ -457,6 +458,7 @@ const AppContent = () => {
           <Route path="/po-master-items" element={<POMasterItems />} />
           <Route path="/po-received-items" element={<POReceivedItems />} />
         <Route path="/procurement-pin-access" element={<ProcurementPinAccess />} />
+          <Route path="/loss-discrepancies" element={<LossDiscrepancies />} />
           
           {/* Studio & Content Creation */}
           <Route path="/studio" element={<Studio />} />
