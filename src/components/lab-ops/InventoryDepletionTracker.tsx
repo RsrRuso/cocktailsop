@@ -134,11 +134,9 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
         `)
         .eq("outlet_id", outletId);
       
-      if (invError) {
-        console.error("Error fetching inventory items:", invError);
-      }
-      
-      console.log("InventoryDepletionTracker: fetched", inventoryItems?.length || 0, "items for outlet", outletId);
+        if (invError) {
+          console.error("Error fetching inventory items:", invError);
+        }
 
 
       // Get inventory item IDs for this outlet to filter movements
@@ -162,7 +160,6 @@ export default function InventoryDepletionTracker({ outletId }: InventoryDepleti
           console.error("Error fetching movements:", movError);
         }
         movements = data || [];
-        console.log("Movements fetched:", movements?.length || 0);
       }
 
       // Fetch pourer readings (ml_dispensed is the column name)

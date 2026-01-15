@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -49,12 +49,17 @@ const MasterSpirits = () => {
     unit: "ml"
   });
 
-  // Filter spirits based on search query
-  const filteredSpirits = spirits?.filter(spirit => 
-    spirit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    spirit.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    spirit.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // Memoize filtered spirits to prevent recalculation on every render
+  const filteredSpirits = useMemo(() => {
+    if (!spirits) return [];
+    if (!searchQuery.trim()) return spirits;
+    const query = searchQuery.toLowerCase();
+    return spirits.filter(spirit => 
+      spirit.name.toLowerCase().includes(query) ||
+      spirit.brand?.toLowerCase().includes(query) ||
+      spirit.category?.toLowerCase().includes(query)
+    );
+  }, [spirits, searchQuery]);
 
   const handleOpenDialog = (spirit?: any) => {
     if (spirit) {

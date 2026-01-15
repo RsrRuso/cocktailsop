@@ -233,7 +233,7 @@ export const useUserMemberships = (userId: string | null) => {
             .eq('user_id', userId)
             .eq('is_active', true);
           
-          console.log('[Lab Ops Staff Query] userId:', userId, 'result:', staffResult.data, 'error:', staffResult.error);
+          // Production: removed console.log for performance
           
           // If staff records found, fetch outlet names separately
           if (staffResult.data && staffResult.data.length > 0) {
@@ -256,7 +256,7 @@ export const useUserMemberships = (userId: string | null) => {
             .select('id, name')
             .eq('user_id', userId);
           
-          console.log('[Lab Ops Owned Query] userId:', userId, 'result:', ownedResult.data, 'error:', ownedResult.error);
+          // Production: removed console.log for performance
           ownedLabOpsData = ownedResult.data;
         } catch (e) {
           console.error('Error fetching lab ops memberships:', e);

@@ -28,7 +28,6 @@ export const useGroupAdmin = (groupId: string | null) => {
         setIsAdmin(false);
       } else {
         const adminStatus = data?.role === 'admin';
-        console.log('Group admin check:', { groupId, userId: user.id, role: data?.role, isAdmin: adminStatus });
         setIsAdmin(adminStatus);
       }
     } catch (err) {

@@ -10,14 +10,9 @@ export const usePageTransition = () => {
       const duration = endTime - startTime;
       const path = window.location?.pathname || '/';
 
-      // Log all page transitions for monitoring
-      console.log(`⚡ Page transition: ${path} - ${(duration / 1000).toFixed(2)}s`);
-
-      // Warn if slower than 1 second (optimal target)
+      // Production: only log slow page loads (>1s) to reduce console noise
       if (duration > 1000) {
         console.warn(`⚠️ Slow page load: ${path} took ${(duration / 1000).toFixed(2)}s (target: <1s)`);
-      } else {
-        console.log(`✅ Fast load: ${path}`);
       }
     };
 
