@@ -24,6 +24,7 @@ import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { useGroupAdmin } from "@/hooks/useGroupAdmin";
 import { useBatchActivityTracker } from "@/hooks/useBatchActivityTracker";
 import { useSubRecipes } from "@/hooks/useSubRecipes";
+import { useSubRecipeProductions } from "@/hooks/useSubRecipeProductions";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
 import { ActivityTrackingPanel } from "@/components/batch-calculator/ActivityTrackingPanel";
 import QRCode from "qrcode";
@@ -145,7 +146,8 @@ const BatchCalculator = () => {
   );
   const { groups, createGroup, updateGroup, deleteGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
-  const { subRecipes, calculateBreakdown: calculateSubRecipeBreakdown } = useSubRecipes(selectedGroupId);
+  const { subRecipes, calculateBreakdown: calculateSubRecipeBreakdown, getTotalDepletion } = useSubRecipes(selectedGroupId);
+  const { getTotalProduced } = useSubRecipeProductions();
   const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
   const queryClient = useQueryClient();
   
@@ -4208,6 +4210,16 @@ const BatchCalculator = () => {
                           
                           {/* Always show "Leftover in Bottles" when there's partial consumption */}
                           {batchResults.scaledIngredients.some(ing => {
+                            // Check if sub-recipe with available stock
+                            const matchedSubRecipe = subRecipes?.find(
+                              (sr) => sr.name.toLowerCase() === ing.name.toLowerCase()
+                            );
+                            if (matchedSubRecipe) {
+                              const totalProduced = getTotalProduced(matchedSubRecipe.id);
+                              const totalUsed = getTotalDepletion(matchedSubRecipe.id);
+                              return totalProduced - totalUsed > 0;
+                            }
+                            // Otherwise check bottle leftover
                             if (!ing.bottle_size_ml) return false;
                             const scaledMl = parseFloat(ing.scaledAmount);
                             return scaledMl % ing.bottle_size_ml !== 0;
@@ -4215,9 +4227,45 @@ const BatchCalculator = () => {
                             <div className="text-sm bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
                               <div className="font-semibold mb-2 text-blue-900 dark:text-blue-100">Leftover in Bottles:</div>
                               {batchResults.scaledIngredients
-                                .filter(ing => ing.bottle_size_ml && parseFloat(ing.scaledAmount) % ing.bottle_size_ml !== 0)
+                                .filter(ing => {
+                                  // Include sub-recipes with stock
+                                  const matchedSubRecipe = subRecipes?.find(
+                                    (sr) => sr.name.toLowerCase() === ing.name.toLowerCase()
+                                  );
+                                  if (matchedSubRecipe) {
+                                    const totalProduced = getTotalProduced(matchedSubRecipe.id);
+                                    const totalUsed = getTotalDepletion(matchedSubRecipe.id);
+                                    return totalProduced - totalUsed > 0;
+                                  }
+                                  // Otherwise check bottle leftover
+                                  return ing.bottle_size_ml && parseFloat(ing.scaledAmount) % ing.bottle_size_ml !== 0;
+                                })
                                 .map(ing => {
                                   const scaledMl = parseFloat(ing.scaledAmount);
+                                  
+                                  // Check if this is a sub-recipe
+                                  const matchedSubRecipe = subRecipes?.find(
+                                    (sr) => sr.name.toLowerCase() === ing.name.toLowerCase()
+                                  );
+                                  
+                                  if (matchedSubRecipe) {
+                                    // For sub-recipes, calculate leftover from actual production stock
+                                    const totalProduced = getTotalProduced(matchedSubRecipe.id);
+                                    const totalUsed = getTotalDepletion(matchedSubRecipe.id);
+                                    const availableStock = totalProduced - totalUsed;
+                                    const leftoverMl = availableStock - scaledMl;
+                                    
+                                    return (
+                                      <div key={ing.id} className="flex justify-between py-1">
+                                        <span className="text-blue-700 dark:text-blue-300">{ing.name}:</span>
+                                        <span className="text-blue-900 dark:text-blue-100 font-bold">
+                                          {leftoverMl > 0 ? `${leftoverMl.toFixed(0)} ml remaining` : 'Will be depleted'}
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  // For regular bottles
                                   const partialMl = scaledMl % ing.bottle_size_ml!;
                                   const leftoverMl = ing.bottle_size_ml! - partialMl;
                                   return (
