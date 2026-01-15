@@ -14,7 +14,9 @@ import {
   User,
   Trash2,
   TrendingDown,
-  Package
+  Package,
+  FlaskConical,
+  Beaker
 } from "lucide-react";
 import { useBatchProductionLosses, LOSS_REASONS } from "@/hooks/useBatchProductionLosses";
 import { format } from "date-fns";
@@ -42,8 +44,9 @@ const LossDiscrepancies = () => {
     const query = searchQuery.toLowerCase();
     return allLosses.filter(loss => 
       loss.ingredient_name.toLowerCase().includes(query) ||
+      loss.sub_recipe_name?.toLowerCase().includes(query) ||
       loss.loss_reason?.toLowerCase().includes(query) ||
-      (loss.production as any)?.batch_name?.toLowerCase().includes(query)
+      loss.production?.batch_name?.toLowerCase().includes(query)
     );
   }, [allLosses, searchQuery]);
 
@@ -55,7 +58,11 @@ const LossDiscrepancies = () => {
       .sort((a, b) => b[1].totalLoss - a[1].totalLoss)
       .slice(0, 5);
     
-    return { totalLossMl, count: losses.length, topIngredients };
+    // Count by source type
+    const batchLosses = losses.filter(l => l.production_id).length;
+    const subRecipeLosses = losses.filter(l => l.sub_recipe_production_id).length;
+    
+    return { totalLossMl, count: losses.length, topIngredients, batchLosses, subRecipeLosses };
   }, [filteredLosses, getLossesByIngredient]);
 
   const getReasonLabel = (reason: string | null) => {
@@ -70,8 +77,13 @@ const LossDiscrepancies = () => {
       case 'quality_issue': return 'bg-orange-500/20 text-orange-700 dark:text-orange-300';
       case 'equipment_residue': return 'bg-purple-500/20 text-purple-700 dark:text-purple-300';
       case 'overpouring': return 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300';
+      case 'production_loss': return 'bg-rose-500/20 text-rose-700 dark:text-rose-300';
       default: return 'bg-muted text-muted-foreground';
     }
+  };
+
+  const isSubRecipeLoss = (loss: typeof filteredLosses[0]) => {
+    return !!loss.sub_recipe_production_id;
   };
 
   return (
@@ -122,6 +134,24 @@ const LossDiscrepancies = () => {
           </Card>
         </div>
 
+        {/* Source Type Breakdown */}
+        {(summary.batchLosses > 0 || summary.subRecipeLosses > 0) && (
+          <div className="flex gap-2 flex-wrap">
+            {summary.subRecipeLosses > 0 && (
+              <Badge variant="outline" className="flex items-center gap-1.5">
+                <FlaskConical className="h-3 w-3 text-primary" />
+                Sub-Recipes: {summary.subRecipeLosses}
+              </Badge>
+            )}
+            {summary.batchLosses > 0 && (
+              <Badge variant="outline" className="flex items-center gap-1.5">
+                <Beaker className="h-3 w-3 text-blue-500" />
+                Batch Productions: {summary.batchLosses}
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Top Ingredients by Loss */}
         {summary.topIngredients.length > 0 && (
           <Card className="p-4 glass">
@@ -146,7 +176,7 @@ const LossDiscrepancies = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by ingredient, reason, or batch..."
+            placeholder="Search by ingredient, sub-recipe, reason, or batch..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -166,7 +196,7 @@ const LossDiscrepancies = () => {
                   <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-30" />
                   <p>No loss records found</p>
                   <p className="text-sm mt-1">
-                    Losses will appear here when recorded during batch production
+                    Losses will appear here when recorded during sub-recipe or batch production
                   </p>
                 </div>
               ) : (
@@ -175,6 +205,12 @@ const LossDiscrepancies = () => {
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {/* Source indicator */}
+                          {isSubRecipeLoss(loss) ? (
+                            <FlaskConical className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Beaker className="h-4 w-4 text-blue-500" />
+                          )}
                           <span className="font-medium">{loss.ingredient_name}</span>
                           <Badge variant="destructive" className="text-xs">
                             -{loss.loss_amount_ml} ml
@@ -186,9 +222,24 @@ const LossDiscrepancies = () => {
                           )}
                         </div>
                         
-                        {(loss as any).production?.batch_name && (
+                        {/* Show yield comparison for sub-recipe losses */}
+                        {isSubRecipeLoss(loss) && loss.expected_yield_ml && loss.actual_yield_ml && (
+                          <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                            Expected: {loss.expected_yield_ml}ml → Actual: {loss.actual_yield_ml}ml
+                          </div>
+                        )}
+                        
+                        {/* Show batch name for batch production losses */}
+                        {loss.production?.batch_name && (
                           <p className="text-sm text-muted-foreground">
-                            Batch: {(loss as any).production.batch_name}
+                            Batch: {loss.production.batch_name}
+                          </p>
+                        )}
+                        
+                        {/* Show sub-recipe name */}
+                        {loss.sub_recipe_name && (
+                          <p className="text-sm text-muted-foreground">
+                            Sub-Recipe: {loss.sub_recipe_name}
                           </p>
                         )}
                         

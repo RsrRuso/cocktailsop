@@ -4,11 +4,15 @@ import { toast } from "sonner";
 
 export interface BatchProductionLoss {
   id: string;
-  production_id: string;
+  production_id: string | null;
+  sub_recipe_production_id: string | null;
   ingredient_name: string;
+  sub_recipe_name: string | null;
   loss_amount_ml: number;
   loss_reason: string | null;
   notes: string | null;
+  expected_yield_ml: number | null;
+  actual_yield_ml: number | null;
   recorded_by_user_id: string | null;
   recorded_by_name: string | null;
   created_at: string;
@@ -22,6 +26,7 @@ export const LOSS_REASONS = [
   { value: 'quality_issue', label: 'Quality Issue' },
   { value: 'overpouring', label: 'Over-pouring' },
   { value: 'training', label: 'Training' },
+  { value: 'production_loss', label: 'Production Loss' },
   { value: 'other', label: 'Other' },
 ] as const;
 
@@ -49,17 +54,19 @@ export const useBatchProductionLosses = (productionId?: string) => {
     gcTime: 5 * 60 * 1000,
   });
 
-  // Fetch all losses for discrepancies page
+  // Fetch all losses for discrepancies page (including sub-recipe losses)
   const { data: allLosses, isLoading: isLoadingAll } = useQuery({
     queryKey: ['all-batch-production-losses'],
     queryFn: async (): Promise<(BatchProductionLoss & { 
-      production?: { batch_name: string; recipe_id: string; production_date: string } 
+      production?: { batch_name: string; recipe_id: string; production_date: string } | null;
+      sub_recipe_production?: { production_date: string } | null;
     })[]> => {
       const { data, error } = await supabase
         .from('batch_production_losses')
         .select(`
           *,
-          production:batch_productions(batch_name, recipe_id, production_date)
+          production:batch_productions(batch_name, recipe_id, production_date),
+          sub_recipe_production:sub_recipe_productions(production_date)
         `)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -74,11 +81,15 @@ export const useBatchProductionLosses = (productionId?: string) => {
   // Record a new loss
   const recordLoss = useMutation({
     mutationFn: async (loss: {
-      production_id: string;
+      production_id?: string | null;
+      sub_recipe_production_id?: string | null;
       ingredient_name: string;
+      sub_recipe_name?: string;
       loss_amount_ml: number;
       loss_reason?: string;
       notes?: string;
+      expected_yield_ml?: number;
+      actual_yield_ml?: number;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -95,11 +106,15 @@ export const useBatchProductionLosses = (productionId?: string) => {
       const { data, error } = await supabase
         .from('batch_production_losses')
         .insert({
-          production_id: loss.production_id,
+          production_id: loss.production_id || null,
+          sub_recipe_production_id: loss.sub_recipe_production_id || null,
           ingredient_name: loss.ingredient_name,
+          sub_recipe_name: loss.sub_recipe_name || null,
           loss_amount_ml: loss.loss_amount_ml,
           loss_reason: loss.loss_reason || null,
           notes: loss.notes || null,
+          expected_yield_ml: loss.expected_yield_ml || null,
+          actual_yield_ml: loss.actual_yield_ml || null,
           recorded_by_user_id: user.id,
           recorded_by_name: recordedByName,
         })

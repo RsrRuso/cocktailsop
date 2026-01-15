@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { Plus, Calendar, FlaskConical, Clock } from "lucide-react";
+import { Plus, Calendar, FlaskConical, Clock, AlertTriangle, Beaker, TrendingDown } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { SubRecipe } from "@/hooks/useSubRecipes";
 import { useSubRecipeProductions } from "@/hooks/useSubRecipeProductions";
+import { useBatchProductionLosses } from "@/hooks/useBatchProductionLosses";
+import { cn } from "@/lib/utils";
 
 interface SubRecipeProductionDialogProps {
   open: boolean;
@@ -31,10 +33,36 @@ export const SubRecipeProductionDialog = ({
   groupId,
 }: SubRecipeProductionDialogProps) => {
   const { createProduction } = useSubRecipeProductions();
+  const { recordLoss } = useBatchProductionLosses();
   
   const [quantityMl, setQuantityMl] = useState("");
   const [expirationDays, setExpirationDays] = useState(7);
   const [notes, setNotes] = useState("");
+
+  // Calculate total ingredients amount
+  const totalIngredientsMl = useMemo(() => {
+    if (!subRecipe?.ingredients) return 0;
+    return subRecipe.ingredients.reduce((sum, ing) => {
+      // Convert to ml if needed (assume ml for now)
+      const amount = Number(ing.amount) || 0;
+      return sum + amount;
+    }, 0);
+  }, [subRecipe]);
+
+  // Expected yield from recipe definition
+  const expectedYield = subRecipe?.total_yield_ml || 0;
+
+  // Calculate loss/gain based on actual yield vs expected
+  const lossAmount = useMemo(() => {
+    const actualYield = parseFloat(quantityMl) || 0;
+    if (actualYield <= 0) return 0;
+    // Loss = Expected Yield - Actual Yield
+    // If positive = loss, if negative = gain (over-produced)
+    return expectedYield - actualYield;
+  }, [quantityMl, expectedYield]);
+
+  const hasLoss = lossAmount > 0;
+  const hasGain = lossAmount < 0;
 
   useEffect(() => {
     if (open && subRecipe) {
@@ -44,7 +72,7 @@ export const SubRecipeProductionDialog = ({
     }
   }, [open, subRecipe]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!subRecipe || !quantityMl) return;
 
     const quantity = parseFloat(quantityMl);
@@ -56,14 +84,35 @@ export const SubRecipeProductionDialog = ({
       ? addDays(new Date(), expirationDays).toISOString()
       : undefined;
 
-    createProduction({
-      sub_recipe_id: subRecipe.id,
-      quantity_produced_ml: quantity,
-      production_date: new Date().toISOString(),
-      expiration_date: expirationDate,
-      notes: notes || undefined,
-      group_id: groupId || undefined,
-    });
+    // First create the production
+    createProduction(
+      {
+        sub_recipe_id: subRecipe.id,
+        quantity_produced_ml: quantity,
+        production_date: new Date().toISOString(),
+        expiration_date: expirationDate,
+        notes: notes || undefined,
+        group_id: groupId || undefined,
+      },
+      {
+        onSuccess: (data) => {
+          // If there was a loss, record it automatically
+          if (hasLoss && lossAmount > 0) {
+            recordLoss({
+              production_id: null as any, // Not a batch production
+              sub_recipe_production_id: data.id,
+              ingredient_name: subRecipe.name,
+              sub_recipe_name: subRecipe.name,
+              loss_amount_ml: lossAmount,
+              loss_reason: 'production_loss',
+              expected_yield_ml: expectedYield,
+              actual_yield_ml: quantity,
+              notes: `Auto-recorded: Expected ${expectedYield}ml, produced ${quantity}ml. Difference: ${lossAmount}ml loss.`,
+            });
+          }
+        }
+      }
+    );
 
     onOpenChange(false);
   };
@@ -80,7 +129,7 @@ export const SubRecipeProductionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
+      <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-primary" />
@@ -92,20 +141,80 @@ export const SubRecipeProductionDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Quantity Produced */}
+          {/* Ingredients Summary */}
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Beaker className="h-4 w-4 text-primary" />
+              Ingredients Used
+            </div>
+            <div className="space-y-1 text-sm">
+              {subRecipe.ingredients.map((ing, idx) => (
+                <div key={idx} className="flex justify-between text-muted-foreground">
+                  <span>{ing.name}</span>
+                  <span className="font-mono">{ing.amount} {ing.unit}</span>
+                </div>
+              ))}
+              <div className="flex justify-between border-t pt-1 mt-1 font-medium">
+                <span>Total Ingredients</span>
+                <span className="text-primary font-mono">{totalIngredientsMl.toFixed(0)} ml</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Expected Yield Display */}
+          <div className="flex justify-between items-center p-2 bg-card border rounded-lg">
+            <span className="text-sm text-muted-foreground">Expected Yield</span>
+            <span className="font-medium text-primary">{expectedYield} ml</span>
+          </div>
+
+          {/* Actual Yield Input */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Quantity Produced (ml) *</Label>
+            <Label className="text-sm font-medium">Actual Yield (ml) *</Label>
             <Input
               type="number"
               placeholder="e.g., 1000"
               value={quantityMl}
               onChange={(e) => setQuantityMl(e.target.value)}
-              className="h-10"
+              className="h-10 text-lg font-mono"
             />
             <p className="text-xs text-muted-foreground">
-              Recipe yields {subRecipe.total_yield_ml}ml per batch
+              Enter the actual amount produced after all processing
             </p>
           </div>
+
+          {/* Loss/Gain Indicator */}
+          {(hasLoss || hasGain) && parseFloat(quantityMl) > 0 && (
+            <div className={cn(
+              "p-3 rounded-lg flex items-center gap-3",
+              hasLoss ? "bg-destructive/10 border border-destructive/30" : "bg-green-500/10 border border-green-500/30"
+            )}>
+              {hasLoss ? (
+                <>
+                  <TrendingDown className="h-5 w-5 text-destructive" />
+                  <div>
+                    <div className="font-medium text-destructive">
+                      {lossAmount.toFixed(1)} ml Loss
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Will be auto-recorded in Loss Discrepancies
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-green-500" />
+                  <div>
+                    <div className="font-medium text-green-500">
+                      {Math.abs(lossAmount).toFixed(1)} ml Over-produced
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      More yield than expected recipe output
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Expiration Days with Slider */}
           <div className="space-y-3">
@@ -190,6 +299,7 @@ export const SubRecipeProductionDialog = ({
           >
             <Plus className="h-4 w-4 mr-1.5" />
             Record Production
+            {hasLoss && <span className="ml-1 text-xs opacity-80">+ Loss</span>}
           </Button>
           <Button
             variant="outline"
