@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -279,6 +279,16 @@ export const useWasabiMedia = ({ conversationId, currentUserId, onMessageSent }:
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Cleanup timers on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (videoTimerRef.current) clearInterval(videoTimerRef.current);
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      if (videoStreamRef.current) videoStreamRef.current.getTracks().forEach(t => t.stop());
+    };
+  }, []);
 
   return {
     isRecordingVoice,

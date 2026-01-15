@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
 
 function PWAUpdatePromptInner() {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -11,8 +13,8 @@ function PWAUpdatePromptInner() {
     onRegisteredSW(swUrl, registration) {
       console.log('SW Registered:', swUrl);
       // Check for updates every 4 hours (reduced from 1 hour to save resources)
-      if (registration) {
-        setInterval(() => {
+      if (registration && !intervalRef.current) {
+        intervalRef.current = setInterval(() => {
           // Only check when tab is visible
           if (document.visibilityState === 'visible') {
             registration.update();
@@ -24,6 +26,15 @@ function PWAUpdatePromptInner() {
       console.error('SW registration error:', error);
     },
   });
+  
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (needRefresh) {
