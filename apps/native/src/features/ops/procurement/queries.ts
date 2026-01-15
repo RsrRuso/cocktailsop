@@ -7,9 +7,37 @@ export function useProcurementWorkspaces(userId?: string) {
     queryKey: ['proc', 'workspaces', userId],
     enabled: !!userId,
     queryFn: async (): Promise<ProcurementWorkspace[]> => {
-      const res = await supabase.from('procurement_workspaces').select('*').order('created_at', { ascending: false });
-      if (res.error) throw res.error;
-      return (res.data ?? []) as unknown as ProcurementWorkspace[];
+      // First get workspaces user owns
+      const ownedRes = await supabase
+        .from('procurement_workspaces')
+        .select('*')
+        .eq('owner_id', userId!)
+        .order('created_at', { ascending: false });
+      
+      // Then get workspaces user is a member of
+      const memberRes = await supabase
+        .from('procurement_workspace_members')
+        .select('workspace_id')
+        .eq('user_id', userId!);
+      
+      const memberWorkspaceIds = (memberRes.data ?? []).map(m => m.workspace_id);
+      
+      let memberWorkspaces: ProcurementWorkspace[] = [];
+      if (memberWorkspaceIds.length > 0) {
+        const memberWorkspacesRes = await supabase
+          .from('procurement_workspaces')
+          .select('*')
+          .in('id', memberWorkspaceIds)
+          .order('created_at', { ascending: false });
+        memberWorkspaces = (memberWorkspacesRes.data ?? []) as unknown as ProcurementWorkspace[];
+      }
+      
+      // Combine and deduplicate
+      const owned = (ownedRes.data ?? []) as unknown as ProcurementWorkspace[];
+      const allWorkspaces = [...owned, ...memberWorkspaces];
+      const uniqueWorkspaces = Array.from(new Map(allWorkspaces.map(w => [w.id, w])).values());
+      
+      return uniqueWorkspaces;
     },
   });
 }

@@ -8,8 +8,24 @@ export function useMixologistGroups(userId?: string) {
     queryKey: ['batch', 'groups', userId],
     enabled: !!userId,
     queryFn: async (): Promise<MixologistGroupLite[]> => {
-      // RLS already restricts to groups user can see
-      const res = await supabase.from('mixologist_groups').select('id, name, description, created_by, created_at').order('created_at', { ascending: false });
+      // First get group IDs where user is a member - explicit membership filter
+      const membershipsRes = await supabase
+        .from('mixologist_group_members')
+        .select('group_id')
+        .eq('user_id', userId!);
+      
+      if (membershipsRes.error) throw membershipsRes.error;
+      if (!membershipsRes.data || membershipsRes.data.length === 0) return [];
+      
+      const groupIds = membershipsRes.data.map(m => m.group_id);
+      
+      // Then fetch only those groups user is member of
+      const res = await supabase
+        .from('mixologist_groups')
+        .select('id, name, description, created_by, created_at')
+        .in('id', groupIds)
+        .order('created_at', { ascending: false });
+      
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as MixologistGroupLite[];
     },
@@ -18,7 +34,7 @@ export function useMixologistGroups(userId?: string) {
 
 export function useBatchRecipes(userId?: string, opts?: { staffSession?: BatchStaffSession | null; groupId?: string | null }) {
   return useQuery({
-    queryKey: ['batch', 'recipes', userId ?? null, opts?.staffSession?.group?.id ?? null],
+    queryKey: ['batch', 'recipes', userId ?? null, opts?.staffSession?.group?.id ?? null, opts?.groupId ?? null],
     enabled: !!userId || !!opts?.staffSession?.group?.id,
     queryFn: async (): Promise<BatchRecipeLite[]> => {
       // Staff mode: use edge function to bypass RLS safely
@@ -31,10 +47,21 @@ export function useBatchRecipes(userId?: string, opts?: { staffSession?: BatchSt
         return rows as BatchRecipeLite[];
       }
 
-      const res = await supabase
+      // Build query with explicit filtering - only show personal or group-specific recipes
+      let q = supabase
         .from('batch_recipes')
-        .select('id, user_id, recipe_name, description, current_serves, ingredients, created_at, updated_at')
+        .select('id, user_id, recipe_name, description, current_serves, ingredients, created_at, updated_at, group_id')
         .order('created_at', { ascending: false });
+      
+      if (opts?.groupId) {
+        // Show recipes for specific group only
+        q = q.eq('group_id', opts.groupId);
+      } else {
+        // Show personal recipes only (no group, owned by user)
+        q = q.is('group_id', null).eq('user_id', userId!);
+      }
+      
+      const res = await q;
       if (res.error) throw res.error;
       return (res.data ?? []) as unknown as BatchRecipeLite[];
     },

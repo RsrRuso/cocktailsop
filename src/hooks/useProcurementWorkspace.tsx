@@ -32,17 +32,44 @@ export const useProcurementWorkspace = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch all workspaces user has access to
+  // Fetch workspaces user owns or is a member of - explicit membership filter
   const { data: workspaces, isLoading: isLoadingWorkspaces } = useQuery({
     queryKey: ['procurement-workspaces', user?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      // First get workspaces user owns
+      const { data: ownedWorkspaces, error: ownedError } = await (supabase as any)
         .from('procurement_workspaces')
         .select('*')
+        .eq('owner_id', user?.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return (data || []) as ProcurementWorkspace[];
+      if (ownedError) throw ownedError;
+      
+      // Then get workspaces user is a member of
+      const { data: memberships } = await (supabase as any)
+        .from('procurement_workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user?.id);
+      
+      const memberWorkspaceIds = (memberships || []).map((m: any) => m.workspace_id);
+      
+      let memberWorkspaces: ProcurementWorkspace[] = [];
+      if (memberWorkspaceIds.length > 0) {
+        const { data: memberData } = await (supabase as any)
+          .from('procurement_workspaces')
+          .select('*')
+          .in('id', memberWorkspaceIds)
+          .order('created_at', { ascending: false });
+        memberWorkspaces = memberData || [];
+      }
+      
+      // Combine and deduplicate
+      const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspaces];
+      const uniqueWorkspaces = Array.from(
+        new Map(allWorkspaces.map((w: any) => [w.id, w])).values()
+      );
+      
+      return uniqueWorkspaces as ProcurementWorkspace[];
     },
     enabled: !!user?.id
   });
