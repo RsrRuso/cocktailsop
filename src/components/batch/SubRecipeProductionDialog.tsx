@@ -16,9 +16,10 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, Calendar, FlaskConical, Clock, AlertTriangle, Beaker, TrendingDown, ExternalLink } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { SubRecipe } from "@/hooks/useSubRecipes";
-import { useSubRecipeProductions } from "@/hooks/useSubRecipeProductions";
-import { useBatchProductionLosses } from "@/hooks/useBatchProductionLosses";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SubRecipeProductionDialogProps {
   open: boolean;
@@ -33,18 +34,17 @@ export const SubRecipeProductionDialog = ({
   subRecipe,
   groupId,
 }: SubRecipeProductionDialogProps) => {
-  const { createProduction } = useSubRecipeProductions();
-  const { recordLoss } = useBatchProductionLosses();
+  const queryClient = useQueryClient();
   
   const [quantityMl, setQuantityMl] = useState("");
   const [expirationDays, setExpirationDays] = useState(7);
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calculate total ingredients amount
   const totalIngredientsMl = useMemo(() => {
     if (!subRecipe?.ingredients) return 0;
     return subRecipe.ingredients.reduce((sum, ing) => {
-      // Convert to ml if needed (assume ml for now)
       const amount = Number(ing.amount) || 0;
       return sum + amount;
     }, 0);
@@ -57,8 +57,6 @@ export const SubRecipeProductionDialog = ({
   const lossAmount = useMemo(() => {
     const actualYield = parseFloat(quantityMl) || 0;
     if (actualYield <= 0 || totalIngredientsMl <= 0) return 0;
-    // Loss = Total Ingredients - Actual Yield
-    // If positive = loss, if negative = gain (over-produced)
     return totalIngredientsMl - actualYield;
   }, [quantityMl, totalIngredientsMl]);
 
@@ -67,7 +65,6 @@ export const SubRecipeProductionDialog = ({
 
   useEffect(() => {
     if (open && subRecipe) {
-      // Clear quantity so user must enter actual yield
       setQuantityMl("");
       setExpirationDays(7);
       setNotes("");
@@ -75,48 +72,103 @@ export const SubRecipeProductionDialog = ({
   }, [open, subRecipe]);
 
   const handleSubmit = async () => {
-    if (!subRecipe || !quantityMl) return;
+    if (!subRecipe || !quantityMl || isSubmitting) return;
 
     const quantity = parseFloat(quantityMl);
     if (isNaN(quantity) || quantity <= 0) {
+      toast.error("Please enter a valid quantity");
       return;
     }
 
-    const expirationDate = expirationDays > 0
-      ? addDays(new Date(), expirationDays).toISOString()
-      : undefined;
+    setIsSubmitting(true);
 
-    // First create the production
-    createProduction(
-      {
-        sub_recipe_id: subRecipe.id,
-        quantity_produced_ml: quantity,
-        production_date: new Date().toISOString(),
-        expiration_date: expirationDate,
-        notes: notes || undefined,
-        group_id: groupId || undefined,
-      },
-      {
-        onSuccess: (data) => {
-          // If there was a loss, record it automatically
-          if (hasLoss && lossAmount > 0) {
-            recordLoss({
-              production_id: null as any, // Not a batch production
-              sub_recipe_production_id: data.id,
-              ingredient_name: subRecipe.name,
-              sub_recipe_name: subRecipe.name,
-              loss_amount_ml: lossAmount,
-              loss_reason: 'production_loss',
-              expected_yield_ml: expectedYield,
-              actual_yield_ml: quantity,
-              notes: `Auto-recorded: Expected ${expectedYield}ml, produced ${quantity}ml. Difference: ${lossAmount}ml loss.`,
-            });
-          }
-        }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Not authenticated");
+        setIsSubmitting(false);
+        return;
       }
-    );
 
-    onOpenChange(false);
+      // Get producer name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      const producerName = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'Unknown';
+
+      const expirationDate = expirationDays > 0
+        ? addDays(new Date(), expirationDays).toISOString()
+        : null;
+
+      // Create the production
+      const { data: productionData, error: productionError } = await supabase
+        .from('sub_recipe_productions')
+        .insert({
+          sub_recipe_id: subRecipe.id,
+          quantity_produced_ml: quantity,
+          produced_by_user_id: user.id,
+          produced_by_name: producerName,
+          production_date: new Date().toISOString(),
+          expiration_date: expirationDate,
+          notes: notes || null,
+          group_id: groupId || null,
+        })
+        .select()
+        .single();
+
+      if (productionError) throw productionError;
+
+      // If there was a loss, record it for EACH INGREDIENT proportionally
+      if (hasLoss && lossAmount > 0 && subRecipe.ingredients.length > 0) {
+        const lossRecords = subRecipe.ingredients.map((ing) => {
+          const ingredientAmount = Number(ing.amount) || 0;
+          const ratio = ingredientAmount / totalIngredientsMl;
+          const ingredientLoss = lossAmount * ratio;
+          
+          return {
+            production_id: null,
+            sub_recipe_production_id: productionData.id,
+            ingredient_name: ing.name,
+            sub_recipe_name: subRecipe.name,
+            loss_amount_ml: Math.round(ingredientLoss * 100) / 100, // Round to 2 decimals
+            loss_reason: 'production_loss',
+            expected_yield_ml: ingredientAmount,
+            actual_yield_ml: ingredientAmount - ingredientLoss,
+            recorded_by_user_id: user.id,
+            recorded_by_name: producerName,
+            notes: `Auto-calculated: ${ratio.toFixed(1)}% of ${lossAmount.toFixed(0)}ml total loss from ${subRecipe.name} production`,
+          };
+        });
+
+        const { error: lossError } = await supabase
+          .from('batch_production_losses')
+          .insert(lossRecords);
+
+        if (lossError) {
+          console.error("Failed to record losses:", lossError);
+          toast.warning("Production saved but loss tracking failed");
+        } else {
+          toast.success(`Production recorded with ${lossRecords.length} ingredient losses tracked`);
+        }
+      } else {
+        toast.success("Production batch recorded!");
+      }
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['sub-recipe-productions'] });
+      queryClient.invalidateQueries({ queryKey: ['all-batch-production-losses'] });
+      queryClient.invalidateQueries({ queryKey: ['batch-production-losses'] });
+
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Production error:", error);
+      toast.error("Failed to record production: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!subRecipe) return null;
@@ -300,16 +352,17 @@ export const SubRecipeProductionDialog = ({
           <Button
             onClick={handleSubmit}
             className="w-full sm:w-auto order-1 sm:order-2"
-            disabled={!quantityMl || parseFloat(quantityMl) <= 0}
+            disabled={!quantityMl || parseFloat(quantityMl) <= 0 || isSubmitting}
           >
             <Plus className="h-4 w-4 mr-1.5" />
-            Record Production
-            {hasLoss && <span className="ml-1 text-xs opacity-80">+ Loss</span>}
+            {isSubmitting ? "Recording..." : "Record Production"}
+            {hasLoss && !isSubmitting && <span className="ml-1 text-xs opacity-80">+ Loss</span>}
           </Button>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             className="w-full sm:w-auto order-2 sm:order-1"
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
