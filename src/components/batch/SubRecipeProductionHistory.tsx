@@ -124,83 +124,187 @@ export const SubRecipeProductionHistory = ({
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      // Header
-      doc.setFontSize(20);
+      // Colors
+      const primaryColor = [212, 175, 55] as [number, number, number]; // Gold
+      const darkColor = [30, 30, 30] as [number, number, number];
+      const grayColor = [100, 100, 100] as [number, number, number];
+      const lightGray = [245, 245, 245] as [number, number, number];
+      const successColor = [34, 197, 94] as [number, number, number];
+      const dangerColor = [239, 68, 68] as [number, number, number];
+      
+      // Header Background
+      doc.setFillColor(...darkColor);
+      doc.rect(0, 0, pageWidth, 45, 'F');
+      
+      // Gold accent line
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 45, pageWidth, 3, 'F');
+      
+      // Header Text
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
-      doc.text("Sub-Recipe Production Report", pageWidth / 2, 20, { align: "center" });
+      doc.text("PRODUCTION REPORT", pageWidth / 2, 22, { align: "center" });
       
-      doc.setFontSize(16);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
-      doc.text(recipeName, pageWidth / 2, 30, { align: "center" });
+      doc.setTextColor(...primaryColor);
+      doc.text(recipeName.toUpperCase(), pageWidth / 2, 35, { align: "center" });
       
-      // Production Details
-      doc.setFontSize(12);
-      let y = 50;
+      // Production Summary Card
+      let y = 60;
       
+      // Card background
+      doc.setFillColor(...lightGray);
+      doc.roundedRect(15, y - 5, pageWidth - 30, 50, 3, 3, 'F');
+      
+      // Card border
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(15, y - 5, pageWidth - 30, 50, 3, 3, 'S');
+      
+      doc.setTextColor(...darkColor);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("Production Details", 20, y);
+      doc.text("PRODUCTION DETAILS", 25, y + 5);
+      
+      // Details in two columns
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...grayColor);
+      
+      y += 15;
+      doc.text("Quantity Produced:", 25, y);
+      doc.setTextColor(...darkColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${Number(production.quantity_produced_ml).toFixed(0)} ml`, 75, y);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...grayColor);
+      doc.text("Producer:", 120, y);
+      doc.setTextColor(...darkColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(production.produced_by_name || 'Unknown', 150, y);
+      
       y += 10;
-      
       doc.setFont("helvetica", "normal");
-      doc.text(`Quantity Produced: ${Number(production.quantity_produced_ml).toFixed(0)} ml`, 20, y);
-      y += 7;
-      doc.text(`Production Date: ${format(new Date(production.production_date), 'PPP')}`, 20, y);
-      y += 7;
-      doc.text(`Produced By: ${production.produced_by_name || 'Unknown'}`, 20, y);
-      y += 7;
+      doc.setTextColor(...grayColor);
+      doc.text("Production Date:", 25, y);
+      doc.setTextColor(...darkColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(format(new Date(production.production_date), 'MMMM do, yyyy'), 75, y);
+      
       if (production.expiration_date) {
-        doc.text(`Expiration Date: ${format(new Date(production.expiration_date), 'PPP')}`, 20, y);
-        y += 7;
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...grayColor);
+        doc.text("Expires:", 120, y);
+        doc.setTextColor(...darkColor);
+        doc.setFont("helvetica", "bold");
+        doc.text(format(new Date(production.expiration_date), 'MMMM do, yyyy'), 150, y);
       }
       
-      // Ingredients Used
+      // Ingredients Table
       if (ingredients.length > 0) {
-        y += 10;
-        doc.setFont("helvetica", "bold");
-        doc.text("Ingredients Used", 20, y);
-        y += 10;
+        y = 125;
         
+        // Section title
+        doc.setFillColor(...primaryColor);
+        doc.rect(15, y - 5, 4, 15, 'F');
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("INGREDIENTS USED", 25, y + 5);
+        
+        y += 20;
+        
+        // Table header
+        doc.setFillColor(...darkColor);
+        doc.rect(15, y - 5, pageWidth - 30, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("INGREDIENT", 20, y + 2);
+        doc.text("AMOUNT", pageWidth - 50, y + 2, { align: "right" });
+        
+        y += 12;
+        
+        // Table rows
+        doc.setTextColor(...darkColor);
         doc.setFont("helvetica", "normal");
-        ingredients.forEach((ing) => {
-          doc.text(`• ${ing.name}: ${ing.amount} ${ing.unit}`, 25, y);
-          y += 7;
+        
+        ingredients.forEach((ing, idx) => {
+          if (idx % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(15, y - 4, pageWidth - 30, 8, 'F');
+          }
+          doc.text(`${ing.name}`, 20, y + 1);
+          doc.text(`${ing.amount} ${ing.unit}`, pageWidth - 50, y + 1, { align: "right" });
+          y += 8;
         });
         
-        // Total ingredients
+        // Total row
         const totalIngredients = ingredients.reduce((sum, ing) => sum + Number(ing.amount), 0);
-        y += 3;
+        doc.setFillColor(...primaryColor);
+        doc.rect(15, y, pageWidth - 30, 10, 'F');
+        doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.text(`Total Ingredients: ${totalIngredients.toFixed(0)} ml`, 20, y);
+        doc.text("TOTAL", 20, y + 6);
+        doc.text(`${totalIngredients.toFixed(0)} ml`, pageWidth - 50, y + 6, { align: "right" });
         
-        // Loss calculation
+        // Loss/Gain indicator
         const loss = totalIngredients - Number(production.quantity_produced_ml);
-        y += 7;
-        if (loss > 0) {
-          doc.setTextColor(220, 53, 69); // red
-          doc.text(`Production Loss: ${loss.toFixed(0)} ml (${((loss / totalIngredients) * 100).toFixed(1)}%)`, 20, y);
-        } else if (loss < 0) {
-          doc.setTextColor(40, 167, 69); // green
-          doc.text(`Over-production: ${Math.abs(loss).toFixed(0)} ml`, 20, y);
+        y += 18;
+        
+        if (loss !== 0) {
+          const isLoss = loss > 0;
+          doc.setFillColor(isLoss ? 254 : 240, isLoss ? 242 : 253, isLoss ? 242 : 244);
+          doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, 'F');
+          
+          doc.setDrawColor(...(isLoss ? dangerColor : successColor));
+          doc.setLineWidth(0.5);
+          doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, 'S');
+          
+          doc.setTextColor(...(isLoss ? dangerColor : successColor));
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          
+          const lossText = isLoss 
+            ? `⚠ PRODUCTION LOSS: ${loss.toFixed(0)} ml (${((loss / totalIngredients) * 100).toFixed(1)}%)`
+            : `✓ OVER-PRODUCTION: +${Math.abs(loss).toFixed(0)} ml`;
+          doc.text(lossText, pageWidth / 2, y + 12, { align: "center" });
         }
-        doc.setTextColor(0, 0, 0);
       }
       
-      // Notes
+      // Notes section
       if (production.notes) {
-        y += 15;
+        y = y + 35;
+        doc.setFillColor(...primaryColor);
+        doc.rect(15, y - 5, 4, 15, 'F');
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text("Notes", 20, y);
-        y += 7;
+        doc.text("NOTES", 25, y + 5);
+        
+        y += 15;
         doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...grayColor);
         const splitNotes = doc.splitTextToSize(production.notes, pageWidth - 40);
         doc.text(splitNotes, 20, y);
       }
       
       // Footer
+      doc.setFillColor(...darkColor);
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
       doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`Generated on ${format(new Date(), 'PPP pp')}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Generated on ${format(new Date(), 'MMMM do, yyyy')} at ${format(new Date(), 'h:mm a')}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+      
+      doc.setTextColor(...primaryColor);
+      doc.text("SpecVerse", pageWidth - 20, pageHeight - 10, { align: "right" });
       
       doc.save(`${recipeName.replace(/\s+/g, '_')}_Production_${format(new Date(production.production_date), 'yyyy-MM-dd')}.pdf`);
       toast.success("PDF downloaded!");
@@ -214,64 +318,125 @@ export const SubRecipeProductionHistory = ({
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      // Header
-      doc.setFontSize(20);
+      // Colors
+      const primaryColor = [212, 175, 55] as [number, number, number]; // Gold
+      const darkColor = [30, 30, 30] as [number, number, number];
+      const grayColor = [100, 100, 100] as [number, number, number];
+      const lightGray = [245, 245, 245] as [number, number, number];
+      
+      // Header Background
+      doc.setFillColor(...darkColor);
+      doc.rect(0, 0, pageWidth, 55, 'F');
+      
+      // Gold accent line
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 55, pageWidth, 3, 'F');
+      
+      // Header Text
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
-      doc.text("Sub-Recipe Production Report", pageWidth / 2, 20, { align: "center" });
+      doc.text("FULL PRODUCTION REPORT", pageWidth / 2, 22, { align: "center" });
       
-      doc.setFontSize(16);
-      doc.text(recipeName, pageWidth / 2, 30, { align: "center" });
-      
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Total Batches: ${productions.length}`, pageWidth / 2, 38, { align: "center" });
-      
-      // Summary
-      const totalProduced = productions.reduce((sum, p) => sum + Number(p.quantity_produced_ml), 0);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Total Produced: ${totalProduced.toFixed(0)} ml`, pageWidth / 2, 46, { align: "center" });
-      
-      let y = 60;
-      
-      // Production List
       doc.setFontSize(14);
-      doc.text("Production History", 20, y);
-      y += 10;
+      doc.setTextColor(...primaryColor);
+      doc.text(recipeName.toUpperCase(), pageWidth / 2, 35, { align: "center" });
       
+      // Summary stats
+      const totalProduced = productions.reduce((sum, p) => sum + Number(p.quantity_produced_ml), 0);
       doc.setFontSize(10);
+      doc.setTextColor(200, 200, 200);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${productions.length} Batches  •  ${totalProduced.toFixed(0)} ml Total`, pageWidth / 2, 47, { align: "center" });
+      
+      let y = 70;
+      
+      // Table header
+      doc.setFillColor(...darkColor);
+      doc.rect(15, y - 5, pageWidth - 30, 12, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("#", 20, y + 3);
+      doc.text("DATE", 35, y + 3);
+      doc.text("QUANTITY", 85, y + 3);
+      doc.text("PRODUCER", 120, y + 3);
+      doc.text("EXPIRES", 165, y + 3);
+      
+      y += 14;
+      
+      // Table rows
       productions.forEach((production, index) => {
-        if (y > 270) {
+        if (y > pageHeight - 40) {
+          // Add footer before new page
+          doc.setFillColor(...darkColor);
+          doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+          doc.setFontSize(8);
+          doc.setTextColor(...primaryColor);
+          doc.text("SpecVerse", pageWidth - 20, pageHeight - 6, { align: "right" });
+          
           doc.addPage();
-          y = 20;
+          y = 25;
+          
+          // Repeat table header on new page
+          doc.setFillColor(...darkColor);
+          doc.rect(15, y - 5, pageWidth - 30, 12, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text("#", 20, y + 3);
+          doc.text("DATE", 35, y + 3);
+          doc.text("QUANTITY", 85, y + 3);
+          doc.text("PRODUCER", 120, y + 3);
+          doc.text("EXPIRES", 165, y + 3);
+          y += 14;
         }
         
-        doc.setFont("helvetica", "bold");
-        doc.text(`Batch #${index + 1}`, 20, y);
-        y += 6;
+        // Alternating row colors
+        if (index % 2 === 0) {
+          doc.setFillColor(...lightGray);
+          doc.rect(15, y - 4, pageWidth - 30, 10, 'F');
+        }
         
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
-        doc.text(`Quantity: ${Number(production.quantity_produced_ml).toFixed(0)} ml`, 25, y);
-        y += 5;
-        doc.text(`Date: ${format(new Date(production.production_date), 'PPP')}`, 25, y);
-        y += 5;
-        doc.text(`By: ${production.produced_by_name || 'Unknown'}`, 25, y);
-        y += 5;
-        if (production.expiration_date) {
-          doc.text(`Expires: ${format(new Date(production.expiration_date), 'PPP')}`, 25, y);
-          y += 5;
-        }
-        if (production.notes) {
-          doc.text(`Notes: ${production.notes}`, 25, y);
-          y += 5;
-        }
-        y += 5;
+        
+        doc.text(`${index + 1}`, 20, y + 2);
+        doc.text(format(new Date(production.production_date), 'MMM dd, yyyy'), 35, y + 2);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${Number(production.quantity_produced_ml).toFixed(0)} ml`, 85, y + 2);
+        doc.setFont("helvetica", "normal");
+        doc.text(production.produced_by_name || 'Unknown', 120, y + 2);
+        doc.text(production.expiration_date ? format(new Date(production.expiration_date), 'MMM dd') : '-', 165, y + 2);
+        
+        y += 10;
       });
       
+      // Summary box at bottom
+      y += 10;
+      doc.setFillColor(...primaryColor);
+      doc.roundedRect(15, y, pageWidth - 30, 25, 3, 3, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("TOTAL PRODUCTION", 25, y + 10);
+      doc.setFontSize(16);
+      doc.text(`${totalProduced.toFixed(0)} ml`, pageWidth - 25, y + 16, { align: "right" });
+      
       // Footer
+      doc.setFillColor(...darkColor);
+      doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+      
       doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`Generated on ${format(new Date(), 'PPP pp')}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Generated on ${format(new Date(), 'MMMM do, yyyy')} at ${format(new Date(), 'h:mm a')}`, pageWidth / 2, pageHeight - 6, { align: "center" });
+      
+      doc.setTextColor(...primaryColor);
+      doc.text("SpecVerse", pageWidth - 20, pageHeight - 6, { align: "right" });
       
       doc.save(`${recipeName.replace(/\s+/g, '_')}_All_Productions_Report.pdf`);
       toast.success("Full report downloaded!");
