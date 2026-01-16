@@ -46,7 +46,10 @@ const LossDiscrepancies = () => {
   const [searchParams] = useSearchParams();
   const initialGroupId = searchParams.get("groupId");
   
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId);
+  // Default to 'all' to show all losses, not filtered by group
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(
+    initialGroupId === null ? undefined : initialGroupId
+  );
   const [searchQuery, setSearchQuery] = useState("");
   
   const { groups } = useMixologistGroups();
@@ -128,13 +131,18 @@ const LossDiscrepancies = () => {
               <span className="text-sm font-medium">Filter by Group</span>
             </div>
             <Select
-              value={selectedGroupId || "personal"}
-              onValueChange={(value) => setSelectedGroupId(value === "personal" ? null : value)}
+              value={selectedGroupId === undefined ? "all" : selectedGroupId === null ? "personal" : selectedGroupId}
+              onValueChange={(value) => {
+                if (value === "all") setSelectedGroupId(undefined);
+                else if (value === "personal") setSelectedGroupId(null);
+                else setSelectedGroupId(value);
+              }}
             >
               <SelectTrigger className="bg-background/50">
                 <SelectValue placeholder="Select group" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Losses</SelectItem>
                 <SelectItem value="personal">Personal Losses</SelectItem>
                 {groups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
