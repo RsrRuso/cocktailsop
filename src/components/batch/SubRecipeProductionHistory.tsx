@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { format, isPast, differenceInDays, addDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { Trash2, Clock, User, Calendar, AlertTriangle, Edit2, Download, FileText } from "lucide-react";
+import { Trash2, Clock, User, Calendar, AlertTriangle, Edit2, Download, FileText, TrendingDown } from "lucide-react";
 import { SubRecipeProduction } from "@/hooks/useSubRecipeProductions";
+import { useBatchProductionLosses } from "@/hooks/useBatchProductionLosses";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,35 @@ export const SubRecipeProductionHistory = ({
   const [editQuantity, setEditQuantity] = useState("");
   const [editExpirationDays, setEditExpirationDays] = useState(7);
   const [editNotes, setEditNotes] = useState("");
+
+  // Fetch losses for all productions of this sub-recipe
+  const productionIds = productions.map(p => p.id);
+  const { allLosses } = useBatchProductionLosses();
+
+  // Build a map of production ID -> losses for quick access
+  const lossesByProduction = useMemo(() => {
+    const map: Record<string, { ingredient_name: string; loss_amount_ml: number }[]> = {};
+    if (!allLosses) return map;
+    
+    allLosses.forEach((loss) => {
+      if (loss.sub_recipe_production_id && productionIds.includes(loss.sub_recipe_production_id)) {
+        if (!map[loss.sub_recipe_production_id]) {
+          map[loss.sub_recipe_production_id] = [];
+        }
+        map[loss.sub_recipe_production_id].push({
+          ingredient_name: loss.ingredient_name,
+          loss_amount_ml: Number(loss.loss_amount_ml),
+        });
+      }
+    });
+    return map;
+  }, [allLosses, productionIds]);
+
+  // Calculate total loss for a production
+  const getTotalLoss = (productionId: string) => {
+    const losses = lossesByProduction[productionId] || [];
+    return losses.reduce((sum, l) => sum + l.loss_amount_ml, 0);
+  };
 
   if (!productions || productions.length === 0) {
     return (
@@ -274,6 +304,57 @@ export const SubRecipeProductionHistory = ({
             ? `⚠ PRODUCTION LOSS: ${loss.toFixed(0)} ml (${((loss / totalIngredients) * 100).toFixed(1)}%)`
             : `✓ OVER-PRODUCTION: +${Math.abs(loss).toFixed(0)} ml`;
           doc.text(lossText, pageWidth / 2, y + 12, { align: "center" });
+        }
+
+        // Ingredient Loss Breakdown Section (from database)
+        const productionLosses = lossesByProduction[production.id] || [];
+        if (productionLosses.length > 0) {
+          y += 30;
+          
+          // Section title
+          doc.setFillColor(...dangerColor);
+          doc.rect(15, y - 5, 4, 12, 'F');
+          doc.setTextColor(...darkColor);
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.text("INGREDIENT LOSS BREAKDOWN", 25, y + 3);
+          y += 15;
+          
+          // Table header
+          doc.setFillColor(...dangerColor);
+          doc.rect(15, y - 5, pageWidth - 30, 10, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text("INGREDIENT", 20, y + 2);
+          doc.text("LOSS", pageWidth - 25, y + 2, { align: "right" });
+          y += 12;
+          
+          // Table rows
+          let ingredientLossTotal = 0;
+          productionLosses.forEach((loss, idx) => {
+            if (idx % 2 === 0) {
+              doc.setFillColor(254, 242, 242);
+              doc.rect(15, y - 4, pageWidth - 30, 8, 'F');
+            }
+            doc.setTextColor(...darkColor);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text(loss.ingredient_name, 20, y + 1);
+            doc.setTextColor(...dangerColor);
+            doc.setFont("helvetica", "bold");
+            doc.text(`-${loss.loss_amount_ml.toFixed(1)} ml`, pageWidth - 25, y + 1, { align: "right" });
+            ingredientLossTotal += loss.loss_amount_ml;
+            y += 8;
+          });
+          
+          // Total loss row
+          doc.setFillColor(...dangerColor);
+          doc.rect(15, y, pageWidth - 30, 10, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.text("TOTAL LOSS", 20, y + 6);
+          doc.text(`-${ingredientLossTotal.toFixed(0)} ml`, pageWidth - 25, y + 6, { align: "right" });
         }
       }
       
@@ -566,6 +647,81 @@ export const SubRecipeProductionHistory = ({
         doc.setFontSize(11);
         const statusText = isLoss ? "⚠ PRODUCTION LOSS" : "✓ OVER-PRODUCTION";
         doc.text(statusText, pageWidth - 25, y + 20, { align: "right" });
+        
+        // ========== INGREDIENT LOSS BREAKDOWN FROM DATABASE ==========
+        // Aggregate all losses across all productions
+        const allProductionLosses: { ingredient_name: string; loss_amount_ml: number }[] = [];
+        productions.forEach((prod) => {
+          const losses = lossesByProduction[prod.id] || [];
+          losses.forEach(loss => allProductionLosses.push(loss));
+        });
+        
+        if (allProductionLosses.length > 0) {
+          y += 50;
+          
+          // Check if we need a new page
+          if (y > pageHeight - 80) {
+            doc.setFillColor(...darkColor);
+            doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+            doc.setFontSize(8);
+            doc.setTextColor(...primaryColor);
+            doc.text("SpecVerse", pageWidth - 20, pageHeight - 6, { align: "right" });
+            doc.addPage();
+            y = 25;
+          }
+          
+          // Section title
+          doc.setFillColor(...dangerColor);
+          doc.rect(15, y - 5, 4, 12, 'F');
+          doc.setTextColor(...darkColor);
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.text("INGREDIENT LOSS BREAKDOWN", 25, y + 3);
+          y += 15;
+          
+          // Aggregate losses by ingredient
+          const lossByIngredient: Record<string, number> = {};
+          allProductionLosses.forEach(loss => {
+            const key = loss.ingredient_name;
+            lossByIngredient[key] = (lossByIngredient[key] || 0) + loss.loss_amount_ml;
+          });
+          
+          // Table header
+          doc.setFillColor(...dangerColor);
+          doc.rect(15, y - 5, pageWidth - 30, 10, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text("INGREDIENT", 20, y + 2);
+          doc.text("TOTAL LOSS", pageWidth - 25, y + 2, { align: "right" });
+          y += 12;
+          
+          // Table rows
+          let totalIngredientLoss = 0;
+          Object.entries(lossByIngredient).forEach(([name, amount], idx) => {
+            if (idx % 2 === 0) {
+              doc.setFillColor(254, 242, 242);
+              doc.rect(15, y - 4, pageWidth - 30, 8, 'F');
+            }
+            doc.setTextColor(...darkColor);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text(name, 20, y + 1);
+            doc.setTextColor(...dangerColor);
+            doc.setFont("helvetica", "bold");
+            doc.text(`-${amount.toFixed(1)} ml`, pageWidth - 25, y + 1, { align: "right" });
+            totalIngredientLoss += amount;
+            y += 8;
+          });
+          
+          // Total loss row
+          doc.setFillColor(...dangerColor);
+          doc.rect(15, y, pageWidth - 30, 10, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.text("TOTAL INGREDIENT LOSS", 20, y + 6);
+          doc.text(`-${totalIngredientLoss.toFixed(0)} ml`, pageWidth - 25, y + 6, { align: "right" });
+        }
       }
       
       // Footer
@@ -622,6 +778,13 @@ export const SubRecipeProductionHistory = ({
                 +{Number(production.quantity_produced_ml).toFixed(0)}ml
               </span>
               {getExpirationBadge(production.expiration_date)}
+              {/* Show loss badge if there are losses */}
+              {getTotalLoss(production.id) > 0 && (
+                <Badge variant="destructive" className="text-[10px] gap-1">
+                  <TrendingDown className="h-3 w-3" />
+                  -{getTotalLoss(production.id).toFixed(0)}ml loss
+                </Badge>
+              )}
             </div>
             
             <div className="flex items-center gap-1">
@@ -672,6 +835,24 @@ export const SubRecipeProductionHistory = ({
               </AlertDialog>
             </div>
           </div>
+
+          {/* Loss Breakdown (if any) */}
+          {lossesByProduction[production.id] && lossesByProduction[production.id].length > 0 && (
+            <div className="bg-destructive/5 border border-destructive/20 rounded p-2 space-y-1">
+              <div className="text-xs font-medium text-destructive flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" />
+                Ingredient Losses
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                {lossesByProduction[production.id].map((loss, idx) => (
+                  <div key={idx} className="flex justify-between text-muted-foreground">
+                    <span className="truncate">{loss.ingredient_name.split(' ')[0]}</span>
+                    <span className="text-destructive font-medium">-{loss.loss_amount_ml.toFixed(0)}ml</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Details Row */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">

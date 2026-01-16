@@ -30,7 +30,7 @@ export const LOSS_REASONS = [
   { value: 'other', label: 'Other' },
 ] as const;
 
-export const useBatchProductionLosses = (productionId?: string, groupId?: string | null) => {
+export const useBatchProductionLosses = (productionId?: string, groupId?: string | null | undefined) => {
   const queryClient = useQueryClient();
 
   // Fetch losses for a specific production or all
@@ -73,7 +73,7 @@ export const useBatchProductionLosses = (productionId?: string, groupId?: string
 
       if (error) throw error;
       
-      // Filter client-side by group_id if provided
+      // Only filter client-side by group_id if explicitly provided (not undefined)
       let filteredData = data || [];
       if (groupId !== undefined) {
         filteredData = filteredData.filter(loss => {
@@ -93,6 +93,7 @@ export const useBatchProductionLosses = (productionId?: string, groupId?: string
           return groupId === null;
         });
       }
+      // When groupId is undefined, return all data without filtering
       
       return filteredData;
     },
