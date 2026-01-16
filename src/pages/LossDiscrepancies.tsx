@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,11 @@ import {
   TrendingDown,
   Package,
   FlaskConical,
-  Beaker
+  Beaker,
+  Users
 } from "lucide-react";
 import { useBatchProductionLosses, LOSS_REASONS } from "@/hooks/useBatchProductionLosses";
+import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -31,11 +33,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const LossDiscrepancies = () => {
   const navigate = useNavigate();
-  const { allLosses, isLoadingAll, deleteLoss, getLossesByIngredient } = useBatchProductionLosses();
+  const [searchParams] = useSearchParams();
+  const initialGroupId = searchParams.get("groupId");
+  
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  const { groups } = useMixologistGroups();
+  const { allLosses, isLoadingAll, deleteLoss, getLossesByIngredient } = useBatchProductionLosses(undefined, selectedGroupId);
 
   const filteredLosses = useMemo(() => {
     if (!allLosses) return [];
@@ -104,6 +119,32 @@ const LossDiscrepancies = () => {
             </p>
           </div>
         </div>
+
+        {/* Group Selector */}
+        {groups && groups.length > 0 && (
+          <div className="p-3 rounded-xl bg-card/50 border border-border/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filter by Group</span>
+            </div>
+            <Select
+              value={selectedGroupId || "personal"}
+              onValueChange={(value) => setSelectedGroupId(value === "personal" ? null : value)}
+            >
+              <SelectTrigger className="bg-background/50">
+                <SelectValue placeholder="Select group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">Personal Losses</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3">

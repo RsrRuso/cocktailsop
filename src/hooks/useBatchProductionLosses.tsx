@@ -30,7 +30,7 @@ export const LOSS_REASONS = [
   { value: 'other', label: 'Other' },
 ] as const;
 
-export const useBatchProductionLosses = (productionId?: string) => {
+export const useBatchProductionLosses = (productionId?: string, groupId?: string | null) => {
   const queryClient = useQueryClient();
 
   // Fetch losses for a specific production or all
@@ -54,25 +54,47 @@ export const useBatchProductionLosses = (productionId?: string) => {
     gcTime: 5 * 60 * 1000,
   });
 
-  // Fetch all losses for discrepancies page (including sub-recipe losses)
+  // Fetch all losses for discrepancies page (including sub-recipe losses), filtered by group
   const { data: allLosses, isLoading: isLoadingAll } = useQuery({
-    queryKey: ['all-batch-production-losses'],
+    queryKey: ['all-batch-production-losses', groupId],
     queryFn: async (): Promise<(BatchProductionLoss & { 
-      production?: { batch_name: string; recipe_id: string; production_date: string } | null;
-      sub_recipe_production?: { production_date: string } | null;
+      production?: { batch_name: string; recipe_id: string; production_date: string; group_id: string | null } | null;
+      sub_recipe_production?: { production_date: string; group_id: string | null } | null;
     })[]> => {
       const { data, error } = await supabase
         .from('batch_production_losses')
         .select(`
           *,
-          production:batch_productions(batch_name, recipe_id, production_date),
-          sub_recipe_production:sub_recipe_productions(production_date)
+          production:batch_productions(batch_name, recipe_id, production_date, group_id),
+          sub_recipe_production:sub_recipe_productions(production_date, group_id)
         `)
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
-      return data || [];
+      
+      // Filter client-side by group_id if provided
+      let filteredData = data || [];
+      if (groupId !== undefined) {
+        filteredData = filteredData.filter(loss => {
+          // Check if loss is from batch production
+          if (loss.production) {
+            return groupId === null 
+              ? loss.production.group_id === null 
+              : loss.production.group_id === groupId;
+          }
+          // Check if loss is from sub-recipe production
+          if (loss.sub_recipe_production) {
+            return groupId === null 
+              ? loss.sub_recipe_production.group_id === null 
+              : loss.sub_recipe_production.group_id === groupId;
+          }
+          // If no linked production, only show for personal (null) filter
+          return groupId === null;
+        });
+      }
+      
+      return filteredData;
     },
     enabled: !productionId, // Only fetch all when no specific productionId
     staleTime: 2 * 60 * 1000,
