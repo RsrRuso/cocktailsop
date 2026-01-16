@@ -36,12 +36,13 @@ export const SubRecipeProductionDialog = ({
 }: SubRecipeProductionDialogProps) => {
   const queryClient = useQueryClient();
   
+  const [expectedYield, setExpectedYield] = useState("");
   const [quantityMl, setQuantityMl] = useState("");
   const [expirationDays, setExpirationDays] = useState(7);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate total ingredients amount
+  // Calculate total ingredients amount (for display only)
   const totalIngredientsMl = useMemo(() => {
     if (!subRecipe?.ingredients) return 0;
     return subRecipe.ingredients.reduce((sum, ing) => {
@@ -50,21 +51,21 @@ export const SubRecipeProductionDialog = ({
     }, 0);
   }, [subRecipe]);
 
-  // Expected yield = total ingredients (what goes in should come out)
-  const expectedYield = totalIngredientsMl;
-
-  // Calculate loss/gain based on actual yield vs total ingredients
+  // Calculate loss/gain based on actual yield vs manually entered expected yield
+  const expectedYieldNum = parseFloat(expectedYield) || 0;
+  const actualYieldNum = parseFloat(quantityMl) || 0;
+  
   const lossAmount = useMemo(() => {
-    const actualYield = parseFloat(quantityMl) || 0;
-    if (actualYield <= 0 || totalIngredientsMl <= 0) return 0;
-    return totalIngredientsMl - actualYield;
-  }, [quantityMl, totalIngredientsMl]);
+    if (actualYieldNum <= 0 || expectedYieldNum <= 0) return 0;
+    return expectedYieldNum - actualYieldNum;
+  }, [expectedYieldNum, actualYieldNum]);
 
   const hasLoss = lossAmount > 0;
   const hasGain = lossAmount < 0;
 
   useEffect(() => {
     if (open && subRecipe) {
+      setExpectedYield("");
       setQuantityMl("");
       setExpirationDays(7);
       setNotes("");
@@ -135,11 +136,11 @@ export const SubRecipeProductionDialog = ({
             sub_recipe_name: subRecipe.name,
             loss_amount_ml: Math.round(ingredientLoss * 100) / 100, // Round to 2 decimals
             loss_reason: 'production_loss',
-            expected_yield_ml: ingredientAmount,
-            actual_yield_ml: ingredientAmount - ingredientLoss,
+            expected_yield_ml: expectedYieldNum * ratio,
+            actual_yield_ml: (expectedYieldNum * ratio) - ingredientLoss,
             recorded_by_user_id: user.id,
             recorded_by_name: producerName,
-            notes: `Auto-calculated: ${ratio.toFixed(1)}% of ${lossAmount.toFixed(0)}ml total loss from ${subRecipe.name} production`,
+            notes: `Auto-calculated: ${(ratio * 100).toFixed(1)}% of ${lossAmount.toFixed(0)}ml total loss from ${subRecipe.name} production`,
           };
         });
 
@@ -215,10 +216,19 @@ export const SubRecipeProductionDialog = ({
             </div>
           </div>
 
-          {/* Expected Yield Display */}
-          <div className="flex justify-between items-center p-2 bg-card border rounded-lg">
-            <span className="text-sm text-muted-foreground">Expected Yield</span>
-            <span className="font-medium text-primary">{expectedYield} ml</span>
+          {/* Expected Yield Input */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Expected Yield (ml) *</Label>
+            <Input
+              type="number"
+              placeholder="Enter expected yield"
+              value={expectedYield}
+              onChange={(e) => setExpectedYield(e.target.value)}
+              className="h-10 text-lg font-mono"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter what you expect to produce from this batch
+            </p>
           </div>
 
           {/* Actual Yield Input */}
@@ -237,7 +247,7 @@ export const SubRecipeProductionDialog = ({
           </div>
 
           {/* Loss/Gain Indicator */}
-          {(hasLoss || hasGain) && parseFloat(quantityMl) > 0 && (
+          {(hasLoss || hasGain) && actualYieldNum > 0 && expectedYieldNum > 0 && (
             <div className={cn(
               "p-3 rounded-lg flex items-center gap-3",
               hasLoss ? "bg-destructive/10 border border-destructive/30" : "bg-green-500/10 border border-green-500/30"
@@ -352,7 +362,7 @@ export const SubRecipeProductionDialog = ({
           <Button
             onClick={handleSubmit}
             className="w-full sm:w-auto order-1 sm:order-2"
-            disabled={!quantityMl || parseFloat(quantityMl) <= 0 || isSubmitting}
+            disabled={!quantityMl || actualYieldNum <= 0 || !expectedYield || expectedYieldNum <= 0 || isSubmitting}
           >
             <Plus className="h-4 w-4 mr-1.5" />
             {isSubmitting ? "Recording..." : "Record Production"}
