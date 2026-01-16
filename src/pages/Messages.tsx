@@ -34,24 +34,41 @@ interface Conversation {
   group_avatar_url?: string;
 }
 
-// Memoized contact item for search results
-const ContactItem = memo(({ profile, onStartChat }: { profile: Profile; onStartChat: (profile: Profile) => void }) => (
-  <div
-    className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.99]"
-    onClick={() => onStartChat(profile)}
-  >
-    <OptimizedAvatar
-      src={profile.avatar_url}
-      alt={profile.username}
-      fallback={profile.username?.[0]?.toUpperCase() || '?'}
-      userId={profile.id}
-      className="w-11 h-11"
-    />
-    <div className="flex-1 min-w-0">
+// Memoized contact item for search results - avatar navigates to profile, rest starts chat
+const ContactItem = memo(({ profile, onStartChat, onViewProfile }: { 
+  profile: Profile; 
+  onStartChat: (profile: Profile) => void;
+  onViewProfile: (userId: string) => void;
+}) => (
+  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors">
+    {/* Avatar - navigates to profile */}
+    <div 
+      className="cursor-pointer shrink-0 active:scale-95 transition-transform"
+      onClick={(e) => { e.stopPropagation(); onViewProfile(profile.id); }}
+    >
+      <OptimizedAvatar
+        src={profile.avatar_url}
+        alt={profile.username}
+        fallback={profile.username?.[0]?.toUpperCase() || '?'}
+        userId={profile.id}
+        className="w-11 h-11"
+      />
+    </div>
+    {/* Name/username - also navigates to profile */}
+    <div 
+      className="flex-1 min-w-0 cursor-pointer"
+      onClick={(e) => { e.stopPropagation(); onViewProfile(profile.id); }}
+    >
       <p className="font-medium truncate text-sm">{profile.full_name || profile.username}</p>
       <p className="text-xs text-muted-foreground truncate">@{profile.username}</p>
     </div>
-    <UserPlus className="w-4 h-4 text-muted-foreground" />
+    {/* Message button - starts chat */}
+    <button 
+      className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors active:scale-95"
+      onClick={(e) => { e.stopPropagation(); onStartChat(profile); }}
+    >
+      <MessageCircle className="w-4 h-4 text-primary" />
+    </button>
   </div>
 ));
 ContactItem.displayName = 'ContactItem';
@@ -248,6 +265,8 @@ const Messages = () => {
     [contacts, existingUserIds]
   );
 
+  const handleViewProfile = useCallback((userId: string) => navigate(`/user/${userId}`), [navigate]);
+
   const handleStartChat = useCallback(async (profile: Profile) => {
     if (!user?.id) return;
     
@@ -326,7 +345,7 @@ const Messages = () => {
                 </div>
               ) : (
                 newContacts.map((contact) => (
-                  <ContactItem key={contact.id} profile={contact} onStartChat={handleStartChat} />
+                  <ContactItem key={contact.id} profile={contact} onStartChat={handleStartChat} onViewProfile={handleViewProfile} />
                 ))
               )}
             </div>
