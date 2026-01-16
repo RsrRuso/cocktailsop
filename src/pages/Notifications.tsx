@@ -225,43 +225,123 @@ const Notifications = () => {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read first
     if (!notification.read) {
       await supabase.from("notifications").update({ read: true }).eq("id", notification.id);
       refreshNotifications();
     }
 
-    // Navigation logic
-    if (notification.type === 'reel_tag') {
-      // Navigate to saves page for tagged reels
-      navigate('/profile', { state: { openSaves: true, filterType: 'reels' } });
-    } else if (notification.type === 'like' || notification.type === 'comment') {
-      if (notification.reel_id) navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
-      else if (notification.post_id) navigate(`/post/${notification.post_id}`);
-      else if (notification.story_id && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);
-      else if (notification.music_share_id) navigate('/thunder');
-      else if (notification.event_id) navigate(`/event/${notification.event_id}`);
-    } else if (notification.type === 'access_request') navigate('/access-approval');
-    else if (notification.type === 'stock_alert') navigate('/all-inventory');
-    else if (notification.type === 'fifo_alert') navigate('/inventory-manager');
-    else if (['inventory_transfer', 'inventory_receiving', 'spot_check'].includes(notification.type)) navigate('/inventory-transactions');
-    else if (notification.type === 'internal_email') navigate('/email');
-    else if (['batch_submission', 'batch_edit', 'batch_delete', 'recipe_created', 'member_added'].includes(notification.type)) navigate('/batch-calculator');
-    else if (notification.type === 'certificate_earned') navigate(notification.reference_user_id ? `/user/${notification.reference_user_id}` : '/exam-center');
-    else if (['purchase_order', 'po_created'].includes(notification.type)) navigate('/purchase-orders');
-    else if (['receiving', 'po_received'].includes(notification.type)) navigate('/po-received-items');
-    else if (notification.type === 'workspace_invite') navigate('/workspace-management');
-    else if (notification.type === 'group_invite') navigate('/batch-calculator');
-    else if (['follow', 'unfollow', 'profile_view'].includes(notification.type) && notification.reference_user_id) navigate(`/user/${notification.reference_user_id}`);
-    else if (notification.type === 'new_user') navigate('/explore');
-    else if (notification.type === 'new_post' && notification.post_id) navigate(`/post/${notification.post_id}`);
-    else if ((notification.type === 'new_reel' || notification.reel_id) && notification.reel_id) navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
-    else if (notification.type === 'new_story' && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);
-    else if (['new_event', 'event_attendance'].includes(notification.type) && notification.event_id) navigate(`/event/${notification.event_id}`);
-    else if (notification.post_id) navigate(`/post/${notification.post_id}`);
-    else if (notification.story_id && notification.reference_user_id) navigate(`/story/${notification.reference_user_id}`);
-    else if (notification.music_share_id) navigate('/thunder');
-    else if (notification.event_id) navigate(`/event/${notification.event_id}`);
-    else if (notification.reference_user_id) navigate(`/user/${notification.reference_user_id}`);
+    const { type, post_id, reel_id, story_id, music_share_id, event_id, reference_user_id } = notification;
+
+    // Priority navigation based on notification type
+    switch (type) {
+      // Social - Content interactions
+      case 'like':
+      case 'comment':
+        if (reel_id) return navigate('/reels', { state: { scrollToReelId: reel_id, showLivestreamComments: true } });
+        if (post_id) return navigate(`/post/${post_id}`);
+        if (story_id && reference_user_id) return navigate(`/story/${reference_user_id}`);
+        if (music_share_id) return navigate('/thunder');
+        if (event_id) return navigate(`/event/${event_id}`);
+        break;
+
+      // Social - User interactions
+      case 'follow':
+      case 'unfollow':
+      case 'profile_view':
+        if (reference_user_id) return navigate(`/user/${reference_user_id}`);
+        break;
+
+      case 'new_user':
+        return navigate('/explore');
+
+      // Content notifications
+      case 'new_post':
+        if (post_id) return navigate(`/post/${post_id}`);
+        break;
+
+      case 'new_reel':
+      case 'reel_tag':
+        if (type === 'reel_tag') return navigate('/profile', { state: { openSaves: true, filterType: 'reels' } });
+        if (reel_id) return navigate('/reels', { state: { scrollToReelId: reel_id, showLivestreamComments: true } });
+        break;
+
+      case 'new_story':
+        if (reference_user_id) return navigate(`/story/${reference_user_id}`);
+        break;
+
+      case 'new_event':
+      case 'event_attendance':
+        if (event_id) return navigate(`/event/${event_id}`);
+        break;
+
+      case 'new_music':
+        return navigate('/thunder');
+
+      // Messages
+      case 'message':
+        return navigate('/messages');
+
+      // Work - Access/Workspace
+      case 'access_request':
+        return navigate('/access-approval');
+
+      case 'access_granted':
+      case 'access_denied':
+      case 'workspace_invite':
+      case 'pin_granted':
+        return navigate('/workspace-management');
+
+      case 'group_invite':
+      case 'member_added':
+        return navigate('/batch-calculator');
+
+      // Work - Inventory
+      case 'stock_alert':
+        return navigate('/all-inventory');
+
+      case 'fifo_alert':
+        return navigate('/inventory-manager');
+
+      case 'inventory_transfer':
+      case 'inventory_receiving':
+      case 'spot_check':
+        return navigate('/inventory-transactions');
+
+      // Work - Batch Calculator
+      case 'batch_submission':
+      case 'batch_edit':
+      case 'batch_delete':
+      case 'recipe_created':
+        return navigate('/batch-calculator');
+
+      // Work - Procurement
+      case 'purchase_order':
+      case 'po_created':
+        return navigate('/purchase-orders');
+
+      case 'receiving':
+      case 'po_received':
+        return navigate('/po-received-items');
+
+      // Work - Other
+      case 'internal_email':
+        return navigate('/email');
+
+      case 'certificate_earned':
+        return navigate(reference_user_id ? `/user/${reference_user_id}` : '/exam-center');
+
+      default:
+        break;
+    }
+
+    // Fallback navigation based on available IDs
+    if (post_id) return navigate(`/post/${post_id}`);
+    if (reel_id) return navigate('/reels', { state: { scrollToReelId: reel_id, showLivestreamComments: true } });
+    if (story_id && reference_user_id) return navigate(`/story/${reference_user_id}`);
+    if (music_share_id) return navigate('/thunder');
+    if (event_id) return navigate(`/event/${event_id}`);
+    if (reference_user_id) return navigate(`/user/${reference_user_id}`);
   };
 
   let runningIndex = 0;
