@@ -86,6 +86,32 @@ export const useSubRecipeProductions = (subRecipeId?: string) => {
     },
   });
 
+  // Update production
+  const updateProduction = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<SubRecipeProduction> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('sub_recipe_productions')
+        .update({
+          quantity_produced_ml: updates.quantity_produced_ml,
+          expiration_date: updates.expiration_date || null,
+          notes: updates.notes || null,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sub-recipe-productions'] });
+      toast.success("Production batch updated!");
+    },
+    onError: (error) => {
+      toast.error("Failed to update production: " + error.message);
+    },
+  });
+
   // Delete production
   const deleteProduction = useMutation({
     mutationFn: async (productionId: string) => {
@@ -173,6 +199,7 @@ export const useSubRecipeProductions = (subRecipeId?: string) => {
           createProduction.mutate(data);
         }
       } : createProduction.mutate,
+    updateProduction: updateProduction.mutate,
     deleteProduction: deleteProduction.mutate,
     getTotalProduced,
     getProductionsByRecipe,

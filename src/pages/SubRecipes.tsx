@@ -63,7 +63,7 @@ const SubRecipes = () => {
   const { groups } = useMixologistGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { subRecipes, depletions, isLoading, createSubRecipe, updateSubRecipe, deleteSubRecipe, calculateBreakdown, getTotalDepletion } = useSubRecipes(selectedGroupId);
-  const { productions, getTotalProduced, getExpirationStatus, deleteProduction } = useSubRecipeProductions();
+  const { productions, getTotalProduced, getExpirationStatus, deleteProduction, updateProduction } = useSubRecipeProductions();
   const { spirits } = useMasterSpirits();
   
   const [showDialog, setShowDialog] = useState(false);
@@ -473,7 +473,10 @@ const SubRecipes = () => {
                       <CollapsibleContent className="space-y-2 mb-3">
                         <SubRecipeProductionHistory
                           productions={recipeProductions}
+                          recipeName={recipe.name}
+                          ingredients={recipe.ingredients}
                           onDelete={deleteProduction}
+                          onUpdate={(id, data) => updateProduction({ id, ...data })}
                         />
                       </CollapsibleContent>
                     </Collapsible>
