@@ -181,7 +181,7 @@ const Messages = () => {
       setContactsLoading(true);
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('id, username, full_name, avatar_url')
           .neq('id', user.id)
           .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
