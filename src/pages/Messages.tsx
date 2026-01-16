@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Search, Pin, Archive, Users, Mail, CheckCheck, Trash2, X } from "lucide-react";
+import { MessageCircle, Search, Pin, Archive, Users, Mail, CheckCheck, Trash2, X, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,28 @@ interface Conversation {
   group_name?: string;
   group_avatar_url?: string;
 }
+
+// Memoized contact item for search results
+const ContactItem = memo(({ profile, onStartChat }: { profile: Profile; onStartChat: (profile: Profile) => void }) => (
+  <div
+    className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.99]"
+    onClick={() => onStartChat(profile)}
+  >
+    <OptimizedAvatar
+      src={profile.avatar_url}
+      alt={profile.username}
+      fallback={profile.username?.[0]?.toUpperCase() || '?'}
+      userId={profile.id}
+      className="w-11 h-11"
+    />
+    <div className="flex-1 min-w-0">
+      <p className="font-medium truncate text-sm">{profile.full_name || profile.username}</p>
+      <p className="text-xs text-muted-foreground truncate">@{profile.username}</p>
+    </div>
+    <UserPlus className="w-4 h-4 text-muted-foreground" />
+  </div>
+));
+ContactItem.displayName = 'ContactItem';
 
 // Memoized conversation item with delete
 const ConversationItem = memo(({ conversation, onNavigate, onTogglePin, onDelete }: { 
@@ -126,8 +148,41 @@ const Messages = () => {
   const [pinnedChats, setPinnedChats] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.getItem('pinnedChats') || '[]')));
   const [archivedChats, setArchivedChats] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.getItem('archivedChats') || '[]')));
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [contacts, setContacts] = useState<Profile[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
 
   const { conversations, isLoading, refreshConversations, setConversations } = useMessagesData(user?.id || null);
+
+  // Fetch contacts when search query changes
+  useEffect(() => {
+    if (!searchQuery.trim() || !user?.id) {
+      setContacts([]);
+      return;
+    }
+
+    const searchContacts = async () => {
+      setContactsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .neq('id', user.id)
+          .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+          .limit(10);
+
+        if (error) throw error;
+        setContacts(data || []);
+      } catch (err) {
+        console.error('Error searching contacts:', err);
+        setContacts([]);
+      } finally {
+        setContactsLoading(false);
+      }
+    };
+
+    const debounce = setTimeout(searchContacts, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, user?.id]);
 
   useEffect(() => { localStorage.setItem('pinnedChats', JSON.stringify([...pinnedChats])); }, [pinnedChats]);
   useEffect(() => { localStorage.setItem('archivedChats', JSON.stringify([...archivedChats])); }, [archivedChats]);
@@ -183,6 +238,52 @@ const Messages = () => {
   const totalUnread = useMemo(() => conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0), [conversations]);
   const handleNavigate = useCallback((id: string) => navigate(`/messages/${id}`), [navigate]);
 
+  // Filter contacts to exclude users who already have conversations
+  const existingUserIds = useMemo(() => 
+    new Set(conversations.map(c => c.otherUser?.id).filter(Boolean)),
+    [conversations]
+  );
+  const newContacts = useMemo(() => 
+    contacts.filter(c => !existingUserIds.has(c.id)),
+    [contacts, existingUserIds]
+  );
+
+  const handleStartChat = useCallback(async (profile: Profile) => {
+    if (!user?.id) return;
+    
+    try {
+      // Check if conversation already exists
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .contains('participant_ids', [user.id, profile.id])
+        .eq('is_group', false)
+        .maybeSingle();
+
+      if (existing) {
+        navigate(`/messages/${existing.id}`);
+        return;
+      }
+
+      // Create new conversation
+      const { data: newConv, error } = await supabase
+        .from('conversations')
+        .insert({
+          participant_ids: [user.id, profile.id],
+          is_group: false,
+          last_message_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      navigate(`/messages/${newConv.id}`);
+    } catch (err) {
+      console.error('Error starting chat:', err);
+      toast.error('Could not start conversation');
+    }
+  }, [user?.id, navigate]);
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
@@ -210,7 +311,36 @@ const Messages = () => {
             <Archive className="w-3 h-3" />Archived
           </button>
         </div>
+        {/* Contact List - Show when searching */}
+        {searchQuery.trim() && newContacts.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Start new chat</span>
+            </div>
+            <div className="space-y-0.5 bg-muted/30 rounded-xl p-1">
+              {contactsLoading ? (
+                <div className="flex items-center gap-3 p-3 animate-pulse">
+                  <div className="w-11 h-11 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-1.5"><div className="h-3 w-24 bg-muted rounded" /></div>
+                </div>
+              ) : (
+                newContacts.map((contact) => (
+                  <ContactItem key={contact.id} profile={contact} onStartChat={handleStartChat} />
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Existing Conversations */}
         <div className="space-y-0.5">
+          {searchQuery.trim() && filteredConversations.length > 0 && (
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <MessageCircle className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Existing chats</span>
+            </div>
+          )}
           {isLoading && conversations.length === 0 ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
@@ -218,10 +348,12 @@ const Messages = () => {
                 <div className="flex-1 space-y-1.5"><div className="h-3 w-24 bg-muted rounded" /><div className="h-2.5 w-32 bg-muted rounded" /></div>
               </div>
             ))
-          ) : filteredConversations.length === 0 ? (
+          ) : filteredConversations.length === 0 && (!searchQuery.trim() || newContacts.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3"><MessageCircle className="w-6 h-6 text-muted-foreground" /></div>
-              <p className="text-muted-foreground text-sm">{showArchived ? "No archived chats" : "No conversations yet"}</p>
+              <p className="text-muted-foreground text-sm">
+                {searchQuery.trim() ? "No users found" : (showArchived ? "No archived chats" : "No conversations yet")}
+              </p>
             </div>
           ) : (
             filteredConversations.map((conversation) => (
