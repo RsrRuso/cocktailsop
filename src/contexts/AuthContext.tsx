@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Initial session check
+    // Initial session check - INSTANT, non-blocking
     const initAuth = async () => {
       try {
         // Skip normal auth if this is a password recovery URL
@@ -183,19 +183,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Load cached profile instantly, then refresh from network
-          try {
-            const cached = await getCache('profiles', session.user.id);
-            if (cached && isMounted) setProfile(cached);
-          } catch {
-            // ignore cache failures
-          }
+          // Load cached profile INSTANTLY (sync from IndexedDB)
+          getCache('profiles', session.user.id)
+            .then(cached => {
+              if (cached && isMounted) setProfile(cached);
+            })
+            .catch(() => {});
 
-          await fetchProfile(session.user.id);
+          // Fetch fresh profile in background - DO NOT BLOCK
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
         }
       } catch (error) {
         console.error('Auth init error:', error);
       } finally {
+        // INSTANT: Always set loading false immediately after session check
         if (isMounted) {
           setIsLoading(false);
         }
