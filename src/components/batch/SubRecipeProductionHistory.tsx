@@ -314,7 +314,7 @@ export const SubRecipeProductionHistory = ({
     }
   };
 
-  const downloadAllProductionsPDF = () => {
+  const downloadAllProductionsPDF = async () => {
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -325,6 +325,8 @@ export const SubRecipeProductionHistory = ({
       const darkColor = [30, 30, 30] as [number, number, number];
       const grayColor = [100, 100, 100] as [number, number, number];
       const lightGray = [245, 245, 245] as [number, number, number];
+      const dangerColor = [239, 68, 68] as [number, number, number];
+      const successColor = [34, 197, 94] as [number, number, number];
       
       // Header Background
       doc.setFillColor(...darkColor);
@@ -353,6 +355,15 @@ export const SubRecipeProductionHistory = ({
       
       let y = 70;
       
+      // ========== PRODUCTION BATCHES TABLE ==========
+      doc.setFillColor(...primaryColor);
+      doc.rect(15, y - 5, 4, 12, 'F');
+      doc.setTextColor(...darkColor);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("PRODUCTION BATCHES", 25, y + 3);
+      y += 15;
+      
       // Table header
       doc.setFillColor(...darkColor);
       doc.rect(15, y - 5, pageWidth - 30, 12, 'F');
@@ -369,7 +380,7 @@ export const SubRecipeProductionHistory = ({
       
       // Table rows
       productions.forEach((production, index) => {
-        if (y > pageHeight - 40) {
+        if (y > pageHeight - 100) {
           // Add footer before new page
           doc.setFillColor(...darkColor);
           doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
@@ -415,17 +426,147 @@ export const SubRecipeProductionHistory = ({
         y += 10;
       });
       
-      // Summary box at bottom
-      y += 10;
+      // ========== TOTAL PRODUCTION BOX ==========
+      y += 8;
       doc.setFillColor(...primaryColor);
-      doc.roundedRect(15, y, pageWidth - 30, 25, 3, 3, 'F');
-      
+      doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("TOTAL PRODUCTION", 25, y + 10);
-      doc.setFontSize(16);
-      doc.text(`${totalProduced.toFixed(0)} ml`, pageWidth - 25, y + 16, { align: "right" });
+      doc.text("TOTAL PRODUCTION", 25, y + 12);
+      doc.setFontSize(14);
+      doc.text(`${totalProduced.toFixed(0)} ml`, pageWidth - 25, y + 13, { align: "right" });
+      
+      // ========== INGREDIENTS BREAKDOWN ==========
+      if (ingredients.length > 0) {
+        y += 35;
+        
+        // Check if we need a new page
+        if (y > pageHeight - 100) {
+          doc.setFillColor(...darkColor);
+          doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+          doc.setFontSize(8);
+          doc.setTextColor(...primaryColor);
+          doc.text("SpecVerse", pageWidth - 20, pageHeight - 6, { align: "right" });
+          doc.addPage();
+          y = 25;
+        }
+        
+        // Section title
+        doc.setFillColor(...primaryColor);
+        doc.rect(15, y - 5, 4, 12, 'F');
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("TOTAL INGREDIENTS USED", 25, y + 3);
+        y += 15;
+        
+        // Table header
+        doc.setFillColor(...darkColor);
+        doc.rect(15, y - 5, pageWidth - 30, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("INGREDIENT", 20, y + 2);
+        doc.text("PER BATCH", 100, y + 2, { align: "right" });
+        doc.text("TOTAL USED", pageWidth - 25, y + 2, { align: "right" });
+        
+        y += 12;
+        
+        // Calculate total ingredient usage based on total production
+        const totalYieldPerBatch = ingredients.reduce((sum, ing) => sum + Number(ing.amount), 0);
+        const productionRatio = totalProduced / (totalYieldPerBatch || 1);
+        
+        // Table rows
+        let grandTotalIngredients = 0;
+        ingredients.forEach((ing, idx) => {
+          const scaledAmount = Number(ing.amount) * productionRatio;
+          grandTotalIngredients += scaledAmount;
+          
+          if (idx % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(15, y - 4, pageWidth - 30, 8, 'F');
+          }
+          doc.setTextColor(...darkColor);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(`${ing.name}`, 20, y + 1);
+          doc.text(`${ing.amount} ${ing.unit}`, 100, y + 1, { align: "right" });
+          doc.setFont("helvetica", "bold");
+          doc.text(`${scaledAmount.toFixed(0)} ${ing.unit}`, pageWidth - 25, y + 1, { align: "right" });
+          y += 8;
+        });
+        
+        // Total row for ingredients
+        doc.setFillColor(...darkColor);
+        doc.rect(15, y, pageWidth - 30, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text("TOTAL INGREDIENTS", 20, y + 6);
+        doc.text(`${grandTotalIngredients.toFixed(0)} ml`, pageWidth - 25, y + 6, { align: "right" });
+        
+        y += 20;
+        
+        // ========== LOSS SUMMARY ==========
+        // Calculate overall loss (expected ingredients vs actual produced)
+        const overallLoss = grandTotalIngredients - totalProduced;
+        const lossPercentage = grandTotalIngredients > 0 ? (overallLoss / grandTotalIngredients) * 100 : 0;
+        
+        // Check if we need a new page
+        if (y > pageHeight - 60) {
+          doc.setFillColor(...darkColor);
+          doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+          doc.setFontSize(8);
+          doc.setTextColor(...primaryColor);
+          doc.text("SpecVerse", pageWidth - 20, pageHeight - 6, { align: "right" });
+          doc.addPage();
+          y = 25;
+        }
+        
+        // Section title
+        doc.setFillColor(...primaryColor);
+        doc.rect(15, y - 5, 4, 12, 'F');
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("OVERALL LOSS ANALYSIS", 25, y + 3);
+        y += 15;
+        
+        // Loss summary card
+        const isLoss = overallLoss > 0;
+        doc.setFillColor(isLoss ? 254 : 240, isLoss ? 242 : 253, isLoss ? 242 : 244);
+        doc.roundedRect(15, y, pageWidth - 30, 35, 3, 3, 'F');
+        
+        doc.setDrawColor(...(isLoss ? dangerColor : successColor));
+        doc.setLineWidth(0.8);
+        doc.roundedRect(15, y, pageWidth - 30, 35, 3, 3, 'S');
+        
+        // Loss details inside card
+        doc.setFontSize(9);
+        doc.setTextColor(...grayColor);
+        doc.setFont("helvetica", "normal");
+        doc.text("Total Ingredients Used:", 25, y + 10);
+        doc.text("Total Production Output:", 25, y + 20);
+        doc.text("Overall Variance:", 25, y + 30);
+        
+        doc.setTextColor(...darkColor);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${grandTotalIngredients.toFixed(0)} ml`, 100, y + 10);
+        doc.text(`${totalProduced.toFixed(0)} ml`, 100, y + 20);
+        
+        // Variance with color coding
+        doc.setTextColor(...(isLoss ? dangerColor : successColor));
+        const varianceText = isLoss 
+          ? `-${overallLoss.toFixed(0)} ml (${lossPercentage.toFixed(1)}% loss)`
+          : `+${Math.abs(overallLoss).toFixed(0)} ml (${Math.abs(lossPercentage).toFixed(1)}% gain)`;
+        doc.text(varianceText, 100, y + 30);
+        
+        // Status indicator on right side
+        doc.setFontSize(11);
+        const statusText = isLoss ? "⚠ PRODUCTION LOSS" : "✓ OVER-PRODUCTION";
+        doc.text(statusText, pageWidth - 25, y + 20, { align: "right" });
+      }
       
       // Footer
       doc.setFillColor(...darkColor);
