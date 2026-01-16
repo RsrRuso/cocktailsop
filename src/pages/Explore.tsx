@@ -89,10 +89,17 @@ const Explore = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [posts, setPosts] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [searchedProfiles, setSearchedProfiles] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"top" | "accounts">("top");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const { isVerified } = useVerifiedUsers(profiles.map((p) => p.id));
+  const allProfileIds = useMemo(() => {
+    const ids = [...profiles.map(p => p.id), ...searchedProfiles.map(p => p.id)];
+    return [...new Set(ids)];
+  }, [profiles, searchedProfiles]);
+
+  const { isVerified } = useVerifiedUsers(allProfileIds);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,7 +129,7 @@ const Explore = () => {
         }
       } catch (error: any) {
         console.error("Explore fetch error:", error);
-        toast.error("Couldn’t load Explore. Please try again.");
+        toast.error("Couldn't load Explore. Please try again.");
         if (!cancelled) {
           setPosts([]);
           setProfiles([]);
@@ -138,20 +145,48 @@ const Explore = () => {
     };
   }, []);
 
+  // Live search for profiles when typing
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchedProfiles([]);
+      return;
+    }
+
+    const searchProfiles = async () => {
+      setIsSearching(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, follower_count')
+          .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+          .order('follower_count', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+        setSearchedProfiles(data || []);
+      } catch (err) {
+        console.error('Profile search error:', err);
+        setSearchedProfiles([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchProfiles, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
+
   const filteredPosts = useMemo(() => {
     if (!searchQuery) return posts;
     const q = searchQuery.toLowerCase();
     return posts.filter(post => post.content?.toLowerCase().includes(q));
   }, [posts, searchQuery]);
 
-  const filteredProfiles = useMemo(() => {
-    if (!searchQuery) return profiles;
-    const q = searchQuery.toLowerCase();
-    return profiles.filter(p => 
-      p.username?.toLowerCase().includes(q) || 
-      p.full_name?.toLowerCase().includes(q)
-    );
-  }, [profiles, searchQuery]);
+  // Use searched profiles when searching, otherwise use default profiles
+  const displayProfiles = useMemo(() => {
+    if (searchQuery.trim()) return searchedProfiles;
+    return profiles;
+  }, [searchQuery, searchedProfiles, profiles]);
 
   const handlePostClick = useCallback((id: string) => navigate(`/post/${id}`), [navigate]);
   const handleProfileClick = useCallback((id: string) => navigate(`/user/${id}`), [navigate]);
@@ -169,7 +204,7 @@ const Explore = () => {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-900 border-0 text-sm placeholder:text-neutral-400 focus-visible:ring-0"
+              className="pl-10 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-900 border-0 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus-visible:ring-0"
             />
           </div>
         </div>
@@ -223,7 +258,7 @@ const Explore = () => {
 
         {activeTab === "accounts" && (
           <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-            {isLoading ? (
+            {isLoading || isSearching ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="py-3 px-4 flex items-center gap-3 animate-pulse">
                   <div className="w-11 h-11 rounded-full bg-neutral-200 dark:bg-neutral-800" />
@@ -233,12 +268,12 @@ const Explore = () => {
                   </div>
                 </div>
               ))
-            ) : filteredProfiles.length === 0 ? (
+            ) : displayProfiles.length === 0 ? (
               <div className="text-center py-16 text-neutral-500 text-sm">
-                No accounts found
+                {searchQuery.trim() ? "No accounts found" : "No accounts to show"}
               </div>
             ) : (
-              filteredProfiles.map((profile) => (
+              displayProfiles.map((profile) => (
                 <ProfileItem
                   key={profile.id}
                   profile={profile}
