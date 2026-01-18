@@ -26,6 +26,42 @@ export function useIsFollowing({
   });
 }
 
+export function useFollowingIds(userId?: string) {
+  return useQuery({
+    queryKey: ['following', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [] as string[];
+      const { data, error } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId);
+
+      if (error) throw error;
+      return (data ?? []).map((f: any) => f.following_id as string);
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useFollowerIds(userId?: string) {
+  return useQuery({
+    queryKey: ['followers', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [] as string[];
+      const { data, error } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', userId);
+
+      if (error) throw error;
+      return (data ?? []).map((f: any) => f.follower_id as string);
+    },
+    staleTime: 60_000,
+  });
+}
+
 export function useFollow() {
   return useMutation({
     mutationFn: async ({ followerId, followingId }: { followerId: string; followingId: string }) => {
@@ -38,7 +74,12 @@ export function useFollow() {
       return res.data;
     },
     onSuccess: async (_data, vars) => {
-      await queryClient.invalidateQueries({ queryKey: ['follows', 'isFollowing', vars.followerId, vars.followingId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['follows', 'isFollowing', vars.followerId, vars.followingId] }),
+        queryClient.invalidateQueries({ queryKey: ['following', vars.followerId] }),
+        queryClient.invalidateQueries({ queryKey: ['followers', vars.followingId] }),
+        queryClient.invalidateQueries({ queryKey: ['profile', vars.followingId] }),
+      ]);
     },
   });
 }
@@ -55,7 +96,56 @@ export function useUnfollow() {
       return true;
     },
     onSuccess: async (_data, vars) => {
-      await queryClient.invalidateQueries({ queryKey: ['follows', 'isFollowing', vars.followerId, vars.followingId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['follows', 'isFollowing', vars.followerId, vars.followingId] }),
+        queryClient.invalidateQueries({ queryKey: ['following', vars.followerId] }),
+        queryClient.invalidateQueries({ queryKey: ['followers', vars.followingId] }),
+        queryClient.invalidateQueries({ queryKey: ['profile', vars.followingId] }),
+      ]);
+    },
+  });
+}
+
+// Get following users with profiles
+export function useFollowingProfiles(userId?: string) {
+  return useQuery({
+    queryKey: ['following-profiles', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from('follows')
+        .select(`
+          following_id,
+          profiles:following_id (id, username, full_name, avatar_url, professional_title)
+        `)
+        .eq('follower_id', userId)
+        .limit(100);
+
+      if (error) throw error;
+      return (data ?? []).map((f: any) => f.profiles).filter(Boolean);
+    },
+  });
+}
+
+// Get follower users with profiles
+export function useFollowerProfiles(userId?: string) {
+  return useQuery({
+    queryKey: ['follower-profiles', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from('follows')
+        .select(`
+          follower_id,
+          profiles:follower_id (id, username, full_name, avatar_url, professional_title)
+        `)
+        .eq('following_id', userId)
+        .limit(100);
+
+      if (error) throw error;
+      return (data ?? []).map((f: any) => f.profiles).filter(Boolean);
     },
   });
 }
