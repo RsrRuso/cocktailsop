@@ -1,11 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { queryClient } from '../../lib/queryClient';
 
 export type ConversationRow = {
   id: string;
   participant_ids: string[];
   last_message_at: string | null;
   created_at: string | null;
+  is_group?: boolean;
+  group_name?: string | null;
+  group_avatar_url?: string | null;
 };
 
 export type MessageRow = {
@@ -14,6 +18,8 @@ export type MessageRow = {
   sender_id: string;
   content: string;
   created_at: string;
+  media_url?: string | null;
+  media_type?: string | null;
 };
 
 export type ProfileLite = {
@@ -27,6 +33,10 @@ export type ConversationPreview = {
   id: string;
   other?: ProfileLite | null;
   last?: { content: string; created_at: string } | null;
+  isGroup?: boolean;
+  groupName?: string | null;
+  groupAvatarUrl?: string | null;
+  unreadCount?: number;
 };
 
 export function useConversations(userId?: string) {
@@ -37,7 +47,7 @@ export function useConversations(userId?: string) {
       if (!userId) return [];
       const convRes = await supabase
         .from('conversations')
-        .select('id, participant_ids, last_message_at, created_at')
+        .select('id, participant_ids, last_message_at, created_at, is_group, group_name, group_avatar_url')
         .contains('participant_ids', [userId])
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(50);
@@ -84,8 +94,68 @@ export function useConversations(userId?: string) {
           id: c.id,
           other: otherId ? profilesById.get(otherId) ?? null : null,
           last: last ? { content: last.content, created_at: last.created_at } : null,
+          isGroup: c.is_group ?? false,
+          groupName: c.group_name ?? null,
+          groupAvatarUrl: c.group_avatar_url ?? null,
+          unreadCount: 0,
         };
       });
+    },
+  });
+}
+
+// Search users for new conversations
+export function useSearchUsers(query: string, userId?: string) {
+  return useQuery({
+    queryKey: ['search-users', query],
+    enabled: !!query && query.length >= 2 && !!userId,
+    queryFn: async () => {
+      if (!userId || !query) return [];
+      const { data, error } = await supabase
+        .from('profiles_public')
+        .select('id, username, full_name, avatar_url')
+        .neq('id', userId)
+        .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+        .limit(10);
+
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 10_000,
+  });
+}
+
+// Create or get existing conversation
+export function useCreateConversation(userId?: string) {
+  return useMutation({
+    mutationFn: async (otherUserId: string) => {
+      if (!userId) throw new Error('Not signed in');
+
+      // Check for existing conversation
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .contains('participant_ids', [userId, otherUserId])
+        .eq('is_group', false)
+        .maybeSingle();
+
+      if (existing) return existing.id;
+
+      // Create new conversation
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert({
+          participant_ids: [userId, otherUserId],
+          is_group: false,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return data.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', userId] });
     },
   });
 }
